@@ -6,6 +6,7 @@ import { loadResponsibles, loadAccessRequests, loadActiveUsers } from "../featur
 import { ensureOperationalNotifications } from "../features/notifications.js";
 import { getSubscriptionAccessStatus } from "../features/subscription.js";
 import { loadMarketplaces } from "../features/marketplace.js";
+import { loadRemoteData, subscribeRemote } from "../data/remote.js";
 
 export async function setupBackend() {
   const config = window.SUPABASE_CONFIG || {};

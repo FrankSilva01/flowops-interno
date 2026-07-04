@@ -6,6 +6,7 @@ import { persist, removeRemote } from "../data/remote.js";
 import {
   renderDashboard, renderCommercialDashboard, renderTopProducts, renderFollowUps,
   renderCompanySidebarStatus, openQuickAction, resetDashboardPreferences, openEmailDigest,
+  applyFocusFilter,
 } from "../features/dashboard.js";
 import {
   saveOrder, saveOrderFromDialog, updateMarketplaceCodePlaceholder, updateOrderFormStatusColor,
@@ -19,7 +20,7 @@ import { renderCash, saveCash, startCashEdit, cancelCashEdit } from "../features
 import {
   setMaterialsTab, clearMaterialFilters, clearInventoryFilters, saveMaterial, cancelMaterialEdit,
   saveInventoryItem, renderMaterials, renderInventory, resetInventoryForm, materialCashId,
-  startInventoryEdit,
+  startInventoryEdit, startMaterialEdit,
 } from "../features/materials.js";
 import { renderLeads, openLeadDialog, saveLead, openOrderFromLead, openLeadFile, deleteLeadFile } from "../features/customers.js";
 import { renderReports } from "../features/reports.js";
@@ -28,10 +29,11 @@ import {
   renderApprovals, renderActiveUsers, renderResponsibleOptions, loadAndRenderApprovals,
   loadAndRenderUsers, loadAndRenderResponsibles, createManualUserAccess, saveResponsible,
   approveAccess, rejectAccess, changeUserRole, removeUser, editResponsible, deleteResponsible,
+  renderResponsibles,
 } from "../features/users.js";
 import {
   renderNotifications, renderTrialBanner, clearVisibleNotifications, markAllNotificationsRead,
-  clearReadNotifications, openNotification,
+  clearReadNotifications, openNotification, markNotificationRead,
 } from "../features/notifications.js";
 import {
   renderSubscriptionPortal, requestPlanChange, handlePaymentAction, submitScheduledDowngrade,

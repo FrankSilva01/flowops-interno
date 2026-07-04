@@ -3,7 +3,7 @@ import { byId, html, countBy, sum, formatDate, formatDateShort, formatDateTime, 
 import { renderBarChart, renderLineChart } from "../core/charts.js";
 import { setView, bindActions, renderTables } from "../core/router.js";
 import { getOrderPriority, getOrderCode, getMarketplaceLabel, syncOrderFilterControls } from "./orders.js";
-import { formatInventoryNumber } from "./materials.js";
+import { formatInventoryNumber, setMaterialsTab } from "./materials.js";
 import { getLeadFollowUp } from "./customers.js";
 import { getSubscriptionAlert } from "./subscription.js";
 import { normalizeMarketplaceChannel } from "./marketplace.js";
