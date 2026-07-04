@@ -5,6 +5,7 @@ import {
   sortOrders, getOrderPriority, getMarketplaceLabel, getOrderCode, getOrderMarketplaceChannel,
   renderSlaBadge, renderInlineSelect, updateOrderInline,
 } from "./orders.js";
+import { getResponsibleNames } from "./users.js";
 
 export function renderProduction() {
   renderKanbanFilters();

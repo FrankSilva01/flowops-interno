@@ -24,6 +24,11 @@ import {
 import { renderLeads, openLeadDialog, saveLead, openOrderFromLead, openLeadFile, deleteLeadFile } from "../features/customers.js";
 import { renderReports } from "../features/reports.js";
 import { renderLogs, recordAudit } from "../features/logs.js";
+import {
+  renderApprovals, renderActiveUsers, renderResponsibleOptions, loadAndRenderApprovals,
+  loadAndRenderUsers, loadAndRenderResponsibles, createManualUserAccess, saveResponsible,
+  approveAccess, rejectAccess, changeUserRole, removeUser, editResponsible, deleteResponsible,
+} from "../features/users.js";
 
 export function bindEvents() {
   byId("sidebarToggle")?.addEventListener("click", toggleSidebar);

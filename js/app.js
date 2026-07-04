@@ -77,6 +77,13 @@ import {
   renderLogs, applyHistoryRange, isWithinDateRange, auditActionLabel, auditDiffText,
   formatAuditValue, recordAudit, auditSnapshot,
 } from "./features/logs.js";
+import {
+  renderApprovals, renderActiveUsers, renderResponsibles, loadAccessRequests, loadActiveUsers,
+  loadResponsibles, loadAndRenderResponsibles, loadAndRenderApprovals, loadAndRenderUsers,
+  approveAccess, rejectAccess, changeUserRole, removeUser, createManualUserAccess,
+  showPlanLimitDialog, saveResponsible, editResponsible, deleteResponsible,
+  renderResponsibleOptions, getResponsibleNames, nextResponsibleId,
+} from "./features/users.js";
 
 // Bridge: o restante do app (ainda não modularizado, carregado por app-direct-legacy.js
 // como script classico logo depois deste modulo) referencia estes nomes como globais.
@@ -137,6 +144,11 @@ Object.assign(window, {
   renderDonutChart, renderReportInsight,
   renderLogs, applyHistoryRange, isWithinDateRange, auditActionLabel, auditDiffText,
   formatAuditValue, recordAudit, auditSnapshot,
+  renderApprovals, renderActiveUsers, renderResponsibles, loadAccessRequests, loadActiveUsers,
+  loadResponsibles, loadAndRenderResponsibles, loadAndRenderApprovals, loadAndRenderUsers,
+  approveAccess, rejectAccess, changeUserRole, removeUser, createManualUserAccess,
+  showPlanLimitDialog, saveResponsible, editResponsible, deleteResponsible,
+  renderResponsibleOptions, getResponsibleNames, nextResponsibleId,
 });
 
 document.addEventListener("DOMContentLoaded", async () => {
