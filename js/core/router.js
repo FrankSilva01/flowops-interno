@@ -22,6 +22,7 @@ import {
   startInventoryEdit,
 } from "../features/materials.js";
 import { renderLeads, openLeadDialog, saveLead, openOrderFromLead, openLeadFile, deleteLeadFile } from "../features/customers.js";
+import { renderReports } from "../features/reports.js";
 
 export function bindEvents() {
   byId("sidebarToggle")?.addEventListener("click", toggleSidebar);

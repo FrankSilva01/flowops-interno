@@ -64,6 +64,15 @@ import {
   renderLeadHistory, saveLead, uploadLeadFiles, openLeadFile, deleteLeadFile, formatFileSize,
   openOrderFromLead,
 } from "./features/customers.js";
+import {
+  renderReports, renderReportTabContent, reportProductDefinition, reportMaterialDefinition,
+  reportClientDefinition, reportStockDefinition, aggregateReportRows, reportLateOrders,
+  reportTabLabel, reportPeriodLabel, reportGroupLabel, exportReportTable, exportReport,
+  downloadTextFile, getReportRows, reportStartDate, reportReferenceDate, reportOrderDate,
+  findOrderCashEntry, getReportFinancial, reportDailyRows, reportGroupKey, localReportDateKey,
+  formatReportGroupLabel, parseReportDate, openReportPrintView, reportMarketplaceRows, reportKpi,
+  renderDonutChart, renderReportInsight,
+} from "./features/reports.js";
 
 // Bridge: o restante do app (ainda não modularizado, carregado por app-direct-legacy.js
 // como script classico logo depois deste modulo) referencia estes nomes como globais.
@@ -115,6 +124,13 @@ Object.assign(window, {
   renderLeads, getInitials, getLeadOrders, getLeadFollowUp, openLeadDialog, renderLeadFiles,
   renderLeadHistory, saveLead, uploadLeadFiles, openLeadFile, deleteLeadFile, formatFileSize,
   openOrderFromLead,
+  renderReports, renderReportTabContent, reportProductDefinition, reportMaterialDefinition,
+  reportClientDefinition, reportStockDefinition, aggregateReportRows, reportLateOrders,
+  reportTabLabel, reportPeriodLabel, reportGroupLabel, exportReportTable, exportReport,
+  downloadTextFile, getReportRows, reportStartDate, reportReferenceDate, reportOrderDate,
+  findOrderCashEntry, getReportFinancial, reportDailyRows, reportGroupKey, localReportDateKey,
+  formatReportGroupLabel, parseReportDate, openReportPrintView, reportMarketplaceRows, reportKpi,
+  renderDonutChart, renderReportInsight,
 });
 
 document.addEventListener("DOMContentLoaded", async () => {
