@@ -1,0 +1,1 @@
+export const SUPABASE_CONFIG = window.SUPABASE_CONFIG;
