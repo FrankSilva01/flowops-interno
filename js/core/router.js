@@ -15,6 +15,7 @@ import {
   appendHistory, syncOrderPaymentCash,
 } from "../features/orders.js";
 import { renderProduction } from "../features/production.js";
+import { saveCash, startCashEdit, cancelCashEdit } from "../features/cash.js";
 
 export function bindEvents() {
   byId("sidebarToggle")?.addEventListener("click", toggleSidebar);

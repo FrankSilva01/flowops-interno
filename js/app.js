@@ -52,6 +52,7 @@ import {
   renderProduction, filterProductionOrders, renderProductionSummary, isProductionEligible,
   renderKanbanCard, renderKanbanFilters, bindKanban,
 } from "./features/production.js";
+import { renderCash, saveCash, startCashEdit, cancelCashEdit, resetCashForm, filterCash } from "./features/cash.js";
 
 // Bridge: o restante do app (ainda não modularizado, carregado por app-direct-legacy.js
 // como script classico logo depois deste modulo) referencia estes nomes como globais.
@@ -95,6 +96,7 @@ Object.assign(window, {
   nextOrderCode, appendHistory, showOrderHistory, customTagClass, deleteCustomTag,
   renderProduction, filterProductionOrders, renderProductionSummary, isProductionEligible,
   renderKanbanCard, renderKanbanFilters, bindKanban,
+  renderCash, saveCash, startCashEdit, cancelCashEdit, resetCashForm, filterCash,
 });
 
 document.addEventListener("DOMContentLoaded", async () => {
