@@ -100,6 +100,31 @@ import {
   subscriptionStatusText, paymentStatusText,
 } from "./features/subscription.js";
 import { submitSupportTicket, renderSupportPortal, renderWhatsNew } from "./features/support.js";
+import {
+  normalizeMarketplaceChannel, marketplaceDisplayName, matchesMarketplaceChannel,
+  marketplaceChannelsForCurrentFilter, renderMarketplaceChannelCards, getIntegrationTokenAlert,
+  renderMarketplaces, renderIntegrationSummary, renderMarketplaceLogSummary, renderMarketplaceApiLog,
+  marketplaceLogLabel, marketplaceLogKindClass, marketplaceLogStatusLabel, marketplaceLogStatusClass,
+  matchesMarketplaceLogFilter, loadMarketplaces, loadAndRenderMarketplaces, renderStorefrontAdmin,
+  updateStorefrontTargetFields, storefrontListingImages, storefrontDeliveryNoteFromListing,
+  fillStorefrontFormFromListing, importSelectedListingToStorefrontForm, saveStorefrontProduct,
+  bindStorefrontImageInputs, addStorefrontImageFiles, bindStorefrontDescriptionEditor,
+  resizeImageFileForStorefront, storefrontRequest, loadMlCategoryFields, parseJsonSafe,
+  connectMercadoLivre, disconnectMercadoLivre, configureShopee, renderMarketplaceWritePermission,
+  marketplaceSaleStatus, marketplaceSaleStatusClass, setMarketplaceView, applyMarketplaceLogRange,
+  viewMarketplaceOrder, createMarketplaceOrder, marketplaceRequest, downloadMarketplaceDocument,
+  syncMercadoLivre, connectAmazon, syncAmazon, showMarketplaceStats, openMarketplaceEdit,
+  saveMarketplaceListing, getMarketplaceStatusFromHash, showMarketplaceOAuthStatus,
+} from "./features/marketplace.js";
+import {
+  renderSettingsData, runManualBackup, maintenanceRequest, downloadBackupScope, downloadSavedBackup,
+  restoreBackupFromFile, simulateBackupRestore, renderBackupSimulation, readBackupFile,
+  validateBackupSnapshot, downloadJsonFile,
+} from "./features/backup.js";
+import {
+  exportJson, importFile, importJson, importCollection, importRows, parseCsv, splitCsvLine,
+  normalizeText, normalizeImportedItem, pick, normalizeKey, normalizeDate, loadXlsx,
+} from "./core/importer.js";
 
 // Bridge: o restante do app (ainda não modularizado, carregado por app-direct-legacy.js
 // como script classico logo depois deste modulo) referencia estes nomes como globais.
@@ -177,6 +202,25 @@ Object.assign(window, {
   loadMercadoPagoSdk, normalizeApiError, subscriptionMetric, getCompanyHealth,
   subscriptionStatusText, paymentStatusText,
   submitSupportTicket, renderSupportPortal, renderWhatsNew,
+  normalizeMarketplaceChannel, marketplaceDisplayName, matchesMarketplaceChannel,
+  marketplaceChannelsForCurrentFilter, renderMarketplaceChannelCards, getIntegrationTokenAlert,
+  renderMarketplaces, renderIntegrationSummary, renderMarketplaceLogSummary, renderMarketplaceApiLog,
+  marketplaceLogLabel, marketplaceLogKindClass, marketplaceLogStatusLabel, marketplaceLogStatusClass,
+  matchesMarketplaceLogFilter, loadMarketplaces, loadAndRenderMarketplaces, renderStorefrontAdmin,
+  updateStorefrontTargetFields, storefrontListingImages, storefrontDeliveryNoteFromListing,
+  fillStorefrontFormFromListing, importSelectedListingToStorefrontForm, saveStorefrontProduct,
+  bindStorefrontImageInputs, addStorefrontImageFiles, bindStorefrontDescriptionEditor,
+  resizeImageFileForStorefront, storefrontRequest, loadMlCategoryFields, parseJsonSafe,
+  connectMercadoLivre, disconnectMercadoLivre, configureShopee, renderMarketplaceWritePermission,
+  marketplaceSaleStatus, marketplaceSaleStatusClass, setMarketplaceView, applyMarketplaceLogRange,
+  viewMarketplaceOrder, createMarketplaceOrder, marketplaceRequest, downloadMarketplaceDocument,
+  syncMercadoLivre, connectAmazon, syncAmazon, showMarketplaceStats, openMarketplaceEdit,
+  saveMarketplaceListing, getMarketplaceStatusFromHash, showMarketplaceOAuthStatus,
+  renderSettingsData, runManualBackup, maintenanceRequest, downloadBackupScope, downloadSavedBackup,
+  restoreBackupFromFile, simulateBackupRestore, renderBackupSimulation, readBackupFile,
+  validateBackupSnapshot, downloadJsonFile,
+  exportJson, importFile, importJson, importCollection, importRows, parseCsv, splitCsvLine,
+  normalizeText, normalizeImportedItem, pick, normalizeKey, normalizeDate, loadXlsx,
 });
 
 document.addEventListener("DOMContentLoaded", async () => {

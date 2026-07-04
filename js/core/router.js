@@ -12,10 +12,10 @@ import {
   bindReferenceImageInput, cancelOrderEdit, startOrderEdit, openOrderEditDialog, showOrderHistory,
   duplicateOrder, removeReferenceImage, updateOrderInline, removeOrderTag, copyMarketplaceCode,
   syncOrderFilterControls, updateQuoteStage, convertQuoteToProduction, applyDeliveredPaymentDefault,
-  appendHistory, syncOrderPaymentCash,
+  appendHistory, syncOrderPaymentCash, renderOrders, deleteCustomTag,
 } from "../features/orders.js";
 import { renderProduction } from "../features/production.js";
-import { saveCash, startCashEdit, cancelCashEdit } from "../features/cash.js";
+import { renderCash, saveCash, startCashEdit, cancelCashEdit } from "../features/cash.js";
 import {
   setMaterialsTab, clearMaterialFilters, clearInventoryFilters, saveMaterial, cancelMaterialEdit,
   saveInventoryItem, renderMaterials, renderInventory, resetInventoryForm, materialCashId,
@@ -23,7 +23,7 @@ import {
 } from "../features/materials.js";
 import { renderLeads, openLeadDialog, saveLead, openOrderFromLead, openLeadFile, deleteLeadFile } from "../features/customers.js";
 import { renderReports } from "../features/reports.js";
-import { renderLogs, recordAudit } from "../features/logs.js";
+import { renderLogs, recordAudit, applyHistoryRange } from "../features/logs.js";
 import {
   renderApprovals, renderActiveUsers, renderResponsibleOptions, loadAndRenderApprovals,
   loadAndRenderUsers, loadAndRenderResponsibles, createManualUserAccess, saveResponsible,
@@ -38,6 +38,44 @@ import {
   closePaymentMethodDialog,
 } from "../features/subscription.js";
 import { submitSupportTicket, renderSupportPortal, renderWhatsNew } from "../features/support.js";
+import {
+  renderMarketplaces, loadAndRenderMarketplaces, connectMercadoLivre, disconnectMercadoLivre,
+  configureShopee, connectAmazon, syncAmazon, syncMercadoLivre, saveMarketplaceListing,
+  saveStorefrontProduct, updateStorefrontTargetFields, importSelectedListingToStorefrontForm,
+  loadMlCategoryFields, bindStorefrontImageInputs, bindStorefrontDescriptionEditor, setMarketplaceView,
+  applyMarketplaceLogRange, showMarketplaceStats, openMarketplaceEdit, fillStorefrontFormFromListing,
+  viewMarketplaceOrder, createMarketplaceOrder, downloadMarketplaceDocument,
+} from "../features/marketplace.js";
+import {
+  runManualBackup, downloadBackupScope, simulateBackupRestore, restoreBackupFromFile,
+  downloadSavedBackup, renderSettingsData,
+} from "../features/backup.js";
+import { exportJson, importFile } from "./importer.js";
+
+function bindFilter(elementId, filterKey) {
+  const element = byId(elementId);
+  if (!element) return;
+  element.addEventListener("change", (event) => {
+    state.filters[filterKey] = event.target.value;
+    renderTables();
+  });
+}
+
+function bindTextFilter(elementId, filterKey, renderer, normalize = true) {
+  const element = byId(elementId);
+  if (!element) return;
+  element.addEventListener("input", (event) => {
+    state.filters[filterKey] = normalize ? event.target.value.trim().toLowerCase() : event.target.value;
+    renderer();
+  });
+}
+
+export function renderTables() {
+  renderOrders();
+  renderCash();
+  renderMaterials();
+  renderInventory();
+}
 
 export function bindEvents() {
   byId("sidebarToggle")?.addEventListener("click", toggleSidebar);

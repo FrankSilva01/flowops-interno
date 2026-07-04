@@ -2,6 +2,8 @@ import { state, money } from "../core/state.js";
 import { byId, html, formatDate, formatDateShort, formatDateTime, countBy, sum, showAppMessage } from "../core/dom.js";
 import { renderLineChart } from "../core/charts.js";
 import { getOrderCode } from "./orders.js";
+import { normalizeMarketplaceChannel } from "./marketplace.js";
+import { normalizeText } from "../core/importer.js";
 
 export function renderReports() {
   const content = byId("reportsContent");

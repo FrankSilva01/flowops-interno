@@ -3,6 +3,7 @@ import { byId, html, formatDate, formatDateTime, flashActionMessage, showAppConf
 import { bindActions } from "../core/router.js";
 import { loadRemoteData } from "../data/remote.js";
 import { recordAudit } from "./logs.js";
+import { marketplaceDisplayName } from "./marketplace.js";
 
 export async function getSubscriptionAccessStatus() {
   try {

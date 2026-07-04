@@ -5,6 +5,7 @@ import { render } from "./router.js";
 import { loadResponsibles, loadAccessRequests, loadActiveUsers } from "../features/users.js";
 import { ensureOperationalNotifications } from "../features/notifications.js";
 import { getSubscriptionAccessStatus } from "../features/subscription.js";
+import { loadMarketplaces } from "../features/marketplace.js";
 
 export async function setupBackend() {
   const config = window.SUPABASE_CONFIG || {};

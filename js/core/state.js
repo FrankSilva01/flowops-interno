@@ -36,7 +36,7 @@ export const PRIORITY_OPTIONS = ["", "Baixa", "Normal", "Alta", "Urgente"];
 export const STATUS_OPTIONS = ["Orçamento", "A preparar", "Despachado", "A caminho", "Entregue"];
 export const SUBSCRIPTION_DEFAULT_GRACE_DAYS = 5;
 
-function order(id, description, material, deliveryDate, charged, received, status, notes = "") {
+export function order(id, description, material, deliveryDate, charged, received, status, notes = "") {
   return {
     id,
     quantity: 1,
