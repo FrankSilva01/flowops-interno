@@ -1,7 +1,10 @@
 import { state, saveData, normalizeOrderStatus } from "../core/state.js";
 import { render } from "../core/router.js";
 import { subscriptionFallbackFromOrganization } from "../features/subscription.js";
-import { parseOrderMeta, serializeOrderMeta, deriveOrderCode } from "../features/orders.js";
+import {
+  parseOrderMeta, serializeOrderMeta, deriveOrderCode, normalizeReferenceImageValue,
+  isOwnReferenceImagePath,
+} from "../features/orders.js";
 
 export async function persist(kind, item) {
   if (!state.online || !state.supabase) return;
@@ -48,6 +51,7 @@ export async function loadRemoteData() {
   if (storefrontEvents.error) throw storefrontEvents.error;
 
   state.data.orders = orders.data.map(fromRemoteOrder);
+  await signOrderReferenceImages(state.data.orders);
   state.data.cash = cashEntries.data.map(fromRemoteCash);
   state.data.materials = materials.data.map(fromRemoteMaterial);
   state.inventoryItems = inventoryItems.data || [];
@@ -66,6 +70,21 @@ export async function loadRemoteData() {
   state.supportTickets = supportTickets.error ? [] : supportTickets.data || [];
   state.announcements = announcements.error ? [] : announcements.data || [];
   state.changelog = changelog.error ? [] : changelog.data || [];
+}
+
+// order-images e um bucket privado; o que fica salvo no pedido e so o caminho
+// no storage (normalizeReferenceImageValue). Aqui resolvemos uma URL assinada
+// (temporaria) para exibir a imagem nesta sessao, em um unico lote.
+async function signOrderReferenceImages(orders) {
+  if (!state.supabase) return;
+  const targets = orders.filter((order) => isOwnReferenceImagePath(order.referenceImageUrl));
+  if (!targets.length) return;
+  const paths = targets.map((order) => order.referenceImageUrl);
+  const { data, error } = await state.supabase.storage.from("order-images").createSignedUrls(paths, 3600);
+  if (error || !data) return;
+  data.forEach((result, index) => {
+    if (result?.signedUrl) targets[index].referenceImageUrl = result.signedUrl;
+  });
 }
 
 export function subscribeRemote() {
@@ -157,7 +176,7 @@ export function fromRemoteOrder(item) {
     received: Number(item.received || 0),
     notes: meta.text,
     stlLink: meta.stlLink,
-    referenceImageUrl: meta.referenceImageUrl,
+    referenceImageUrl: normalizeReferenceImageValue(meta.referenceImageUrl),
     internalNotes: meta.internalNotes,
     tags: meta.tags,
     priority: meta.priority,

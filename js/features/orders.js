@@ -264,13 +264,39 @@ export async function removeOrderTag(id, tag) {
   render();
 }
 
+const ORDER_IMAGE_PATH_MARKERS = [
+  "/storage/v1/object/public/order-images/",
+  "/storage/v1/object/sign/order-images/",
+];
+
+// order-images e um bucket privado: nunca persistimos uma URL publica/assinada
+// (elas expiram ou dependem do bucket ser publico). Guardamos so o caminho no
+// storage; a URL exibida (assinada) e recalculada a cada carregamento.
+export function normalizeReferenceImageValue(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (!/^https?:\/\//i.test(raw)) return raw;
+  for (const marker of ORDER_IMAGE_PATH_MARKERS) {
+    const index = raw.indexOf(marker);
+    if (index !== -1) {
+      let path = decodeURIComponent(raw.slice(index + marker.length));
+      const queryIndex = path.indexOf("?");
+      if (queryIndex !== -1) path = path.slice(0, queryIndex);
+      return path;
+    }
+  }
+  return raw;
+}
+
+export function isOwnReferenceImagePath(value) {
+  const raw = String(value || "").trim();
+  return Boolean(raw) && !/^https?:\/\//i.test(raw);
+}
+
 export async function removeStorageImage(url) {
   if (!state.supabase) return;
-  const marker = "/storage/v1/object/public/order-images/";
-  const index = String(url || "").indexOf(marker);
-  if (index < 0) return;
-  const path = decodeURIComponent(String(url).slice(index + marker.length));
-  if (!path) return;
+  const path = normalizeReferenceImageValue(url);
+  if (!isOwnReferenceImagePath(path)) return;
   await state.supabase.storage.from("order-images").remove([path]);
 }
 
@@ -600,8 +626,11 @@ export async function uploadReferenceImage(file, orderId) {
   if (error) {
     throw new Error(`Não consegui enviar a imagem. Rode o SQL atualizado para criar o bucket order-images. Detalhe: ${error.message}`);
   }
-  const { data } = state.supabase.storage.from("order-images").getPublicUrl(path);
-  return data.publicUrl;
+  // order-images e privado; assina a URL so para a pre-visualizacao imediata.
+  // O que fica persistido (serializeOrderMeta) e sempre o caminho puro, nao a
+  // URL assinada, que expira.
+  const { data } = await state.supabase.storage.from("order-images").createSignedUrl(path, 3600);
+  return data?.signedUrl || path;
 }
 
 export function normalizeImportedOrder(row) {
@@ -754,7 +783,7 @@ export function serializeOrderMeta(item) {
     orderCode: item.orderCode || deriveOrderCode(item.id),
     marketplaceOrderCode: item.marketplaceOrderCode || "",
     stlLink: item.stlLink || "",
-    referenceImageUrl: item.referenceImageUrl || "",
+    referenceImageUrl: normalizeReferenceImageValue(item.referenceImageUrl),
     internalNotes: item.internalNotes || "",
     tags: item.tags || [],
     priority: item.priority || "",
