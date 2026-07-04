@@ -59,6 +59,11 @@ import {
   saveInventoryItem, startInventoryEdit, resetInventoryForm, materialToCashEntry, materialCashId,
   filterMaterials, sortMaterials,
 } from "./features/materials.js";
+import {
+  renderLeads, getInitials, getLeadOrders, getLeadFollowUp, openLeadDialog, renderLeadFiles,
+  renderLeadHistory, saveLead, uploadLeadFiles, openLeadFile, deleteLeadFile, formatFileSize,
+  openOrderFromLead,
+} from "./features/customers.js";
 
 // Bridge: o restante do app (ainda não modularizado, carregado por app-direct-legacy.js
 // como script classico logo depois deste modulo) referencia estes nomes como globais.
@@ -107,6 +112,9 @@ Object.assign(window, {
   formatInventoryNumber, saveMaterial, startMaterialEdit, cancelMaterialEdit, resetMaterialForm,
   saveInventoryItem, startInventoryEdit, resetInventoryForm, materialToCashEntry, materialCashId,
   filterMaterials, sortMaterials,
+  renderLeads, getInitials, getLeadOrders, getLeadFollowUp, openLeadDialog, renderLeadFiles,
+  renderLeadHistory, saveLead, uploadLeadFiles, openLeadFile, deleteLeadFile, formatFileSize,
+  openOrderFromLead,
 });
 
 document.addEventListener("DOMContentLoaded", async () => {

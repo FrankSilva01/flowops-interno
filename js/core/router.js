@@ -21,6 +21,7 @@ import {
   saveInventoryItem, renderMaterials, renderInventory, resetInventoryForm, materialCashId,
   startInventoryEdit,
 } from "../features/materials.js";
+import { renderLeads, openLeadDialog, saveLead, openOrderFromLead, openLeadFile, deleteLeadFile } from "../features/customers.js";
 
 export function bindEvents() {
   byId("sidebarToggle")?.addEventListener("click", toggleSidebar);
