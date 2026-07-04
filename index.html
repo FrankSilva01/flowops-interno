@@ -1,0 +1,1162 @@
+﻿<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Cache-Control" content="no-store" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>FlowOps</title>
+    <link rel="preconnect" href="https://djvrhvzjvnyensbobtby.supabase.co" />
+    <link rel="preconnect" href="https://unpkg.com" />
+    <link rel="preconnect" href="https://sdk.mercadopago.com" />
+    <link rel="preconnect" href="https://api.mercadopago.com" />
+    <script src="./theme-init.js?v=110"></script>
+    <link rel="stylesheet" href="./styles.css?v=114" />
+    <script src="./supabase-config.js?v=110" defer></script>
+    <script src="./app-direct.js?v=114" defer></script>
+  </head>
+  <body>
+    <main id="appView" class="app-shell" hidden>
+      <aside class="sidebar">
+        <div class="sidebar-head">
+          <div class="brand">
+            <div class="brand-mark">AFT</div>
+            <div>
+              <strong id="sidebarCompanyName">3D.AFT</strong>
+              <span id="sidebarPlan">Plano</span>
+              <span id="syncMode" hidden>Modo teste local</span>
+            </div>
+          </div>
+          <button id="sidebarToggle" class="sidebar-toggle sidebar-collapse-btn" type="button" aria-label="Recolher menu" aria-expanded="true" title="Recolher menu">
+            <span aria-hidden="true"><i></i><i></i><i></i></span>
+          </button>
+        </div>
+
+        <nav class="tabs" aria-label="Seções">
+          <span class="sidebar-group-label">Operação</span>
+          <button class="tab active" data-view="dashboard" title="Dashboard"><span class="nav-icon">▦</span><span class="nav-label">Dashboard</span></button>
+          <button class="tab" data-view="orders" title="Encomendas"><span class="nav-icon">□</span><span class="nav-label">Encomendas</span></button>
+          <button class="tab" data-view="production" title="Produção"><span class="nav-icon">⌂</span><span class="nav-label">Produção</span></button>
+          <button class="tab" data-view="leads" title="Clientes e Leads"><span class="nav-icon">♙</span><span class="nav-label">Clientes e Leads</span></button>
+          <button class="tab" data-view="cash" title="Fluxo de caixa"><span class="nav-icon">$</span><span class="nav-label">Fluxo de caixa</span></button>
+          <button class="tab" data-view="materials" title="Materiais"><span class="nav-icon">◇</span><span class="nav-label">Materiais</span></button>
+          <button class="tab" data-view="reports" title="Relatórios"><span class="nav-icon">▧</span><span class="nav-label">Relatórios</span></button>
+          <button id="marketplaceTab" class="tab" data-view="marketplace" title="Marketplace" hidden><span class="nav-icon">⇄</span><span class="nav-label">Marketplace</span></button>
+
+          <span class="sidebar-group-label">Conta</span>
+          <button class="tab" data-view="subscription" title="Minha Assinatura"><span class="nav-icon">▣</span><span class="nav-label">Minha Assinatura</span></button>
+          <button class="tab" data-view="logs" title="Histórico"><span class="nav-icon">☷</span><span class="nav-label">Histórico</span></button>
+          <button id="approvalsTab" class="tab" data-view="approvals" title="Gestão de usuários" hidden><span class="nav-icon">♚</span><span class="nav-label">Gestão de usuários</span></button>
+
+          <span class="sidebar-group-label">Plataforma</span>
+          <button id="sidebarNotificationsBtn" class="tab sidebar-notifications-btn" type="button" title="Notificações"><span class="nav-icon">♢</span><span class="nav-label">Notificações</span><strong id="sidebarNotificationBadge" hidden>0</strong></button>
+          <button class="tab" data-view="support" title="Suporte"><span class="nav-icon">?</span><span class="nav-label">Suporte</span></button>
+          <button class="tab" data-view="whatsnew" title="Novidades"><span class="nav-icon">↑</span><span class="nav-label">Novidades</span></button>
+        </nav>
+
+        <div class="company-status-card">
+          <span id="sidebarCompanyStatus">● Empresa ativa</span>
+          <span id="sidebarPlanStatus">★ Plano</span>
+          <span id="sidebarMarketplaceStatus">○ Marketplace</span>
+          <span id="sidebarBackupStatus">○ Backup pendente</span>
+        </div>
+
+        <div class="session-card">
+          <span id="activeUserName">Modo teste</span>
+          <small id="activeUserRole">Acesso direto sem login</small>
+          <button id="logoutBtn" class="ghost-btn" type="button" hidden>Sair</button>
+        </div>
+      </aside>
+
+      <section class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Operação</p>
+            <h2 id="viewTitle">Dashboard</h2>
+          </div>
+          <div class="topbar-actions">
+            <button id="themeToggle" class="topbar-icon-btn" type="button" aria-label="Alterar tema" title="Tema: escuro">
+              <span id="themeToggleIcon" aria-hidden="true">☾</span>
+            </button>
+            <div class="notification-center">
+              <button id="notificationBell" class="notification-bell" type="button" aria-label="Notificações">
+                <span class="bell-glyph" aria-hidden="true">🔔</span>
+                <strong id="notificationBadge" hidden>0</strong>
+              </button>
+              <div id="notificationDropdown" class="notification-dropdown" hidden>
+                <div class="notification-head">
+                  <strong>Notificações</strong>
+                  <div class="notification-head-actions">
+                    <button id="markAllNotificationsBtn" type="button">Marcar todas como lidas</button>
+                    <button id="clearReadNotificationsBtn" type="button">Limpar lidas</button>
+                  </div>
+                </div>
+                <div id="notificationFilters" class="notification-filters">
+                  <button class="active" type="button" data-notification-filter="all">Todas</button>
+                  <button type="button" data-notification-filter="unread">Não lidas</button>
+                  <button type="button" data-notification-filter="error">Erros</button>
+                  <button type="button" data-notification-filter="quote">Orçamento</button>
+                  <button type="button" data-notification-filter="marketplace">Marketplace</button>
+                  <button type="button" data-notification-filter="system">Sistema</button>
+                </div>
+                <div id="notificationList" class="notification-list"></div>
+              </div>
+            </div>
+            <input id="globalSearch" class="search-input" placeholder="Buscar pedido, material ou lançamento" />
+            <input id="importFileInput" type="file" accept=".json,.csv,.xlsx,.xls" hidden />
+            <button id="importBtn" class="secondary-btn" type="button">Importar</button>
+            <button id="emailDigestBtn" class="secondary-btn" type="button">Resumo e-mail</button>
+            <button id="exportBtn" class="secondary-btn" type="button">Exportar JSON</button>
+          </div>
+        </header>
+
+        <section id="dashboardView" class="view active-view">
+          <div id="trialBanner" class="trial-banner" hidden></div>
+          <div class="dashboard-welcome">
+            <div>
+              <span id="dashboardGreeting">Olá</span>
+              <strong id="dashboardGreetingSummary">Visão geral da operação</strong>
+            </div>
+            <div class="quick-actions" aria-label="Ações rápidas">
+              <button class="primary-btn" type="button" data-quick-action="order">+ Nova encomenda</button>
+              <button class="secondary-btn" type="button" data-quick-action="client">+ Novo cliente</button>
+              <button class="secondary-btn" type="button" data-quick-action="lead">+ Novo lead</button>
+              <button class="secondary-btn" type="button" data-quick-action="material">+ Novo material</button>
+            </div>
+          </div>
+          <div class="dashboard-toolbar">
+            <button id="customizeDashboardBtn" class="secondary-btn" type="button">Personalizar dashboard</button>
+            <div id="dashboardCustomizePanel" class="dashboard-customize-panel" hidden>
+              <strong>Informações visíveis</strong>
+              <div id="dashboardCustomizeOptions"></div>
+              <button id="resetDashboardBtn" class="secondary-btn" type="button">Restaurar padrão</button>
+            </div>
+          </div>
+          <div class="kpi-grid">
+            <article class="kpi"><span>Entradas</span><strong id="kpiIncome">R$ 0,00</strong></article>
+            <article class="kpi"><span>Saídas</span><strong id="kpiExpense">R$ 0,00</strong></article>
+            <article class="kpi"><span>Saldo atual</span><strong id="kpiBalance">R$ 0,00</strong></article>
+            <article class="kpi"><span>A receber</span><strong id="kpiReceivable">R$ 0,00</strong></article>
+            <article class="kpi"><span>Encomendas abertas</span><strong id="kpiOpenOrders">0</strong></article>
+            <article class="kpi"><span>Atrasadas</span><strong id="kpiLateOrders">0</strong></article>
+            <article class="kpi"><span>Recebido no mês</span><strong id="kpiMonthIncome">R$ 0,00</strong></article>
+            <article class="kpi"><span>Pedidos no mês</span><strong id="kpiMonthOrders">0</strong></article>
+            <article class="kpi"><span>Cliente que mais comprou</span><strong id="kpiTopClient">-</strong></article>
+          </div>
+          <section class="panel dashboard-notification-preview">
+            <div class="panel-head">
+              <div><h3>Notificações importantes</h3><span>Eventos recentes da empresa e da plataforma</span></div>
+              <div class="panel-head-actions">
+                <button id="clearDashboardNotificationsBtn" class="secondary-btn" type="button">Limpar tela</button>
+                <button id="openAllNotificationsBtn" class="secondary-btn" type="button">Ver todas</button>
+              </div>
+            </div>
+            <div id="dashboardNotificationList" class="dashboard-notification-list"></div>
+          </section>
+          <div id="dashboardGrid" class="dashboard-grid">
+            <section class="panel dashboard-card dashboard-overview-card" data-dashboard-card="operations-overview" draggable="true">
+              <div class="panel-head"><h3>Visão operacional</h3></div>
+              <div class="dashboard-overview-grid">
+                <article><h4>Financeiro</h4><div id="financeChart" class="chart-bars"></div></article>
+                <article><h4>Encomendas por status</h4><div id="statusChart" class="chart-bars"></div></article>
+                <article><h4>Encomendas por material</h4><div id="materialChart" class="chart-bars"></div></article>
+                <article><h4>Movimento por dia</h4><div id="dailyCashChart" class="column-chart"></div></article>
+              </div>
+            </section>
+            <section class="panel dashboard-card" data-dashboard-card="focus" draggable="true">
+              <div class="panel-head"><h3>Atenção da semana</h3></div>
+              <div id="weeklyFocus" class="focus-grid"></div>
+            </section>
+            <section class="panel dashboard-card" data-dashboard-card="alerts" draggable="true">
+              <div class="panel-head"><h3>Alertas</h3></div>
+              <div id="alertsList" class="stack-list"></div>
+            </section>
+            <section class="panel dashboard-card" data-dashboard-card="integration-health" draggable="true">
+              <div class="panel-head"><h3>Integrações</h3></div>
+              <button id="integrationErrorCard" class="integration-error-card" type="button" data-action="open-marketplace-errors">
+                <span>Integrações com erro</span>
+                <strong id="integrationErrorCount">0</strong>
+                <small>Ver Logs API</small>
+              </button>
+              <div id="dashboardTokenAlert"></div>
+            </section>
+            <section class="panel dashboard-card" data-dashboard-card="top-open" draggable="true">
+              <div class="panel-head"><h3>Top valores em aberto</h3></div>
+              <div id="topOpenOrders" class="stack-list"></div>
+            </section>
+            <section class="panel dashboard-card" data-dashboard-card="upcoming" draggable="true">
+              <div class="panel-head"><h3>Próximas entregas</h3></div>
+              <div id="upcomingList" class="stack-list"></div>
+            </section>
+            <section class="panel dashboard-card" data-dashboard-card="material-summary" draggable="true">
+              <div class="panel-head"><h3>Resumo por material</h3></div>
+              <div id="materialSummary" class="stack-list"></div>
+            </section>
+            <section class="panel dashboard-card" data-dashboard-card="commercial" draggable="true">
+              <div class="panel-head"><h3>Comercial</h3></div>
+              <div id="commercialDashboard" class="commercial-grid"></div>
+            </section>
+            <section class="panel dashboard-card" data-dashboard-card="top-products" draggable="true">
+              <div class="panel-head">
+                <h3>Produtos mais vendidos</h3>
+                <select id="topProductsPeriod" aria-label="Período">
+                  <option value="30">30 dias</option>
+                  <option value="90">90 dias</option>
+                  <option value="365">Ano</option>
+                  <option value="all">Todos</option>
+                </select>
+              </div>
+              <div id="topProductsList" class="top-products-list"></div>
+            </section>
+            <section class="panel dashboard-card" data-dashboard-card="follow-up" draggable="true">
+              <div class="panel-head"><h3>Follow-up</h3></div>
+              <div id="followUpList" class="stack-list"></div>
+            </section>
+          </div>
+        </section>
+
+        <section id="reportsView" class="view">
+          <p class="view-subtitle">Análises completas do seu negócio. Gere, exporte e acompanhe dados importantes.</p>
+          <div class="report-tabs" role="tablist" aria-label="Relatórios">
+            <button class="active" type="button" data-report-tab="overview">Visão geral</button>
+            <button type="button" data-report-tab="financial">Financeiro</button>
+            <button type="button" data-report-tab="production">Produção</button>
+            <button type="button" data-report-tab="commercial">Comercial</button>
+            <button type="button" data-report-tab="marketplaces">Marketplaces</button>
+            <button type="button" data-report-tab="products">Produtos</button>
+            <button type="button" data-report-tab="materials">Materiais</button>
+            <button type="button" data-report-tab="clients">Clientes</button>
+            <button type="button" data-report-tab="stock">Estoque</button>
+          </div>
+          <section class="panel report-filter-panel">
+            <label>Período
+              <select id="reportPeriodFilter">
+                <option value="30">Últimos 30 dias</option>
+                <option value="90">Últimos 90 dias</option>
+                <option value="365">Ano</option>
+                <option value="all">Todos</option>
+              </select>
+            </label>
+            <label>Comparar com
+              <select id="reportCompareFilter">
+                <option value="previous">Período anterior</option>
+                <option value="none">Não comparar</option>
+              </select>
+            </label>
+            <label>Grupo
+              <select id="reportGroupFilter">
+                <option value="day">Por dia</option>
+                <option value="week">Por semana</option>
+                <option value="month">Por mês</option>
+              </select>
+            </label>
+            <div class="report-filter-actions">
+              <button id="clearReportFiltersBtn" class="secondary-btn" type="button">Limpar filtros</button>
+              <button id="applyReportFiltersBtn" class="primary-btn" type="button">Aplicar filtros</button>
+            </div>
+          </section>
+          <div id="reportsContent"></div>
+        </section>
+
+        <section id="ordersView" class="view">
+          <form id="orderForm" class="entry-form">
+            <input name="id" type="hidden" />
+            <input name="description" placeholder="Encomenda" required />
+            <input name="client" placeholder="Cliente" />
+            <input name="marketplaceOrderCode" placeholder="Código Marketplace" />
+            <input name="quantity" type="number" min="1" step="1" value="1" placeholder="Quantidade" required />
+            <select name="material">
+              <option value="">Material</option>
+              <option>Resina</option>
+              <option>Filamento</option>
+              <option>PLA</option>
+              <option>PETG</option>
+            </select>
+            <input name="deliveryDate" type="date" />
+            <input name="charged" type="number" step="0.01" min="0" placeholder="Valor" />
+            <input name="received" type="number" step="0.01" min="0" placeholder="Recebido" />
+            <select name="priority">
+              <option value="">Prioridade</option>
+              <option>Baixa</option>
+              <option>Normal</option>
+              <option>Alta</option>
+              <option>Urgente</option>
+            </select>
+            <select name="productionStage">
+              <option value="">Etapa</option>
+              <option>Em fila</option>
+              <option>Imprimindo</option>
+              <option>Pós-processo</option>
+              <option>Pintando</option>
+              <option>Pronto</option>
+              <option>Entregue</option>
+            </select>
+            <select name="responsible">
+              <option value="">Responsável</option>
+              <option>Franklin</option>
+              <option>Ravena</option>
+              <option>Anderson</option>
+              <option>Dayane</option>
+            </select>
+            <select name="status" class="status-select-input">
+              <option>Orçamento</option>
+              <option selected>A preparar</option>
+              <option>Despachado</option>
+              <option>A caminho</option>
+              <option>Entregue</option>
+            </select>
+            <select name="quoteStage">
+              <option value="">Fluxo normal</option>
+              <option>Solicitado</option>
+              <option>Em análise</option>
+              <option>Orçamento enviado</option>
+              <option>Aguardando cliente</option>
+              <option>Aprovado</option>
+              <option>Recusado</option>
+              <option>Convertido em encomenda</option>
+            </select>
+            <input name="stlLink" type="url" placeholder="Link do STL/origem" />
+            <input name="referenceImageUrl" type="hidden" />
+            <div id="referenceImageDropzone" class="image-dropzone" tabindex="0" role="button" aria-label="Adicionar imagem de referência">
+              <input name="referenceImageFile" type="file" accept="image/*" />
+              <div id="referenceImageEmpty" class="image-dropzone-empty">
+                <strong>Imagem</strong>
+                <small>Selecionar ou arrastar</small>
+              </div>
+              <div id="referenceImagePreview" class="image-preview" hidden>
+                <img id="referenceImagePreviewImg" alt="Pré-visualização da referência" />
+                <button id="removePendingImageBtn" type="button" aria-label="Remover imagem">×</button>
+              </div>
+            </div>
+            <select name="marketplaceTagToAdd">
+              <option value="">Marketplace</option>
+              <option>Mercado Livre</option>
+              <option>Shopee</option>
+              <option>Amazon</option>
+            </select>
+            <input name="customTagToAdd" list="customTagsList" placeholder="Tag personalizada" />
+            <datalist id="customTagsList"></datalist>
+            <textarea class="internal-notes-field" name="internalNotes" placeholder="Nota interna"></textarea>
+            <button id="orderSubmitBtn" class="primary-btn" type="submit">Salvar encomenda</button>
+            <button id="cancelOrderEditBtn" class="secondary-btn" type="button" hidden>Cancelar edição</button>
+          </form>
+          <div class="order-filter-bar" aria-label="Filtros de encomendas">
+            <label>Ordenar por
+              <select id="orderSort">
+                <option value="alpha">Ordem alfabética</option>
+                <option value="delivery">Data de entrega</option>
+                <option value="value">Maior valor</option>
+                <option value="material">Material</option>
+              </select>
+            </label>
+            <label>Material
+              <select id="orderMaterialFilter">
+                <option value="all">Todos</option>
+                <option>Resina</option>
+                <option>Filamento</option>
+                <option>PLA</option>
+                <option>PETG</option>
+                <option value="">Não informado</option>
+              </select>
+            </label>
+            <label>Status
+              <select id="orderStatusFilter">
+                <option value="all">Todos</option>
+                <option>Orçamento</option>
+                <option>A preparar</option>
+                <option>Despachado</option>
+                <option>A caminho</option>
+                <option>Entregue</option>
+              </select>
+            </label>
+            <label>Marketplace
+              <select id="orderMarketplaceFilter">
+                <option value="all">Todos</option>
+                <option value="mercado-livre">Mercado Livre</option>
+                <option value="shopee">Shopee</option>
+                <option value="amazon">Amazon</option>
+                <option value="direct">Venda direta</option>
+              </select>
+            </label>
+            <label>Foco
+              <select id="orderFocusFilter">
+                <option value="all">Todos</option>
+                <option value="urgent">Alta prioridade</option>
+                <option value="soon">Prazo curto</option>
+                <option value="late">Atrasadas</option>
+                <option value="noDate">Sem data</option>
+                <option value="noValue">Sem valor</option>
+              </select>
+            </label>
+            <label>Orçamento
+              <select id="orderQuoteFilter">
+                <option value="all">Todos</option>
+                <option value="quotes">Orçamentos</option>
+                <option value="Solicitado">Aguardando análise</option>
+                <option value="Orçamento enviado">Orçamento enviado</option>
+                <option value="Aguardando cliente">Aguardando cliente</option>
+                <option value="Aprovado">Aprovados</option>
+                <option value="Recusado">Recusados</option>
+              </select>
+            </label>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Pedido</th><th>Cód. Marketplace</th><th>Qtd.</th><th>Material</th><th>SLA</th><th>Entrega</th><th>Prioridade</th><th>Etapa</th><th>Responsável</th><th>Status</th><th>Valor</th><th>Recebido</th><th></th>
+                </tr>
+              </thead>
+              <tbody id="ordersTable"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="productionView" class="view">
+          <div id="productionQuoteSummary" class="production-quote-summary"></div>
+          <div id="kanbanFilters" class="kanban-filters"></div>
+          <div id="kanbanBoard" class="kanban-board"></div>
+        </section>
+
+        <section id="leadsView" class="view">
+          <div class="panel-head">
+            <div>
+              <h3>Clientes e Leads</h3>
+              <small>Contatos da vitrine, marketplaces e atendimento manual.</small>
+            </div>
+            <button id="newLeadBtn" class="primary-btn" type="button">Novo lead</button>
+          </div>
+          <div class="lead-toolbar">
+            <input id="leadSearch" type="search" placeholder="Buscar nome, e-mail, WhatsApp ou PED" />
+            <select id="leadStatusFilter">
+              <option value="all">Todos os status</option>
+              <option>Novo</option>
+              <option>Em negociação</option>
+              <option>Convertido</option>
+              <option>Perdido</option>
+              <option>Cliente recorrente</option>
+            </select>
+            <select id="leadOriginFilter">
+              <option value="all">Todas as origens</option>
+              <option>Vitrine</option>
+              <option>Mercado Livre</option>
+              <option>Shopee</option>
+              <option>Amazon</option>
+              <option>Manual</option>
+            </select>
+          </div>
+          <div id="leadsList" class="leads-grid"></div>
+        </section>
+
+        <section id="cashView" class="view">
+          <div class="filter-bar">
+            <label>
+              Tipo
+              <select id="cashTypeFilter">
+                <option value="all">Entradas e saídas</option>
+                <option value="Entrada">Somente entradas</option>
+                <option value="Saída">Somente saídas</option>
+              </select>
+            </label>
+          </div>
+          <form id="cashForm" class="entry-form">
+            <input name="id" type="hidden" />
+            <input name="date" type="date" required />
+            <select name="type"><option>Entrada</option><option>Saída</option></select>
+            <input name="category" placeholder="Categoria" required />
+            <input name="description" placeholder="Descrição" required />
+            <input name="amount" type="number" step="0.01" min="0" placeholder="Valor" required />
+            <input name="method" placeholder="Forma de pagamento" />
+            <button id="cashSubmitBtn" class="primary-btn" type="submit">Salvar lançamento</button>
+            <button id="cancelCashEditBtn" class="secondary-btn" type="button" hidden>Cancelar edição</button>
+          </form>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Data</th><th>Tipo</th><th>Categoria</th><th>Descrição</th><th>Entrada</th><th>Saída</th><th>Saldo</th><th></th>
+                </tr>
+              </thead>
+              <tbody id="cashTable"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="materialsView" class="view">
+          <div class="materials-tabs" role="tablist" aria-label="Materiais">
+            <button class="active" type="button" data-materials-tab="purchases">Compras e financeiro</button>
+            <button type="button" data-materials-tab="inventory">Estoque e insumos</button>
+          </div>
+          <div id="materialsPurchasesPane" class="materials-pane active">
+          <div class="section-heading">
+            <div><p class="eyebrow">Financeiro</p><h3>Compras de materiais</h3></div>
+            <span>As compras continuam gerando saída automática no fluxo de caixa.</span>
+          </div>
+          <div class="filter-bar">
+            <label>Buscar<input id="materialSearchFilter" type="search" placeholder="Material, fornecedor ou especificação" /></label>
+            <label>
+              Material
+              <select id="materialTypeFilter">
+                <option value="all">Todos</option>
+                <option>Resina</option>
+                <option>Filamento</option>
+                <option>PLA</option>
+                <option>PETG</option>
+                <option>Peça/reposto</option>
+              </select>
+            </label>
+            <label>
+              Ordenar
+              <select id="materialSort">
+                <option value="date">Data</option>
+                <option value="supplier">Fornecedor</option>
+                <option value="type">Material</option>
+                <option value="total">Valor total</option>
+              </select>
+            </label>
+            <label>Fornecedor<input id="materialSupplierFilter" type="search" placeholder="Todos" /></label>
+            <label>De<input id="materialDateFromFilter" type="date" /></label>
+            <label>Até<input id="materialDateToFilter" type="date" /></label>
+            <button id="clearMaterialFiltersBtn" class="secondary-btn" type="button">Limpar filtros</button>
+          </div>
+          <form id="materialForm" class="entry-form">
+            <input name="id" type="hidden" />
+            <input name="date" type="date" required />
+            <input name="supplier" placeholder="Fornecedor" required />
+            <select name="type">
+              <option>Resina</option><option>Filamento</option><option>PLA</option><option>PETG</option><option>Peça/reposto</option>
+            </select>
+            <input name="spec" placeholder="Cor/especificação" />
+            <input name="quantity" type="number" step="0.01" min="0" placeholder="Qtd." required />
+            <input name="unitCost" type="number" step="0.01" min="0" placeholder="Custo unit." required />
+            <button id="materialSubmitBtn" class="primary-btn" type="submit">Salvar material</button>
+            <button id="cancelMaterialEditBtn" class="secondary-btn" type="button" hidden>Cancelar edição</button>
+          </form>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Data</th><th>Fornecedor</th><th>Material</th><th>Especificação</th><th>Qtd.</th><th>Total</th><th></th>
+                </tr>
+              </thead>
+              <tbody id="materialsTable"></tbody>
+            </table>
+          </div>
+          </div>
+
+          <div id="materialsInventoryPane" class="materials-pane">
+          <div class="panel inventory-panel">
+            <div class="panel-head">
+              <div><h3>Estoque e insumos</h3><span>Controle quantidades e defina o ponto de reposição de cada item.</span></div>
+              <span id="lowStockSummary" class="inventory-summary"></span>
+            </div>
+            <form id="inventoryForm" class="entry-form inventory-form">
+              <input name="id" type="hidden" />
+              <input name="name" placeholder="Item ou insumo" required />
+              <input name="category" placeholder="Categoria" value="Insumo" required />
+              <input name="unit" placeholder="Unidade (un., kg, L)" value="un." required />
+              <input name="quantity" type="number" step="0.01" min="0" placeholder="Quantidade atual" required />
+              <input name="minimum_quantity" type="number" step="0.01" min="0" placeholder="Estoque mínimo" required />
+              <input name="unit_cost" type="number" step="0.01" min="0" placeholder="Custo unitário" />
+              <input name="supplier" placeholder="Fornecedor" />
+              <input name="notes" placeholder="Observação" />
+              <button id="inventorySubmitBtn" class="primary-btn" type="submit">Salvar insumo</button>
+              <button id="cancelInventoryEditBtn" class="secondary-btn" type="button" hidden>Cancelar edição</button>
+            </form>
+            <div class="filter-bar inventory-filter-bar">
+              <label>Buscar<input id="inventorySearchFilter" type="search" placeholder="Item, categoria ou fornecedor" /></label>
+              <label>Status<select id="inventoryStatusFilter"><option value="all">Todos</option><option value="low">Estoque baixo</option><option value="ok">Normal</option></select></label>
+              <label>Fornecedor<input id="inventorySupplierFilter" type="search" placeholder="Todos" /></label>
+              <button id="clearInventoryFiltersBtn" class="secondary-btn" type="button">Limpar filtros</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr><th>Item</th><th>Categoria</th><th>Quantidade</th><th>Mínimo</th><th>Custo estimado</th><th>Status</th><th></th></tr>
+                </thead>
+                <tbody id="inventoryTable"></tbody>
+              </table>
+            </div>
+          </div>
+          </div>
+        </section>
+
+        <section id="subscriptionView" class="view">
+          <div id="subscriptionSummary" class="subscription-summary"></div>
+          <div class="panel">
+            <div class="panel-head">
+              <div><h3>Alterar plano</h3><span>Solicite upgrade ou downgrade conforme a necessidade da empresa</span></div>
+            </div>
+            <div id="subscriptionPlanOptions" class="subscription-plan-options"></div>
+            <p id="subscriptionChangeMessage" class="form-message"></p>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><h3>Histórico de cobrança</h3><span>Pagamentos e tentativas da assinatura</span></div></div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Data/Hora</th><th>Valor</th><th>Status</th><th>Método</th><th>Cartão</th><th>Motivo/retorno</th></tr></thead>
+                <tbody id="billingHistoryTable"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section id="notificationsView" class="view">
+          <div class="panel">
+            <div class="panel-head">
+              <div><h3>Central de notificações</h3><span>Acompanhe alertas operacionais, assinatura, integrações e sistema.</span></div>
+              <div class="panel-head-actions">
+                <button id="notificationsPageMarkAllBtn" class="secondary-btn" type="button">Marcar todas como lidas</button>
+                <button id="notificationsPageClearBtn" class="secondary-btn" type="button">Limpar tela</button>
+              </div>
+            </div>
+            <div id="notificationsPageFilters" class="notification-filters notification-page-filters">
+              <button class="active" type="button" data-notification-filter="all">Todas</button>
+              <button type="button" data-notification-filter="unread">Não lidas</button>
+              <button type="button" data-notification-filter="error">Erros</button>
+              <button type="button" data-notification-filter="quote">Orçamentos</button>
+              <button type="button" data-notification-filter="marketplace">Marketplace</button>
+              <button type="button" data-notification-filter="system">Sistema</button>
+            </div>
+            <div id="notificationsPageList" class="notifications-page-list"></div>
+          </div>
+        </section>
+
+        <section id="supportView" class="view">
+          <div class="panel">
+            <div class="panel-head"><div><h3>Central de Suporte</h3><span>Envie uma sugestão, dúvida ou relato de problema</span></div></div>
+            <form id="supportTicketForm" class="entry-form support-form">
+              <select name="category" required><option>Sugestão</option><option>Bug</option><option>Dúvida</option></select>
+              <input name="subject" placeholder="Assunto" required />
+              <select name="priority"><option>Baixa</option><option selected>Normal</option><option>Alta</option><option>Urgente</option></select>
+              <textarea name="message" placeholder="Descreva o que aconteceu ou o que precisa" required></textarea>
+              <button class="primary-btn" type="submit">Enviar para o suporte</button>
+            </form>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h3>Meus chamados</h3></div>
+            <div id="supportTicketsList" class="stack-list"></div>
+          </div>
+        </section>
+
+        <section id="whatsnewView" class="view">
+          <div class="panel">
+            <div class="panel-head"><div><h3>Novidades da Plataforma</h3><span>Atualizações, integrações e melhorias recentes</span></div></div>
+            <div id="announcementsList" class="stack-list"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h3>Changelog</h3></div>
+            <div id="changelogList" class="stack-list"></div>
+          </div>
+        </section>
+
+        <section id="approvalsView" class="view">
+          <div class="panel user-management">
+            <div class="panel-head">
+              <div><h3>Usuários ativos</h3><span id="userPlanLimit"></span></div>
+              <button id="refreshUsersBtn" class="secondary-btn" type="button">Atualizar</button>
+            </div>
+            <form id="manualUserForm" class="compact-form user-access-form">
+              <input name="name" placeholder="Nome do usuário" />
+              <input name="email" type="email" placeholder="E-mail para liberar acesso" required />
+              <input name="password" type="password" placeholder="Senha inicial" minlength="6" required />
+              <select name="role">
+                <option value="Edicao">Edição</option>
+                <option value="Leitura">Somente leitura</option>
+                <option value="Administrador">Administrador</option>
+              </select>
+              <button class="primary-btn" type="submit">Criar acesso</button>
+            </form>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>E-mail</th><th>Permissão</th><th>Aprovado em</th><th></th>
+                  </tr>
+                </thead>
+                <tbody id="activeUsersTable"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="panel user-management">
+            <div class="panel-head">
+              <h3>Responsáveis</h3>
+              <button id="refreshResponsiblesBtn" class="secondary-btn" type="button">Atualizar</button>
+            </div>
+            <form id="responsibleForm" class="compact-form">
+              <input name="name" placeholder="Nome do responsável" required />
+              <button class="primary-btn" type="submit">Adicionar</button>
+            </form>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nome</th><th></th>
+                  </tr>
+                </thead>
+                <tbody id="responsiblesTable"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head">
+              <h3>Pendentes de aprovação</h3>
+              <button id="refreshApprovalsBtn" class="secondary-btn" type="button">Atualizar</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Data</th><th>Nome</th><th>E-mail</th><th>Status</th><th></th>
+                  </tr>
+                </thead>
+                <tbody id="approvalsTable"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section id="marketplaceView" class="view">
+          <div class="view-tabs" role="tablist" aria-label="Marketplace">
+            <button class="view-tab active" type="button" data-marketplace-view="listings">Anúncios</button>
+            <button class="view-tab" type="button" data-marketplace-view="storefront">Vitrine</button>
+            <button class="view-tab" type="button" data-marketplace-view="sales">Vendas</button>
+            <button class="view-tab" type="button" data-marketplace-view="integrations">Integrações</button>
+            <button class="view-tab" type="button" data-marketplace-view="api-logs">Logs API</button>
+            <button class="view-tab" type="button" data-marketplace-view="backup">Backup</button>
+          </div>
+
+          <div class="marketplace-channel-filters" role="group" aria-label="Filtrar por marketplace">
+            <span>Marketplace</span>
+            <button class="filter-chip active" type="button" data-action="marketplace-channel-filter" data-channel="all">Todos</button>
+            <button class="filter-chip" type="button" data-action="marketplace-channel-filter" data-channel="mercado-livre">Mercado Livre</button>
+            <button class="filter-chip" type="button" data-action="marketplace-channel-filter" data-channel="shopee">Shopee</button>
+            <button class="filter-chip" type="button" data-action="marketplace-channel-filter" data-channel="amazon">Amazon</button>
+          </div>
+
+          <div id="marketplaceListingsView" class="marketplace-subview active">
+            <div class="panel-head">
+              <h3>Anúncios sincronizados</h3>
+              <div class="inline-actions">
+                <button id="refreshMarketplacesBtn" class="secondary-btn" type="button">Atualizar</button>
+                <button id="syncMercadoLivreBtn" class="primary-btn" type="button">Sincronizar ML</button>
+              </div>
+            </div>
+            <div id="marketplaceStatus" class="marketplace-status"></div>
+            <div id="marketplaceListingsGrid" class="marketplace-listings-grid"></div>
+          </div>
+
+          <div id="marketplaceStorefrontView" class="marketplace-subview">
+            <div class="panel-head">
+              <div>
+                <h3>Gestão da vitrine</h3>
+                <small>Cadastre produtos da vitrine pública, use dados sincronizados do marketplace ou prepare publicação no Mercado Livre.</small>
+              </div>
+              <div class="inline-actions">
+                <button id="openStorefrontBtn" class="secondary-btn" type="button">Abrir vitrine</button>
+                <button id="refreshStorefrontBtn" class="secondary-btn" type="button">Atualizar</button>
+              </div>
+            </div>
+            <div class="storefront-admin-grid">
+              <form id="storefrontProductForm" class="storefront-product-form">
+                <input name="external_id" type="hidden" />
+                <div class="form-section-title">Origem do produto</div>
+                <fieldset class="publish-targets">
+                  <legend>Publicar em</legend>
+                  <label><input name="publish_vitrine" type="checkbox" checked /> Vitrine</label>
+                  <label><input name="publish_ml" type="checkbox" /> Mercado Livre</label>
+                  <label><input name="publish_shopee" type="checkbox" /> Shopee</label>
+                  <label><input name="publish_amazon" type="checkbox" /> Amazon</label>
+                </fieldset>
+                <label>Marketplace
+                  <select name="marketplace">
+                    <option value="Vitrine">Somente vitrine</option>
+                    <option value="Mercado Livre">Mercado Livre</option>
+                    <option value="Shopee">Shopee</option>
+                    <option value="Amazon">Amazon</option>
+                  </select>
+                </label>
+                <label>Anúncio existente
+                  <select id="storefrontSourceListing" name="source_listing">
+                    <option value="">Produto novo/manual</option>
+                  </select>
+                </label>
+                <button id="importListingToStorefrontBtn" class="secondary-btn" type="button">Usar dados do anúncio</button>
+
+                <div class="form-section-title">Dados principais</div>
+                <label>Título<input name="title" required /></label>
+                <label>Categoria interna<input name="category" value="Action figures" /></label>
+                <label>Preço<input name="price" type="number" min="0.01" step="0.01" required /></label>
+                <label>Estoque<input name="available_quantity" type="number" min="0" step="1" value="1" /></label>
+                <label>Link de compra<input name="marketplace_url" type="url" /></label>
+                <label>Link Shopee<input name="shopee_url" type="url" /></label>
+                <label>Link Amazon<input name="amazon_url" type="url" /></label>
+                <label>Link WhatsApp/orçamento<input name="whatsapp_url" type="url" placeholder="https://wa.me/..." /></label>
+                <label>Observação de pagamento<input name="payment_note" /></label>
+                <label class="wide">Observação de entrega<input name="delivery_note" placeholder="Ex: As datas de entrega incluem os 20 dias necessários para deixar o produto pronto." /></label>
+                <div class="form-section-title">Informações técnicas</div>
+                <label>Material<input name="tech_material" placeholder="Resina 8K" /></label>
+                <label>Altura<input name="tech_height" placeholder="15 cm" /></label>
+                <label>Pintura<input name="tech_painting" placeholder="Pintado à mão" /></label>
+                <label>Montagem<input name="tech_assembly" placeholder="Não necessária" /></label>
+                <label class="wide">Descrição
+                  <textarea name="description" rows="5"></textarea>
+                </label>
+                <label class="wide">Descrição visual
+                  <textarea name="description_html" hidden></textarea>
+                  <div id="storefrontDescriptionEditor" class="rich-description-editor" contenteditable="true" aria-label="Descrição visual"></div>
+                  <small>Cole imagens direto aqui, ou use texto normal no campo acima.</small>
+                </label>
+                <label class="wide">URLs das imagens<textarea name="image_url" rows="4" placeholder="Uma URL por linha"></textarea></label>
+                <label id="storefrontImageDropzone" class="storefront-image-dropzone wide">
+                  <span>Imagens do produto</span>
+                  <small>Selecionar, arrastar ou soltar imagens aqui</small>
+                  <input id="storefrontImageFiles" type="file" accept="image/*" multiple />
+                </label>
+
+                <div id="storefrontMlFields" class="marketplace-extra-fields">
+                  <div class="form-section-title">Campos Mercado Livre</div>
+                  <label>ID da categoria ML<input name="ml_category_id" placeholder="Ex: MLB1839" /></label>
+                  <button id="loadMlCategoryFieldsBtn" class="secondary-btn" type="button">Carregar campos da categoria</button>
+                  <label>Tipo de anúncio
+                    <select name="ml_listing_type_id">
+                      <option value="gold_special">Clássico</option>
+                      <option value="gold_pro">Premium</option>
+                      <option value="free">Grátis</option>
+                    </select>
+                  </label>
+                  <label>Condição
+                    <select name="ml_condition">
+                      <option value="new">Novo</option>
+                      <option value="used">Usado</option>
+                    </select>
+                  </label>
+                  <label>Garantia<input name="ml_warranty" value="Sem garantia" /></label>
+                  <label>Tempo de preparo<input name="ml_manufacturing_time" placeholder="20 dias" /></label>
+                  <label>SKU<input name="sku" /></label>
+                  <label class="wide">Atributos ML em JSON<textarea name="ml_attributes_json" rows="5" placeholder='[{"id":"BRAND","value_name":"3D.AFT"}]'></textarea></label>
+                  <div id="mlCategoryFieldsPreview" class="category-fields-preview"></div>
+                </div>
+
+                <div id="storefrontShopeeFields" class="marketplace-extra-fields" hidden>
+                  <div class="form-section-title">Campos Shopee</div>
+                  <p class="hint-box">A Shopee ainda está em revisão. O formulário já guarda dados da vitrine, mas a publicação direta depende das credenciais aprovadas no Shopee Open Platform.</p>
+                  <label>Categoria Shopee<input name="shopee_category_id" /></label>
+                  <label>Peso<input name="shopee_weight" /></label>
+                  <label>Prazo de envio<input name="shopee_days_to_ship" placeholder="20" /></label>
+                </div>
+                <div id="storefrontAmazonFields" class="marketplace-extra-fields" hidden>
+                  <div class="form-section-title">Campos Amazon</div>
+                  <p class="hint-box">Estrutura SP-API preparada. A publicacao e sincronizacao serao ativadas ao conectar a conta Amazon Seller.</p>
+                  <label>SKU Amazon<input name="amazon_sku" /></label>
+                  <label>ASIN<input name="amazon_asin" /></label>
+                  <label>Product Type<input name="amazon_product_type" /></label>
+                  <label class="wide">Atributos Amazon em JSON<textarea name="amazon_attributes_json" rows="4"></textarea></label>
+                </div>
+
+                <label class="checkbox-row"><input name="featured" type="checkbox" checked /> Exibir na vitrine</label>
+                <p id="storefrontProductMessage" class="form-error"></p>
+                <button class="primary-btn" type="submit">Salvar produto da vitrine</button>
+              </form>
+              <div>
+                <div id="storefrontStats" class="integration-summary-grid"></div>
+                <div id="storefrontProductList" class="storefront-product-list"></div>
+              </div>
+            </div>
+          </div>
+
+          <div id="marketplaceSalesView" class="marketplace-subview">
+            <div class="panel-head">
+              <h3>Vendas dos marketplaces</h3>
+              <div class="inline-actions">
+                <button id="refreshMarketplaceSalesBtn" class="secondary-btn" type="button">Atualizar</button>
+                <button id="syncMarketplaceSalesBtn" class="primary-btn" type="button">Sincronizar vendas</button>
+              </div>
+            </div>
+            <div id="marketplaceSalesGrid" class="marketplace-sales-grid"></div>
+          </div>
+
+          <div id="marketplaceIntegrationsView" class="marketplace-subview">
+            <div class="integration-summary-grid">
+              <article><span>Última sincronização</span><strong id="integrationLastSync">-</strong></article>
+              <article><span>Anúncios sincronizados</span><strong id="integrationListingsCount">0</strong></article>
+              <article><span>Vendas importadas</span><strong id="integrationSalesCount">0</strong></article>
+              <article><span>Erros recentes</span><strong id="integrationRecentErrors">0</strong></article>
+            </div>
+            <div id="integrationTokenAlert"></div>
+            <div id="marketplaceChannelCards" class="marketplace-channel-grid"></div>
+            <div class="panel">
+              <div class="panel-head">
+                <h3>Contas conectadas</h3>
+                <div class="inline-actions">
+                  <button id="connectMercadoLivreBtn" class="secondary-btn" type="button">Conectar Mercado Livre</button>
+                  <button id="connectShopeeBtn" class="secondary-btn" type="button">Integrar conta Shopee</button>
+                  <button id="connectAmazonBtn" class="secondary-btn" type="button">Integrar conta Amazon</button>
+                  <button id="syncAmazonBtn" class="secondary-btn" type="button">Sincronizar Amazon</button>
+                </div>
+              </div>
+              <p class="muted">Se o Mercado Livre abrir com a conta errada, saia dessa conta no Mercado Livre ou use uma janela anonima antes de tentar novamente.</p>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Marketplace</th><th>Conta</th><th>Permissão de anúncios</th><th>Token até</th><th>Atualizado</th><th>Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody id="marketplaceAccountsTable"></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-head">
+                <h3>Logs da integração</h3>
+                <button class="secondary-btn" type="button" data-action="open-marketplace-logs">Ver todos</button>
+              </div>
+              <div id="marketplaceLogsSummary" class="stack-list"></div>
+            </div>
+          </div>
+
+          <div id="marketplaceApiLogsView" class="marketplace-subview">
+            <div class="panel-head">
+              <div>
+                <h3>Logs API</h3>
+                <small>Auditoria das comunicações entre o sistema e os marketplaces.</small>
+              </div>
+              <div class="inline-actions">
+                <button id="clearMarketplaceLogsViewBtn" class="secondary-btn" type="button">Limpar tela</button>
+                <button id="refreshMarketplaceLogsBtn" class="secondary-btn" type="button">Atualizar</button>
+              </div>
+            </div>
+            <div class="log-range-filter">
+              <label>De<input id="marketplaceLogDateFrom" type="datetime-local" /></label>
+              <label>Até<input id="marketplaceLogDateTo" type="datetime-local" /></label>
+              <button id="applyMarketplaceLogRangeBtn" class="secondary-btn" type="button">Aplicar período</button>
+            </div>
+            <div class="api-log-filters" role="group" aria-label="Filtrar logs da API">
+              <button class="filter-chip active" type="button" data-action="marketplace-log-filter" data-filter="all">Todos</button>
+              <button class="filter-chip" type="button" data-action="marketplace-log-filter" data-filter="success">Sucesso</button>
+              <button class="filter-chip" type="button" data-action="marketplace-log-filter" data-filter="error">Erro</button>
+              <button class="filter-chip" type="button" data-action="marketplace-log-filter" data-filter="webhook">Webhook</button>
+              <button class="filter-chip" type="button" data-action="marketplace-log-filter" data-filter="listings">Anúncios</button>
+              <button class="filter-chip" type="button" data-action="marketplace-log-filter" data-filter="sales">Vendas</button>
+              <button class="filter-chip" type="button" data-action="marketplace-log-filter" data-filter="documents">Documentos</button>
+            </div>
+            <div id="marketplaceApiLogsList" class="api-log-list"></div>
+            <button id="loadMoreMarketplaceLogsBtn" class="secondary-btn load-more-btn" type="button">Carregar mais</button>
+          </div>
+
+          <div id="marketplaceBackupView" class="marketplace-subview">
+            <div class="panel-head">
+              <div><h3>Backup</h3><small>Snapshot semanal privado com registro de execução.</small></div>
+              <button id="runBackupBtn" class="secondary-btn" type="button">Executar agora</button>
+            </div>
+            <div id="backupStatus" class="integration-summary-grid"></div>
+            <div class="backup-actions-panel">
+              <div>
+                <h3>Baixar backup</h3>
+                <p>Os arquivos JSON podem ser guardados fora do Supabase e usados para restauracao.</p>
+              </div>
+              <div class="inline-actions">
+                <button id="downloadSystemBackupBtn" class="secondary-btn" type="button">Baixar sistema</button>
+                <button id="downloadStorefrontBackupBtn" class="secondary-btn" type="button">Baixar vitrine</button>
+                <button id="downloadDatabaseBackupBtn" class="primary-btn" type="button">Baixar banco completo</button>
+              </div>
+            </div>
+            <div class="backup-restore-panel">
+              <div>
+                <h3>Importar e restaurar</h3>
+                <p>Selecione um backup JSON ou JSON.GZ gerado pelo sistema. Registros existentes com o mesmo identificador serao atualizados.</p>
+              </div>
+              <div class="backup-restore-controls">
+                <input id="backupImportFile" type="file" accept=".json,.gz,.json.gz,application/json,application/gzip" />
+                <button id="simulateBackupRestoreBtn" class="secondary-btn" type="button">Testar restauracao</button>
+                <button id="restoreBackupBtn" class="danger-btn" type="button">Importar backup</button>
+              </div>
+              <small id="backupRestoreMessage" class="muted"></small>
+              <div id="backupSimulationReport" class="backup-simulation-report" hidden></div>
+            </div>
+            <div class="panel backup-history-panel">
+              <div class="panel-head"><h3>Histórico de backups</h3></div>
+              <div id="backupHistoryList" class="stack-list"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="logsView" class="view">
+          <div class="filter-bar">
+            <label>
+              Tipo de histórico
+              <select id="logTypeFilter">
+                <option value="all">Todos</option>
+                <option value="orders">Encomendas</option>
+                <option value="access">Acessos</option>
+                <option value="audit">Auditoria completa</option>
+              </select>
+            </label>
+            <label>De<input id="historyDateFrom" type="datetime-local" /></label>
+            <label>Até<input id="historyDateTo" type="datetime-local" /></label>
+            <button id="applyHistoryRangeBtn" class="secondary-btn" type="button">Aplicar período</button>
+            <button id="clearHistoryViewBtn" class="secondary-btn" type="button">Limpar tela</button>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h3>Histórico de alterações</h3></div>
+            <div id="logsList" class="stack-list"></div>
+            <button id="loadMoreHistoryBtn" class="secondary-btn load-more-btn" type="button">Carregar mais</button>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <dialog id="passwordResetDialog" class="app-dialog password-reset-dialog">
+      <form id="passwordResetForm" method="dialog">
+        <div class="dialog-head">
+          <div><p class="eyebrow">RECUPERA?O DE ACESSO</p><h3>Defina sua nova senha</h3></div>
+        </div>
+        <p class="muted">O link já identificou sua conta. Informe apenas a nova senha.</p>
+        <label>Nova senha<input name="password" type="password" minlength="8" autocomplete="new-password" required /></label>
+        <label>Confirmar nova senha<input name="password_confirm" type="password" minlength="8" autocomplete="new-password" required /></label>
+        <p id="passwordResetMessage" class="form-message"></p>
+        <button class="primary-btn" type="submit">Alterar senha</button>
+      </form>
+    </dialog>
+
+    <dialog id="downgradeDialog" class="app-dialog downgrade-dialog">
+      <form id="downgradeForm" method="dialog">
+        <input name="plan_code" type="hidden" />
+        <div class="dialog-head">
+          <div><p class="eyebrow">ALTERA?O DE PLANO</p><h3 id="downgradeDialogTitle">Agendar downgrade</h3></div>
+          <button id="closeDowngradeDialogBtn" class="icon-btn" type="button" aria-label="Fechar">×</button>
+        </div>
+        <p id="downgradeEffectiveText" class="muted"></p>
+        <div id="downgradeUsersSection">
+          <strong id="downgradeUsersInstruction"></strong>
+          <div id="downgradeUserList" class="downgrade-user-list"></div>
+        </div>
+        <p id="downgradeMessage" class="form-message"></p>
+        <div class="dialog-actions">
+          <button id="cancelDowngradeBtn" class="secondary-btn" type="button">Cancelar</button>
+          <button class="primary-btn" type="submit">Confirmar agendamento</button>
+        </div>
+      </form>
+    </dialog>
+
+        <dialog id="paymentMethodDialog" class="app-dialog payment-method-dialog">
+      <div class="dialog-head">
+        <div><p class="eyebrow">MERCADO PAGO</p><h3>Forma de pagamento</h3></div>
+        <button id="closePaymentMethodBtn" class="icon-btn" type="button" aria-label="Fechar">&times;</button>
+      </div>
+      <div id="cardPaymentBrick_container"></div>
+      <p class="payment-method-note">Cadastro seguro pelo Mercado Pago. O FlowOps não armazena dados do cartão.</p>
+      <p id="paymentMethodMessage" class="form-message"></p>
+      <div class="dialog-actions payment-method-actions"><button class="secondary-btn" type="button" data-close-payment-method>Fechar</button></div>
+    </dialog>
+
+    <dialog id="appMessageDialog" class="app-message-dialog">
+      <div class="app-message-content">
+        <div class="dialog-head">
+          <div><p class="eyebrow">3D.AFT</p><h3 id="appMessageTitle">Aviso</h3></div>
+          <button id="closeAppMessageBtn" class="icon-btn" type="button" aria-label="Fechar">×</button>
+        </div>
+        <p id="appMessageText"></p>
+        <div class="dialog-actions"><button id="confirmAppMessageBtn" class="primary-btn" type="button">Entendi</button></div>
+      </div>
+    </dialog>
+    <dialog id="historyDialog" class="history-dialog">
+      <div class="panel-head">
+        <h3>Histórico</h3>
+        <button id="closeHistoryBtn" class="icon-btn" type="button">Fechar</button>
+      </div>
+      <div id="historyContent" class="stack-list"></div>
+    </dialog>
+    <dialog id="marketplaceStatsDialog" class="history-dialog marketplace-dialog">
+      <div class="panel-head">
+        <h3>Estatísticas do anúncio</h3>
+        <button class="icon-btn" type="button" data-close-dialog="marketplaceStatsDialog">Fechar</button>
+      </div>
+      <div id="marketplaceStatsContent"></div>
+    </dialog>
+    <dialog id="marketplaceEditDialog" class="history-dialog marketplace-dialog">
+      <div class="panel-head">
+        <h3>Editar anúncio</h3>
+        <button class="icon-btn" type="button" data-close-dialog="marketplaceEditDialog">Fechar</button>
+      </div>
+      <form id="marketplaceEditForm" class="login-form">
+        <input name="itemId" type="hidden" />
+        <input name="marketplace" type="hidden" />
+        <label>Título<input name="title" required /></label>
+        <label>Preço<input name="price" type="number" min="0.01" step="0.01" required /></label>
+        <label>Estoque<input name="availableQuantity" type="number" min="0" step="1" required /></label>
+        <label>Status
+          <select name="status">
+            <option value="active">Ativo</option>
+            <option value="paused">Pausado</option>
+          </select>
+        </label>
+        <p class="form-error" id="marketplaceEditMessage"></p>
+        <button class="primary-btn" type="submit">Salvar no marketplace</button>
+      </form>
+    </dialog>
+    <dialog id="leadDialog" class="history-dialog lead-dialog">
+      <div class="panel-head">
+        <h3 id="leadDialogTitle">Lead</h3>
+        <button class="icon-btn" type="button" data-close-dialog="leadDialog">Fechar</button>
+      </div>
+      <form id="leadForm" class="lead-form">
+        <input name="id" type="hidden" />
+        <label>Nome<input name="name" required /></label>
+        <label>E-mail<input name="email" type="email" /></label>
+        <label>WhatsApp<input name="whatsapp" /></label>
+        <label>Origem<select name="origin"><option>Vitrine</option><option>Mercado Livre</option><option>Shopee</option><option>Amazon</option><option>Manual</option></select></label>
+        <label>Status<select name="status"><option>Novo</option><option>Em negociação</option><option>Convertido</option><option>Perdido</option><option>Cliente recorrente</option></select></label>
+        <label>Último contato<input name="last_contact_at" type="datetime-local" /></label>
+        <label class="lead-notes">Observações<textarea name="notes"></textarea></label>
+        <label class="lead-notes">Arquivos
+          <input id="leadFileInput" type="file" multiple accept="image/*,.stl,.obj,.3mf,.pdf" />
+          <small>Fotos, STLs, referencias e PDF. Tambem aceita arrastar arquivos.</small>
+        </label>
+        <button class="primary-btn" type="submit">Salvar lead</button>
+      </form>
+      <div id="leadFilesList" class="lead-files-list"></div>
+      <div id="leadHistoryContent" class="lead-history"></div>
+    </dialog>
+    <dialog id="orderEditDialog" class="history-dialog order-edit-dialog">
+      <div class="panel-head">
+        <div><h3>Editar encomenda</h3><small id="orderEditDialogCode"></small></div>
+        <button class="icon-btn" type="button" data-close-dialog="orderEditDialog">Fechar</button>
+      </div>
+      <form id="orderEditDialogForm" class="order-edit-dialog-form">
+        <input name="id" type="hidden" />
+        <label>Encomenda<input name="description" required /></label>
+        <label>Cliente<input name="client" /></label>
+        <label>Código marketplace<input name="marketplaceOrderCode" /></label>
+        <label>Quantidade<input name="quantity" type="number" min="1" step="1" /></label>
+        <label>Material<select name="material"><option value="">Material</option><option>Resina</option><option>Filamento</option><option>PLA</option><option>PETG</option></select></label>
+        <label>Entrega<input name="deliveryDate" type="date" /></label>
+        <label>Valor<input name="charged" type="number" min="0" step="0.01" /></label>
+        <label>Recebido<input name="received" type="number" min="0" step="0.01" /></label>
+        <label>Prioridade<select name="priority"><option value="">Prioridade</option><option>Baixa</option><option>Normal</option><option>Alta</option><option>Urgente</option></select></label>
+        <label>Etapa<select name="productionStage"></select></label>
+        <label>Responsável<select name="responsible"></select></label>
+        <label>Status<select name="status"></select></label>
+        <label class="wide">Link STL/origem<input name="stlLink" /></label>
+        <label class="wide">Nota interna<textarea name="internalNotes"></textarea></label>
+        <button class="primary-btn wide" type="submit">Salvar alterações</button>
+      </form>
+    </dialog>
+    <dialog id="planLimitDialog" class="history-dialog plan-limit-dialog">
+      <div class="panel-head">
+        <div><p class="eyebrow">Limite do plano</p><h3>Capacidade de usuários atingida</h3></div>
+        <button class="icon-btn" type="button" data-close-dialog="planLimitDialog">Fechar</button>
+      </div>
+      <p id="planLimitMessage">O plano atual atingiu o limite de usuários.</p>
+      <div id="planLimitRecommendation" class="plan-limit-recommendation"></div>
+      <div class="dialog-actions">
+        <button class="secondary-btn" type="button" data-close-dialog="planLimitDialog">OK</button>
+        <button id="goToUpgradeBtn" class="primary-btn" type="button">Ver planos e fazer upgrade</button>
+      </div>
+    </dialog>
+  </body>
+</html>
+
+

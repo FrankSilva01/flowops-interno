@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://fancy-pastelito-51931f.netlify.app/sitemap.xml

@@ -1,0 +1,200 @@
+﻿<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Cache-Control" content="no-store" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>3D.AFT Store</title>
+    <meta name="description" content="Miniaturas, action figures, decoraÃ§Ã£o e peÃ§as personalizadas produzidas em impressÃ£o 3D pela 3D.AFT." />
+    <meta property="og:title" content="3D.AFT Store" />
+    <meta property="og:description" content="ImpressÃ£o 3D profissional, miniaturas e projetos personalizados." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://fancy-pastelito-51931f.netlify.app/" />
+    <meta property="og:image" content="https://fancy-pastelito-51931f.netlify.app/assets/logo-3daft.png" />
+    <link rel="canonical" href="https://fancy-pastelito-51931f.netlify.app/" />
+    <link rel="stylesheet" href="./store.css?v=79" />
+    <script src="./supabase-config.js?v=79" defer></script>
+    <script src="./store.js?v=79" defer></script>
+  </head>
+  <body>
+    <header class="store-header">
+      <div class="store-top">
+        <a class="brand" href="./" aria-label="3D.AFT Store">
+          <span class="brand-logo">3D.AFT</span>
+          <strong>3D.AFT Store</strong>
+        </a>
+        <label class="store-search">
+          <input id="storeSearch" type="search" placeholder="Digite o que você procura" />
+          <span>Buscar</span>
+        </label>
+        <button id="adminOpenBtn" class="ghost-action" type="button" hidden>Admin</button>
+      </div>
+      <nav class="store-nav" aria-label="Categorias">
+        <button class="nav-chip active" type="button" data-category="all">Todos</button>
+        <button class="nav-chip" type="button" data-category="Action Figures">Action Figures</button>
+        <button class="nav-chip" type="button" data-category="Funko">Funko</button>
+        <button class="nav-chip" type="button" data-category="Miniaturas RPG">Miniaturas RPG</button>
+        <button class="nav-chip" type="button" data-category="Utilidades">Utilidades</button>
+        <button class="nav-chip" type="button" data-category="Decoracao">DecoraÃ§Ã£o</button>
+        <button class="nav-chip" type="button" data-section="custom">Personalizados</button>
+        <button class="nav-chip" type="button" data-section="about">Sobre nós</button>
+        <button class="nav-chip" type="button" data-section="faq">FAQ</button>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <span>Impressão 3D sob demanda</span>
+          <h1>Itens geek, action figures e peças decorativas</h1>
+          <p>Escolha o produto aqui e finalize com segurança no Mercado Livre, Shopee ou Amazon.</p>
+        </div>
+        <div class="hero-carousel" aria-label="Produtos em destaque">
+          <button id="heroPrevBtn" class="carousel-arrow" type="button" aria-label="Produto anterior">&lsaquo;</button>
+          <div id="heroSlides" class="hero-slides"></div>
+          <button id="heroNextBtn" class="carousel-arrow" type="button" aria-label="Próximo produto">&rsaquo;</button>
+        </div>
+      </section>
+
+      <section class="benefits" aria-label="Benefícios">
+        <div><strong>Compra segura</strong><span>Pagamento feito no marketplace</span></div>
+        <div><strong>Produto sob demanda</strong><span>Prazo de preparo informado antes da compra</span></div>
+        <div><strong>Atendimento direto</strong><span>Tire dúvidas antes de comprar</span></div>
+      </section>
+
+      <section id="homeView" class="catalog-section">
+        <div class="section-head">
+          <h2>Produtos em destaque</h2>
+          <span id="productCount">Carregando...</span>
+        </div>
+        <div id="productGrid" class="product-grid"></div>
+      </section>
+
+      <section id="detailView" class="detail-view" hidden>
+        <button id="backToCatalogBtn" class="text-button" type="button">Voltar para a vitrine</button>
+        <div id="productDetail"></div>
+      </section>
+
+      <section id="customView" class="custom-view" hidden>
+        <div class="section-head">
+          <h2>Trabalhos personalizados</h2>
+          <span>Envie seu STL ou imagens para orçamento.</span>
+        </div>
+        <form id="customQuoteForm" class="custom-form">
+          <input name="name" placeholder="Nome" required />
+          <input name="email" type="email" placeholder="E-mail" required />
+          <input name="whatsapp" placeholder="WhatsApp" required />
+          <input name="desired_size" placeholder="Tamanho desejado" />
+          <select name="material">
+            <option value="">Material</option>
+            <option>Resina UV Premium</option>
+            <option>Filamento PLA</option>
+            <option>PETG</option>
+            <option>Outro</option>
+          </select>
+          <textarea name="description" placeholder="Descrição do projeto" required></textarea>
+          <label class="custom-file">Upload STL<input name="stl_file" type="file" accept=".stl,.obj,.3mf,.zip" /></label>
+          <label class="custom-file">Upload imagens<input name="image_files" type="file" accept="image/*" multiple /></label>
+          <button class="buy-button quote" type="submit">Solicitar orçamento</button>
+          <p id="customQuoteMessage" class="form-message"></p>
+        </form>
+      </section>
+
+      <section id="aboutView" class="info-page" hidden>
+        <h2>Quem somos</h2>
+        <p>A 3D.AFT é especializada em impressão 3D de miniaturas, action figures, decoração geek e peças personalizadas.</p>
+        <p>Trabalhamos com impressão em resina 8K de alta definição e também projetos sob encomenda.</p>
+        <h3>Como funciona</h3>
+        <ol>
+          <li>Escolha o produto</li>
+          <li>Clique em comprar</li>
+          <li>Finalize no marketplace</li>
+          <li>Produzimos e enviamos</li>
+        </ol>
+        <h3>Trabalhos personalizados</h3>
+        <p>Possui um STL próprio? Solicite um orçamento pela aba Personalizados.</p>
+        <h3>Materiais utilizados</h3>
+        <ul>
+          <li>Resina UV Premium</li>
+          <li>Filamento PLA</li>
+          <li>Pintura artesanal</li>
+        </ul>
+      </section>
+
+      <section id="faqView" class="info-page" hidden>
+        <h2>Perguntas frequentes</h2>
+        <details open><summary>O produto é impresso após a compra?</summary><p>Sim. Muitos itens são produzidos sob demanda.</p></details>
+        <details><summary>Posso pedir outro tamanho?</summary><p>Sim, mediante orçamento.</p></details>
+        <details><summary>Vocês pintam as peças?</summary><p>Dependendo do modelo, sim.</p></details>
+        <details><summary>Qual o prazo de produção?</summary><p>Normalmente entre 5 e 20 dias, conforme o anúncio ou orçamento.</p></details>
+        <details><summary>Posso enviar meu próprio STL?</summary><p>Sim, fazemos impressão sob encomenda.</p></details>
+        <details><summary>A peça chega montada?</summary><p>Alguns modelos podem ser enviados desmontados para maior segurança.</p></details>
+      </section>
+    </main>
+
+    <footer class="store-footer">
+      <strong>3D.AFT Store</strong>
+      <p>Impressão 3D profissional<br />Miniaturas • Action Figures • Personalizados</p>
+      <nav>
+        <a href="https://wa.me/5511967617077" target="_blank" rel="noopener">WhatsApp</a>
+        <a href="#" aria-disabled="true">Instagram</a>
+        <a href="#" aria-disabled="true">TikTok</a>
+        <a href="#" aria-disabled="true">Mercado Livre</a>
+        <a href="#" aria-disabled="true">Shopee</a>
+        <a href="#" aria-disabled="true">Amazon</a>
+        <button type="button" data-footer-section="about">Sobre nós</button>
+        <button type="button" data-footer-section="faq">FAQ</button>
+        <a href="#" aria-disabled="true">Política de Privacidade</a>
+      </nav>
+    </footer>
+
+    <dialog id="adminDialog" class="admin-dialog">
+      <div class="dialog-head">
+        <h2>Administrar vitrine</h2>
+        <button id="adminCloseBtn" type="button">Fechar</button>
+      </div>
+      <form id="adminLoginForm" class="admin-form">
+        <input name="email" type="email" placeholder="E-mail admin" autocomplete="username" required />
+        <input name="password" type="password" placeholder="Senha" autocomplete="current-password" required />
+        <button type="submit">Entrar</button>
+        <p id="adminLoginMessage" class="form-message"></p>
+      </form>
+      <section id="adminPanel" hidden>
+        <div id="adminStats" class="admin-stats"></div>
+        <form id="productForm" class="product-form">
+          <select name="marketplace">
+            <option value="Vitrine">Somente vitrine</option>
+            <option value="Mercado Livre">Mercado Livre</option>
+            <option value="Shopee">Shopee</option>
+            <option value="Amazon">Amazon</option>
+          </select>
+          <select name="publish_target">
+            <option value="storefront">Salvar apenas na vitrine</option>
+            <option value="mercado_livre_draft">Preparar para publicar no Mercado Livre</option>
+          </select>
+          <input name="external_id" placeholder="Código interno ou código do anúncio" />
+          <input name="title" placeholder="Titulo do produto" required />
+          <input name="category" placeholder="Categoria" value="Action figures" />
+          <input name="price" type="number" min="0.01" step="0.01" placeholder="Preco" required />
+          <input name="marketplace_url" type="url" placeholder="Link do Mercado Livre, Shopee ou Amazon" />
+          <textarea name="image_url" placeholder="URLs das imagens, uma por linha"></textarea>
+          <label class="file-drop">
+            <span>Imagens do produto</span>
+            <small>Selecionar arquivos da maquina</small>
+            <input id="productImages" name="product_images" type="file" accept="image/*" multiple />
+          </label>
+          <textarea name="description" placeholder="Descrição do produto"></textarea>
+          <input name="payment_note" placeholder="Observacao de pagamento" />
+          <input name="delivery_note" placeholder="Ex: As datas de entrega incluem 20 dias para produção." />
+          <label class="checkbox-row"><input name="featured" type="checkbox" /> Produto em destaque</label>
+          <button type="submit">Salvar produto</button>
+          <p id="productFormMessage" class="form-message"></p>
+        </form>
+        <div id="adminProductList" class="admin-product-list"></div>
+      </section>
+    </dialog>
+  </body>
+</html>
+
