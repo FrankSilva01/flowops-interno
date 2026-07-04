@@ -53,6 +53,12 @@ import {
   renderKanbanCard, renderKanbanFilters, bindKanban,
 } from "./features/production.js";
 import { renderCash, saveCash, startCashEdit, cancelCashEdit, resetCashForm, filterCash } from "./features/cash.js";
+import {
+  setMaterialsTab, clearMaterialFilters, clearInventoryFilters, renderMaterials, renderInventory,
+  formatInventoryNumber, saveMaterial, startMaterialEdit, cancelMaterialEdit, resetMaterialForm,
+  saveInventoryItem, startInventoryEdit, resetInventoryForm, materialToCashEntry, materialCashId,
+  filterMaterials, sortMaterials,
+} from "./features/materials.js";
 
 // Bridge: o restante do app (ainda não modularizado, carregado por app-direct-legacy.js
 // como script classico logo depois deste modulo) referencia estes nomes como globais.
@@ -97,6 +103,10 @@ Object.assign(window, {
   renderProduction, filterProductionOrders, renderProductionSummary, isProductionEligible,
   renderKanbanCard, renderKanbanFilters, bindKanban,
   renderCash, saveCash, startCashEdit, cancelCashEdit, resetCashForm, filterCash,
+  setMaterialsTab, clearMaterialFilters, clearInventoryFilters, renderMaterials, renderInventory,
+  formatInventoryNumber, saveMaterial, startMaterialEdit, cancelMaterialEdit, resetMaterialForm,
+  saveInventoryItem, startInventoryEdit, resetInventoryForm, materialToCashEntry, materialCashId,
+  filterMaterials, sortMaterials,
 });
 
 document.addEventListener("DOMContentLoaded", async () => {

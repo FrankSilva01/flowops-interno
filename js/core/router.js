@@ -16,6 +16,11 @@ import {
 } from "../features/orders.js";
 import { renderProduction } from "../features/production.js";
 import { saveCash, startCashEdit, cancelCashEdit } from "../features/cash.js";
+import {
+  setMaterialsTab, clearMaterialFilters, clearInventoryFilters, saveMaterial, cancelMaterialEdit,
+  saveInventoryItem, renderMaterials, renderInventory, resetInventoryForm, materialCashId,
+  startInventoryEdit,
+} from "../features/materials.js";
 
 export function bindEvents() {
   byId("sidebarToggle")?.addEventListener("click", toggleSidebar);
