@@ -3,6 +3,7 @@ import { byId, html, formatDate, countBy, nextId, number, filterRows, showAppMes
 import { bindActions, render } from "../core/router.js";
 import { ensureCanEdit } from "../core/permissions.js";
 import { persist } from "../data/remote.js";
+import { ensureOperationalNotifications } from "./notifications.js";
 
 export function setMaterialsTab(tab) {
   document.querySelectorAll("[data-materials-tab]").forEach((button) => {

@@ -84,6 +84,11 @@ import {
   showPlanLimitDialog, saveResponsible, editResponsible, deleteResponsible,
   renderResponsibleOptions, getResponsibleNames, nextResponsibleId,
 } from "./features/users.js";
+import {
+  createNotification, ensureOperationalNotifications, renderNotifications, notificationAllowed,
+  markNotificationRead, markAllNotificationsRead, clearReadNotifications, clearVisibleNotifications,
+  openNotification, renderTrialBanner,
+} from "./features/notifications.js";
 
 // Bridge: o restante do app (ainda não modularizado, carregado por app-direct-legacy.js
 // como script classico logo depois deste modulo) referencia estes nomes como globais.
@@ -149,6 +154,9 @@ Object.assign(window, {
   approveAccess, rejectAccess, changeUserRole, removeUser, createManualUserAccess,
   showPlanLimitDialog, saveResponsible, editResponsible, deleteResponsible,
   renderResponsibleOptions, getResponsibleNames, nextResponsibleId,
+  createNotification, ensureOperationalNotifications, renderNotifications, notificationAllowed,
+  markNotificationRead, markAllNotificationsRead, clearReadNotifications, clearVisibleNotifications,
+  openNotification, renderTrialBanner,
 });
 
 document.addEventListener("DOMContentLoaded", async () => {

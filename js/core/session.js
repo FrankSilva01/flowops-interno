@@ -3,6 +3,7 @@ import { byId, html } from "./dom.js";
 import { isAdminRole, isEditorRole, displayRole } from "./permissions.js";
 import { render } from "./router.js";
 import { loadResponsibles, loadAccessRequests, loadActiveUsers } from "../features/users.js";
+import { ensureOperationalNotifications } from "../features/notifications.js";
 
 export async function setupBackend() {
   const config = window.SUPABASE_CONFIG || {};

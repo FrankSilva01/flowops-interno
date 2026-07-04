@@ -29,6 +29,10 @@ import {
   loadAndRenderUsers, loadAndRenderResponsibles, createManualUserAccess, saveResponsible,
   approveAccess, rejectAccess, changeUserRole, removeUser, editResponsible, deleteResponsible,
 } from "../features/users.js";
+import {
+  renderNotifications, renderTrialBanner, clearVisibleNotifications, markAllNotificationsRead,
+  clearReadNotifications, openNotification,
+} from "../features/notifications.js";
 
 export function bindEvents() {
   byId("sidebarToggle")?.addEventListener("click", toggleSidebar);
