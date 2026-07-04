@@ -1,0 +1,128 @@
+/* Dense dark workspace and in-sidebar navigation controls v110 */
+.sidebar-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.sidebar-head .brand {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-bottom: 0;
+}
+
+.sidebar-collapse-btn {
+  display: grid;
+  flex: 0 0 34px;
+  width: 34px;
+  min-height: 34px !important;
+  padding: 0 !important;
+  place-items: center;
+  border: 1px solid rgba(148, 178, 190, .28) !important;
+  background: rgba(255, 255, 255, .045) !important;
+  color: #dce9ed !important;
+}
+
+.sidebar-collapse-btn:hover {
+  transform: none;
+  border-color: #21c4b2 !important;
+  background: rgba(33, 196, 178, .12) !important;
+}
+
+.app-shell.sidebar-collapsed .sidebar-head {
+  flex-direction: column;
+}
+
+.app-shell.sidebar-collapsed .sidebar-head .brand {
+  flex: 0 0 auto;
+}
+
+.app-shell.sidebar-collapsed .sidebar-collapse-btn {
+  width: 42px;
+}
+
+html[data-theme="dark"] body,
+html[data-theme="dark"] .workspace {
+  background: #101920;
+}
+
+html[data-theme="dark"] .topbar {
+  padding: 0 0 12px;
+  border-bottom: 1px solid rgba(108, 135, 148, .16);
+}
+
+html[data-theme="dark"] .panel,
+html[data-theme="dark"] .kpi,
+html[data-theme="dark"] .metric,
+html[data-theme="dark"] .dashboard-welcome,
+html[data-theme="dark"] .report-kpi,
+html[data-theme="dark"] .report-chart-card,
+html[data-theme="dark"] .report-table-card,
+html[data-theme="dark"] .report-insights {
+  background: #1a2a34;
+  border-color: #354a57;
+  box-shadow: none;
+}
+
+.kpi {
+  position: relative;
+  min-height: 116px;
+  padding: 22px 16px 18px 78px;
+  overflow: hidden;
+}
+
+.kpi::before {
+  content: "";
+  position: absolute;
+  top: 22px;
+  left: 18px;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: linear-gradient(145deg, #18c8b5, #087f73);
+  box-shadow: 0 10px 24px rgba(10, 184, 163, .2);
+}
+
+.kpi:nth-child(2)::before,
+.kpi:nth-child(6)::before {
+  background: linear-gradient(145deg, #f05466, #9f2939);
+}
+
+.kpi:nth-child(4)::before,
+.kpi:nth-child(8)::before {
+  background: linear-gradient(145deg, #3388f0, #1552a5);
+}
+
+.kpi:nth-child(5)::before,
+.kpi:nth-child(9)::before {
+  background: linear-gradient(145deg, #9b5ee8, #54259c);
+}
+
+.kpi:nth-child(7)::before {
+  background: linear-gradient(145deg, #e8a71a, #a16800);
+}
+
+.kpi strong {
+  font-size: clamp(22px, 1.65vw, 29px);
+}
+
+@media (max-width: 900px) {
+  .sidebar-head {
+    flex-direction: column;
+  }
+  .sidebar-collapse-btn {
+    width: 42px;
+  }
+}
+
+@media (max-width: 620px) {
+  .sidebar-head {
+    width: 100%;
+    flex-direction: row;
+  }
+  .sidebar-collapse-btn {
+    width: 42px;
+  }
+}
+
