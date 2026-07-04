@@ -7,6 +7,13 @@ import {
   renderDashboard, renderCommercialDashboard, renderTopProducts, renderFollowUps,
   renderCompanySidebarStatus, openQuickAction, resetDashboardPreferences, openEmailDigest,
 } from "../features/dashboard.js";
+import {
+  saveOrder, saveOrderFromDialog, updateMarketplaceCodePlaceholder, updateOrderFormStatusColor,
+  bindReferenceImageInput, cancelOrderEdit, startOrderEdit, openOrderEditDialog, showOrderHistory,
+  duplicateOrder, removeReferenceImage, updateOrderInline, removeOrderTag, copyMarketplaceCode,
+  syncOrderFilterControls, updateQuoteStage, convertQuoteToProduction, applyDeliveredPaymentDefault,
+  appendHistory, syncOrderPaymentCash,
+} from "../features/orders.js";
 
 export function bindEvents() {
   byId("sidebarToggle")?.addEventListener("click", toggleSidebar);

@@ -2,6 +2,7 @@ import { state, money } from "../core/state.js";
 import { byId, html, countBy, sum, formatDate, formatDateShort, formatDateTime, flashActionMessage } from "../core/dom.js";
 import { renderBarChart, renderLineChart } from "../core/charts.js";
 import { setView, bindActions } from "../core/router.js";
+import { getOrderPriority, getOrderCode, getMarketplaceLabel, syncOrderFilterControls } from "./orders.js";
 
 export function initDashboardDrag() {
   applyDashboardOrder();

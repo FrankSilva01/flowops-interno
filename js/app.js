@@ -33,6 +33,21 @@ import {
   cashByDate, getTopClient, openEmailDigest, renderCommercialDashboard, renderTopProducts,
   renderFollowUps, getFinancialMetrics,
 } from "./features/dashboard.js";
+import {
+  renderOrders, renderOrderReferences, renderQuoteActions, renderTags, renderInlineSelect,
+  renderDeliveryDate, renderSlaBadge, getSlaState, getFieldClass, duplicateOrder,
+  removeReferenceImage, updateQuoteStage, convertQuoteToProduction, updateOrderInline,
+  removeOrderTag, removeStorageImage, saveOrder, openOrderEditDialog, saveOrderFromDialog,
+  orderPaymentCashId, applyDeliveredPaymentDefault, syncOrderPaymentCash, ensureCustomTag,
+  startOrderEdit, cancelOrderEdit, resetOrderForm, bindReferenceImageInput, setPendingReferenceImage,
+  clearPendingReferenceImage, updateReferenceImagePreview, validateReferenceImage, uploadReferenceImage,
+  normalizeImportedOrder, normalizeMarketplaceTag, filterOrders, getOrderMarketplaceChannel,
+  matchesOrderFocus, sortOrders, getOrderPriority, parseOrderMeta, serializeOrderMeta,
+  getOrderChanges, parseTags, mergeTags, isMarketplaceTag, getMarketplaceLabel,
+  getSelectedMarketplaceLabel, updateMarketplaceCodePlaceholder, updateOrderFormStatusColor,
+  copyMarketplaceCode, syncOrderFilterControls, getTagClass, getOrderCode, deriveOrderCode,
+  nextOrderCode, appendHistory, showOrderHistory, customTagClass, deleteCustomTag,
+} from "./features/orders.js";
 
 // Bridge: o restante do app (ainda não modularizado, carregado por app-direct-legacy.js
 // como script classico logo depois deste modulo) referencia estes nomes como globais.
@@ -61,6 +76,19 @@ Object.assign(window, {
   renderIntegrationHealth, renderAlerts, renderWeeklyFocus, applyFocusFilter, renderTopOpenOrders,
   cashByDate, getTopClient, openEmailDigest, renderCommercialDashboard, renderTopProducts,
   renderFollowUps, getFinancialMetrics,
+  renderOrders, renderOrderReferences, renderQuoteActions, renderTags, renderInlineSelect,
+  renderDeliveryDate, renderSlaBadge, getSlaState, getFieldClass, duplicateOrder,
+  removeReferenceImage, updateQuoteStage, convertQuoteToProduction, updateOrderInline,
+  removeOrderTag, removeStorageImage, saveOrder, openOrderEditDialog, saveOrderFromDialog,
+  orderPaymentCashId, applyDeliveredPaymentDefault, syncOrderPaymentCash, ensureCustomTag,
+  startOrderEdit, cancelOrderEdit, resetOrderForm, bindReferenceImageInput, setPendingReferenceImage,
+  clearPendingReferenceImage, updateReferenceImagePreview, validateReferenceImage, uploadReferenceImage,
+  normalizeImportedOrder, normalizeMarketplaceTag, filterOrders, getOrderMarketplaceChannel,
+  matchesOrderFocus, sortOrders, getOrderPriority, parseOrderMeta, serializeOrderMeta,
+  getOrderChanges, parseTags, mergeTags, isMarketplaceTag, getMarketplaceLabel,
+  getSelectedMarketplaceLabel, updateMarketplaceCodePlaceholder, updateOrderFormStatusColor,
+  copyMarketplaceCode, syncOrderFilterControls, getTagClass, getOrderCode, deriveOrderCode,
+  nextOrderCode, appendHistory, showOrderHistory, customTagClass, deleteCustomTag,
 });
 
 document.addEventListener("DOMContentLoaded", async () => {
