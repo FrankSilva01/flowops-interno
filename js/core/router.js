@@ -33,6 +33,11 @@ import {
   renderNotifications, renderTrialBanner, clearVisibleNotifications, markAllNotificationsRead,
   clearReadNotifications, openNotification,
 } from "../features/notifications.js";
+import {
+  renderSubscriptionPortal, requestPlanChange, handlePaymentAction, submitScheduledDowngrade,
+  closePaymentMethodDialog,
+} from "../features/subscription.js";
+import { submitSupportTicket, renderSupportPortal, renderWhatsNew } from "../features/support.js";
 
 export function bindEvents() {
   byId("sidebarToggle")?.addEventListener("click", toggleSidebar);

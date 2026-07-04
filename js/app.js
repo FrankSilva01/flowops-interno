@@ -7,7 +7,7 @@ import {
 import {
   byId, filterRows, countBy, flashActionMessage, uniqueValues, today, safeUrl, formatDateTime,
   nextId, sum, number, formatDate, formatDateShort, html, sanitizeRichHtml, showAppMessage,
-  showAppConfirm, closeAppMessage,
+  showAppConfirm, closeAppMessage, renderOperationalSummary,
 } from "./core/dom.js";
 import { renderBarChart, renderLineChart } from "./core/charts.js";
 import { isAdminRole, isEditorRole, displayRole, ensureCanEdit, ensureCanAdmin, updateEditAccess } from "./core/permissions.js";
@@ -89,6 +89,17 @@ import {
   markNotificationRead, markAllNotificationsRead, clearReadNotifications, clearVisibleNotifications,
   openNotification, renderTrialBanner,
 } from "./features/notifications.js";
+import {
+  getSubscriptionAccessStatus, subscriptionFallbackFromOrganization, getSubscriptionAlert,
+  renderSubscriptionPortal, getSubscriptionPrice, addDays, subscriptionPaymentApproved,
+  subscriptionRenewalMissed, getSubscriptionGraceInfo, renderSubscriptionPlanOptions,
+  requestPlanChange, openDowngradeDialog, submitScheduledDowngrade, handlePaymentAction,
+  callSubscriptionApi, openPaymentMethodDialog, normalizeMercadoPagoCardFields, paymentErrorMessage,
+  refreshPaymentCardFormAfterError, showPaymentCheckoutFallback, closePaymentMethodDialog,
+  loadMercadoPagoSdk, normalizeApiError, subscriptionMetric, getCompanyHealth,
+  subscriptionStatusText, paymentStatusText,
+} from "./features/subscription.js";
+import { submitSupportTicket, renderSupportPortal, renderWhatsNew } from "./features/support.js";
 
 // Bridge: o restante do app (ainda não modularizado, carregado por app-direct-legacy.js
 // como script classico logo depois deste modulo) referencia estes nomes como globais.
@@ -100,7 +111,7 @@ Object.assign(window, {
   saveData, getInitialView, getHashRoute,
   byId, filterRows, countBy, flashActionMessage, uniqueValues, today, safeUrl, formatDateTime,
   nextId, sum, number, formatDate, formatDateShort, html, sanitizeRichHtml, showAppMessage,
-  showAppConfirm, closeAppMessage,
+  showAppConfirm, closeAppMessage, renderOperationalSummary,
   renderBarChart, renderLineChart,
   isAdminRole, isEditorRole, displayRole, ensureCanEdit, ensureCanAdmin, updateEditAccess,
   setupBackend, loadSupabase, resolveLoginBrand, showLoginOverlay, loginOnline, userAccessRequest,
@@ -157,6 +168,15 @@ Object.assign(window, {
   createNotification, ensureOperationalNotifications, renderNotifications, notificationAllowed,
   markNotificationRead, markAllNotificationsRead, clearReadNotifications, clearVisibleNotifications,
   openNotification, renderTrialBanner,
+  getSubscriptionAccessStatus, subscriptionFallbackFromOrganization, getSubscriptionAlert,
+  renderSubscriptionPortal, getSubscriptionPrice, addDays, subscriptionPaymentApproved,
+  subscriptionRenewalMissed, getSubscriptionGraceInfo, renderSubscriptionPlanOptions,
+  requestPlanChange, openDowngradeDialog, submitScheduledDowngrade, handlePaymentAction,
+  callSubscriptionApi, openPaymentMethodDialog, normalizeMercadoPagoCardFields, paymentErrorMessage,
+  refreshPaymentCardFormAfterError, showPaymentCheckoutFallback, closePaymentMethodDialog,
+  loadMercadoPagoSdk, normalizeApiError, subscriptionMetric, getCompanyHealth,
+  subscriptionStatusText, paymentStatusText,
+  submitSupportTicket, renderSupportPortal, renderWhatsNew,
 });
 
 document.addEventListener("DOMContentLoaded", async () => {

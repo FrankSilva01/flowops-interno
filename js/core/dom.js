@@ -191,3 +191,21 @@ export function closeAppMessage() {
   const dialog = byId("appMessageDialog");
   if (dialog?.open) dialog.close();
 }
+
+export function renderOperationalSummary(viewId, summaryId, metrics) {
+  const view = byId(viewId);
+  if (!view) return;
+  let target = byId(summaryId);
+  if (!target) {
+    target = document.createElement("section");
+    target.id = summaryId;
+    target.className = "operational-summary-grid";
+    view.prepend(target);
+  }
+  target.innerHTML = metrics.map(([label, value, note, tone]) => `
+    <article class="operational-summary-card ${html(tone || "teal")}">
+      <i aria-hidden="true"></i>
+      <div><span>${html(label)}</span><strong>${html(String(value))}</strong><small>${html(note || "")}</small></div>
+    </article>
+  `).join("");
+}

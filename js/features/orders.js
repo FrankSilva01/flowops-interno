@@ -2,7 +2,7 @@ import {
   state, money, PRODUCTION_STAGES, PRIORITY_OPTIONS, STATUS_OPTIONS,
   normalizeOrderStatus, normalizeStage, defaultChecklist, saveData,
 } from "../core/state.js";
-import { byId, html, safeUrl, formatDate, formatDateTime, flashActionMessage, nextId, number } from "../core/dom.js";
+import { byId, html, safeUrl, formatDate, formatDateTime, flashActionMessage, nextId, number, renderOperationalSummary } from "../core/dom.js";
 import { bindActions, render } from "../core/router.js";
 import { ensureCanEdit } from "../core/permissions.js";
 import { persist, removeRemote, loadRemoteData } from "../data/remote.js";

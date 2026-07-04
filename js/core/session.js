@@ -4,6 +4,7 @@ import { isAdminRole, isEditorRole, displayRole } from "./permissions.js";
 import { render } from "./router.js";
 import { loadResponsibles, loadAccessRequests, loadActiveUsers } from "../features/users.js";
 import { ensureOperationalNotifications } from "../features/notifications.js";
+import { getSubscriptionAccessStatus } from "../features/subscription.js";
 
 export async function setupBackend() {
   const config = window.SUPABASE_CONFIG || {};

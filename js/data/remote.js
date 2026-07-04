@@ -1,5 +1,6 @@
 import { state, saveData, normalizeOrderStatus } from "../core/state.js";
 import { render } from "../core/router.js";
+import { subscriptionFallbackFromOrganization } from "../features/subscription.js";
 
 export async function persist(kind, item) {
   if (!state.online || !state.supabase) return;

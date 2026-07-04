@@ -5,6 +5,7 @@ import { getLeadFollowUp, openLeadDialog } from "./customers.js";
 import { formatInventoryNumber, startInventoryEdit } from "./materials.js";
 import { getTokenAlert, getRecentIntegrationErrors } from "./dashboard.js";
 import { startOrderEdit } from "./orders.js";
+import { getSubscriptionAlert } from "./subscription.js";
 
 export async function createNotification(type, title, message, relatedEntity, relatedEntityId, priority = "normal", roleTarget = "all") {
   if (!state.supabase) return;

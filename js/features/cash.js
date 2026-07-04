@@ -1,5 +1,5 @@
 import { state, money, saveData } from "../core/state.js";
-import { byId, html, formatDate, nextId, number, filterRows } from "../core/dom.js";
+import { byId, html, formatDate, nextId, number, filterRows, renderOperationalSummary } from "../core/dom.js";
 import { bindActions, render } from "../core/router.js";
 import { ensureCanEdit } from "../core/permissions.js";
 import { persist } from "../data/remote.js";
