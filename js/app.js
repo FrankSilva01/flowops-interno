@@ -25,6 +25,14 @@ import {
   persist, removeRemote, loadRemoteData, subscribeRemote, refreshRemote, tableName, toRemote,
   fromRemoteOrder, fromRemoteCash, fromRemoteMaterial,
 } from "./data/remote.js";
+import {
+  initDashboardDrag, applyDashboardOrder, saveDashboardOrder, DASHBOARD_CARD_LABELS,
+  renderDashboardCustomizer, applyDashboardVisibility, resetDashboardPreferences, openQuickAction,
+  renderDashboard, renderCompanySidebarStatus, getRecentIntegrationErrors, getTokenAlert,
+  renderIntegrationHealth, renderAlerts, renderWeeklyFocus, applyFocusFilter, renderTopOpenOrders,
+  cashByDate, getTopClient, openEmailDigest, renderCommercialDashboard, renderTopProducts,
+  renderFollowUps, getFinancialMetrics,
+} from "./features/dashboard.js";
 
 // Bridge: o restante do app (ainda não modularizado, carregado por app-direct-legacy.js
 // como script classico logo depois deste modulo) referencia estes nomes como globais.
@@ -47,6 +55,12 @@ Object.assign(window, {
   updateSidebarToggle, setTheme, cycleTheme, applyTheme,
   persist, removeRemote, loadRemoteData, subscribeRemote, refreshRemote, tableName, toRemote,
   fromRemoteOrder, fromRemoteCash, fromRemoteMaterial,
+  initDashboardDrag, applyDashboardOrder, saveDashboardOrder, DASHBOARD_CARD_LABELS,
+  renderDashboardCustomizer, applyDashboardVisibility, resetDashboardPreferences, openQuickAction,
+  renderDashboard, renderCompanySidebarStatus, getRecentIntegrationErrors, getTokenAlert,
+  renderIntegrationHealth, renderAlerts, renderWeeklyFocus, applyFocusFilter, renderTopOpenOrders,
+  cashByDate, getTopClient, openEmailDigest, renderCommercialDashboard, renderTopProducts,
+  renderFollowUps, getFinancialMetrics,
 });
 
 document.addEventListener("DOMContentLoaded", async () => {

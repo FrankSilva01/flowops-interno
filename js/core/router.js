@@ -3,6 +3,10 @@ import { byId, flashActionMessage, showAppMessage, closeAppMessage } from "./dom
 import { ensureCanEdit, ensureCanAdmin, updateEditAccess } from "./permissions.js";
 import { logout, saveRecoveredPassword } from "./session.js";
 import { persist, removeRemote } from "../data/remote.js";
+import {
+  renderDashboard, renderCommercialDashboard, renderTopProducts, renderFollowUps,
+  renderCompanySidebarStatus, openQuickAction, resetDashboardPreferences, openEmailDigest,
+} from "../features/dashboard.js";
 
 export function bindEvents() {
   byId("sidebarToggle")?.addEventListener("click", toggleSidebar);
