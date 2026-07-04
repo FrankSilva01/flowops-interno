@@ -4,6 +4,7 @@ import { bindActions, setView, render } from "../core/router.js";
 import { ensureCanEdit } from "../core/permissions.js";
 import { loadRemoteData } from "../data/remote.js";
 import { getOrderCode, startOrderEdit } from "./orders.js";
+import { recordAudit } from "./logs.js";
 
 export function renderLeads() {
   const target = byId("leadsList");

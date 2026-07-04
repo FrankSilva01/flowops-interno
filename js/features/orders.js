@@ -6,6 +6,7 @@ import { byId, html, safeUrl, formatDate, formatDateTime, flashActionMessage, ne
 import { bindActions, render } from "../core/router.js";
 import { ensureCanEdit } from "../core/permissions.js";
 import { persist, removeRemote, loadRemoteData } from "../data/remote.js";
+import { recordAudit } from "./logs.js";
 
 export function renderOrders() {
   const rows = sortOrders(filterOrders(filterRows(state.data.orders, ["orderCode", "marketplaceOrderCode", "description", "client", "material", "status", "responsible", "productionStage", "stlLink", "referenceImageUrl", "internalNotes", "tags"])));

@@ -73,6 +73,10 @@ import {
   formatReportGroupLabel, parseReportDate, openReportPrintView, reportMarketplaceRows, reportKpi,
   renderDonutChart, renderReportInsight,
 } from "./features/reports.js";
+import {
+  renderLogs, applyHistoryRange, isWithinDateRange, auditActionLabel, auditDiffText,
+  formatAuditValue, recordAudit, auditSnapshot,
+} from "./features/logs.js";
 
 // Bridge: o restante do app (ainda não modularizado, carregado por app-direct-legacy.js
 // como script classico logo depois deste modulo) referencia estes nomes como globais.
@@ -131,6 +135,8 @@ Object.assign(window, {
   findOrderCashEntry, getReportFinancial, reportDailyRows, reportGroupKey, localReportDateKey,
   formatReportGroupLabel, parseReportDate, openReportPrintView, reportMarketplaceRows, reportKpi,
   renderDonutChart, renderReportInsight,
+  renderLogs, applyHistoryRange, isWithinDateRange, auditActionLabel, auditDiffText,
+  formatAuditValue, recordAudit, auditSnapshot,
 });
 
 document.addEventListener("DOMContentLoaded", async () => {

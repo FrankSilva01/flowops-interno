@@ -23,6 +23,7 @@ import {
 } from "../features/materials.js";
 import { renderLeads, openLeadDialog, saveLead, openOrderFromLead, openLeadFile, deleteLeadFile } from "../features/customers.js";
 import { renderReports } from "../features/reports.js";
+import { renderLogs, recordAudit } from "../features/logs.js";
 
 export function bindEvents() {
   byId("sidebarToggle")?.addEventListener("click", toggleSidebar);
