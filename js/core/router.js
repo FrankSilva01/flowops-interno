@@ -14,6 +14,7 @@ import {
   syncOrderFilterControls, updateQuoteStage, convertQuoteToProduction, applyDeliveredPaymentDefault,
   appendHistory, syncOrderPaymentCash,
 } from "../features/orders.js";
+import { renderProduction } from "../features/production.js";
 
 export function bindEvents() {
   byId("sidebarToggle")?.addEventListener("click", toggleSidebar);

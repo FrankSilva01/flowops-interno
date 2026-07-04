@@ -48,6 +48,10 @@ import {
   copyMarketplaceCode, syncOrderFilterControls, getTagClass, getOrderCode, deriveOrderCode,
   nextOrderCode, appendHistory, showOrderHistory, customTagClass, deleteCustomTag,
 } from "./features/orders.js";
+import {
+  renderProduction, filterProductionOrders, renderProductionSummary, isProductionEligible,
+  renderKanbanCard, renderKanbanFilters, bindKanban,
+} from "./features/production.js";
 
 // Bridge: o restante do app (ainda não modularizado, carregado por app-direct-legacy.js
 // como script classico logo depois deste modulo) referencia estes nomes como globais.
@@ -89,6 +93,8 @@ Object.assign(window, {
   getSelectedMarketplaceLabel, updateMarketplaceCodePlaceholder, updateOrderFormStatusColor,
   copyMarketplaceCode, syncOrderFilterControls, getTagClass, getOrderCode, deriveOrderCode,
   nextOrderCode, appendHistory, showOrderHistory, customTagClass, deleteCustomTag,
+  renderProduction, filterProductionOrders, renderProductionSummary, isProductionEligible,
+  renderKanbanCard, renderKanbanFilters, bindKanban,
 });
 
 document.addEventListener("DOMContentLoaded", async () => {
