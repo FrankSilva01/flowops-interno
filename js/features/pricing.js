@@ -2,6 +2,7 @@ import { state, money } from "../core/state.js";
 import { byId, html, flashActionMessage, number, showAppMessage } from "../core/dom.js";
 import { bindActions } from "../core/router.js";
 import { ensureCanEdit } from "../core/permissions.js";
+import { renderBarChart } from "../core/charts.js";
 import { recordAudit } from "./logs.js";
 import { getOrderMarketplaceChannel } from "./orders.js";
 import {
@@ -984,6 +985,8 @@ export function renderCommercialIntelligence() {
     return;
   }
   renderProfitabilitySummaryPanel();
+  renderProfitabilityDistributionChart();
+  renderTopProductsProfitChart();
   renderListingProfitabilityTable();
   renderSuggestions();
   renderProfitSimulator();
@@ -1005,6 +1008,41 @@ export function renderProfitabilitySummaryPanel() {
     <article><span>Margem média</span><strong>${totals.avgMarginPct.toFixed(1)}%</strong></article>
     <article><span>Lucro potencial estimado</span><strong style="color:var(--green)">${money.format(potentialGain)}</strong><small>Estimado, se reprecificado para margem saudável</small></article>
   `;
+}
+
+// --- Graficos (reaproveitam renderBarChart, ja existente em core/charts.js) ---
+
+const PROFITABILITY_CHART_COLORS = {
+  loss: "#dc2626",
+  critical: "#f97316",
+  attention: "#eab308",
+  healthy: "#22c55e",
+  excellent: "#15803c",
+};
+
+export function renderProfitabilityDistributionChart() {
+  const counts = getProfitabilitySummary();
+  renderBarChart("profitabilityDistributionChart", [
+    { label: "Prejuízo", value: counts.loss, color: PROFITABILITY_CHART_COLORS.loss },
+    { label: "Crítico", value: counts.critical, color: PROFITABILITY_CHART_COLORS.critical },
+    { label: "Atenção", value: counts.attention, color: PROFITABILITY_CHART_COLORS.attention },
+    { label: "Saudável", value: counts.healthy, color: PROFITABILITY_CHART_COLORS.healthy },
+    { label: "Excelente", value: counts.excellent, color: PROFITABILITY_CHART_COLORS.excellent },
+  ]);
+}
+
+export function renderTopProductsProfitChart() {
+  const top = state.marketplaceListings
+    .map((listing) => ({ listing, profitability: getListingProfitability(listing) }))
+    .filter((row) => row.profitability.hasCost)
+    .sort((a, b) => b.profitability.netProfit - a.profitability.netProfit)
+    .slice(0, 10);
+  renderBarChart("topProductsProfitChart", top.map(({ listing, profitability }) => ({
+    label: (listing.title || listing.external_id || "").length > 24 ? `${listing.title.slice(0, 24)}…` : (listing.title || listing.external_id),
+    value: profitability.netProfit,
+    color: PROFITABILITY_CHART_COLORS[profitability.level.key],
+    format: (value) => money.format(value),
+  })));
 }
 
 // --- Tabela de rentabilidade por anuncio (filtros + ordenacao) ---

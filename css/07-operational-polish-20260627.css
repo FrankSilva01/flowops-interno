@@ -1956,3 +1956,17 @@ html[data-theme="dark"] .materials-tabs button.active {
   border-top: 1px solid var(--border);
   font-weight: 500;
 }
+
+/* Inteligencia Comercial - graficos lado a lado */
+
+.intelligence-charts-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 900px) {
+  .intelligence-charts-row {
+    grid-template-columns: 1fr;
+  }
+}
