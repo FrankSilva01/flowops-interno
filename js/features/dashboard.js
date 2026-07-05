@@ -224,11 +224,13 @@ export function renderCompanySidebarStatus() {
   const lastBackup = state.backupRuns[0];
   const active = ["active", "trial", "free"].includes(state.subscription?.status);
   byId("sidebarPlan").textContent = `Plano ${String(plan?.name || state.subscription?.plan_code || "-").toUpperCase()}`;
-  byId("sidebarCompanyStatus").textContent = active ? "● Empresa ativa" : "● Empresa com atenção";
-  byId("sidebarCompanyStatus").className = active ? "status-ok" : "status-alert";
-  byId("sidebarPlanStatus").textContent = `★ Plano ${String(plan?.name || state.subscription?.plan_code || "-").toUpperCase()}`;
-  byId("sidebarMarketplaceStatus").textContent = mlConnected ? "● Mercado Livre conectado" : "○ Mercado Livre pendente";
-  byId("sidebarBackupStatus").textContent = lastBackup?.status === "success" ? "● Último backup OK" : "○ Backup pendente";
+  byId("sidebarCompanyStatus").textContent = active ? "Empresa ativa" : "Empresa com atenção";
+  byId("sidebarCompanyStatusDot").className = `status-dot ${active ? "ok" : "alert"}`;
+  byId("sidebarPlanStatus").textContent = `Plano ${String(plan?.name || state.subscription?.plan_code || "-").toUpperCase()}`;
+  byId("sidebarMarketplaceStatus").textContent = mlConnected ? "Mercado Livre conectado" : "Mercado Livre pendente";
+  byId("sidebarMarketplaceStatusDot").className = `status-dot ${mlConnected ? "ok" : "neutral"}`;
+  byId("sidebarBackupStatus").textContent = lastBackup?.status === "success" ? "Último backup OK" : "Backup pendente";
+  byId("sidebarBackupStatusDot").className = `status-dot ${lastBackup?.status === "success" ? "ok" : "neutral"}`;
 }
 
 export function getRecentIntegrationErrors() {

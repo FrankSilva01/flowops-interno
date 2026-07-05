@@ -843,10 +843,10 @@ export function applyTheme(theme) {
   const button = byId("themeToggle");
   const icon = byId("themeToggleIcon");
   const labels = { light: "claro", dark: "escuro" };
-  const icons = { light: "☀", dark: "☾" };
+  const icons = { light: "ti-sun", dark: "ti-moon" };
   if (button) {
     button.title = `Tema: ${labels[theme]}. Clique para alterar.`;
     button.setAttribute("aria-label", button.title);
   }
-  if (icon) icon.textContent = icons[theme];
+  if (icon) icon.className = `ti ${icons[theme]}`;
 }

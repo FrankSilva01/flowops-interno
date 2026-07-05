@@ -1259,3 +1259,166 @@ button.attention-item:hover {
   word-break: break-word;
 }
 
+/* Redesign visual - menu lateral e topbar (unifica as regras espalhadas
+   em 00/02/03/04/05 num unico visual limpo, sem gradiente/borda pesada) */
+
+.sidebar {
+  gap: 18px;
+  padding: 16px 12px;
+  background: #101a20;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: none;
+}
+
+.sidebar-head {
+  padding: 0 2px;
+}
+
+.brand-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--teal);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.brand strong {
+  display: block;
+  color: #f1f5f9;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.brand span {
+  color: #7f92a1;
+  font-size: 11px;
+}
+
+.tabs {
+  gap: 2px;
+}
+
+.sidebar-group-label {
+  margin: 16px 8px 6px;
+  color: #62747f;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.tabs .sidebar-group-label:first-child {
+  margin-top: 4px;
+}
+
+.tab {
+  min-height: 34px;
+  gap: 10px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 7px;
+  color: #a7b6c2;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.tab:hover {
+  transform: none;
+  background: rgba(255, 255, 255, 0.05);
+  border-color: transparent;
+  color: #e2e8f0;
+}
+
+.tab.active,
+.sidebar button.active {
+  background: rgba(20, 124, 114, 0.22);
+  border-color: transparent;
+  box-shadow: none;
+  color: #fff;
+}
+
+.tab .nav-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  flex: 0 0 18px;
+  color: #71879a;
+  font-size: 15px;
+}
+
+.tab.active .nav-icon {
+  color: #5eead4;
+}
+
+.sidebar-notifications-btn strong {
+  background: var(--red);
+}
+
+.company-status-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 10px 0;
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0;
+  background: none;
+}
+
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #93a3b0;
+  font-size: 11px;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: #5a6b78;
+}
+
+.status-dot.ok {
+  background: #34d399;
+}
+
+.status-dot.alert {
+  background: #f87171;
+}
+
+.status-row-icon {
+  width: 12px;
+  flex: 0 0 12px;
+  color: #eab308;
+  font-size: 11px;
+}
+
+.session-card {
+  border-color: rgba(255, 255, 255, 0.08);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.session-card span {
+  color: #e2e8f0;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.bell-glyph {
+  font-size: 17px;
+  filter: none;
+  color: inherit;
+}
+
+.topbar-icon-btn i {
+  font-size: 16px;
+}
+

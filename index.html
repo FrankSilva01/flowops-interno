@@ -43,32 +43,32 @@
 
         <nav class="tabs" aria-label="Seções">
           <span class="sidebar-group-label">Operação</span>
-          <button class="tab active" data-view="dashboard" title="Dashboard"><span class="nav-icon">▦</span><span class="nav-label">Dashboard</span></button>
-          <button class="tab" data-view="orders" title="Encomendas"><span class="nav-icon">□</span><span class="nav-label">Encomendas</span></button>
-          <button class="tab" data-view="production" title="Produção"><span class="nav-icon">⌂</span><span class="nav-label">Produção</span></button>
-          <button class="tab" data-view="logistics" title="Logística"><span class="nav-icon">➤</span><span class="nav-label">Logística</span></button>
-          <button class="tab" data-view="leads" title="Clientes e Leads"><span class="nav-icon">♙</span><span class="nav-label">Clientes e Leads</span></button>
-          <button class="tab" data-view="cash" title="Fluxo de caixa"><span class="nav-icon">$</span><span class="nav-label">Fluxo de caixa</span></button>
-          <button class="tab" data-view="materials" title="Materiais"><span class="nav-icon">◇</span><span class="nav-label">Materiais</span></button>
-          <button class="tab" data-view="reports" title="Relatórios"><span class="nav-icon">▧</span><span class="nav-label">Relatórios</span></button>
-          <button id="marketplaceTab" class="tab" data-view="marketplace" title="Marketplace" hidden><span class="nav-icon">⇄</span><span class="nav-label">Marketplace</span></button>
+          <button class="tab active" data-view="dashboard" title="Dashboard"><span class="nav-icon"><i class="ti ti-layout-dashboard" aria-hidden="true"></i></span><span class="nav-label">Dashboard</span></button>
+          <button class="tab" data-view="orders" title="Encomendas"><span class="nav-icon"><i class="ti ti-package" aria-hidden="true"></i></span><span class="nav-label">Encomendas</span></button>
+          <button class="tab" data-view="production" title="Produção"><span class="nav-icon"><i class="ti ti-tool" aria-hidden="true"></i></span><span class="nav-label">Produção</span></button>
+          <button class="tab" data-view="logistics" title="Logística"><span class="nav-icon"><i class="ti ti-truck-delivery" aria-hidden="true"></i></span><span class="nav-label">Logística</span></button>
+          <button class="tab" data-view="leads" title="Clientes e Leads"><span class="nav-icon"><i class="ti ti-users" aria-hidden="true"></i></span><span class="nav-label">Clientes e Leads</span></button>
+          <button class="tab" data-view="cash" title="Fluxo de caixa"><span class="nav-icon"><i class="ti ti-cash-banknote" aria-hidden="true"></i></span><span class="nav-label">Fluxo de caixa</span></button>
+          <button class="tab" data-view="materials" title="Materiais"><span class="nav-icon"><i class="ti ti-cube" aria-hidden="true"></i></span><span class="nav-label">Materiais</span></button>
+          <button class="tab" data-view="reports" title="Relatórios"><span class="nav-icon"><i class="ti ti-chart-bar" aria-hidden="true"></i></span><span class="nav-label">Relatórios</span></button>
+          <button id="marketplaceTab" class="tab" data-view="marketplace" title="Marketplace" hidden><span class="nav-icon"><i class="ti ti-building-store" aria-hidden="true"></i></span><span class="nav-label">Marketplace</span></button>
 
           <span class="sidebar-group-label">Conta</span>
-          <button class="tab" data-view="subscription" title="Minha Assinatura"><span class="nav-icon">▣</span><span class="nav-label">Minha Assinatura</span></button>
-          <button class="tab" data-view="logs" title="Histórico"><span class="nav-icon">☷</span><span class="nav-label">Histórico</span></button>
-          <button id="approvalsTab" class="tab" data-view="approvals" title="Gestão de usuários" hidden><span class="nav-icon">♚</span><span class="nav-label">Gestão de usuários</span></button>
+          <button class="tab" data-view="subscription" title="Minha Assinatura"><span class="nav-icon"><i class="ti ti-credit-card" aria-hidden="true"></i></span><span class="nav-label">Minha Assinatura</span></button>
+          <button class="tab" data-view="logs" title="Histórico"><span class="nav-icon"><i class="ti ti-history" aria-hidden="true"></i></span><span class="nav-label">Histórico</span></button>
+          <button id="approvalsTab" class="tab" data-view="approvals" title="Gestão de usuários" hidden><span class="nav-icon"><i class="ti ti-shield-check" aria-hidden="true"></i></span><span class="nav-label">Gestão de usuários</span></button>
 
           <span class="sidebar-group-label">Plataforma</span>
-          <button id="sidebarNotificationsBtn" class="tab sidebar-notifications-btn" type="button" title="Notificações"><span class="nav-icon">♢</span><span class="nav-label">Notificações</span><strong id="sidebarNotificationBadge" hidden>0</strong></button>
-          <button class="tab" data-view="support" title="Suporte"><span class="nav-icon">?</span><span class="nav-label">Suporte</span></button>
-          <button class="tab" data-view="whatsnew" title="Novidades"><span class="nav-icon">↑</span><span class="nav-label">Novidades</span></button>
+          <button id="sidebarNotificationsBtn" class="tab sidebar-notifications-btn" type="button" title="Notificações"><span class="nav-icon"><i class="ti ti-bell" aria-hidden="true"></i></span><span class="nav-label">Notificações</span><strong id="sidebarNotificationBadge" hidden>0</strong></button>
+          <button class="tab" data-view="support" title="Suporte"><span class="nav-icon"><i class="ti ti-lifebuoy" aria-hidden="true"></i></span><span class="nav-label">Suporte</span></button>
+          <button class="tab" data-view="whatsnew" title="Novidades"><span class="nav-icon"><i class="ti ti-sparkles" aria-hidden="true"></i></span><span class="nav-label">Novidades</span></button>
         </nav>
 
         <div class="company-status-card">
-          <span id="sidebarCompanyStatus">● Empresa ativa</span>
-          <span id="sidebarPlanStatus">★ Plano</span>
-          <span id="sidebarMarketplaceStatus">○ Marketplace</span>
-          <span id="sidebarBackupStatus">○ Backup pendente</span>
+          <div class="status-row"><i class="status-dot" id="sidebarCompanyStatusDot"></i><span id="sidebarCompanyStatus">Empresa ativa</span></div>
+          <div class="status-row"><i class="ti ti-star status-row-icon" aria-hidden="true"></i><span id="sidebarPlanStatus">Plano</span></div>
+          <div class="status-row"><i class="status-dot" id="sidebarMarketplaceStatusDot"></i><span id="sidebarMarketplaceStatus">Marketplace</span></div>
+          <div class="status-row"><i class="status-dot" id="sidebarBackupStatusDot"></i><span id="sidebarBackupStatus">Backup pendente</span></div>
         </div>
 
         <div class="session-card">
@@ -86,11 +86,11 @@
           </div>
           <div class="topbar-actions">
             <button id="themeToggle" class="topbar-icon-btn" type="button" aria-label="Alterar tema" title="Tema: escuro">
-              <span id="themeToggleIcon" aria-hidden="true">☾</span>
+              <i id="themeToggleIcon" class="ti ti-moon" aria-hidden="true"></i>
             </button>
             <div class="notification-center">
               <button id="notificationBell" class="notification-bell" type="button" aria-label="Notificações">
-                <span class="bell-glyph" aria-hidden="true">🔔</span>
+                <i class="ti ti-bell bell-glyph" aria-hidden="true"></i>
                 <strong id="notificationBadge" hidden>0</strong>
               </button>
               <div id="notificationDropdown" class="notification-dropdown" hidden>
