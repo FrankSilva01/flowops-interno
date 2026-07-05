@@ -552,7 +552,7 @@ export function renderProfitabilityBadge(listing) {
   if (!hasCommercialIntelligenceAccess()) return "";
   const profitability = getListingProfitability(listing);
   if (!profitability.hasCost) return `<span class="badge neutral" title="Cadastre o custo deste produto para ver a rentabilidade">Sem custo</span>`;
-  return `<span class="badge ${profitability.level.className}" title="Margem estimada: ${profitability.marginPct.toFixed(1)}%">${html(profitability.level.label)}</span>`;
+  return `<span class="badge ${profitability.level.className}" title="${html(profitability.level.label)} - margem estimada: ${profitability.marginPct.toFixed(1)}%">${Math.round(profitability.marginPct)}%</span>`;
 }
 
 export function getProfitabilitySummary() {

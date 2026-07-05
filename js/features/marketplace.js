@@ -166,9 +166,9 @@ export function renderMarketplaces() {
         <thead><tr><th>Produto</th><th>Marketplace</th><th>Preço</th><th>Estoque</th><th>Visualizações</th><th>Conversão</th><th>Status</th><th>Ações</th></tr></thead>
         <tbody>${listings.map((item) => `
           <tr>
-            <td><div class="listing-product-cell">${item.thumbnail_url ? `<img src="${html(item.thumbnail_url)}" alt="" loading="lazy" />` : `<span class="listing-placeholder"></span>`}<span><strong>${html(item.title)}</strong><small>${html(item.external_id)}</small>${renderProfitabilityBadge(item)}</span></div></td>
+            <td><div class="listing-product-cell">${item.thumbnail_url ? `<img src="${html(item.thumbnail_url)}" alt="" loading="lazy" />` : `<span class="listing-placeholder"></span>`}<span><strong>${html(item.title)}</strong><small>${html(item.external_id)}</small></span></div></td>
             <td>${html(marketplaceDisplayName(item.marketplace))}</td>
-            <td>${money.format(Number(item.price || 0))}</td>
+            <td>${money.format(Number(item.price || 0))} ${renderProfitabilityBadge(item)}</td>
             <td>${Number(item.stock || item.available_quantity || 0).toLocaleString("pt-BR")}</td>
             <td>${Number(item.views || item.views_today || 0).toLocaleString("pt-BR")}</td>
             <td>${Number(item.conversion || 0).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%</td>
