@@ -970,21 +970,43 @@ export function simulateSalesForGoal(event) {
 
 export function renderMarketplaceComparison() {
   const target = byId("marketplaceComparisonTable");
+  const insightTarget = byId("marketplaceComparisonInsight");
   if (!target) return;
   const rows = ["mercado-livre", "shopee", "amazon"].map((channel) => {
     const listings = state.marketplaceListings.filter((item) => normalizeMarketplaceChannel(item.marketplace) === channel);
     const withCost = listings.map(getListingProfitability).filter((item) => item.hasCost);
     const avgMargin = withCost.length ? withCost.reduce((sum, item) => sum + item.marginPct, 0) / withCost.length : null;
-    return { label: marketplaceDisplayName(channel), count: listings.length, withCost: withCost.length, avgMargin };
+    const avgProfit = withCost.length ? withCost.reduce((sum, item) => sum + item.netProfit, 0) / withCost.length : null;
+    return { channel, label: marketplaceDisplayName(channel), count: listings.length, avgMargin, avgProfit };
   }).filter((row) => row.count > 0);
-  target.innerHTML = rows.length ? rows.map((row) => `
-    <tr>
-      <td>${html(row.label)}</td>
-      <td>${row.count}</td>
-      <td>${row.withCost}</td>
-      <td>${row.avgMargin === null ? "-" : `${row.avgMargin.toFixed(1)}%`}</td>
-    </tr>
-  `).join("") : `<tr><td colspan="4">Nenhum anúncio sincronizado ainda.</td></tr>`;
+
+  const withMargin = rows.filter((row) => row.avgMargin !== null);
+  const best = withMargin.length ? withMargin.reduce((a, b) => (b.avgMargin > a.avgMargin ? b : a)) : null;
+  const worst = withMargin.length ? withMargin.reduce((a, b) => (b.avgMargin < a.avgMargin ? b : a)) : null;
+  const hasGap = Boolean(best && worst && best.channel !== worst.channel && best.avgMargin - worst.avgMargin >= 5);
+
+  target.innerHTML = rows.length ? rows.map((row) => {
+    let recommendation = "Estável";
+    if (row.avgMargin === null) recommendation = "-";
+    else if (hasGap && row.channel === best.channel) recommendation = "Priorizar este canal";
+    else if (hasGap && row.channel === worst.channel) recommendation = "Revisar preço ou taxas";
+    return `
+      <tr>
+        <td>${html(row.label)}</td>
+        <td>${row.count}</td>
+        <td>${row.avgMargin === null ? "-" : `${row.avgMargin.toFixed(1)}%`}</td>
+        <td>${row.avgProfit === null ? "-" : money.format(row.avgProfit)}</td>
+        <td>${html(recommendation)}</td>
+      </tr>
+    `;
+  }).join("") : `<tr><td colspan="5">Nenhum anúncio sincronizado ainda.</td></tr>`;
+
+  if (insightTarget) {
+    insightTarget.hidden = !hasGap;
+    if (hasGap) {
+      insightTarget.textContent = `Sua margem média no ${best.label} é ${best.avgMargin.toFixed(1)}%, no ${worst.label} é ${worst.avgMargin.toFixed(1)}%. Considere priorizar o canal com maior margem.`;
+    }
+  }
 }
 
 // --- Widget de dashboard ---
