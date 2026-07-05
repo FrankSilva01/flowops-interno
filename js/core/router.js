@@ -211,12 +211,29 @@ export function bindEvents() {
     if (!notificationCenter) byId("notificationDropdown").hidden = true;
     const dashboardToolbar = event.target.closest(".dashboard-toolbar");
     if (!dashboardToolbar) byId("dashboardCustomizePanel").hidden = true;
+    const topbarMenu = event.target.closest(".topbar-menu");
+    if (!topbarMenu) {
+      byId("topbarMoreMenu").hidden = true;
+      byId("topbarMoreBtn")?.setAttribute("aria-expanded", "false");
+    }
   });
   document.addEventListener("keydown", (event) => {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+      event.preventDefault();
+      byId("globalSearch")?.focus();
+      return;
+    }
     if (event.key !== "Escape") return;
     byId("notificationDropdown").hidden = true;
     byId("dashboardCustomizePanel").hidden = true;
+    byId("topbarMoreMenu").hidden = true;
     closeOrderDrawer();
+  });
+  byId("topbarMoreBtn")?.addEventListener("click", () => {
+    const menu = byId("topbarMoreMenu");
+    const willOpen = menu.hidden;
+    menu.hidden = !willOpen;
+    byId("topbarMoreBtn").setAttribute("aria-expanded", String(willOpen));
   });
   document.addEventListener("click", async (event) => {
     const planButton = event.target.closest("[data-request-plan]");

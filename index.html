@@ -80,9 +80,14 @@
 
       <section class="workspace">
         <header class="topbar">
-          <div>
+          <div class="topbar-title">
             <p class="eyebrow">Operação</p>
             <h2 id="viewTitle">Dashboard</h2>
+          </div>
+          <div class="topbar-search">
+            <i class="ti ti-search" aria-hidden="true"></i>
+            <input id="globalSearch" class="search-input" placeholder="Buscar pedido, material ou lançamento" />
+            <kbd class="search-kbd">Ctrl K</kbd>
           </div>
           <div class="topbar-actions">
             <button id="themeToggle" class="topbar-icon-btn" type="button" aria-label="Alterar tema" title="Tema: escuro">
@@ -112,11 +117,17 @@
                 <div id="notificationList" class="notification-list"></div>
               </div>
             </div>
-            <input id="globalSearch" class="search-input" placeholder="Buscar pedido, material ou lançamento" />
             <input id="importFileInput" type="file" accept=".json,.csv,.xlsx,.xls" hidden />
-            <button id="importBtn" class="secondary-btn" type="button">Importar</button>
-            <button id="emailDigestBtn" class="secondary-btn" type="button">Resumo e-mail</button>
-            <button id="exportBtn" class="secondary-btn" type="button">Exportar JSON</button>
+            <button id="importBtn" class="topbar-btn" type="button">Importar</button>
+            <div class="topbar-menu">
+              <button id="topbarMoreBtn" class="topbar-icon-btn" type="button" aria-label="Mais opções" aria-haspopup="true" aria-expanded="false">
+                <i class="ti ti-dots-vertical" aria-hidden="true"></i>
+              </button>
+              <div id="topbarMoreMenu" class="topbar-more-menu" hidden>
+                <button id="emailDigestBtn" type="button"><i class="ti ti-mail" aria-hidden="true"></i> Resumo e-mail</button>
+                <button id="exportBtn" type="button"><i class="ti ti-download" aria-hidden="true"></i> Exportar JSON</button>
+              </div>
+            </div>
           </div>
         </header>
 
