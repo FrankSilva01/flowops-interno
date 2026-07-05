@@ -196,6 +196,7 @@ export const state = {
   productListings: [],
   financialSettings: null,
   commercialSuggestions: [],
+  dismissedInsightKeys: [],
   productSearch: "",
   intelligenceTableLevelFilter: "all",
   intelligenceTableMarketplaceFilter: "all",

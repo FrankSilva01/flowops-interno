@@ -703,16 +703,10 @@ export async function generateSuggestions() {
   const queue = [];
   state.marketplaceListings.forEach((listing) => {
     const profitability = getListingProfitability(listing);
-    if (!profitability.hasCost) {
-      if (!openKeys.has(`no_cost:${listing.external_id}`)) {
-        queue.push({
-          kind: "no_cost", target_type: "listing", target_id: listing.external_id, marketplace: listing.marketplace,
-          title: "Custo não cadastrado",
-          message: `Cadastre o custo do produto "${listing.title}" para calcularmos a rentabilidade deste anúncio.`,
-        });
-      }
-      return;
-    }
+    // Anuncios sem custo nao viram mais uma sugestao por item (era a origem do
+    // spam de "cadastre o custo" repetido) - agora aparecem agregados no card
+    // "Acao necessaria" de renderSuggestions, calculado a partir de getCostCoverage.
+    if (!profitability.hasCost) return;
     if (["loss", "critical"].includes(profitability.level.key) && !openKeys.has(`reprice:${listing.external_id}`)) {
       const suggestedPrice = calculatePriceSuggestion({
         cost: profitability.cost, feePct: profitability.feePct, taxPct: settings.default_tax_pct,
@@ -739,24 +733,177 @@ export async function generateSuggestions() {
   }
 }
 
+function countRecentSalesForListing(listing) {
+  const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  return state.marketplaceSales.filter((sale) => {
+    if (sale.marketplace !== listing.marketplace) return false;
+    const itemId = sale.raw_payload?.order_items?.[0]?.item?.id;
+    if (itemId !== listing.external_id) return false;
+    const when = new Date(sale.raw_payload?.date_created || sale.created_at || 0).getTime();
+    return when >= cutoff;
+  }).length;
+}
+
+// Produtos que vendem bem mas com margem baixa - so entra se tiver pelo menos
+// 5 vendas nos ultimos 30 dias (state.marketplaceSales), pra nao sugerir
+// aumento de preco em anuncios sem volume relevante.
+function getHighVolumeLowMarginInsights() {
+  const settings = getFinancialSettings();
+  const results = [];
+  state.marketplaceListings.forEach((listing) => {
+    const profitability = getListingProfitability(listing);
+    if (!profitability.hasCost || profitability.marginPct >= settings.profitability_thresholds.healthy) return;
+    const salesCount = countRecentSalesForListing(listing);
+    if (salesCount < 5) return;
+    const suggestedPrice = calculatePriceSuggestion({
+      cost: profitability.cost, feePct: profitability.feePct, taxPct: profitability.taxPct,
+      shipping: profitability.shipping, packaging: profitability.packaging,
+      targetMarginPct: settings.profitability_thresholds.healthy,
+    });
+    const priceIncrease = suggestedPrice ? suggestedPrice - profitability.revenue : 0;
+    if (priceIncrease <= 0) return;
+    results.push({
+      key: `high-volume-low-margin:${listing.marketplace}:${listing.external_id}`,
+      title: listing.title,
+      message: `Vende bem (${salesCount} venda${salesCount === 1 ? "" : "s"}/mês) mas tem margem de apenas ${profitability.marginPct.toFixed(1)}%. Aumente ${money.format(priceIncrease)} no preço para atingir ${settings.profitability_thresholds.healthy}% de margem.`,
+      impact: priceIncrease * salesCount,
+      action: { action: "simulate-listing", label: "Simular novo preço", marketplace: listing.marketplace, externalId: listing.external_id },
+    });
+  });
+  return results.sort((a, b) => b.impact - a.impact).slice(0, 3);
+}
+
+// Mesmo produto vinculado a mais de um marketplace com margem bem diferente
+// entre os canais (>=15 pontos percentuais de diferenca).
+function getChannelGapInsights() {
+  const byProduct = new Map();
+  state.marketplaceListings.forEach((listing) => {
+    const product = getProductForListing(listing.marketplace, listing.external_id);
+    if (!product) return;
+    const profitability = getListingProfitability(listing);
+    if (!profitability.hasCost) return;
+    const entry = byProduct.get(product.id) || { product, channels: [] };
+    entry.channels.push({ listing, profitability });
+    byProduct.set(product.id, entry);
+  });
+  const results = [];
+  byProduct.forEach(({ product, channels }) => {
+    if (channels.length < 2) return;
+    const sorted = channels.slice().sort((a, b) => b.profitability.marginPct - a.profitability.marginPct);
+    const best = sorted[0];
+    const worst = sorted[sorted.length - 1];
+    const gap = best.profitability.marginPct - worst.profitability.marginPct;
+    if (gap < 15) return;
+    results.push({
+      key: `channel-gap:${product.id}`,
+      title: product.name,
+      message: `Tem ${best.profitability.marginPct.toFixed(1)}% de margem em ${html(marketplaceDisplayName(best.listing.marketplace))} mas só ${worst.profitability.marginPct.toFixed(1)}% em ${html(marketplaceDisplayName(worst.listing.marketplace))}. Priorize vendas pelo canal com maior margem.`,
+    });
+  });
+  return results.slice(0, 3);
+}
+
+// Frete como % media do preco no portfolio com custo cadastrado.
+function getShippingShareInsight() {
+  const withCost = state.marketplaceListings.map(getListingProfitability).filter((item) => item.hasCost && item.revenue > 0);
+  if (!withCost.length) return null;
+  const avgPct = withCost.reduce((sum, item) => sum + (item.shipping / item.revenue) * 100, 0) / withCost.length;
+  if (avgPct < 15) return null;
+  return {
+    key: "shipping-share",
+    title: "Frete representa uma fatia grande do preço",
+    message: `Frete representa em média ${avgPct.toFixed(1)}% do preço dos seus anúncios com custo cadastrado. Avalie embutir o frete no preço ou revisar a estratégia de envio.`,
+  };
+}
+
+function estimateRepriceImpact(suggestion) {
+  const listing = state.marketplaceListings.find((item) => item.marketplace === suggestion.marketplace && item.external_id === suggestion.target_id);
+  if (!listing || !suggestion.suggested_price) return 0;
+  const profitability = getListingProfitability(listing);
+  if (!profitability.hasCost) return 0;
+  const projected = computeMarginBreakdown({
+    cost: profitability.cost, revenue: suggestion.suggested_price, feePct: profitability.feePct,
+    taxPct: profitability.taxPct, shipping: profitability.shipping, packaging: profitability.packaging,
+  });
+  return Math.max(projected.netProfit - profitability.netProfit, 0);
+}
+
+function renderInsightCard(insight) {
+  return `
+    <div class="suggestion-insight-card">
+      <div>
+        <strong>${html(insight.title)}</strong>
+        <span>${html(insight.message)}</span>
+      </div>
+      <div class="inline-actions">
+        ${insight.action ? `<button class="secondary-btn" type="button" data-action="${html(insight.action.action)}" data-marketplace="${html(insight.action.marketplace || "")}" data-external-id="${html(insight.action.externalId || "")}">${html(insight.action.label)}</button>` : ""}
+        <button class="icon-btn" type="button" data-action="dismiss-insight" data-insight-key="${html(insight.key)}">Dispensar</button>
+      </div>
+    </div>
+  `;
+}
+
+export function dismissInsight(key) {
+  if (!state.dismissedInsightKeys.includes(key)) state.dismissedInsightKeys.push(key);
+  renderSuggestions();
+}
+
 export function renderSuggestions() {
   const target = byId("suggestionsList");
   if (!target) return;
-  const open = state.commercialSuggestions
-    .filter((item) => item.status === "open")
-    .sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")));
-  target.innerHTML = open.length ? open.map((item) => `
-    <div class="list-row suggestion-row">
-      <div>
-        <strong>${html(item.title)}</strong>
-        <span>${html(item.message)}</span>
+  const sections = [];
+  const dismissed = state.dismissedInsightKeys;
+
+  const coverage = getCostCoverage();
+  const missing = coverage.total - coverage.withCost;
+  if (missing > 0) {
+    sections.push(`
+      <div class="suggestion-action-card">
+        <div>
+          <strong>${missing} anúncio${missing === 1 ? "" : "s"} sem custo cadastrado</strong>
+          <span>Sem o custo, não é possível calcular margem ou lucro desses anúncios.</span>
+        </div>
+        <button class="primary-btn" type="button" data-action="open-bulk-cost-dialog">Cadastrar em lote</button>
       </div>
-      <div class="inline-actions">
-        <button class="secondary-btn" type="button" data-action="resolve-suggestion" data-id="${html(item.id)}">Resolvido</button>
-        <button class="icon-btn" type="button" data-action="dismiss-suggestion" data-id="${html(item.id)}">Dispensar</button>
-      </div>
-    </div>
-  `).join("") : `<div class="empty-chart">Nenhuma sugestão no momento.</div>`;
+    `);
+  }
+
+  const openReprice = state.commercialSuggestions
+    .filter((item) => item.status === "open" && item.kind === "reprice")
+    .sort((a, b) => (a.current_margin ?? 0) - (b.current_margin ?? 0));
+  if (openReprice.length) {
+    const totalImpact = openReprice.reduce((sum, item) => sum + estimateRepriceImpact(item), 0);
+    sections.push(`
+      <details class="suggestion-group" open>
+        <summary>
+          <span>${openReprice.length} anúncio${openReprice.length === 1 ? "" : "s"} com margem abaixo do saudável — ajuste o preço ou revise o custo</span>
+          ${totalImpact > 0 ? `<span class="suggestion-group-impact">+${money.format(totalImpact)}/mês estimado</span>` : ""}
+        </summary>
+        <div class="suggestion-group-list">
+          ${openReprice.map((item) => `
+            <div class="list-row suggestion-row">
+              <div>
+                <strong>${html(item.title)}</strong>
+                <span>${html(item.message)}</span>
+              </div>
+              <div class="inline-actions">
+                ${item.suggested_price ? `<button class="secondary-btn" type="button" data-action="simulate-listing" data-marketplace="${html(item.marketplace)}" data-external-id="${html(item.target_id)}">Simular novo preço</button>` : ""}
+                <button class="secondary-btn" type="button" data-action="resolve-suggestion" data-id="${html(item.id)}">Resolvido</button>
+                <button class="icon-btn" type="button" data-action="dismiss-suggestion" data-id="${html(item.id)}">Dispensar</button>
+              </div>
+            </div>
+          `).join("")}
+        </div>
+      </details>
+    `);
+  }
+
+  getHighVolumeLowMarginInsights().filter((insight) => !dismissed.includes(insight.key)).forEach((insight) => sections.push(renderInsightCard(insight)));
+  getChannelGapInsights().filter((insight) => !dismissed.includes(insight.key)).forEach((insight) => sections.push(renderInsightCard(insight)));
+  const shippingInsight = getShippingShareInsight();
+  if (shippingInsight && !dismissed.includes(shippingInsight.key)) sections.push(renderInsightCard(shippingInsight));
+
+  target.innerHTML = sections.length ? sections.join("") : `<div class="empty-chart">Nenhuma sugestão no momento.</div>`;
   bindActions();
 }
 

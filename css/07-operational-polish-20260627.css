@@ -1970,3 +1970,87 @@ html[data-theme="dark"] .materials-tabs button.active {
     grid-template-columns: 1fr;
   }
 }
+
+/* Inteligencia Comercial - sugestoes agrupadas com impacto estimado */
+
+.suggestion-action-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  background: var(--canvas);
+}
+
+.suggestion-action-card strong {
+  font-size: 14px;
+}
+
+.suggestion-action-card span {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.suggestion-group {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.suggestion-group summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  background: var(--canvas);
+  list-style: none;
+}
+
+.suggestion-group summary::-webkit-details-marker {
+  display: none;
+}
+
+.suggestion-group-impact {
+  flex: 0 0 auto;
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.suggestion-group-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+}
+
+.suggestion-insight-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-1);
+}
+
+.suggestion-insight-card strong {
+  font-size: 13px;
+}
+
+.suggestion-insight-card span {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+}

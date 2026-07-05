@@ -63,7 +63,7 @@ import {
   renderCommercialIntelligence, dismissSuggestion, resolveSuggestion, simulateSalesForGoal,
   renderOrderProductOptions, bindProductMarketplaceCheckboxes, bindProductImageInputs,
   bindProductProfitPreview, openBulkCostDialog, saveBulkCosts, renderListingProfitabilityTable,
-  openPriceCalculatorForListing,
+  openPriceCalculatorForListing, dismissInsight,
 } from "../features/pricing.js";
 
 function bindFilter(elementId, filterKey) {
@@ -607,6 +607,10 @@ export function bindActions() {
       }
       if (action === "simulate-listing") {
         openPriceCalculatorForListing(button.dataset.marketplace, button.dataset.externalId);
+        return;
+      }
+      if (action === "dismiss-insight") {
+        dismissInsight(button.dataset.insightKey);
         return;
       }
       if (action === "resolve-suggestion") {
