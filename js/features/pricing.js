@@ -593,6 +593,30 @@ export function getProfitPotential() {
   return { currentProfit, potentialProfit, itemsBelowHealthy };
 }
 
+// Totais do portfolio (todos os anuncios com custo cadastrado) - usados nos
+// KPIs do painel de rentabilidade e no relatorio de Inteligencia Comercial.
+// Receita e estimada com base no preco de listagem (mesma convencao usada em
+// getListingProfitability), nao no volume real de vendas.
+export function getPortfolioTotals() {
+  let revenueTotal = 0;
+  let costTotal = 0;
+  let feeTotal = 0;
+  let netProfitTotal = 0;
+  let marginSum = 0;
+  let count = 0;
+  state.marketplaceListings.forEach((listing) => {
+    const profitability = getListingProfitability(listing);
+    if (!profitability.hasCost) return;
+    revenueTotal += profitability.revenue;
+    costTotal += profitability.cost;
+    feeTotal += profitability.feeAmount + profitability.taxAmount + profitability.shipping + profitability.packaging;
+    netProfitTotal += profitability.netProfit;
+    marginSum += profitability.marginPct;
+    count++;
+  });
+  return { revenueTotal, costTotal, feeTotal, netProfitTotal, avgMarginPct: count ? marginSum / count : 0, count };
+}
+
 // --- Calculadora de preco/lucro (disponivel para todos os planos) ---
 
 export function calculatePriceSuggestion({ cost, feePct = 0, taxPct = 0, shipping = 0, packaging = 0, targetMarginPct }) {
@@ -968,17 +992,17 @@ export function renderCommercialIntelligence() {
 export function renderProfitabilitySummaryPanel() {
   const target = byId("intelligenceSummaryGrid");
   if (!target) return;
-  const counts = getProfitabilitySummary();
+  const totals = getPortfolioTotals();
   const potential = getProfitPotential();
+  const profitColor = totals.netProfitTotal >= 0 ? "var(--green)" : "var(--red)";
+  const potentialGain = Math.max(potential.potentialProfit - potential.currentProfit, 0);
   target.innerHTML = `
-    <article><span>Prejuízo</span><strong>${counts.loss}</strong></article>
-    <article><span>Crítico</span><strong>${counts.critical}</strong></article>
-    <article><span>Atenção</span><strong>${counts.attention}</strong></article>
-    <article><span>Saudável</span><strong>${counts.healthy}</strong></article>
-    <article><span>Excelente</span><strong>${counts.excellent}</strong></article>
-    <article><span>Sem custo cadastrado</span><strong>${counts.noCost}</strong></article>
-    <article><span>Lucro atual (anúncios)</span><strong>${money.format(potential.currentProfit)}</strong></article>
-    <article><span>Lucro potencial estimado</span><strong>${money.format(potential.potentialProfit)}</strong></article>
+    <article><span>Receita bruta total</span><strong>${money.format(totals.revenueTotal)}</strong><small>Estimado, ${totals.count} anúncio${totals.count === 1 ? "" : "s"} com custo</small></article>
+    <article><span>Custo total</span><strong>${money.format(totals.costTotal)}</strong></article>
+    <article><span>Taxas estimadas totais</span><strong>${money.format(totals.feeTotal)}</strong><small>Comissão + imposto + frete + embalagem</small></article>
+    <article><span>Lucro líquido total</span><strong style="color:${profitColor}">${money.format(totals.netProfitTotal)}</strong></article>
+    <article><span>Margem média</span><strong>${totals.avgMarginPct.toFixed(1)}%</strong></article>
+    <article><span>Lucro potencial estimado</span><strong style="color:var(--green)">${money.format(potentialGain)}</strong><small>Estimado, se reprecificado para margem saudável</small></article>
   `;
 }
 
