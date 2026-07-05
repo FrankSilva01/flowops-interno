@@ -5,13 +5,14 @@
 // anuncio, frete e reputacao do vendedor. Modulo separado pra nao inflar
 // pricing.js, que ja cobre custo/margem/sugestoes de cadastro em lote.
 import { state, money } from "../core/state.js";
-import { byId, html, formatDateTime, flashActionMessage } from "../core/dom.js";
+import { byId, html, safeUrl, formatDateTime, flashActionMessage } from "../core/dom.js";
 import { bindActions } from "../core/router.js";
 import { ensureCanEdit } from "../core/permissions.js";
+import { renderLineChart } from "../core/charts.js";
 import { marketplaceRequest } from "./marketplace.js";
 import {
   hasCommercialIntelligenceAccess, getListingProfitability, getFinancialSettings,
-  computeMarginBreakdown,
+  computeMarginBreakdown, openPriceCalculatorForListing,
 } from "./pricing.js";
 
 const ANALYTICS_URL = "https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-sync?marketplace=ml&action=analytics-full";
@@ -204,9 +205,9 @@ function healthTone(score) {
 }
 
 function vsAverageBadge(competitiveness) {
-  if (competitiveness === "below") return `<span class="badge done">↓ abaixo</span>`;
-  if (competitiveness === "above") return `<span class="badge danger-badge">↑ acima</span>`;
-  if (competitiveness === "average") return `<span class="badge neutral">≈ na média</span>`;
+  if (competitiveness === "below") return `<span class="badge done"><i class="ti ti-arrow-narrow-down" aria-hidden="true"></i> abaixo</span>`;
+  if (competitiveness === "above") return `<span class="badge danger-badge"><i class="ti ti-arrow-narrow-up" aria-hidden="true"></i> acima</span>`;
+  if (competitiveness === "average") return `<span class="badge neutral">na média</span>`;
   return `<span class="badge neutral">N/D</span>`;
 }
 
@@ -246,7 +247,7 @@ export function renderPerformanceTable() {
     const factorsTooltip = composite ? composite.factors.map(([label, value, weight]) => `${label}: ${value.toFixed(0)} × ${(weight * 100).toFixed(0)}%`).join(" | ") : "";
     return `
       <tr>
-        <td class="listing-profitability-name" title="${html(listing.title)}">${html(listing.title)}</td>
+        <td><button class="link-cell" type="button" data-action="open-listing-drawer" data-marketplace="${html(listing.marketplace)}" data-external-id="${html(listing.external_id)}" title="${html(listing.title)}">${html(listing.title)}</button></td>
         <td>${money.format(Number(listing.price || 0))}</td>
         <td>${analytics ? vsAverageBadge(analytics.price_competitiveness) : `<span class="badge neutral">N/D</span>`}</td>
         <td>${analytics && analytics.visits != null ? Number(analytics.visits).toLocaleString("pt-BR") : "-"}</td>
@@ -319,4 +320,172 @@ export function renderMarketplaceAnalyticsPanel() {
       : "Ainda não sincronizado";
   }
   renderPerformanceTable();
+}
+
+// --- Raio-X: diagnostico completo por anuncio (drawer com 6 blocos) ---
+
+export function closeListingDrawer() {
+  byId("listingDrawer").classList.remove("open");
+  byId("listingDrawer").setAttribute("aria-hidden", "true");
+  byId("listingDrawerOverlay").hidden = true;
+}
+
+export function openListingDrawer(marketplace, externalId) {
+  const listing = state.marketplaceListings.find((item) => item.marketplace === marketplace && item.external_id === externalId);
+  if (!listing) return;
+  const analytics = getListingAnalytics(marketplace, externalId);
+  const profitability = getListingProfitability(listing);
+  const portfolioAvgConversion = computePortfolioAvgConversion();
+  const suggestion = getPriceSuggestionScenario(listing, analytics, profitability, portfolioAvgConversion);
+
+  byId("listingDrawerCode").textContent = listing.sku || externalId;
+  byId("listingDrawerTitle").textContent = listing.title;
+  byId("listingDrawerMarketplace").textContent = marketplace;
+
+  renderListingDrawerFinancial(profitability, suggestion);
+  renderListingDrawerPerformance(analytics, portfolioAvgConversion);
+  renderListingDrawerCompetitiveness(listing, analytics);
+  renderListingDrawerHealth(analytics);
+  renderListingDrawerShipping(analytics);
+
+  const simulateBtn = byId("listingDrawerSimulateBtn");
+  simulateBtn.hidden = !profitability.hasCost;
+  simulateBtn.onclick = () => {
+    closeListingDrawer();
+    openPriceCalculatorForListing(marketplace, externalId);
+  };
+
+  const openMlBtn = byId("listingDrawerOpenMlBtn");
+  const permalink = safeUrl(listing.permalink);
+  openMlBtn.hidden = !permalink;
+  if (permalink) openMlBtn.href = permalink;
+
+  const editBtn = byId("listingDrawerEditBtn");
+  editBtn.onclick = () => {
+    closeListingDrawer();
+    document.querySelector(`[data-action="marketplace-edit"][data-id="${CSS.escape(externalId)}"]`)?.click();
+  };
+
+  byId("listingDrawer").classList.add("open");
+  byId("listingDrawer").setAttribute("aria-hidden", "false");
+  byId("listingDrawerOverlay").hidden = false;
+}
+
+function renderListingDrawerFinancial(profitability, suggestion) {
+  const target = byId("listingDrawerFinancial");
+  if (!profitability.hasCost) {
+    target.innerHTML = `<div class="empty-chart">Cadastre o custo deste produto para ver o resumo financeiro.</div>`;
+    return;
+  }
+  const feesTotal = profitability.feeAmount + profitability.taxAmount + profitability.shipping + profitability.packaging;
+  const profitColor = profitability.netProfit >= 0 ? "var(--green)" : "var(--red)";
+  target.innerHTML = `
+    <div class="drawer-field-row"><span>Preço</span><strong>${money.format(profitability.revenue)}</strong></div>
+    <div class="drawer-field-row"><span>Custo</span><strong>${money.format(profitability.cost)}</strong></div>
+    <div class="drawer-field-row"><span>Taxas</span><strong>${money.format(feesTotal)}</strong></div>
+    <div class="drawer-field-row"><span>Lucro</span><strong style="color:${profitColor}">${money.format(profitability.netProfit)}</strong></div>
+    <div class="drawer-field-row"><span>Margem</span><strong><span class="badge ${profitability.level.className}">${profitability.marginPct.toFixed(1)}% - ${html(profitability.level.label)}</span></strong></div>
+    ${suggestion ? `<div class="listing-drawer-suggestion">${html(suggestion.text)}${suggestion.impact ? ` <strong>(+${money.format(suggestion.impact)}/venda estimado)</strong>` : ""}</div>` : ""}
+  `;
+}
+
+function renderListingDrawerPerformance(analytics, portfolioAvgConversion) {
+  const target = byId("listingDrawerPerformance");
+  if (!analytics) {
+    target.innerHTML = `<div class="empty-chart">Clique em "Atualizar métricas" para sincronizar dados de performance.</div>`;
+    byId("listingDrawerVisitsChart").innerHTML = "";
+    return;
+  }
+  const avgTicket = analytics.avg_ticket != null ? money.format(analytics.avg_ticket) : "-";
+  target.innerHTML = `
+    <div class="drawer-field-row"><span>Visitas (30d)</span><strong>${Number(analytics.visits || 0).toLocaleString("pt-BR")}</strong></div>
+    <div class="drawer-field-row"><span>Vendas no período</span><strong>${Number(analytics.sold_quantity || 0).toLocaleString("pt-BR")}</strong></div>
+    <div class="drawer-field-row"><span>Conversão</span><strong>${analytics.conversion_rate != null ? `${analytics.conversion_rate.toFixed(1)}%` : "-"}${portfolioAvgConversion ? ` <small>(sua média no portfólio: ${portfolioAvgConversion.toFixed(1)}%)</small>` : ""}</strong></div>
+    <div class="drawer-field-row"><span>Ticket médio</span><strong>${avgTicket}</strong></div>
+  `;
+  const series = analytics.raw_summary?.visits_series || [];
+  if (series.length) {
+    renderLineChart("listingDrawerVisitsChart", series.map((point) => ({
+      label: point.date ? String(point.date).slice(5) : "",
+      value: Number(point.total || 0),
+    })), { format: (value) => `${value} visita${value === 1 ? "" : "s"}`, valueLabel: "Visitas por dia" });
+  } else {
+    byId("listingDrawerVisitsChart").innerHTML = `<div class="empty-chart">Sem série de visitas disponível.</div>`;
+  }
+}
+
+function renderListingDrawerCompetitiveness(listing, analytics) {
+  const target = byId("listingDrawerCompetitiveness");
+  if (!analytics || analytics.price_position_min == null) {
+    target.innerHTML = `<div class="empty-chart">Dados de concorrência não disponíveis ainda.</div>`;
+    return;
+  }
+  const price = Number(listing.price || 0);
+  const min = analytics.price_position_min;
+  const max = analytics.price_position_max;
+  const avg = analytics.price_position_avg;
+  const range = Math.max(max - min, 1);
+  const userPct = Math.min(Math.max(((price - min) / range) * 100, 0), 100);
+  const avgPct = Math.min(Math.max(((avg - min) / range) * 100, 0), 100);
+  target.innerHTML = `
+    <div class="drawer-field-row"><span>Seu preço</span><strong>${money.format(price)}</strong></div>
+    <div class="drawer-field-row"><span>Média da categoria</span><strong>${money.format(avg)}</strong></div>
+    <div class="drawer-field-row"><span>Mediana</span><strong>${money.format(analytics.price_position_median)}</strong></div>
+    <div class="price-spectrum">
+      <div class="price-spectrum-track">
+        <div class="price-spectrum-marker price-spectrum-avg" style="left:${avgPct}%" title="Média: ${html(money.format(avg))}"></div>
+        <div class="price-spectrum-marker price-spectrum-user" style="left:${userPct}%" title="Seu preço: ${html(money.format(price))}"></div>
+      </div>
+      <div class="price-spectrum-labels"><span>Mais barato: ${money.format(min)}</span><span>Mais caro: ${money.format(max)}</span></div>
+    </div>
+    <div class="drawer-field-row"><span>Posição nos resultados de busca</span><strong>${analytics.search_position ? `#${analytics.search_position}` : "Fora do top 50"}</strong></div>
+  `;
+}
+
+function renderListingDrawerHealth(analytics) {
+  const target = byId("listingDrawerHealth");
+  if (!analytics) {
+    target.innerHTML = `<div class="empty-chart">Saúde do anúncio não disponível ainda.</div>`;
+    return;
+  }
+  const tone = healthTone(analytics.health_score);
+  const checklist = analytics.health_checklist || {};
+  const items = [
+    ["fotos", "Fotos suficientes"],
+    ["descricao", "Descrição completa"],
+    ["ficha_tecnica", "Ficha técnica preenchida"],
+    ["video", "Vídeo do produto"],
+  ];
+  target.innerHTML = `
+    <div class="drawer-field-row"><span>Score geral</span><strong><span class="badge ${tone.className}">${analytics.health_score != null ? `${Math.round(analytics.health_score * 100)}%` : "N/D"} - ${html(tone.label)}</span></strong></div>
+    <ul class="health-checklist">
+      ${items.map(([key, label]) => `<li class="${checklist[key] ? "ok" : "fail"}"><i class="ti ${checklist[key] ? "ti-check" : "ti-x"}" aria-hidden="true"></i> ${html(label)}</li>`).join("")}
+    </ul>
+    <small class="form-hint">Checklist estimado a partir dos dados do anúncio - o Mercado Livre não expõe um checklist oficial de qualidade via API.</small>
+  `;
+}
+
+function renderListingDrawerShipping(analytics) {
+  const target = byId("listingDrawerShipping");
+  const shipping = analytics?.raw_summary?.shipping;
+  if (!shipping) {
+    target.innerHTML = `<div class="empty-chart">Dados de frete não disponíveis ainda.</div>`;
+    return;
+  }
+  const cityLabels = { SP: "São Paulo", RJ: "Rio de Janeiro", BH: "Belo Horizonte" };
+  const costRows = Object.entries(shipping.costs_by_city || {}).map(([city, cost]) => `
+    <div class="drawer-field-row"><span>Frete estimado (${html(cityLabels[city] || city)})</span><strong>${cost != null ? money.format(cost) : "N/D"}</strong></div>
+  `).join("");
+  target.innerHTML = `
+    <div class="drawer-field-row"><span>Frete grátis ativo</span><strong>${shipping.free_shipping ? "Sim" : "Não"}</strong></div>
+    ${costRows}
+    ${shipping.shipping_share_pct != null && shipping.shipping_share_pct >= 15
+      ? `<div class="listing-drawer-suggestion">O frete representa ${shipping.shipping_share_pct.toFixed(0)}% do preço. Considere embutir o frete no preço.</div>`
+      : ""}
+  `;
+}
+
+export function bindListingDrawer() {
+  byId("listingDrawerCloseBtn")?.addEventListener("click", closeListingDrawer);
+  byId("listingDrawerOverlay")?.addEventListener("click", closeListingDrawer);
 }

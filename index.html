@@ -1358,6 +1358,40 @@
       </div>
     </aside>
 
+    <div id="listingDrawerOverlay" class="drawer-overlay" hidden></div>
+    <aside id="listingDrawer" class="order-drawer" aria-hidden="true">
+      <div class="drawer-header">
+        <div>
+          <span class="order-code" id="listingDrawerCode"></span>
+          <h3 id="listingDrawerTitle">Anúncio</h3>
+          <small id="listingDrawerMarketplace"></small>
+        </div>
+        <button id="listingDrawerCloseBtn" class="icon-btn" type="button" aria-label="Fechar">×</button>
+      </div>
+      <div class="drawer-body">
+        <div class="drawer-section-title">Resumo financeiro</div>
+        <div id="listingDrawerFinancial" class="drawer-field-list"></div>
+
+        <div class="drawer-section-title">Performance (30 dias)</div>
+        <div id="listingDrawerPerformance" class="drawer-field-list"></div>
+        <div id="listingDrawerVisitsChart" class="chart-bars"></div>
+
+        <div class="drawer-section-title">Competitividade</div>
+        <div id="listingDrawerCompetitiveness"></div>
+
+        <div class="drawer-section-title">Saúde do anúncio</div>
+        <div id="listingDrawerHealth"></div>
+
+        <div class="drawer-section-title">Frete</div>
+        <div id="listingDrawerShipping" class="drawer-field-list"></div>
+      </div>
+      <div class="drawer-footer">
+        <button id="listingDrawerSimulateBtn" class="secondary-btn" type="button">Simular novo preço</button>
+        <a id="listingDrawerOpenMlBtn" class="secondary-btn" type="button" target="_blank" rel="noopener">Abrir no Mercado Livre</a>
+        <button id="listingDrawerEditBtn" class="primary-btn" type="button">Editar anúncio</button>
+      </div>
+    </aside>
+
     <dialog id="passwordResetDialog" class="app-dialog password-reset-dialog">
       <form id="passwordResetForm" method="dialog">
         <div class="dialog-head">

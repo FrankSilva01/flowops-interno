@@ -67,6 +67,7 @@ import {
 } from "../features/pricing.js";
 import {
   syncAnalyticsFull, renderPerformanceTable, bindPerformanceTableToggles,
+  openListingDrawer, bindListingDrawer, closeListingDrawer,
 } from "../features/marketplace-analytics.js";
 
 function bindFilter(elementId, filterKey) {
@@ -232,6 +233,7 @@ export function bindEvents() {
     byId("dashboardCustomizePanel").hidden = true;
     byId("topbarMoreMenu").hidden = true;
     closeOrderDrawer();
+    closeListingDrawer();
   });
   byId("topbarMoreBtn")?.addEventListener("click", () => {
     const menu = byId("topbarMoreMenu");
@@ -407,6 +409,7 @@ export function bindEvents() {
     renderPerformanceTable();
   });
   bindPerformanceTableToggles();
+  bindListingDrawer();
   updateMarketplaceCodePlaceholder();
   updateOrderFormStatusColor();
   updateStorefrontTargetFields();
@@ -627,6 +630,10 @@ export function bindActions() {
       }
       if (action === "sync-analytics-full") {
         await syncAnalyticsFull();
+        return;
+      }
+      if (action === "open-listing-drawer") {
+        openListingDrawer(button.dataset.marketplace, button.dataset.externalId);
         return;
       }
       if (action === "resolve-suggestion") {
