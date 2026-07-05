@@ -1539,3 +1539,63 @@ button.attention-item:hover {
   color: var(--muted);
 }
 
+/* Redesign visual - mudanca 3: unifica as 3 implementacoes de tabs
+   (Marketplace .view-tab, Relatorios .report-tabs button, Materiais
+   .materials-tabs button) num unico padrao: texto simples com underline
+   no ativo, sem fundo/borda em volta. */
+
+.view-tabs,
+.report-tabs,
+.materials-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0;
+  margin-bottom: 14px;
+  border: 0;
+  border-bottom: 0.5px solid var(--border);
+  border-radius: 0;
+  background: none;
+  overflow-x: auto;
+}
+
+.view-tab,
+.report-tabs button,
+.materials-tabs button {
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 8px 16px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.view-tab.active,
+.report-tabs button.active,
+.materials-tabs button.active {
+  border-bottom-color: var(--teal);
+  background: none;
+  color: var(--teal);
+  font-weight: 500;
+}
+
+html[data-theme="dark"] .view-tab,
+html[data-theme="dark"] .report-tabs button,
+html[data-theme="dark"] .materials-tabs button {
+  background: none;
+  border-color: transparent;
+  border-bottom-color: transparent;
+  color: #aebbc5;
+}
+
+html[data-theme="dark"] .view-tab.active,
+html[data-theme="dark"] .report-tabs button.active,
+html[data-theme="dark"] .materials-tabs button.active {
+  background: none;
+  border-bottom-color: #2dd4bf;
+  color: #72d4c8;
+}
+
