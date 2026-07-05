@@ -2159,3 +2159,59 @@ html[data-theme="dark"] .materials-tabs button.active {
 .health-checklist li.fail {
   color: var(--red);
 }
+
+/* Inteligencia Comercial - painel de reputacao do vendedor */
+
+.seller-reputation-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  align-items: center;
+}
+
+.seller-reputation-level {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.seller-reputation-level i {
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--canvas);
+  color: var(--amber);
+  font-size: 18px;
+}
+
+.seller-reputation-level div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.seller-reputation-level span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.seller-reputation-alerts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.listing-drawer-suggestion.danger {
+  background: color-mix(in srgb, var(--red) 12%, var(--canvas));
+  color: var(--red);
+}
+
+@media (max-width: 1100px) {
+  .seller-reputation-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

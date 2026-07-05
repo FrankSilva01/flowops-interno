@@ -305,6 +305,53 @@ export function bindPerformanceTableToggles() {
   });
 }
 
+// --- Reputacao do vendedor ---
+// Limiares de alerta sao uma referencia aproximada nossa (documentada aqui
+// e na propria UI), nao os valores oficiais/exatos do programa MercadoLider,
+// que o Mercado Livre nao expoe via API.
+const REPUTATION_THRESHOLDS = { claimsWarning: 4, claimsCritical: 5, cancellationWarning: 3, delayedWarning: 15 };
+
+export function renderSellerReputationPanel() {
+  const panel = byId("sellerReputationPanel");
+  const target = byId("sellerReputationContent");
+  if (!panel || !target) return;
+  const metrics = state.sellerMetrics;
+  if (!metrics) {
+    panel.hidden = true;
+    return;
+  }
+  panel.hidden = false;
+  const alerts = [];
+  if (metrics.claims_rate != null) {
+    if (metrics.claims_rate >= REPUTATION_THRESHOLDS.claimsCritical) {
+      alerts.push(`Sua taxa de reclamações está em ${metrics.claims_rate.toFixed(1)}% — acima de ${REPUTATION_THRESHOLDS.claimsCritical}% você corre risco de perder o MercadoLíder.`);
+    } else if (metrics.claims_rate >= REPUTATION_THRESHOLDS.claimsWarning) {
+      alerts.push(`Sua taxa de reclamações subiu para ${metrics.claims_rate.toFixed(1)}% — fique de olho, a referência de risco é ${REPUTATION_THRESHOLDS.claimsCritical}%.`);
+    }
+  }
+  if (metrics.cancellation_rate != null && metrics.cancellation_rate >= REPUTATION_THRESHOLDS.cancellationWarning) {
+    alerts.push(`Taxa de cancelamentos em ${metrics.cancellation_rate.toFixed(1)}% — acima da referência de ${REPUTATION_THRESHOLDS.cancellationWarning}%.`);
+  }
+  if (metrics.delayed_rate != null && metrics.delayed_rate >= REPUTATION_THRESHOLDS.delayedWarning) {
+    alerts.push(`${metrics.delayed_rate.toFixed(1)}% dos envios com atraso no despacho — acima da referência de ${REPUTATION_THRESHOLDS.delayedWarning}%.`);
+  }
+
+  target.innerHTML = `
+    <div class="seller-reputation-grid">
+      <div class="seller-reputation-level">
+        <i class="ti ti-medal" aria-hidden="true"></i>
+        <div><strong>${html(metrics.seller_level || "Não disponível")}</strong><span>Nível no Mercado Livre</span></div>
+      </div>
+      <div class="drawer-field-row"><span>Reclamações</span><strong>${metrics.claims_rate != null ? `${metrics.claims_rate.toFixed(1)}%` : "-"}</strong></div>
+      <div class="drawer-field-row"><span>Despacho no prazo</span><strong>${metrics.delayed_rate != null ? `${(100 - metrics.delayed_rate).toFixed(1)}%` : "-"}</strong></div>
+      <div class="drawer-field-row"><span>Cancelamentos</span><strong>${metrics.cancellation_rate != null ? `${metrics.cancellation_rate.toFixed(1)}%` : "-"}</strong></div>
+      <div class="drawer-field-row"><span>Total de vendas</span><strong>${Number(metrics.total_sales || 0).toLocaleString("pt-BR")}</strong></div>
+    </div>
+    ${alerts.length ? `<div class="seller-reputation-alerts">${alerts.map((text) => `<div class="listing-drawer-suggestion danger">${html(text)}</div>`).join("")}</div>` : ""}
+    <small class="form-hint">Atualizado em ${formatDateTime(metrics.synced_at)} - referências de risco (reclamações/cancelamentos/atraso) são aproximadas, não os valores oficiais do programa MercadoLíder.</small>
+  `;
+}
+
 // --- Painel geral (botao de sync + "atualizado em") ---
 export function renderMarketplaceAnalyticsPanel() {
   const button = byId("syncAnalyticsBtn");
@@ -319,6 +366,7 @@ export function renderMarketplaceAnalyticsPanel() {
       ? `Atualizado em ${formatDateTime(state.analyticsSyncedAt)}`
       : "Ainda não sincronizado";
   }
+  renderSellerReputationPanel();
   renderPerformanceTable();
 }
 
