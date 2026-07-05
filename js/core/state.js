@@ -215,6 +215,7 @@ export const state = {
   notificationLimit: 20,
   topProductsPeriod: "30",
   theme: ["light", "dark"].includes(localStorage.getItem("3daft-theme")) ? localStorage.getItem("3daft-theme") : "dark",
+  ordersViewMode: ["cards", "table"].includes(localStorage.getItem("3daft-orders-view-mode")) ? localStorage.getItem("3daft-orders-view-mode") : "cards",
   dashboardHiddenCards: loadStringArray("3daft-dashboard-hidden"),
   historyDateFrom: "",
   historyDateTo: "",

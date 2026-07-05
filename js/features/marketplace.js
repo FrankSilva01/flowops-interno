@@ -860,6 +860,7 @@ export function viewMarketplaceOrder(orderId) {
   if (!order) return;
   state.query = getOrderCode(order).toLowerCase();
   byId("globalSearch").value = getOrderCode(order);
+  if (byId("ordersSearchInput")) byId("ordersSearchInput").value = getOrderCode(order);
   state.filters.orderMaterial = "all";
   state.filters.orderStatus = "all";
   state.filters.orderMarketplace = "all";

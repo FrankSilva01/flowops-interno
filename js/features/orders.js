@@ -2,7 +2,7 @@ import {
   state, money, PRODUCTION_STAGES, PRIORITY_OPTIONS, STATUS_OPTIONS,
   normalizeOrderStatus, normalizeStage, defaultChecklist, saveData,
 } from "../core/state.js";
-import { byId, html, safeUrl, formatDate, formatDateTime, flashActionMessage, nextId, number, renderOperationalSummary, filterRows } from "../core/dom.js";
+import { byId, html, safeUrl, formatDate, formatDateTime, formatRelativeTime, flashActionMessage, nextId, number, renderOperationalSummary, filterRows } from "../core/dom.js";
 import { bindActions, render } from "../core/router.js";
 import { ensureCanEdit } from "../core/permissions.js";
 import { persist, removeRemote, loadRemoteData } from "../data/remote.js";
@@ -21,11 +21,20 @@ export function renderOrders() {
     ["Produzindo", rows.filter((item) => !["Em fila", "Entregue"].includes(normalizeStage(item.productionStage || item.status))).length, `${rows.filter((item) => normalizeStage(item.productionStage || item.status) === "Em fila").length} em fila`, "purple"],
     ["A receber", money.format(rows.reduce((sum, item) => sum + Math.max(0, Number(item.charged || 0) - Number(item.received || 0)), 0)), "valores pendentes", "amber"],
   ]);
-  byId("ordersTable").innerHTML = rows.map((item) => {
-    const priority = getOrderPriority(item);
-    const status = normalizeOrderStatus(item.status);
-    const marketplaceLabel = getMarketplaceLabel(item);
-    return `
+  const searchInput = byId("ordersSearchInput");
+  if (searchInput && document.activeElement !== searchInput) searchInput.value = state.query;
+  byId("ordersTable").innerHTML = rows.map(renderOrderTableRow).join("");
+  byId("ordersCardList").innerHTML = rows.length ? rows.map(renderOrderCard).join("")
+    : `<div class="empty-state compact"><strong>Nenhuma encomenda encontrada</strong><span>Ajuste os filtros ou cadastre uma nova encomenda.</span></div>`;
+  applyOrdersViewMode();
+  bindActions();
+}
+
+function renderOrderTableRow(item) {
+  const priority = getOrderPriority(item);
+  const status = normalizeOrderStatus(item.status);
+  const marketplaceLabel = getMarketplaceLabel(item);
+  return `
       <tr>
         <td>
           <span class="order-code">${html(getOrderCode(item))}</span>
@@ -70,8 +79,135 @@ export function renderOrders() {
         </td>
       </tr>
     `;
-  }).join("");
-  bindActions();
+}
+
+function renderOrderCard(item) {
+  const priority = getOrderPriority(item);
+  const status = normalizeOrderStatus(item.status);
+  const marketplaceLabel = getMarketplaceLabel(item);
+  const sla = getSlaState(item);
+  const isLate = sla.className === "danger-badge" && status !== "Entregue";
+  const edgeClass = status === "Entregue" ? "order-card-paid" : isLate ? "order-card-late" : "";
+  return `
+    <article class="order-card ${edgeClass}" data-action="open-order-drawer" data-id="${html(item.id)}" tabindex="0" role="button" aria-label="Ver detalhes de ${html(getOrderCode(item))}">
+      <div class="order-card-row1">
+        <span class="order-code">${html(getOrderCode(item))}</span>
+        <strong class="order-card-title">${html(item.description)}</strong>
+        <span class="order-card-value">${item.charged ? money.format(item.charged) : "-"}</span>
+      </div>
+      <div class="order-card-row2">
+        <span><i class="ti ti-package" aria-hidden="true"></i> ${Number(item.quantity || 1)}x</span>
+        <span>${html(item.material || "Material não informado")}</span>
+        <span><i class="ti ti-clock" aria-hidden="true"></i> ${item.deliveryDate ? formatDate(item.deliveryDate) : "Sem data"}</span>
+        ${item.responsible ? `<span><i class="ti ti-user" aria-hidden="true"></i> ${html(item.responsible)}</span>` : ""}
+      </div>
+      <div class="order-card-row3">
+        ${marketplaceLabel !== "Marketplace" ? `<span class="badge queue">${html(marketplaceLabel)}</span>` : ""}
+        ${["urgent", "high"].includes(priority.key) ? `<span class="badge danger-badge">${html(priority.label)}</span>` : ""}
+        <span class="badge ${getFieldClass("status", status)}">${html(status)}</span>
+        ${item.quoteStage ? `<span class="badge queue">Orçamento: ${html(item.quoteStage)}</span>` : ""}
+      </div>
+    </article>
+  `;
+}
+
+export function setOrdersViewMode(mode) {
+  state.ordersViewMode = mode === "table" ? "table" : "cards";
+  localStorage.setItem("3daft-orders-view-mode", state.ordersViewMode);
+  applyOrdersViewMode();
+}
+
+export function applyOrdersViewMode() {
+  const isTable = state.ordersViewMode === "table";
+  const tableWrap = byId("ordersTableWrap");
+  const cardList = byId("ordersCardList");
+  if (tableWrap) tableWrap.hidden = !isTable;
+  if (cardList) cardList.hidden = isTable;
+  byId("ordersViewCardsBtn")?.setAttribute("aria-pressed", String(!isTable));
+  byId("ordersViewTableBtn")?.setAttribute("aria-pressed", String(isTable));
+}
+
+export function openOrderDrawer(id) {
+  const item = state.data.orders.find((orderItem) => orderItem.id === id);
+  if (!item) return;
+  const status = normalizeOrderStatus(item.status);
+  byId("orderDrawerCode").textContent = getOrderCode(item);
+  byId("orderDrawerTitle").textContent = item.description;
+  byId("orderDrawerMarketplace").textContent = getMarketplaceLabel(item);
+  const rows = [
+    ["Cliente", item.client || "-"],
+    ["Quantidade", Number(item.quantity || 1)],
+    ["Material", item.material || "-"],
+    ["Status", status],
+    ["Prioridade", item.priority || getOrderPriority(item).label],
+    ["Etapa de produção", item.productionStage || "Em fila"],
+    ["Responsável", item.responsible || "-"],
+    ["Data de entrega", item.deliveryDate ? formatDate(item.deliveryDate) : "Sem data"],
+    ["Valor cobrado", item.charged ? money.format(item.charged) : "-"],
+    ["Valor recebido", item.received ? money.format(item.received) : "-"],
+    ["Código marketplace", item.marketplaceOrderCode || "-"],
+  ];
+  byId("orderDrawerFields").innerHTML = rows.map(([label, value]) => `
+    <div class="drawer-field-row"><span>${html(label)}</span><strong>${html(String(value))}</strong></div>
+  `).join("");
+  const notesTarget = byId("orderDrawerNotes");
+  if (item.internalNotes) {
+    notesTarget.hidden = false;
+    notesTarget.innerHTML = `<strong>Nota interna</strong><p>${html(item.internalNotes)}</p>`;
+  } else {
+    notesTarget.hidden = true;
+    notesTarget.innerHTML = "";
+  }
+  const timelineEvents = (item.history || []).slice(0, 5);
+  byId("orderDrawerTimeline").innerHTML = timelineEvents.length ? timelineEvents.map((entry) => `
+    <div class="drawer-timeline-row">
+      <strong>${entry.changes.map((change) => `${html(change.field)}: ${html(change.from)} → ${html(change.to)}`).join(", ")}</strong>
+      <span title="${formatDateTime(entry.at)}">${formatRelativeTime(entry.at)}</span>
+    </div>
+  `).join("") : `<div class="empty-chart">Nenhum evento registrado.</div>`;
+  byId("orderDrawerDeliverBtn").textContent = status === "Entregue" ? "Reabrir" : "Entregar";
+  byId("orderDrawerDeliverBtn").dataset.id = id;
+  byId("orderDrawerEditBtn").dataset.id = id;
+  byId("orderDrawerHistoryBtn").dataset.id = id;
+  byId("orderDrawer").classList.add("open");
+  byId("orderDrawer").setAttribute("aria-hidden", "false");
+  byId("orderDrawerOverlay").hidden = false;
+}
+
+export function closeOrderDrawer() {
+  byId("orderDrawer").classList.remove("open");
+  byId("orderDrawer").setAttribute("aria-hidden", "true");
+  byId("orderDrawerOverlay").hidden = true;
+}
+
+export function bindOrderDrawer() {
+  byId("orderDrawerCloseBtn")?.addEventListener("click", closeOrderDrawer);
+  byId("orderDrawerOverlay")?.addEventListener("click", closeOrderDrawer);
+  byId("orderDrawerEditBtn")?.addEventListener("click", (event) => {
+    const id = event.currentTarget.dataset.id;
+    closeOrderDrawer();
+    openOrderEditDialog(id);
+  });
+  byId("orderDrawerHistoryBtn")?.addEventListener("click", (event) => {
+    showOrderHistory(event.currentTarget.dataset.id);
+  });
+  byId("orderDrawerDeliverBtn")?.addEventListener("click", async (event) => {
+    if (!ensureCanEdit()) return;
+    const id = event.currentTarget.dataset.id;
+    const item = state.data.orders.find((row) => row.id === id);
+    if (!item) return;
+    const previousOrder = structuredClone(item);
+    const previousStatus = normalizeOrderStatus(item.status);
+    item.status = previousStatus === "Entregue" ? "A preparar" : "Entregue";
+    if (item.status === "Entregue") item.productionStage = "Entregue";
+    applyDeliveredPaymentDefault(item);
+    item.history = appendHistory(item.history, [{ field: "Status", from: previousStatus, to: item.status }]);
+    await persist("orders", item);
+    await syncOrderPaymentCash(item, previousOrder);
+    closeOrderDrawer();
+    saveData();
+    render();
+  });
 }
 
 export function renderOrderReferences(item) {
@@ -894,15 +1030,19 @@ export async function copyMarketplaceCode(id) {
 
 export function syncOrderFilterControls() {
   const material = byId("orderMaterialFilter");
-  const status = byId("orderStatusFilter");
   const marketplace = byId("orderMarketplaceFilter");
   const focus = byId("orderFocusFilter");
   const quote = byId("orderQuoteFilter");
   if (material) material.value = state.filters.orderMaterial;
-  if (status) status.value = state.filters.orderStatus;
   if (marketplace) marketplace.value = state.filters.orderMarketplace;
   if (focus) focus.value = state.filters.orderFocus;
   if (quote) quote.value = state.filters.orderQuote;
+  document.querySelectorAll("[data-order-status-pill]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.orderStatusPill === (state.filters.orderStatus || "all"));
+  });
+  const advancedPanel = byId("orderAdvancedFilters");
+  const hasAdvancedFilter = ["orderMaterial", "orderMarketplace", "orderFocus", "orderQuote"].some((key) => state.filters[key] !== "all");
+  if (advancedPanel && hasAdvancedFilter) advancedPanel.hidden = false;
 }
 
 export function getTagClass(tag) {

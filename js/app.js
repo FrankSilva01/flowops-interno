@@ -48,6 +48,7 @@ import {
   getSelectedMarketplaceLabel, updateMarketplaceCodePlaceholder, updateOrderFormStatusColor,
   copyMarketplaceCode, syncOrderFilterControls, getTagClass, getOrderCode, deriveOrderCode,
   nextOrderCode, appendHistory, showOrderHistory, customTagClass, deleteCustomTag,
+  setOrdersViewMode, applyOrdersViewMode, openOrderDrawer, closeOrderDrawer, bindOrderDrawer,
 } from "./features/orders.js";
 import {
   renderProduction, filterProductionOrders, renderProductionSummary, isProductionEligible,

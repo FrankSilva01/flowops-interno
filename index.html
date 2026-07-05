@@ -454,7 +454,23 @@
             <button id="orderSubmitBtn" class="primary-btn" type="submit">Salvar encomenda</button>
             <button id="cancelOrderEditBtn" class="secondary-btn" type="button" hidden>Cancelar edição</button>
           </form>
-          <div class="order-filter-bar" aria-label="Filtros de encomendas">
+          <div class="orders-toolbar">
+            <input id="ordersSearchInput" type="search" class="orders-search-input" placeholder="Buscar encomenda..." aria-label="Buscar encomenda" />
+            <div class="orders-status-pills" id="ordersStatusPills">
+              <button type="button" class="filter-chip active" data-order-status-pill="all">Todas</button>
+              <button type="button" class="filter-chip" data-order-status-pill="Orçamento">Orçamento</button>
+              <button type="button" class="filter-chip" data-order-status-pill="A preparar">A preparar</button>
+              <button type="button" class="filter-chip" data-order-status-pill="Despachado">Despachado</button>
+              <button type="button" class="filter-chip" data-order-status-pill="A caminho">A caminho</button>
+              <button type="button" class="filter-chip" data-order-status-pill="Entregue">Entregue</button>
+            </div>
+            <button id="toggleOrderFiltersBtn" class="secondary-btn compact" type="button"><i class="ti ti-filter" aria-hidden="true"></i> Filtros</button>
+            <div class="orders-view-toggle" role="group" aria-label="Modo de visualização">
+              <button id="ordersViewCardsBtn" class="view-toggle-btn" type="button" data-orders-view="cards" aria-pressed="true" title="Ver em cards"><i class="ti ti-layout-grid" aria-hidden="true"></i></button>
+              <button id="ordersViewTableBtn" class="view-toggle-btn" type="button" data-orders-view="table" aria-pressed="false" title="Ver em tabela"><i class="ti ti-list" aria-hidden="true"></i></button>
+            </div>
+          </div>
+          <div class="order-filter-bar" id="orderAdvancedFilters" aria-label="Filtros avançados de encomendas" hidden>
             <label>Ordenar por
               <select id="orderSort">
                 <option value="alpha">Ordem alfabética</option>
@@ -471,16 +487,6 @@
                 <option>PLA</option>
                 <option>PETG</option>
                 <option value="">Não informado</option>
-              </select>
-            </label>
-            <label>Status
-              <select id="orderStatusFilter">
-                <option value="all">Todos</option>
-                <option>Orçamento</option>
-                <option>A preparar</option>
-                <option>Despachado</option>
-                <option>A caminho</option>
-                <option>Entregue</option>
               </select>
             </label>
             <label>Marketplace
@@ -514,7 +520,8 @@
               </select>
             </label>
           </div>
-          <div class="table-wrap">
+          <div id="ordersCardList" class="orders-card-list"></div>
+          <div class="table-wrap" id="ordersTableWrap" hidden>
             <table>
               <thead>
                 <tr>
@@ -1218,6 +1225,29 @@
         </section>
       </section>
     </main>
+
+    <div id="orderDrawerOverlay" class="drawer-overlay" hidden></div>
+    <aside id="orderDrawer" class="order-drawer" aria-hidden="true">
+      <div class="drawer-header">
+        <div>
+          <span class="order-code" id="orderDrawerCode">PED-0000</span>
+          <h3 id="orderDrawerTitle">Encomenda</h3>
+          <small id="orderDrawerMarketplace"></small>
+        </div>
+        <button id="orderDrawerCloseBtn" class="icon-btn" type="button" aria-label="Fechar">×</button>
+      </div>
+      <div class="drawer-body">
+        <div id="orderDrawerFields" class="drawer-field-list"></div>
+        <div id="orderDrawerNotes" class="drawer-notes" hidden></div>
+        <div class="drawer-section-title">Histórico recente</div>
+        <div id="orderDrawerTimeline" class="drawer-timeline"></div>
+      </div>
+      <div class="drawer-footer">
+        <button id="orderDrawerEditBtn" class="secondary-btn" type="button">Editar</button>
+        <button id="orderDrawerDeliverBtn" class="primary-btn" type="button">Entregar</button>
+        <button id="orderDrawerHistoryBtn" class="secondary-btn" type="button">Histórico completo</button>
+      </div>
+    </aside>
 
     <dialog id="passwordResetDialog" class="app-dialog password-reset-dialog">
       <form id="passwordResetForm" method="dialog">

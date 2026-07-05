@@ -872,3 +872,270 @@ button.attention-item:hover {
   white-space: nowrap;
 }
 
+/* Redesign visual - mudanca 3: encomendas em cards + drawer */
+
+.orders-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0 10px;
+}
+
+.orders-search-input {
+  min-height: 34px;
+  min-width: 220px;
+  flex: 1 1 220px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: inherit;
+  font-size: 13px;
+}
+
+.orders-status-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.orders-view-toggle {
+  display: flex;
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 2px;
+  margin-left: auto;
+}
+
+.view-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  min-height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.view-toggle-btn[aria-pressed="true"] {
+  background: var(--teal-2);
+  color: var(--teal);
+}
+
+.orders-card-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.order-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  cursor: pointer;
+  transition: border-color 120ms ease;
+}
+
+.order-card:hover,
+.order-card:focus-visible {
+  border-color: var(--teal);
+}
+
+.order-card.order-card-paid {
+  border-left-color: var(--green);
+}
+
+.order-card.order-card-late {
+  border-left-color: var(--red);
+}
+
+.order-card-row1 {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.order-card-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.order-card-value {
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.order-card-row2 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.order-card-row2 i {
+  font-size: 13px;
+}
+
+.order-card-row3 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  z-index: 60;
+}
+
+.order-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(420px, 100%);
+  background: var(--panel);
+  border-left: 1px solid var(--line);
+  box-shadow: -12px 0 32px rgba(15, 23, 42, 0.18);
+  z-index: 61;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 200ms ease;
+}
+
+.order-drawer.open {
+  transform: translateX(0);
+}
+
+.drawer-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.drawer-header h3 {
+  margin: 4px 0 2px;
+  font-size: 16px;
+}
+
+.drawer-header small {
+  color: var(--muted);
+}
+
+.drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.drawer-field-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.drawer-field-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+}
+
+.drawer-field-row span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.drawer-field-row strong {
+  font-size: 13px;
+  text-align: right;
+}
+
+.drawer-notes {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--canvas);
+  border: 1px solid var(--line);
+}
+
+.drawer-notes p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  white-space: pre-wrap;
+}
+
+.drawer-section-title {
+  margin: 18px 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.drawer-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.drawer-timeline-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+}
+
+.drawer-timeline-row strong {
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.drawer-timeline-row span {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.drawer-footer {
+  display: flex;
+  gap: 8px;
+  padding: 14px 16px;
+  border-top: 1px solid var(--line);
+}
+
+.drawer-footer .primary-btn,
+.drawer-footer .secondary-btn {
+  flex: 1;
+}
+
+@media (max-width: 720px) {
+  .orders-view-toggle {
+    margin-left: 0;
+  }
+}
+

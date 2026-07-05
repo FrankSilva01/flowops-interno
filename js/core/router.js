@@ -14,6 +14,7 @@ import {
   duplicateOrder, removeReferenceImage, updateOrderInline, removeOrderTag, copyMarketplaceCode,
   syncOrderFilterControls, updateQuoteStage, convertQuoteToProduction, applyDeliveredPaymentDefault,
   appendHistory, syncOrderPaymentCash, renderOrders, deleteCustomTag,
+  setOrdersViewMode, openOrderDrawer, closeOrderDrawer, bindOrderDrawer,
 } from "../features/orders.js";
 import { renderProduction } from "../features/production.js";
 import { renderCash, saveCash, startCashEdit, cancelCashEdit } from "../features/cash.js";
@@ -102,13 +103,31 @@ export function bindEvents() {
   bindFilter("cashTypeFilter", "cashType");
   bindFilter("orderSort", "orderSort");
   bindFilter("orderMaterialFilter", "orderMaterial");
-  bindFilter("orderStatusFilter", "orderStatus");
   bindFilter("orderMarketplaceFilter", "orderMarketplace");
   bindFilter("orderFocusFilter", "orderFocus");
   bindFilter("orderQuoteFilter", "orderQuote");
   bindFilter("materialTypeFilter", "materialType");
   bindFilter("materialSort", "materialSort");
   bindFilter("logTypeFilter", "logType");
+  document.querySelectorAll("[data-order-status-pill]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.filters.orderStatus = button.dataset.orderStatusPill;
+      syncOrderFilterControls();
+      renderTables();
+    });
+  });
+  byId("ordersSearchInput")?.addEventListener("input", (event) => {
+    state.query = event.target.value.trim().toLowerCase();
+    renderTables();
+    renderLogs();
+  });
+  byId("ordersViewCardsBtn")?.addEventListener("click", () => setOrdersViewMode("cards"));
+  byId("ordersViewTableBtn")?.addEventListener("click", () => setOrdersViewMode("table"));
+  byId("toggleOrderFiltersBtn")?.addEventListener("click", () => {
+    const panel = byId("orderAdvancedFilters");
+    if (panel) panel.hidden = !panel.hidden;
+  });
+  bindOrderDrawer();
   byId("exportBtn").addEventListener("click", exportJson);
   byId("importBtn").addEventListener("click", () => byId("importFileInput").click());
   byId("importFileInput").addEventListener("change", importFile);
@@ -197,6 +216,7 @@ export function bindEvents() {
     if (event.key !== "Escape") return;
     byId("notificationDropdown").hidden = true;
     byId("dashboardCustomizePanel").hidden = true;
+    closeOrderDrawer();
   });
   document.addEventListener("click", async (event) => {
     const planButton = event.target.closest("[data-request-plan]");
@@ -380,7 +400,7 @@ export function setView(view, replace = false) {
     logs: "Histórico",
     approvals: "Gestão de usuários"
   }[view];
-  byId("globalSearch").hidden = ["dashboard", "reports", "approvals", "notifications", "subscription", "support", "whatsnew"].includes(view);
+  byId("globalSearch").hidden = ["dashboard", "reports", "approvals", "notifications", "subscription", "support", "whatsnew", "orders"].includes(view);
   if (view === "approvals") renderActiveUsers();
   if (!byId("appView")?.hidden) render();
 }
@@ -471,6 +491,10 @@ export function bindActions() {
       }
       if (action === "history-order") {
         showOrderHistory(id);
+        return;
+      }
+      if (action === "open-order-drawer") {
+        openOrderDrawer(id);
         return;
       }
       if (action === "duplicate-order") {
