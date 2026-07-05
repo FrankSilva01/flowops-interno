@@ -61,6 +61,7 @@ export function order(id, description, material, deliveryDate, charged, received
     quoteUpdatedAt: "",
     source: "",
     leadId: "",
+    productId: "",
     checklist: defaultChecklist(),
     history: []
   };
@@ -89,7 +90,7 @@ function loadStringArray(key) {
 }
 
 export function getInitialView() {
-  const allowed = ["dashboard", "orders", "production", "cash", "materials", "leads", "marketplace", "logs", "settings", "approvals"];
+  const allowed = ["dashboard", "orders", "production", "logistics", "cash", "materials", "leads", "marketplace", "logs", "settings", "approvals"];
   const fromHash = getHashRoute();
   if (allowed.includes(fromHash)) return fromHash;
   const saved = localStorage.getItem("3daft-active-view");
@@ -187,6 +188,15 @@ export const state = {
   inventoryItems: [],
   backupRuns: [],
   marketplaceReviews: [],
+  orderLogistics: [],
+  logisticsEvents: [],
+  logisticsSearch: "",
+  logisticsStatusFilter: "all",
+  products: [],
+  productListings: [],
+  financialSettings: null,
+  commercialSuggestions: [],
+  productSearch: "",
   reportTab: "overview",
   reportPeriod: "30",
   reportCompare: "previous",

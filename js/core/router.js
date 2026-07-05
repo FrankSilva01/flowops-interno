@@ -53,6 +53,16 @@ import {
   downloadSavedBackup, renderSettingsData,
 } from "../features/backup.js";
 import { exportJson, importFile } from "./importer.js";
+import {
+  renderLogistics, openLogisticsDialog, saveLogisticsInfo, addLogisticsEvent, syncLogisticsFromMarketplace,
+} from "../features/logistics.js";
+import {
+  openProductQuickDialog, saveProduct, deleteProduct, bindProductFormAutoSku, getProductForListing,
+  openPriceCalculatorDialog, bindPriceCalculatorForm, openFinancialSettingsDialog, saveFinancialSettings,
+  renderCommercialIntelligence, dismissSuggestion, resolveSuggestion, simulateSalesForGoal,
+  renderOrderProductOptions, bindProductMarketplaceCheckboxes, bindProductImageInputs,
+  bindProductProfitPreview,
+} from "../features/pricing.js";
 
 function bindFilter(elementId, filterKey) {
   const element = byId(elementId);
@@ -311,13 +321,36 @@ export function bindEvents() {
   byId("downloadDatabaseBackupBtn").addEventListener("click", () => downloadBackupScope("database"));
   byId("simulateBackupRestoreBtn").addEventListener("click", simulateBackupRestore);
   byId("restoreBackupBtn").addEventListener("click", restoreBackupFromFile);
+  byId("logisticsForm").addEventListener("submit", saveLogisticsInfo);
+  byId("logisticsEventForm").addEventListener("submit", addLogisticsEvent);
+  byId("logisticsSearch")?.addEventListener("input", (event) => {
+    state.logisticsSearch = event.target.value.trim().toLowerCase();
+    renderLogistics();
+  });
+  byId("logisticsStatusFilter")?.addEventListener("change", (event) => {
+    state.logisticsStatusFilter = event.target.value;
+    renderLogistics();
+  });
+  byId("productForm").addEventListener("submit", saveProduct);
+  bindProductFormAutoSku();
+  bindProductMarketplaceCheckboxes();
+  bindProductImageInputs();
+  bindProductProfitPreview();
+  byId("priceCalculatorForm").addEventListener("submit", (event) => event.preventDefault());
+  bindPriceCalculatorForm();
+  byId("financialSettingsForm").addEventListener("submit", saveFinancialSettings);
+  byId("profitSimulatorForm").addEventListener("submit", simulateSalesForGoal);
+  byId("productSearchInput")?.addEventListener("input", (event) => {
+    state.productSearch = event.target.value.trim().toLowerCase();
+    renderCommercialIntelligence();
+  });
   updateMarketplaceCodePlaceholder();
   updateOrderFormStatusColor();
   updateStorefrontTargetFields();
 }
 
 export function setView(view, replace = false) {
-  const allowed = ["dashboard", "orders", "production", "cash", "materials", "reports", "leads", "subscription", "notifications", "support", "whatsnew", "logs", ...(state.isAdmin ? ["marketplace", "approvals"] : [])];
+  const allowed = ["dashboard", "orders", "production", "logistics", "cash", "materials", "reports", "leads", "subscription", "notifications", "support", "whatsnew", "logs", ...(state.isAdmin ? ["marketplace", "approvals"] : [])];
   if (!allowed.includes(view)) view = "dashboard";
   state.view = view;
   localStorage.setItem("3daft-active-view", view);
@@ -334,6 +367,7 @@ export function setView(view, replace = false) {
     dashboard: "Dashboard",
     orders: "Encomendas",
     production: "Produção",
+    logistics: "Logística",
     cash: "Fluxo de caixa",
     materials: "Materiais",
     reports: "Relatórios",
@@ -355,6 +389,7 @@ export function render() {
   updateEditAccess();
   renderCompanySidebarStatus();
   renderResponsibleOptions();
+  renderOrderProductOptions();
   renderNotifications();
   renderTrialBanner();
   switch (state.view) {
@@ -375,6 +410,9 @@ export function render() {
       break;
     case "production":
       renderProduction();
+      break;
+    case "logistics":
+      renderLogistics();
       break;
     case "approvals":
       renderApprovals();
@@ -461,6 +499,60 @@ export function bindActions() {
       }
       if (action === "download-saved-backup") {
         await downloadSavedBackup(id);
+        return;
+      }
+      if (action === "open-logistics") {
+        openLogisticsDialog(id);
+        return;
+      }
+      if (action === "sync-ml-shipment") {
+        if (!ensureCanEdit()) return;
+        syncLogisticsFromMarketplace(id);
+        return;
+      }
+      if (action === "open-product-dialog") {
+        if (!ensureCanEdit()) return;
+        openProductQuickDialog();
+        return;
+      }
+      if (action === "edit-product") {
+        if (!ensureCanEdit()) return;
+        openProductQuickDialog(id);
+        return;
+      }
+      if (action === "delete-product") {
+        if (!ensureCanEdit()) return;
+        await deleteProduct(id);
+        return;
+      }
+      if (action === "edit-listing-product") {
+        if (!ensureCanEdit()) return;
+        const form = byId("marketplaceEditForm");
+        const marketplace = form.elements.marketplace.value;
+        const externalId = form.elements.itemId.value;
+        const product = getProductForListing(marketplace, externalId);
+        byId("marketplaceEditDialog").close();
+        openProductQuickDialog(product?.id || "");
+        if (!product) byId("productForm").elements.listingLink.value = `${marketplace}:${externalId}`;
+        return;
+      }
+      if (action === "open-price-calculator") {
+        openPriceCalculatorDialog();
+        return;
+      }
+      if (action === "open-financial-settings") {
+        if (!ensureCanEdit()) return;
+        openFinancialSettingsDialog();
+        return;
+      }
+      if (action === "resolve-suggestion") {
+        if (!ensureCanEdit()) return;
+        await resolveSuggestion(id);
+        return;
+      }
+      if (action === "dismiss-suggestion") {
+        if (!ensureCanEdit()) return;
+        await dismissSuggestion(id);
         return;
       }
       if (action === "kanban-filter") {

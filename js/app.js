@@ -125,6 +125,27 @@ import {
   exportJson, importFile, importJson, importCollection, importRows, parseCsv, splitCsvLine,
   normalizeText, normalizeImportedItem, pick, normalizeKey, normalizeDate, loadXlsx,
 } from "./core/importer.js";
+import {
+  LOGISTICS_STATUSES, getOrderLogistics, getLogisticsStatusLabel, getLogisticsStatusClass,
+  renderLogisticsBadge, renderLogistics, openLogisticsDialog, renderLogisticsTimeline,
+  saveLogisticsInfo, addLogisticsEvent, getDeliveryStatusCounts, renderDeliveryStatusWidget,
+  checkLogisticsDelays, syncLogisticsFromMarketplace,
+} from "./features/logistics.js";
+import {
+  getFinancialSettings, hasCommercialIntelligenceAccess, getProfitabilityLevel, deriveSkuCode,
+  categoryPrefix, nextProductSku, getProductForListing, getProductForOrder, renderProductCatalogTable,
+  openProductQuickDialog, renderProductListingOptions, bindProductFormAutoSku, saveProduct, deleteProduct,
+  renderOrderProductOptions, classifyMlListingType, resolveListingFeePct, resolveOrderFeeInfo,
+  getListingProfitability, getOrderProfitability, renderProfitabilityBadge, getProfitabilitySummary,
+  getProfitPotential, calculatePriceSuggestion, buildPriceCalculatorResult, openPriceCalculatorDialog,
+  renderPriceCalculator, updatePriceCalculatorResult, bindPriceCalculatorForm, generateSuggestions,
+  renderSuggestions, dismissSuggestion, resolveSuggestion, renderProfitSimulator, simulateSalesForGoal,
+  renderMarketplaceComparison, renderProfitabilityDashboardWidget, renderCommercialIntelligence,
+  renderProfitabilitySummaryPanel, openFinancialSettingsDialog, saveFinancialSettings, reportPricingDefinition,
+  isMarketplaceAccountConnected, updateProductMarketplaceStatusHints, bindProductMarketplaceCheckboxes,
+  bindProductImageInputs, resolveChannelFeePct, computeMarginBreakdown, renderProductProfitPreview,
+  bindProductProfitPreview,
+} from "./features/pricing.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
   const marketplaceStatus = getMarketplaceStatusFromHash();

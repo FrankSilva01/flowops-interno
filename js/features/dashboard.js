@@ -7,6 +7,8 @@ import { formatInventoryNumber, setMaterialsTab } from "./materials.js";
 import { getLeadFollowUp } from "./customers.js";
 import { getSubscriptionAlert } from "./subscription.js";
 import { normalizeMarketplaceChannel } from "./marketplace.js";
+import { renderDeliveryStatusWidget } from "./logistics.js";
+import { renderProfitabilityDashboardWidget } from "./pricing.js";
 
 export function initDashboardDrag() {
   applyDashboardOrder();
@@ -61,6 +63,8 @@ export const DASHBOARD_CARD_LABELS = {
   "integration-health": "Integrações",
   "top-open": "Top valores em aberto",
   upcoming: "Próximas entregas",
+  logistics: "Status das Entregas",
+  profitability: "Saúde dos Anúncios",
   "material-summary": "Resumo por material",
   commercial: "Comercial",
   "top-products": "Produtos mais vendidos",
@@ -195,6 +199,8 @@ export function renderDashboard() {
       <span>${count} pedido${count === 1 ? "" : "s"}</span>
     </div>
   `).join("");
+  renderDeliveryStatusWidget();
+  renderProfitabilityDashboardWidget();
   applyDashboardVisibility();
 }
 

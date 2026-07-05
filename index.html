@@ -45,6 +45,7 @@
           <button class="tab active" data-view="dashboard" title="Dashboard"><span class="nav-icon">▦</span><span class="nav-label">Dashboard</span></button>
           <button class="tab" data-view="orders" title="Encomendas"><span class="nav-icon">□</span><span class="nav-label">Encomendas</span></button>
           <button class="tab" data-view="production" title="Produção"><span class="nav-icon">⌂</span><span class="nav-label">Produção</span></button>
+          <button class="tab" data-view="logistics" title="Logística"><span class="nav-icon">➤</span><span class="nav-label">Logística</span></button>
           <button class="tab" data-view="leads" title="Clientes e Leads"><span class="nav-icon">♙</span><span class="nav-label">Clientes e Leads</span></button>
           <button class="tab" data-view="cash" title="Fluxo de caixa"><span class="nav-icon">$</span><span class="nav-label">Fluxo de caixa</span></button>
           <button class="tab" data-view="materials" title="Materiais"><span class="nav-icon">◇</span><span class="nav-label">Materiais</span></button>
@@ -196,6 +197,14 @@
               <div class="panel-head"><h3>Próximas entregas</h3></div>
               <div id="upcomingList" class="stack-list"></div>
             </section>
+            <section class="panel dashboard-card" data-dashboard-card="logistics" draggable="true">
+              <div class="panel-head"><h3>Status das Entregas</h3></div>
+              <div id="logisticsStatusWidget" class="integration-summary-grid"></div>
+            </section>
+            <section class="panel dashboard-card" data-dashboard-card="profitability" draggable="true">
+              <div class="panel-head"><h3>Saúde dos Anúncios</h3></div>
+              <div id="profitabilityWidget" class="integration-summary-grid"></div>
+            </section>
             <section class="panel dashboard-card" data-dashboard-card="material-summary" draggable="true">
               <div class="panel-head"><h3>Resumo por material</h3></div>
               <div id="materialSummary" class="stack-list"></div>
@@ -229,6 +238,8 @@
             <button class="active" type="button" data-report-tab="overview">Visão geral</button>
             <button type="button" data-report-tab="financial">Financeiro</button>
             <button type="button" data-report-tab="production">Produção</button>
+            <button type="button" data-report-tab="logistics">Logística</button>
+            <button type="button" data-report-tab="pricing">Inteligência Comercial</button>
             <button type="button" data-report-tab="commercial">Comercial</button>
             <button type="button" data-report-tab="marketplaces">Marketplaces</button>
             <button type="button" data-report-tab="products">Produtos</button>
@@ -322,6 +333,9 @@
               <option>Aprovado</option>
               <option>Recusado</option>
               <option>Convertido em encomenda</option>
+            </select>
+            <select name="productId" title="Produto do catálogo (opcional, usado para calcular lucro real)">
+              <option value="">Sem produto vinculado</option>
             </select>
             <input name="stlLink" type="url" placeholder="Link do STL/origem" />
             <input name="referenceImageUrl" type="hidden" />
@@ -424,6 +438,40 @@
           <div id="productionQuoteSummary" class="production-quote-summary"></div>
           <div id="kanbanFilters" class="kanban-filters"></div>
           <div id="kanbanBoard" class="kanban-board"></div>
+        </section>
+
+        <section id="logisticsView" class="view">
+          <div id="logisticsPageSummary" class="operational-summary-grid"></div>
+          <div class="filter-bar">
+            <label>
+              Buscar
+              <input id="logisticsSearch" type="search" placeholder="Código, cliente ou descrição" />
+            </label>
+            <label>
+              Status de rastreio
+              <select id="logisticsStatusFilter">
+                <option value="all">Todos</option>
+                <option value="sem-rastreio">Sem rastreio</option>
+                <option>Aguardando envio</option>
+                <option>Postado</option>
+                <option>Em trânsito</option>
+                <option>Saiu para entrega</option>
+                <option>Entregue</option>
+                <option>Problema na entrega</option>
+                <option>Devolvido</option>
+              </select>
+            </label>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Encomenda</th><th>Transportadora</th><th>Código de rastreio</th><th>Status</th><th>Previsão</th><th></th>
+                </tr>
+              </thead>
+              <tbody id="logisticsTable"></tbody>
+            </table>
+          </div>
         </section>
 
         <section id="leadsView" class="view">
@@ -730,6 +778,7 @@
             <button class="view-tab" type="button" data-marketplace-view="storefront">Vitrine</button>
             <button class="view-tab" type="button" data-marketplace-view="sales">Vendas</button>
             <button class="view-tab" type="button" data-marketplace-view="integrations">Integrações</button>
+            <button class="view-tab" type="button" data-marketplace-view="intelligence">Inteligência</button>
             <button class="view-tab" type="button" data-marketplace-view="api-logs">Logs API</button>
             <button class="view-tab" type="button" data-marketplace-view="backup">Backup</button>
           </div>
@@ -740,12 +789,15 @@
             <button class="filter-chip" type="button" data-action="marketplace-channel-filter" data-channel="mercado-livre">Mercado Livre</button>
             <button class="filter-chip" type="button" data-action="marketplace-channel-filter" data-channel="shopee">Shopee</button>
             <button class="filter-chip" type="button" data-action="marketplace-channel-filter" data-channel="amazon">Amazon</button>
+            <button class="filter-chip" type="button" data-action="marketplace-channel-filter" data-channel="tiktok-shop">TikTok Shop</button>
           </div>
 
           <div id="marketplaceListingsView" class="marketplace-subview active">
             <div class="panel-head">
               <h3>Anúncios sincronizados</h3>
               <div class="inline-actions">
+                <button id="openProductDialogBtn" class="secondary-btn" type="button" data-action="open-product-dialog">Cadastrar produto</button>
+                <button id="openPriceCalculatorBtn" class="secondary-btn" type="button" data-action="open-price-calculator">Calculadora de preço</button>
                 <button id="refreshMarketplacesBtn" class="secondary-btn" type="button">Atualizar</button>
                 <button id="syncMercadoLivreBtn" class="primary-btn" type="button">Sincronizar ML</button>
               </div>
@@ -921,6 +973,66 @@
                 <button class="secondary-btn" type="button" data-action="open-marketplace-logs">Ver todos</button>
               </div>
               <div id="marketplaceLogsSummary" class="stack-list"></div>
+            </div>
+          </div>
+
+          <div id="marketplaceIntelligenceView" class="marketplace-subview">
+            <div class="panel-head">
+              <div>
+                <h3>Inteligência Comercial</h3>
+                <small>Catálogo de produtos, rentabilidade, sugestões e simulações.</small>
+              </div>
+              <div class="inline-actions">
+                <button id="openFinancialSettingsBtn" class="secondary-btn" type="button" data-action="open-financial-settings">Configurações financeiras</button>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-head">
+                <h3>Catálogo de produtos</h3>
+                <input type="search" id="productSearchInput" placeholder="Buscar produto por nome, SKU ou categoria..." aria-label="Buscar produto" />
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>SKU</th><th>Nome</th><th>Categoria</th><th>Custo</th><th>Ações</th></tr></thead>
+                  <tbody id="productCatalogTable"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div id="intelligenceUpsell" class="panel premium-upsell" hidden>
+              <strong>Análises de rentabilidade disponíveis nos planos pagos</strong>
+              <span>Assine um plano para liberar rentabilidade por anúncio, sugestões automáticas, simulador e comparação entre marketplaces.</span>
+              <button class="primary-btn" type="button" data-action="open-subscription">Ver planos</button>
+            </div>
+
+            <div id="intelligenceAnalysisSection">
+              <div class="panel">
+                <div class="panel-head"><h3>Rentabilidade geral</h3></div>
+                <div id="intelligenceSummaryGrid" class="integration-summary-grid"></div>
+              </div>
+              <div class="panel">
+                <div class="panel-head"><h3>Sugestões automáticas</h3></div>
+                <div id="suggestionsList" class="stack-list"></div>
+              </div>
+              <div class="panel">
+                <div class="panel-head"><h3>Simulador: quantas vendas para bater a meta?</h3></div>
+                <form id="profitSimulatorForm" class="compact-form">
+                  <select id="simulatorProductSelect" name="listing"></select>
+                  <input name="goal" type="number" min="0" step="0.01" placeholder="Meta de lucro (R$)" required />
+                  <button class="primary-btn" type="submit">Simular</button>
+                </form>
+                <div id="simulatorResult"></div>
+              </div>
+              <div class="panel">
+                <div class="panel-head"><h3>Comparação entre marketplaces</h3></div>
+                <div class="table-wrap">
+                  <table>
+                    <thead><tr><th>Marketplace</th><th>Anúncios</th><th>Com custo cadastrado</th><th>Margem média</th></tr></thead>
+                    <tbody id="marketplaceComparisonTable"></tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1103,6 +1215,142 @@
         <p class="form-error" id="marketplaceEditMessage"></p>
         <button class="primary-btn" type="submit">Salvar no marketplace</button>
       </form>
+      <div class="panel-head subhead"><h3>Custo e rentabilidade</h3></div>
+      <button class="secondary-btn" type="button" id="editListingProductBtn" data-action="edit-listing-product">Cadastrar/editar custo deste produto</button>
+    </dialog>
+    <dialog id="productDialog" class="history-dialog marketplace-dialog">
+      <div class="panel-head">
+        <h3 id="productDialogTitle">Cadastrar produto</h3>
+        <button class="icon-btn" type="button" data-close-dialog="productDialog">Fechar</button>
+      </div>
+      <form id="productForm" class="login-form">
+        <input name="id" type="hidden" />
+        <label>Nome do produto<input name="name" placeholder="Ex: Action Figure Deadpool" required /></label>
+        <label>Categoria<input name="category" placeholder="Ex: Action figures" list="productCategoryList" /></label>
+        <datalist id="productCategoryList"></datalist>
+        <label>SKU<input name="sku" placeholder="Gerado automaticamente" /></label>
+        <label>Custo do produto<input name="costPrice" type="number" min="0" step="0.01" placeholder="0,00" required /></label>
+        <label>Preço de venda<input name="price" type="number" min="0" step="0.01" placeholder="0,00" required /></label>
+        <label>Estoque disponível<input name="stock" type="number" min="0" step="1" value="1" required /></label>
+        <label id="productImageDropzone" class="storefront-image-dropzone wide">
+          <span>Imagens do produto</span>
+          <small id="productImageStatus">Selecionar, arrastar ou soltar imagens aqui</small>
+          <input id="productImageFiles" type="file" accept="image/*" multiple />
+        </label>
+
+        <div class="form-section-title">Publicar nos marketplaces</div>
+        <fieldset class="publish-targets" id="productMarketplaceTargets">
+          <legend>Selecione onde criar o anúncio</legend>
+          <label><input name="publish_ml" type="checkbox" value="Mercado Livre" /> Mercado Livre <small data-marketplace-status="mercado-livre"></small></label>
+          <label><input name="publish_shopee" type="checkbox" value="Shopee" /> Shopee <small data-marketplace-status="shopee"></small></label>
+          <label><input name="publish_amazon" type="checkbox" value="Amazon" /> Amazon <small data-marketplace-status="amazon"></small></label>
+          <label><input name="publish_tiktok" type="checkbox" value="TikTok Shop" /> TikTok Shop <small data-marketplace-status="tiktok-shop"></small></label>
+        </fieldset>
+        <label id="productMlCategoryField" hidden>ID da categoria no Mercado Livre<input name="mlCategoryId" placeholder="Ex: MLB1839" /></label>
+
+        <div class="form-section-title">Custos e lucro estimado</div>
+        <div id="productProfitPreview" class="profit-preview-grid"></div>
+
+        <label>Vincular a um anúncio já existente (em vez de criar um novo)
+          <select name="listingLink"></select>
+        </label>
+        <label>Observações<textarea name="notes" rows="2" placeholder="Opcional"></textarea></label>
+        <p class="form-error" id="productFormMessage"></p>
+        <button class="primary-btn" type="submit">Salvar produto</button>
+      </form>
+    </dialog>
+    <dialog id="priceCalculatorDialog" class="history-dialog marketplace-dialog">
+      <div class="panel-head">
+        <h3>Calculadora de preço/lucro</h3>
+        <button class="icon-btn" type="button" data-close-dialog="priceCalculatorDialog">Fechar</button>
+      </div>
+      <form id="priceCalculatorForm" class="login-form">
+        <label>Custo do produto<input name="cost" type="number" min="0" step="0.01" required /></label>
+        <label>Marketplace
+          <select name="marketplace">
+            <option value="mercado_livre">Mercado Livre</option>
+            <option value="shopee">Shopee</option>
+            <option value="amazon">Amazon</option>
+            <option value="direct">Venda direta</option>
+          </select>
+        </label>
+        <label id="priceCalculatorListingType">Tipo de anúncio (ML)
+          <select name="listingType">
+            <option value="classic">Clássico</option>
+            <option value="premium">Premium</option>
+          </select>
+        </label>
+        <label>Taxa de imposto (%)<input name="taxPct" type="number" min="0" step="0.01" /></label>
+        <label>Frete (R$)<input name="shipping" type="number" min="0" step="0.01" /></label>
+        <label>Embalagem (R$)<input name="packaging" type="number" min="0" step="0.01" /></label>
+      </form>
+      <div id="priceCalculatorResult" class="integration-summary-grid"></div>
+    </dialog>
+    <dialog id="financialSettingsDialog" class="history-dialog marketplace-dialog">
+      <div class="panel-head">
+        <h3>Configurações financeiras</h3>
+        <button class="icon-btn" type="button" data-close-dialog="financialSettingsDialog">Fechar</button>
+      </div>
+      <form id="financialSettingsForm" class="login-form">
+        <div class="form-section-title">Taxas do Mercado Livre</div>
+        <label>Anúncio clássico (%)<input name="mlClassicFee" type="number" min="0" step="0.01" required /></label>
+        <label>Anúncio premium (%)<input name="mlPremiumFee" type="number" min="0" step="0.01" required /></label>
+        <div class="form-section-title">Outros marketplaces</div>
+        <label>Shopee (%)<input name="shopeeFee" type="number" min="0" step="0.01" required /></label>
+        <label>Amazon (%)<input name="amazonFee" type="number" min="0" step="0.01" required /></label>
+        <div class="form-section-title">Custos gerais</div>
+        <label>Imposto padrão (%)<input name="taxPct" type="number" min="0" step="0.01" required /></label>
+        <label>Frete padrão (R$)<input name="shippingCost" type="number" min="0" step="0.01" required /></label>
+        <label>Embalagem padrão (R$)<input name="packagingCost" type="number" min="0" step="0.01" required /></label>
+        <div class="form-section-title">Classificação de rentabilidade (margem mínima de cada nível, %)</div>
+        <label>Atenção<input name="thresholdAttention" type="number" min="0" step="0.01" required /></label>
+        <label>Saudável<input name="thresholdHealthy" type="number" min="0" step="0.01" required /></label>
+        <label>Excelente<input name="thresholdExcellent" type="number" min="0" step="0.01" required /></label>
+        <button class="primary-btn" type="submit">Salvar configurações</button>
+      </form>
+    </dialog>
+    <dialog id="logisticsDialog" class="history-dialog marketplace-dialog">
+      <div class="panel-head">
+        <h3 id="logisticsDialogTitle">Rastreio</h3>
+        <button class="icon-btn" type="button" data-close-dialog="logisticsDialog">Fechar</button>
+      </div>
+      <form id="logisticsForm" class="login-form">
+        <input name="orderId" type="hidden" />
+        <label>Transportadora<input name="carrier" placeholder="Ex: Correios, Jadlog, Loggi" /></label>
+        <label>Código de rastreio<input name="trackingCode" placeholder="Código informado pela transportadora" /></label>
+        <label>Status
+          <select name="status">
+            <option>Aguardando envio</option>
+            <option>Postado</option>
+            <option>Em trânsito</option>
+            <option>Saiu para entrega</option>
+            <option>Entregue</option>
+            <option>Problema na entrega</option>
+            <option>Devolvido</option>
+          </select>
+        </label>
+        <label>Previsão de entrega<input name="estimatedDeliveryDate" type="date" /></label>
+        <button class="primary-btn" type="submit">Salvar rastreio</button>
+        <button class="secondary-btn" type="button" id="logisticsSyncMlButton" data-action="sync-ml-shipment">Buscar status no Mercado Livre</button>
+      </form>
+      <div class="panel-head subhead"><h3>Adicionar evento na timeline</h3></div>
+      <form id="logisticsEventForm" class="compact-form">
+        <input name="orderId" type="hidden" />
+        <select name="eventStatus">
+          <option value="">Sem mudança de status</option>
+          <option>Aguardando envio</option>
+          <option>Postado</option>
+          <option>Em trânsito</option>
+          <option>Saiu para entrega</option>
+          <option>Entregue</option>
+          <option>Problema na entrega</option>
+          <option>Devolvido</option>
+        </select>
+        <input name="eventMessage" placeholder="Observação (opcional)" />
+        <button class="secondary-btn" type="submit">Adicionar evento</button>
+      </form>
+      <div class="panel-head subhead"><h3>Timeline de rastreio</h3></div>
+      <div id="logisticsTimeline" class="stack-list"></div>
     </dialog>
     <dialog id="leadDialog" class="history-dialog lead-dialog">
       <div class="panel-head">

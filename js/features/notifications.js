@@ -7,6 +7,8 @@ import { getTokenAlert, getRecentIntegrationErrors } from "./dashboard.js";
 import { startOrderEdit } from "./orders.js";
 import { getSubscriptionAlert } from "./subscription.js";
 import { setMarketplaceView } from "./marketplace.js";
+import { checkLogisticsDelays } from "./logistics.js";
+import { generateSuggestions } from "./pricing.js";
 
 export async function createNotification(type, title, message, relatedEntity, relatedEntityId, priority = "normal", roleTarget = "all") {
   if (!state.supabase) return;
@@ -92,6 +94,8 @@ export async function ensureOperationalNotifications() {
     });
   }
   for (const args of queue.slice(0, 30)) await createNotification(...args);
+  await checkLogisticsDelays();
+  await generateSuggestions();
 }
 
 export function renderNotifications() {

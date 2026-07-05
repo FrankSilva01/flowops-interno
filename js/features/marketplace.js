@@ -9,11 +9,13 @@ import { loadRemoteData } from "../data/remote.js";
 import { getOrderCode, syncOrderFilterControls } from "./orders.js";
 import { recordAudit, isWithinDateRange } from "./logs.js";
 import { getTokenAlert } from "./dashboard.js";
+import { renderProfitabilityBadge, renderCommercialIntelligence } from "./pricing.js";
 
 const MARKETPLACE_CHANNELS = [
   { id: "mercado-livre", label: "Mercado Livre" },
   { id: "shopee", label: "Shopee" },
-  { id: "amazon", label: "Amazon" }
+  { id: "amazon", label: "Amazon" },
+  { id: "tiktok-shop", label: "TikTok Shop" }
 ];
 
 export function normalizeMarketplaceChannel(value) {
@@ -25,6 +27,7 @@ export function normalizeMarketplaceChannel(value) {
   if (["mercadolivre", "ml", "meli"].includes(normalized)) return "mercado-livre";
   if (normalized === "shopee") return "shopee";
   if (normalized === "amazon") return "amazon";
+  if (["tiktokshop", "tiktok"].includes(normalized)) return "tiktok-shop";
   return normalized || "mercado-livre";
 }
 
@@ -120,6 +123,7 @@ export function renderMarketplaces() {
   ]);
   renderIntegrationSummary();
   renderStorefrontAdmin();
+  renderCommercialIntelligence();
   if (channelCards) channelCards.innerHTML = renderMarketplaceChannelCards();
   status.innerHTML = state.marketplaceAccounts.length ?
      `<span class="badge done">Mercado Livre conectado</span><small>${state.marketplaceListings.length} anúncio${state.marketplaceListings.length === 1 ? "" : "s"} importado${state.marketplaceListings.length === 1 ? "" : "s"}</small>`
@@ -162,7 +166,7 @@ export function renderMarketplaces() {
         <thead><tr><th>Produto</th><th>Marketplace</th><th>Preço</th><th>Estoque</th><th>Visualizações</th><th>Conversão</th><th>Status</th><th>Ações</th></tr></thead>
         <tbody>${listings.map((item) => `
           <tr>
-            <td><div class="listing-product-cell">${item.thumbnail_url ? `<img src="${html(item.thumbnail_url)}" alt="" loading="lazy" />` : `<span class="listing-placeholder"></span>`}<span><strong>${html(item.title)}</strong><small>${html(item.external_id)}</small></span></div></td>
+            <td><div class="listing-product-cell">${item.thumbnail_url ? `<img src="${html(item.thumbnail_url)}" alt="" loading="lazy" />` : `<span class="listing-placeholder"></span>`}<span><strong>${html(item.title)}</strong><small>${html(item.external_id)}</small>${renderProfitabilityBadge(item)}</span></div></td>
             <td>${html(marketplaceDisplayName(item.marketplace))}</td>
             <td>${money.format(Number(item.price || 0))}</td>
             <td>${Number(item.stock || item.available_quantity || 0).toLocaleString("pt-BR")}</td>
@@ -830,7 +834,7 @@ export function marketplaceSaleStatusClass(status) {
 }
 
 export function setMarketplaceView(view) {
-  state.marketplaceView = ["listings", "storefront", "sales", "integrations", "api-logs", "backup"].includes(view) ? view : "listings";
+  state.marketplaceView = ["listings", "storefront", "sales", "integrations", "intelligence", "api-logs", "backup"].includes(view) ? view : "listings";
   document.querySelectorAll("[data-marketplace-view]").forEach((button) => {
     button.classList.toggle("active", button.dataset.marketplaceView === state.marketplaceView);
   });
@@ -838,6 +842,7 @@ export function setMarketplaceView(view) {
   byId("marketplaceStorefrontView").classList.toggle("active", state.marketplaceView === "storefront");
   byId("marketplaceSalesView").classList.toggle("active", state.marketplaceView === "sales");
   byId("marketplaceIntegrationsView").classList.toggle("active", state.marketplaceView === "integrations");
+  byId("marketplaceIntelligenceView").classList.toggle("active", state.marketplaceView === "intelligence");
   byId("marketplaceApiLogsView").classList.toggle("active", state.marketplaceView === "api-logs");
   byId("marketplaceBackupView").classList.toggle("active", state.marketplaceView === "backup");
 }
@@ -884,6 +889,10 @@ export async function createMarketplaceOrder(externalOrderId, marketplace = "Mer
   } catch (error) {
     alert(`Não consegui criar a encomenda: ${error.message}`);
   }
+}
+
+export async function syncMlShipment(orderId) {
+  return marketplaceRequest(`https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-sync?marketplace=ml&action=sync-shipment&order_id=${encodeURIComponent(orderId)}`);
 }
 
 export async function marketplaceRequest(url, options = {}) {

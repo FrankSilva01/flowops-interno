@@ -11,6 +11,7 @@ import { getResponsibleNames } from "./users.js";
 import { renderSettingsData } from "./backup.js";
 import { pick, normalizeText, normalizeDate, normalizeKey } from "../core/importer.js";
 import { createNotification } from "./notifications.js";
+import { renderLogisticsBadge } from "./logistics.js";
 
 export function renderOrders() {
   const rows = sortOrders(filterOrders(filterRows(state.data.orders, ["orderCode", "marketplaceOrderCode", "description", "client", "material", "status", "responsible", "productionStage", "stlLink", "referenceImageUrl", "internalNotes", "tags"])));
@@ -30,6 +31,7 @@ export function renderOrders() {
           <span class="order-code">${html(getOrderCode(item))}</span>
           <strong>${html(item.description)}</strong>
           ${item.quoteStage ? `<span class="badge queue">Orçamento: ${html(item.quoteStage)}</span>` : ""}
+          ${item.status !== "Orçamento" ? renderLogisticsBadge(item.id) : ""}
           <small>${html(item.client || "Cliente não informado")}</small>
           ${renderTags((item.tags || []).filter((tag) => !isMarketplaceTag(tag)), item.id)}
           ${renderOrderReferences(item)}
@@ -334,6 +336,7 @@ export async function saveOrder(event) {
     quoteUpdatedAt: previous?.quoteStage === form.get("quoteStage") ? previous?.quoteUpdatedAt || "" : new Date().toISOString(),
     source: previous?.source || "manual",
     leadId: previous?.leadId || "",
+    productId: form.get("productId") || "",
     checklist: previous?.checklist || defaultChecklist(),
     history: previous?.history || []
   };
@@ -494,6 +497,7 @@ export function startOrderEdit(id) {
   form.elements.marketplaceTagToAdd.value = "";
   form.elements.customTagToAdd.value = "";
   form.elements.internalNotes.value = item.internalNotes || "";
+  if (form.elements.productId) form.elements.productId.value = item.productId || "";
   updateMarketplaceCodePlaceholder();
   state.editingOrderId = id;
   form.classList.add("editing");
@@ -746,6 +750,7 @@ export function parseOrderMeta(value) {
     quoteUpdatedAt: "",
     source: "manual",
     leadId: "",
+    productId: "",
     checklist: defaultChecklist(),
     history: []
   };
@@ -767,6 +772,7 @@ export function parseOrderMeta(value) {
       quoteUpdatedAt: parsed.quoteUpdatedAt || "",
       source: parsed.source || "",
       leadId: parsed.leadId || "",
+      productId: parsed.productId || "",
       checklist: { ...defaultChecklist(), ...(parsed.checklist || {}) },
       history: Array.isArray(parsed.history) ? parsed.history : []
     };
@@ -776,7 +782,7 @@ export function parseOrderMeta(value) {
 }
 
 export function serializeOrderMeta(item) {
-  const hasMeta = item.marketplaceOrderCode || item.stlLink || item.referenceImageUrl || item.internalNotes || item.tags?.length || item.priority || item.productionStage || item.responsible || item.quoteStage || item.source || item.leadId || item.history?.length || Object.values(item.checklist || {}).some(Boolean);
+  const hasMeta = item.marketplaceOrderCode || item.stlLink || item.referenceImageUrl || item.internalNotes || item.tags?.length || item.priority || item.productionStage || item.responsible || item.quoteStage || item.source || item.leadId || item.productId || item.history?.length || Object.values(item.checklist || {}).some(Boolean);
   if (!hasMeta) return item.notes || null;
   return JSON.stringify({
     text: item.notes || "",
@@ -793,6 +799,7 @@ export function serializeOrderMeta(item) {
     quoteUpdatedAt: item.quoteUpdatedAt || "",
     source: item.source || "",
     leadId: item.leadId || "",
+    productId: item.productId || "",
     checklist: { ...defaultChecklist(), ...(item.checklist || {}) },
     history: item.history || []
   });

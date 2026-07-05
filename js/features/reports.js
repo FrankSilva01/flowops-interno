@@ -4,6 +4,7 @@ import { renderLineChart } from "../core/charts.js";
 import { getOrderCode } from "./orders.js";
 import { normalizeMarketplaceChannel } from "./marketplace.js";
 import { normalizeText } from "../core/importer.js";
+import { reportPricingDefinition } from "./pricing.js";
 
 export function renderReports() {
   const content = byId("reportsContent");
@@ -152,6 +153,8 @@ export function renderReportTabContent(content, tab, rows, financial, dailyRows)
     materials: reportMaterialDefinition(rows),
     clients: reportClientDefinition(rows),
     stock: reportStockDefinition(),
+    logistics: reportLogisticsDefinition(rows),
+    pricing: reportPricingDefinition(),
   };
   const definition = definitions[tab] || definitions.financial;
   const limitedBody = definition.body.slice(0, 100);
@@ -291,6 +294,42 @@ export function reportStockDefinition() {
   };
 }
 
+export function reportLogisticsDefinition(rows) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const delivered = rows.orderLogistics.filter((item) => item.status === "Entregue");
+  const late = state.orderLogistics.filter((item) =>
+    item.status !== "Entregue" && item.status !== "Devolvido"
+    && item.estimated_delivery_date && new Date(`${item.estimated_delivery_date}T00:00:00`) < today
+  );
+  const deliveredWithDates = delivered.filter((item) => item.delivered_at && item.shipped_at);
+  const avgDeliveryDays = deliveredWithDates.length
+    ? (deliveredWithDates.reduce((sum, item) => sum + (new Date(item.delivered_at) - new Date(item.shipped_at)) / 86400000, 0) / deliveredWithDates.length).toFixed(1)
+    : "-";
+  return {
+    title: "Logística",
+    kpis: [
+      ["Rastreios ativos", state.orderLogistics.filter((item) => item.status !== "Entregue" && item.status !== "Devolvido").length, "Em andamento", "teal"],
+      ["Entregues no período", delivered.length, "Concluídos", "green"],
+      ["Atrasados", late.length, "Passaram da previsão", "red"],
+      ["Tempo médio de entrega", avgDeliveryDays === "-" ? "-" : `${avgDeliveryDays} dia(s)`, "Do envio até a entrega", "blue"],
+    ],
+    chartTitle: "Rastreios por status",
+    chartRows: countBy(state.orderLogistics, (item) => item.status || "Sem rastreio"),
+    headers: ["Pedido", "Transportadora", "Status", "Previsão", "Entregue em"],
+    body: rows.orderLogistics.map((item) => {
+      const order = state.data.orders.find((orderItem) => orderItem.id === item.order_id);
+      return [
+        order ? getOrderCode(order) : item.order_id,
+        item.carrier || "-",
+        item.status || "-",
+        item.estimated_delivery_date ? formatDate(item.estimated_delivery_date) : "-",
+        item.delivered_at ? formatDateTime(item.delivered_at) : "-",
+      ];
+    }),
+  };
+}
+
 export function aggregateReportRows(rows, labelGetter, valuesGetter) {
   const map = new Map();
   rows.forEach((item) => {
@@ -314,6 +353,7 @@ export function reportTabLabel(tab) {
   return ({
     overview: "Visão geral", financial: "Financeiro", production: "Produção", commercial: "Comercial",
     marketplaces: "Marketplaces", products: "Produtos", materials: "Materiais", clients: "Clientes", stock: "Estoque",
+    logistics: "Logística", pricing: "Inteligência Comercial",
   })[tab] || "Relatório";
 }
 
@@ -390,6 +430,7 @@ export function getReportRows() {
     sales: state.marketplaceSales.filter((item) => inPeriod(item.date || item.created_at)),
     leads: state.leads.filter((item) => inPeriod(item.created_at || item.updated_at)),
     materials: state.data.materials.filter((item) => inPeriod(item.date || item.created_at)),
+    orderLogistics: state.orderLogistics.filter((item) => inPeriod(item.delivered_at || item.updated_at)),
   };
 }
 

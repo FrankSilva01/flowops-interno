@@ -19,7 +19,7 @@ export async function removeRemote(kind, id) {
 }
 
 export async function loadRemoteData() {
-  const [orders, cashEntries, materials, inventoryItems, leads, auditEvents, notifications, storefrontEvents, customTags, leadFiles, backupRuns, marketplaceReviews, subscription, organizationInfo, subscriptionPlans, subscriptionPayments, supportTickets, announcements, changelog] = await Promise.all([
+  const [orders, cashEntries, materials, inventoryItems, leads, auditEvents, notifications, storefrontEvents, customTags, leadFiles, backupRuns, marketplaceReviews, subscription, organizationInfo, subscriptionPlans, subscriptionPayments, supportTickets, announcements, changelog, orderLogistics, logisticsEvents, products, productListings, financialSettings, commercialSuggestions] = await Promise.all([
     state.supabase.from("orders").select("*").eq("organization_id", state.organizationId).order("id"),
     state.supabase.from("cash_entries").select("*").eq("organization_id", state.organizationId).order("date"),
     state.supabase.from("materials").select("*").eq("organization_id", state.organizationId).order("date"),
@@ -38,7 +38,13 @@ export async function loadRemoteData() {
     state.supabase.from("subscription_payments").select("*").eq("organization_id", state.organizationId).order("created_at", { ascending: false }).limit(100),
     state.supabase.from("saas_support_tickets").select("*").eq("organization_id", state.organizationId).order("created_at", { ascending: false }).limit(100),
     state.supabase.from("saas_announcements").select("*").order("published_at", { ascending: false }).limit(100),
-    state.supabase.from("saas_changelog").select("*").order("published_at", { ascending: false }).limit(100)
+    state.supabase.from("saas_changelog").select("*").order("published_at", { ascending: false }).limit(100),
+    state.supabase.from("order_logistics").select("*").eq("organization_id", state.organizationId),
+    state.supabase.from("logistics_events").select("*").eq("organization_id", state.organizationId).order("occurred_at", { ascending: false }).limit(500),
+    state.supabase.from("products").select("*").eq("organization_id", state.organizationId),
+    state.supabase.from("product_listings").select("*").eq("organization_id", state.organizationId),
+    state.supabase.from("financial_settings").select("*").eq("organization_id", state.organizationId).maybeSingle(),
+    state.supabase.from("commercial_suggestions").select("*").eq("organization_id", state.organizationId).order("created_at", { ascending: false }).limit(200)
   ]);
 
   if (orders.error) throw orders.error;
@@ -70,6 +76,12 @@ export async function loadRemoteData() {
   state.supportTickets = supportTickets.error ? [] : supportTickets.data || [];
   state.announcements = announcements.error ? [] : announcements.data || [];
   state.changelog = changelog.error ? [] : changelog.data || [];
+  state.orderLogistics = orderLogistics.error ? [] : orderLogistics.data || [];
+  state.logisticsEvents = logisticsEvents.error ? [] : logisticsEvents.data || [];
+  state.products = products.error ? [] : products.data || [];
+  state.productListings = productListings.error ? [] : productListings.data || [];
+  state.financialSettings = financialSettings.error ? null : financialSettings.data || null;
+  state.commercialSuggestions = commercialSuggestions.error ? [] : commercialSuggestions.data || [];
 }
 
 // order-images e um bucket privado; o que fica salvo no pedido e so o caminho
@@ -98,6 +110,12 @@ export function subscribeRemote() {
     .on("postgres_changes", { event: "*", schema: "public", table: "inventory_items" }, refreshRemote)
     .on("postgres_changes", { event: "*", schema: "public", table: "crm_leads" }, refreshRemote)
     .on("postgres_changes", { event: "*", schema: "public", table: "notifications" }, refreshRemote)
+    .on("postgres_changes", { event: "*", schema: "public", table: "order_logistics" }, refreshRemote)
+    .on("postgres_changes", { event: "*", schema: "public", table: "logistics_events" }, refreshRemote)
+    .on("postgres_changes", { event: "*", schema: "public", table: "products" }, refreshRemote)
+    .on("postgres_changes", { event: "*", schema: "public", table: "product_listings" }, refreshRemote)
+    .on("postgres_changes", { event: "*", schema: "public", table: "financial_settings" }, refreshRemote)
+    .on("postgres_changes", { event: "*", schema: "public", table: "commercial_suggestions" }, refreshRemote)
     .subscribe();
 }
 
@@ -186,6 +204,7 @@ export function fromRemoteOrder(item) {
     quoteUpdatedAt: meta.quoteUpdatedAt,
     source: meta.source,
     leadId: meta.leadId,
+    productId: meta.productId,
     checklist: meta.checklist,
     history: meta.history
   };
