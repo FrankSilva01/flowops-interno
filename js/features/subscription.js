@@ -170,11 +170,11 @@ export function renderSubscriptionPortal() {
         <div class="inline-actions"><button class="secondary-btn" type="button" data-action="scroll-subscription-payment">Gerenciar assinatura</button><button class="secondary-btn" type="button" data-action="scroll-subscription-plans">Alterar plano</button></div>
       </div>
       <div class="subscription-renewal-timeline">
-        <article><i></i><span>Renovação automática</span><strong>${renewalAt ? formatDate(renewalAt) : "Não agendada"}</strong></article>
-        <article><i></i><span>Método de pagamento</span><strong>${html(paymentMethod)}</strong></article>
-        <article><i></i><span>Valor da mensalidade</span><strong>${money.format(subscriptionPrice)} / mês</strong></article>
+        <article><i class="ti ti-calendar-event" aria-hidden="true"></i><span>Renovação automática</span><strong>${renewalAt ? formatDate(renewalAt) : "Não agendada"}</strong></article>
+        <article><i class="ti ti-credit-card" aria-hidden="true"></i><span>Método de pagamento</span><strong>${html(paymentMethod)}</strong></article>
+        <article><i class="ti ti-currency-dollar" aria-hidden="true"></i><span>Valor da mensalidade</span><strong>${money.format(subscriptionPrice)} / mês</strong></article>
       </div>
-      <div class="subscription-health-visual ${health.level}"><i></i><div><strong>${html(health.label)}</strong><span>${html(health.detail)}</span></div></div>
+      <div class="subscription-health-visual ${health.level}"><i class="ti ${healthIcon(health.level)}" aria-hidden="true"></i><div><strong>${html(health.label)}</strong><span>${html(health.detail)}</span></div></div>
     </section>
     <section class="subscription-usage-panel panel">
       <div class="panel-head"><div><h3>Resumo do uso</h3><span>Acompanhe o consumo atual dos principais recursos do plano.</span></div></div>
@@ -708,6 +708,12 @@ export function normalizeApiError(value, fallback) {
 
 export function subscriptionMetric(label, value) {
   return `<article><span>${html(label)}</span><strong>${html(String(value))}</strong></article>`;
+}
+
+function healthIcon(level) {
+  if (level === "healthy") return "ti-heart";
+  if (level === "attention") return "ti-alert-triangle";
+  return "ti-alert-octagon";
 }
 
 export function getCompanyHealth() {
