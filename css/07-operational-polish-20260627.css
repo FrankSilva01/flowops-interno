@@ -1942,3 +1942,17 @@ html[data-theme="dark"] .materials-tabs button.active {
   color: var(--muted);
   font-size: 12px;
 }
+
+/* Inteligencia Comercial - tabela de rentabilidade por anuncio */
+
+.listing-profitability-name {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.table-totals-row td {
+  border-top: 1px solid var(--border);
+  font-weight: 500;
+}

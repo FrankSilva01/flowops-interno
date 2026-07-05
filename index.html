@@ -1142,6 +1142,42 @@
                 <div id="intelligenceSummaryGrid" class="integration-summary-grid"></div>
               </div>
               <div class="panel">
+                <div class="panel-head">
+                  <h3>Rentabilidade por anúncio</h3>
+                  <div class="inline-actions">
+                    <select id="intelligenceTableLevelFilter" aria-label="Filtrar por faixa de rentabilidade">
+                      <option value="all">Todas as faixas</option>
+                      <option value="loss">Prejuízo</option>
+                      <option value="critical">Crítico</option>
+                      <option value="attention">Atenção</option>
+                      <option value="healthy">Saudável</option>
+                      <option value="excellent">Excelente</option>
+                    </select>
+                    <select id="intelligenceTableMarketplaceFilter" aria-label="Filtrar por marketplace">
+                      <option value="all">Todos os marketplaces</option>
+                      <option value="mercado-livre">Mercado Livre</option>
+                      <option value="shopee">Shopee</option>
+                      <option value="amazon">Amazon</option>
+                      <option value="direct">Venda direta</option>
+                    </select>
+                    <select id="intelligenceTableSort" aria-label="Ordenar por">
+                      <option value="margin_desc">Maior margem</option>
+                      <option value="margin_asc">Menor margem</option>
+                      <option value="profit_desc">Maior lucro</option>
+                      <option value="price_desc">Maior preço</option>
+                      <option value="name_asc">Nome (A-Z)</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="table-wrap">
+                  <table>
+                    <thead><tr><th>Produto</th><th>Marketplace</th><th>Preço</th><th>Custo</th><th>Taxas</th><th>Lucro líquido</th><th>Margem</th><th>Ação</th></tr></thead>
+                    <tbody id="listingProfitabilityTable"></tbody>
+                    <tfoot id="listingProfitabilityTotals"></tfoot>
+                  </table>
+                </div>
+              </div>
+              <div class="panel">
                 <div class="panel-head"><h3>Sugestões automáticas</h3></div>
                 <div id="suggestionsList" class="stack-list"></div>
               </div>

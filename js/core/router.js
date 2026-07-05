@@ -62,7 +62,8 @@ import {
   openPriceCalculatorDialog, bindPriceCalculatorForm, openFinancialSettingsDialog, saveFinancialSettings,
   renderCommercialIntelligence, dismissSuggestion, resolveSuggestion, simulateSalesForGoal,
   renderOrderProductOptions, bindProductMarketplaceCheckboxes, bindProductImageInputs,
-  bindProductProfitPreview, openBulkCostDialog, saveBulkCosts,
+  bindProductProfitPreview, openBulkCostDialog, saveBulkCosts, renderListingProfitabilityTable,
+  openPriceCalculatorForListing,
 } from "../features/pricing.js";
 
 function bindFilter(elementId, filterKey) {
@@ -382,6 +383,18 @@ export function bindEvents() {
     state.productSearch = event.target.value.trim().toLowerCase();
     renderCommercialIntelligence();
   });
+  byId("intelligenceTableLevelFilter")?.addEventListener("change", (event) => {
+    state.intelligenceTableLevelFilter = event.target.value;
+    renderListingProfitabilityTable();
+  });
+  byId("intelligenceTableMarketplaceFilter")?.addEventListener("change", (event) => {
+    state.intelligenceTableMarketplaceFilter = event.target.value;
+    renderListingProfitabilityTable();
+  });
+  byId("intelligenceTableSort")?.addEventListener("change", (event) => {
+    state.intelligenceTableSort = event.target.value;
+    renderListingProfitabilityTable();
+  });
   updateMarketplaceCodePlaceholder();
   updateOrderFormStatusColor();
   updateStorefrontTargetFields();
@@ -590,6 +603,10 @@ export function bindActions() {
       if (action === "open-bulk-cost-dialog") {
         if (!ensureCanEdit()) return;
         openBulkCostDialog();
+        return;
+      }
+      if (action === "simulate-listing") {
+        openPriceCalculatorForListing(button.dataset.marketplace, button.dataset.externalId);
         return;
       }
       if (action === "resolve-suggestion") {

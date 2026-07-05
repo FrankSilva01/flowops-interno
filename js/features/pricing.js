@@ -984,6 +984,7 @@ export function renderCommercialIntelligence() {
     return;
   }
   renderProfitabilitySummaryPanel();
+  renderListingProfitabilityTable();
   renderSuggestions();
   renderProfitSimulator();
   renderMarketplaceComparison();
@@ -1004,6 +1005,97 @@ export function renderProfitabilitySummaryPanel() {
     <article><span>Margem média</span><strong>${totals.avgMarginPct.toFixed(1)}%</strong></article>
     <article><span>Lucro potencial estimado</span><strong style="color:var(--green)">${money.format(potentialGain)}</strong><small>Estimado, se reprecificado para margem saudável</small></article>
   `;
+}
+
+// --- Tabela de rentabilidade por anuncio (filtros + ordenacao) ---
+
+export function getListingsProfitabilityTable() {
+  const levelFilter = state.intelligenceTableLevelFilter;
+  const marketplaceFilter = state.intelligenceTableMarketplaceFilter;
+  const sortBy = state.intelligenceTableSort;
+  const rows = state.marketplaceListings
+    .map((listing) => ({ listing, profitability: getListingProfitability(listing) }))
+    .filter((row) => row.profitability.hasCost)
+    .filter((row) => levelFilter === "all" || row.profitability.level.key === levelFilter)
+    .filter((row) => marketplaceFilter === "all" || normalizeMarketplaceChannel(row.listing.marketplace) === marketplaceFilter);
+  const sorters = {
+    margin_desc: (a, b) => b.profitability.marginPct - a.profitability.marginPct,
+    margin_asc: (a, b) => a.profitability.marginPct - b.profitability.marginPct,
+    profit_desc: (a, b) => b.profitability.netProfit - a.profitability.netProfit,
+    price_desc: (a, b) => Number(b.listing.price || 0) - Number(a.listing.price || 0),
+    name_asc: (a, b) => (a.listing.title || "").localeCompare(b.listing.title || "", "pt-BR"),
+  };
+  return rows.sort(sorters[sortBy] || sorters.margin_desc);
+}
+
+export function renderListingProfitabilityTable() {
+  const target = byId("listingProfitabilityTable");
+  if (!target) return;
+  const rows = getListingsProfitabilityTable();
+  target.innerHTML = rows.length ? rows.map(({ listing, profitability }) => {
+    const feesTotal = profitability.feeAmount + profitability.taxAmount + profitability.shipping + profitability.packaging;
+    const feeBreakdown = `Comissão ${profitability.feePct.toFixed(1)}%: ${money.format(profitability.feeAmount)} + Imposto: ${money.format(profitability.taxAmount)} + Frete/embalagem: ${money.format(profitability.shipping + profitability.packaging)}`;
+    const profitColor = profitability.netProfit >= 0 ? "var(--green)" : "var(--red)";
+    return `
+      <tr>
+        <td class="listing-profitability-name" title="${html(listing.title)}">${html(listing.title)}</td>
+        <td><span class="badge neutral">${html(marketplaceDisplayName(listing.marketplace))}</span></td>
+        <td>${money.format(Number(listing.price || 0))}</td>
+        <td>${money.format(profitability.cost)}</td>
+        <td title="${html(feeBreakdown)}">${money.format(feesTotal)}</td>
+        <td style="color:${profitColor}">${money.format(profitability.netProfit)}</td>
+        <td><span class="badge ${profitability.level.className}">${profitability.marginPct.toFixed(1)}%</span></td>
+        <td><button class="icon-btn" type="button" data-action="simulate-listing" data-marketplace="${html(listing.marketplace)}" data-external-id="${html(listing.external_id)}">Simular</button></td>
+      </tr>
+    `;
+  }).join("") : `<tr><td colspan="8">Nenhum anúncio com custo cadastrado para este filtro.</td></tr>`;
+  renderListingProfitabilityTotals(rows);
+  bindActions();
+}
+
+function renderListingProfitabilityTotals(rows) {
+  const target = byId("listingProfitabilityTotals");
+  if (!target) return;
+  if (!rows.length) {
+    target.innerHTML = "";
+    return;
+  }
+  const revenueTotal = rows.reduce((sum, row) => sum + row.profitability.revenue, 0);
+  const costTotal = rows.reduce((sum, row) => sum + row.profitability.cost, 0);
+  const feeTotal = rows.reduce((sum, row) => sum + row.profitability.feeAmount + row.profitability.taxAmount + row.profitability.shipping + row.profitability.packaging, 0);
+  const netProfitTotal = rows.reduce((sum, row) => sum + row.profitability.netProfit, 0);
+  const avgMargin = rows.reduce((sum, row) => sum + row.profitability.marginPct, 0) / rows.length;
+  target.innerHTML = `
+    <tr class="table-totals-row">
+      <td>Total (${rows.length})</td>
+      <td></td>
+      <td>${money.format(revenueTotal)}</td>
+      <td>${money.format(costTotal)}</td>
+      <td>${money.format(feeTotal)}</td>
+      <td>${money.format(netProfitTotal)}</td>
+      <td>${avgMargin.toFixed(1)}%</td>
+      <td></td>
+    </tr>
+  `;
+}
+
+export function openPriceCalculatorForListing(marketplace, externalId) {
+  const listing = state.marketplaceListings.find((item) => item.marketplace === marketplace && item.external_id === externalId);
+  if (!listing) return;
+  const profitability = getListingProfitability(listing);
+  if (!profitability.hasCost) return;
+  const form = byId("priceCalculatorForm");
+  const channel = normalizeMarketplaceChannel(listing.marketplace);
+  form.elements.cost.value = profitability.cost;
+  form.elements.marketplace.value = channel === "mercado-livre" ? "mercado_livre" : ["shopee", "amazon"].includes(channel) ? channel : "direct";
+  form.elements.listingType.value = channel === "mercado-livre" ? classifyMlListingType(listing.raw_payload || {}) : "classic";
+  form.elements.taxPct.value = profitability.taxPct;
+  form.elements.shipping.value = profitability.shipping;
+  form.elements.packaging.value = profitability.packaging;
+  form.dataset.initialized = "true";
+  byId("priceCalculatorListingType").hidden = form.elements.marketplace.value !== "mercado_livre";
+  updatePriceCalculatorResult();
+  byId("priceCalculatorDialog").showModal();
 }
 
 // --- Configuracoes financeiras por empresa ---
