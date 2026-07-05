@@ -432,9 +432,25 @@ export function renderSellerReputationPanel() {
 
 // --- Painel geral (botao de sync + "atualizado em") ---
 export function renderMarketplaceAnalyticsPanel() {
+  if (!hasCommercialIntelligenceAccess()) return;
+  const connected = state.marketplaceAccounts.length > 0;
+  const emptyState = byId("marketplaceAnalyticsEmptyState");
+  const panels = ["sellerReputationPanel", "marketplacePerformancePanel", "investmentRankingPanel", "categoryTrendsPanel"];
+  if (emptyState) emptyState.hidden = connected;
+  if (!connected) {
+    panels.forEach((id) => {
+      const panel = byId(id);
+      if (panel) panel.hidden = true;
+    });
+    return;
+  }
+  ["marketplacePerformancePanel", "investmentRankingPanel", "categoryTrendsPanel"].forEach((id) => {
+    const panel = byId(id);
+    if (panel) panel.hidden = false;
+  });
+
   const button = byId("syncAnalyticsBtn");
   const status = byId("analyticsSyncedAtLabel");
-  if (!hasCommercialIntelligenceAccess()) return;
   if (button) {
     button.disabled = state.analyticsSyncing;
     button.textContent = state.analyticsSyncing ? "Atualizando..." : "Atualizar métricas";
