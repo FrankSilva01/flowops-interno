@@ -120,7 +120,7 @@ export function renderNotifications() {
   });
   list.innerHTML = visible.length ? visible.slice(0, state.notificationLimit).map((item) => `
     <button class="notification-item ${item.is_read ? "" : "unread"} ${html(item.priority)}" type="button" data-action="open-notification" data-id="${html(item.id)}">
-      <i class="notification-item-icon" aria-hidden="true"></i>
+      <i class="ti ${notificationIcon(item)} notification-item-icon ${notificationTone(item)}" aria-hidden="true"></i>
       <span class="notification-item-copy"><strong>${html(item.title)}</strong><span>${html(item.message || "")}</span><small>${formatDateTime(item.created_at)}</small></span>
     </button>
   `).join("") : `<div class="empty-state compact"><strong>Tudo certo por aqui</strong><span>Nenhuma notificação encontrada.</span></div>`;
@@ -179,6 +179,15 @@ function groupNotifications(items) {
 function notificationTone(item) {
   if (item.is_read) return "ok";
   return item.priority === "high" ? "warn" : "info";
+}
+
+function notificationIcon(item) {
+  if (item.type === "marketplace") return "ti-building-store";
+  if (item.type === "logistics") return "ti-truck";
+  if (item.type === "quote" || item.type === "lead") return "ti-file-invoice";
+  if (item.type === "stock") return "ti-box";
+  if (item.type === "subscription") return "ti-credit-card";
+  return item.priority === "high" ? "ti-alert-triangle" : "ti-bell";
 }
 
 export function notificationAllowed(item) {
