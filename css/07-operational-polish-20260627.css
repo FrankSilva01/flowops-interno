@@ -687,3 +687,188 @@
   color: var(--red);
 }
 
+/* Redesign visual - mudanca 2: dashboard em camadas */
+
+.trial-banner {
+  border-radius: 6px;
+  box-shadow: none;
+  padding: 8px 14px;
+  align-items: center;
+}
+
+.trial-banner div,
+.trial-banner span {
+  display: inline;
+}
+
+.trial-banner i {
+  font-size: 16px;
+}
+
+.trial-banner strong {
+  font-weight: 600;
+}
+
+.attention-row,
+.highlights-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.attention-card .panel-head {
+  margin-bottom: 8px;
+}
+
+.attention-items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.attention-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 4px;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  cursor: default;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  width: 100%;
+}
+
+button.attention-item {
+  cursor: pointer;
+}
+
+button.attention-item:hover {
+  background: var(--canvas);
+}
+
+.attention-item span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.attention-item strong {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.dashboard-collapsible-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+
+.dashboard-collapsible-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dashboard-collapsible-head small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.dashboard-collapsible-toggle .ti-chevron-down {
+  transition: transform 160ms ease;
+}
+
+.dashboard-card.collapsed .dashboard-collapsible-toggle .ti-chevron-down {
+  transform: rotate(-90deg);
+}
+
+.dashboard-collapsible-body {
+  margin-top: 12px;
+}
+
+.dashboard-card.collapsed .dashboard-collapsible-body {
+  display: none;
+}
+
+.secondary-btn.compact {
+  min-height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.notification-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 8px;
+  background: var(--blue);
+}
+
+.notification-dot.info,
+.notification-dot.normal {
+  background: var(--blue);
+}
+
+.notification-dot.warn,
+.notification-dot.high {
+  background: var(--amber);
+}
+
+.notification-dot.ok {
+  background: var(--green);
+}
+
+.dashboard-notification-list button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.dashboard-notification-list button > span:last-of-type {
+  flex: 1;
+  min-width: 0;
+}
+
+.dashboard-notification-list button strong,
+.dashboard-notification-list button small {
+  display: block;
+}
+
+.dashboard-notification-list button small {
+  color: var(--muted);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-notification-list time {
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+

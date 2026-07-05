@@ -31,7 +31,8 @@ import {
   renderDashboard, renderCompanySidebarStatus, getRecentIntegrationErrors, getTokenAlert,
   renderIntegrationHealth, renderAlerts, renderWeeklyFocus, applyFocusFilter, renderTopOpenOrders,
   cashByDate, getTopClient, openEmailDigest, renderCommercialDashboard, renderTopProducts,
-  renderFollowUps, getFinancialMetrics,
+  renderFollowUps, getFinancialMetrics, renderAttentionNeeded, updateDashboardCollapsibleSummaries,
+  bindDashboardCollapsibles,
 } from "./features/dashboard.js";
 import {
   renderOrders, renderOrderReferences, renderQuoteActions, renderTags, renderInlineSelect,

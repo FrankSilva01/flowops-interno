@@ -565,6 +565,10 @@ export function bindActions() {
         applyFocusFilter(button.dataset.focus);
         return;
       }
+      if (action === "view-orders") {
+        setView("orders");
+        return;
+      }
       if (action === "open-quotes") {
         state.filters.orderQuote = "quotes";
         syncOrderFilterControls();

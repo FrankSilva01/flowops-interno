@@ -1,5 +1,5 @@
 import { state } from "../core/state.js";
-import { byId, html, formatDateTime, flashActionMessage } from "../core/dom.js";
+import { byId, html, formatDateTime, formatRelativeTime, flashActionMessage } from "../core/dom.js";
 import { bindActions, setView } from "../core/router.js";
 import { getLeadFollowUp, openLeadDialog } from "./customers.js";
 import { formatInventoryNumber, startInventoryEdit } from "./materials.js";
@@ -126,13 +126,16 @@ export function renderNotifications() {
   `).join("") : `<div class="empty-state compact"><strong>Tudo certo por aqui</strong><span>Nenhuma notificação encontrada.</span></div>`;
   const dashboardList = byId("dashboardNotificationList");
   if (dashboardList) {
-    dashboardList.innerHTML = visible.length ? visible.slice(0, 5).map((item) => `
+    const preview = visible.slice(0, 4);
+    dashboardList.innerHTML = preview.length ? preview.map((item) => `
       <button type="button" data-action="open-notification" data-id="${html(item.id)}">
-        <span class="notification-dot ${html(item.priority)}"></span>
+        <span class="notification-dot ${notificationTone(item)}"></span>
         <span><strong>${html(item.title)}</strong><small>${html(item.message || "")}</small></span>
-        <time>${formatDateTime(item.created_at)}</time>
+        <time title="${formatDateTime(item.created_at)}">${formatRelativeTime(item.created_at)}</time>
       </button>`).join("") : `<div class="empty-chart">Nenhuma notificação importante.</div>`;
   }
+  const openAllBtn = byId("openAllNotificationsBtn");
+  if (openAllBtn) openAllBtn.textContent = visible.length ? `Ver todas (${visible.length})` : "Ver todas";
   const pageList = byId("notificationsPageList");
   if (pageList) {
     pageList.innerHTML = visible.length ? visible.map((item) => `
@@ -145,6 +148,11 @@ export function renderNotifications() {
       </article>`).join("") : `<div class="empty-chart">Nenhuma notificação para este filtro.</div>`;
   }
   bindActions();
+}
+
+function notificationTone(item) {
+  if (item.is_read) return "ok";
+  return item.priority === "high" ? "warn" : "info";
 }
 
 export function notificationAllowed(item) {
@@ -262,6 +270,6 @@ export function renderTrialBanner() {
   }
   banner.hidden = false;
   banner.className = `trial-banner ${alert.level === "critical" ? "critical" : "warning"}`;
-  banner.innerHTML = `<div><strong>${html(alert.title)}</strong><span>${html(alert.message)}</span></div><button type="button" class="secondary-btn" data-action="open-subscription">Ver assinatura</button>`;
+  banner.innerHTML = `<i class="ti ti-alert-triangle" aria-hidden="true"></i><span><strong>${html(alert.title)}:</strong> ${html(alert.message)}</span><button type="button" class="secondary-btn" data-action="open-subscription">Ver assinatura</button>`;
   bindActions();
 }

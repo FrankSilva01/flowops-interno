@@ -63,6 +63,23 @@ export function formatDateTime(value) {
   }).format(new Date(value));
 }
 
+export function formatRelativeTime(value) {
+  if (!value) return "";
+  const time = new Date(value).getTime();
+  if (!Number.isFinite(time)) return "";
+  const diffSec = Math.round((Date.now() - time) / 1000);
+  if (diffSec < 45) return "agora mesmo";
+  const diffMin = Math.round(diffSec / 60);
+  if (diffMin < 60) return `há ${diffMin} min`;
+  const diffHour = Math.round(diffMin / 60);
+  if (diffHour < 24) return `há ${diffHour}h`;
+  const diffDay = Math.round(diffHour / 24);
+  if (diffDay < 7) return `há ${diffDay}d`;
+  const diffWeek = Math.round(diffDay / 7);
+  if (diffWeek < 5) return `há ${diffWeek} sem`;
+  return formatDate(value);
+}
+
 export function nextId(prefix, rows) {
   const defaultOrganization = "00000000-0000-0000-0000-000000000001";
   const tenantCode = state.organizationId && state.organizationId !== defaultOrganization ?

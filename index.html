@@ -142,6 +142,8 @@
               <button id="resetDashboardBtn" class="secondary-btn" type="button">Restaurar padrão</button>
             </div>
           </div>
+
+          <!-- Camada 1: KPIs financeiros -->
           <div class="kpi-grid">
             <article class="kpi"><span>Entradas</span><strong id="kpiIncome">R$ 0,00</strong></article>
             <article class="kpi"><span>Saídas</span><strong id="kpiExpense">R$ 0,00</strong></article>
@@ -153,82 +155,171 @@
             <article class="kpi"><span>Pedidos no mês</span><strong id="kpiMonthOrders">0</strong></article>
             <article class="kpi"><span>Cliente que mais comprou</span><strong id="kpiTopClient">-</strong></article>
           </div>
-          <section class="panel dashboard-notification-preview">
-            <div class="panel-head">
-              <div><h3>Notificações importantes</h3><span>Eventos recentes da empresa e da plataforma</span></div>
-              <div class="panel-head-actions">
-                <button id="clearDashboardNotificationsBtn" class="secondary-btn" type="button">Limpar tela</button>
-                <button id="openAllNotificationsBtn" class="secondary-btn" type="button">Ver todas</button>
-              </div>
-            </div>
-            <div id="dashboardNotificationList" class="dashboard-notification-list"></div>
-          </section>
-          <div id="dashboardGrid" class="dashboard-grid">
-            <section class="panel dashboard-card dashboard-overview-card" data-dashboard-card="operations-overview" draggable="true">
-              <div class="panel-head"><h3>Visão operacional</h3></div>
-              <div class="dashboard-overview-grid">
-                <article><h4>Financeiro</h4><div id="financeChart" class="chart-bars"></div></article>
-                <article><h4>Encomendas por status</h4><div id="statusChart" class="chart-bars"></div></article>
-                <article><h4>Encomendas por material</h4><div id="materialChart" class="chart-bars"></div></article>
-                <article><h4>Movimento por dia</h4><div id="dailyCashChart" class="column-chart"></div></article>
+
+          <!-- Camada 2: Atenção necessária -->
+          <div class="attention-row">
+            <section class="panel attention-card">
+              <div class="panel-head"><h3>Prazos</h3></div>
+              <div class="attention-items">
+                <button type="button" class="attention-item" data-action="focus-orders" data-focus="noDate"><span>Sem data de entrega</span><strong id="attentionNoDate">0</strong></button>
+                <button type="button" class="attention-item" data-action="focus-orders" data-focus="soon"><span>Prazo curto</span><strong id="attentionSoon">0</strong></button>
+                <button type="button" class="attention-item" data-action="focus-orders" data-focus="urgent"><span>Alta prioridade</span><strong id="attentionUrgent">0</strong></button>
               </div>
             </section>
-            <section class="panel dashboard-card" data-dashboard-card="focus" draggable="true">
-              <div class="panel-head"><h3>Atenção da semana</h3></div>
-              <div id="weeklyFocus" class="focus-grid"></div>
+            <section class="panel attention-card">
+              <div class="panel-head"><h3>Financeiro</h3></div>
+              <div class="attention-items">
+                <button type="button" class="attention-item" data-action="focus-orders" data-focus="noValue"><span>Sem valor</span><strong id="attentionNoValue">0</strong></button>
+                <div class="attention-item"><span>Estoque crítico</span><strong id="attentionLowStock">0</strong></div>
+                <div class="attention-item"><span>Assinatura</span><span id="attentionSubscriptionBadge" class="badge neutral">-</span></div>
+              </div>
             </section>
-            <section class="panel dashboard-card" data-dashboard-card="alerts" draggable="true">
-              <div class="panel-head"><h3>Alertas</h3></div>
-              <div id="alertsList" class="stack-list"></div>
-            </section>
-            <section class="panel dashboard-card" data-dashboard-card="integration-health" draggable="true">
-              <div class="panel-head"><h3>Integrações</h3></div>
-              <button id="integrationErrorCard" class="integration-error-card" type="button" data-action="open-marketplace-errors">
-                <span>Integrações com erro</span>
-                <strong id="integrationErrorCount">0</strong>
-                <small>Ver Logs API</small>
-              </button>
-              <div id="dashboardTokenAlert"></div>
-            </section>
-            <section class="panel dashboard-card" data-dashboard-card="top-open" draggable="true">
-              <div class="panel-head"><h3>Top valores em aberto</h3></div>
-              <div id="topOpenOrders" class="stack-list"></div>
-            </section>
-            <section class="panel dashboard-card" data-dashboard-card="upcoming" draggable="true">
-              <div class="panel-head"><h3>Próximas entregas</h3></div>
+          </div>
+
+          <!-- Camada 3: Proximas entregas + Notificacoes recentes -->
+          <div class="highlights-row">
+            <section class="panel">
+              <div class="panel-head">
+                <h3>Próximas entregas</h3>
+                <button class="secondary-btn compact" type="button" data-action="view-orders">Ver todas</button>
+              </div>
               <div id="upcomingList" class="stack-list"></div>
             </section>
-            <section class="panel dashboard-card" data-dashboard-card="logistics" draggable="true">
-              <div class="panel-head"><h3>Status das Entregas</h3></div>
-              <div id="logisticsStatusWidget" class="integration-summary-grid"></div>
-            </section>
-            <section class="panel dashboard-card" data-dashboard-card="profitability" draggable="true">
-              <div class="panel-head"><h3>Saúde dos Anúncios</h3></div>
-              <div id="profitabilityWidget" class="integration-summary-grid"></div>
-            </section>
-            <section class="panel dashboard-card" data-dashboard-card="material-summary" draggable="true">
-              <div class="panel-head"><h3>Resumo por material</h3></div>
-              <div id="materialSummary" class="stack-list"></div>
-            </section>
-            <section class="panel dashboard-card" data-dashboard-card="commercial" draggable="true">
-              <div class="panel-head"><h3>Comercial</h3></div>
-              <div id="commercialDashboard" class="commercial-grid"></div>
-            </section>
-            <section class="panel dashboard-card" data-dashboard-card="top-products" draggable="true">
+            <section class="panel">
               <div class="panel-head">
-                <h3>Produtos mais vendidos</h3>
-                <select id="topProductsPeriod" aria-label="Período">
-                  <option value="30">30 dias</option>
-                  <option value="90">90 dias</option>
-                  <option value="365">Ano</option>
-                  <option value="all">Todos</option>
-                </select>
+                <h3>Notificações recentes</h3>
+                <div class="panel-head-actions">
+                  <button id="clearDashboardNotificationsBtn" class="secondary-btn compact" type="button">Limpar tela</button>
+                  <button id="openAllNotificationsBtn" class="secondary-btn compact" type="button">Ver todas</button>
+                </div>
               </div>
-              <div id="topProductsList" class="top-products-list"></div>
+              <div id="dashboardNotificationList" class="dashboard-notification-list"></div>
             </section>
-            <section class="panel dashboard-card" data-dashboard-card="follow-up" draggable="true">
-              <div class="panel-head"><h3>Follow-up</h3></div>
-              <div id="followUpList" class="stack-list"></div>
+          </div>
+
+          <!-- Camada 4: blocos detalhados colapsaveis -->
+          <div id="dashboardGrid" class="dashboard-grid">
+            <section class="panel dashboard-card dashboard-collapsible collapsed" data-dashboard-card="financial" draggable="true">
+              <button class="dashboard-collapsible-toggle" type="button" data-collapsible-toggle aria-expanded="false">
+                <span class="dashboard-collapsible-head"><strong>Financeiro</strong><small id="summaryFinancial">-</small></span>
+                <i class="ti ti-chevron-down" aria-hidden="true"></i>
+              </button>
+              <div class="dashboard-collapsible-body">
+                <div id="financeChart" class="chart-bars"></div>
+              </div>
+            </section>
+            <section class="panel dashboard-card dashboard-collapsible collapsed" data-dashboard-card="status-breakdown" draggable="true">
+              <button class="dashboard-collapsible-toggle" type="button" data-collapsible-toggle aria-expanded="false">
+                <span class="dashboard-collapsible-head"><strong>Encomendas por status</strong><small id="summaryStatusBreakdown">-</small></span>
+                <i class="ti ti-chevron-down" aria-hidden="true"></i>
+              </button>
+              <div class="dashboard-collapsible-body">
+                <div id="statusChart" class="chart-bars"></div>
+              </div>
+            </section>
+            <section class="panel dashboard-card dashboard-collapsible collapsed" data-dashboard-card="material-breakdown" draggable="true">
+              <button class="dashboard-collapsible-toggle" type="button" data-collapsible-toggle aria-expanded="false">
+                <span class="dashboard-collapsible-head"><strong>Encomendas por material</strong><small id="summaryMaterialBreakdown">-</small></span>
+                <i class="ti ti-chevron-down" aria-hidden="true"></i>
+              </button>
+              <div class="dashboard-collapsible-body">
+                <div id="materialChart" class="chart-bars"></div>
+              </div>
+            </section>
+            <section class="panel dashboard-card dashboard-collapsible collapsed" data-dashboard-card="daily-cash" draggable="true">
+              <button class="dashboard-collapsible-toggle" type="button" data-collapsible-toggle aria-expanded="false">
+                <span class="dashboard-collapsible-head"><strong>Movimento por dia</strong><small id="summaryDailyCash">-</small></span>
+                <i class="ti ti-chevron-down" aria-hidden="true"></i>
+              </button>
+              <div class="dashboard-collapsible-body">
+                <div id="dailyCashChart" class="column-chart"></div>
+              </div>
+            </section>
+            <section class="panel dashboard-card dashboard-collapsible collapsed" data-dashboard-card="integration-health" draggable="true">
+              <button class="dashboard-collapsible-toggle" type="button" data-collapsible-toggle aria-expanded="false">
+                <span class="dashboard-collapsible-head"><strong>Integrações</strong><small id="summaryIntegrations">-</small></span>
+                <i class="ti ti-chevron-down" aria-hidden="true"></i>
+              </button>
+              <div class="dashboard-collapsible-body">
+                <button id="integrationErrorCard" class="integration-error-card" type="button" data-action="open-marketplace-errors">
+                  <span>Integrações com erro</span>
+                  <strong id="integrationErrorCount">0</strong>
+                  <small>Ver Logs API</small>
+                </button>
+                <div id="dashboardTokenAlert"></div>
+              </div>
+            </section>
+            <section class="panel dashboard-card dashboard-collapsible collapsed" data-dashboard-card="top-open" draggable="true">
+              <button class="dashboard-collapsible-toggle" type="button" data-collapsible-toggle aria-expanded="false">
+                <span class="dashboard-collapsible-head"><strong>Top valores em aberto</strong><small id="summaryTopOpen">-</small></span>
+                <i class="ti ti-chevron-down" aria-hidden="true"></i>
+              </button>
+              <div class="dashboard-collapsible-body">
+                <div id="topOpenOrders" class="stack-list"></div>
+              </div>
+            </section>
+            <section class="panel dashboard-card dashboard-collapsible collapsed" data-dashboard-card="logistics" draggable="true">
+              <button class="dashboard-collapsible-toggle" type="button" data-collapsible-toggle aria-expanded="false">
+                <span class="dashboard-collapsible-head"><strong>Status das Entregas</strong><small id="summaryLogistics">-</small></span>
+                <i class="ti ti-chevron-down" aria-hidden="true"></i>
+              </button>
+              <div class="dashboard-collapsible-body">
+                <div id="logisticsStatusWidget" class="integration-summary-grid"></div>
+              </div>
+            </section>
+            <section class="panel dashboard-card dashboard-collapsible collapsed" data-dashboard-card="profitability" draggable="true">
+              <button class="dashboard-collapsible-toggle" type="button" data-collapsible-toggle aria-expanded="false">
+                <span class="dashboard-collapsible-head"><strong>Saúde dos Anúncios</strong><small id="summaryProfitability">-</small></span>
+                <i class="ti ti-chevron-down" aria-hidden="true"></i>
+              </button>
+              <div class="dashboard-collapsible-body">
+                <div id="profitabilityWidget" class="integration-summary-grid"></div>
+              </div>
+            </section>
+            <section class="panel dashboard-card dashboard-collapsible collapsed" data-dashboard-card="material-summary" draggable="true">
+              <button class="dashboard-collapsible-toggle" type="button" data-collapsible-toggle aria-expanded="false">
+                <span class="dashboard-collapsible-head"><strong>Resumo por material</strong><small id="summaryMaterialSummary">-</small></span>
+                <i class="ti ti-chevron-down" aria-hidden="true"></i>
+              </button>
+              <div class="dashboard-collapsible-body">
+                <div id="materialSummary" class="stack-list"></div>
+              </div>
+            </section>
+            <section class="panel dashboard-card dashboard-collapsible collapsed" data-dashboard-card="commercial" draggable="true">
+              <button class="dashboard-collapsible-toggle" type="button" data-collapsible-toggle aria-expanded="false">
+                <span class="dashboard-collapsible-head"><strong>Comercial</strong><small id="summaryCommercial">-</small></span>
+                <i class="ti ti-chevron-down" aria-hidden="true"></i>
+              </button>
+              <div class="dashboard-collapsible-body">
+                <div id="commercialDashboard" class="commercial-grid"></div>
+              </div>
+            </section>
+            <section class="panel dashboard-card dashboard-collapsible collapsed" data-dashboard-card="top-products" draggable="true">
+              <button class="dashboard-collapsible-toggle" type="button" data-collapsible-toggle aria-expanded="false">
+                <span class="dashboard-collapsible-head"><strong>Produtos mais vendidos</strong><small id="summaryTopProducts">-</small></span>
+                <i class="ti ti-chevron-down" aria-hidden="true"></i>
+              </button>
+              <div class="dashboard-collapsible-body">
+                <div class="panel-head">
+                  <span></span>
+                  <select id="topProductsPeriod" aria-label="Período">
+                    <option value="30">30 dias</option>
+                    <option value="90">90 dias</option>
+                    <option value="365">Ano</option>
+                    <option value="all">Todos</option>
+                  </select>
+                </div>
+                <div id="topProductsList" class="top-products-list"></div>
+              </div>
+            </section>
+            <section class="panel dashboard-card dashboard-collapsible collapsed" data-dashboard-card="follow-up" draggable="true">
+              <button class="dashboard-collapsible-toggle" type="button" data-collapsible-toggle aria-expanded="false">
+                <span class="dashboard-collapsible-head"><strong>Follow-up</strong><small id="summaryFollowUp">-</small></span>
+                <i class="ti ti-chevron-down" aria-hidden="true"></i>
+              </button>
+              <div class="dashboard-collapsible-body">
+                <div id="followUpList" class="stack-list"></div>
+              </div>
             </section>
           </div>
         </section>

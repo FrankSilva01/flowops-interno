@@ -1,19 +1,20 @@
 import { state, money } from "../core/state.js";
-import { byId, html, countBy, sum, formatDate, formatDateShort, formatDateTime, flashActionMessage } from "../core/dom.js";
+import { byId, html, countBy, sum, formatDate, formatDateShort, formatDateTime, formatRelativeTime, flashActionMessage } from "../core/dom.js";
 import { renderBarChart, renderLineChart } from "../core/charts.js";
 import { setView, bindActions, renderTables } from "../core/router.js";
 import { getOrderPriority, getOrderCode, getMarketplaceLabel, syncOrderFilterControls } from "./orders.js";
 import { formatInventoryNumber, setMaterialsTab } from "./materials.js";
 import { getLeadFollowUp } from "./customers.js";
-import { getSubscriptionAlert } from "./subscription.js";
+import { getSubscriptionAlert, subscriptionStatusText } from "./subscription.js";
 import { normalizeMarketplaceChannel } from "./marketplace.js";
-import { renderDeliveryStatusWidget } from "./logistics.js";
-import { renderProfitabilityDashboardWidget } from "./pricing.js";
+import { renderDeliveryStatusWidget, getDeliveryStatusCounts } from "./logistics.js";
+import { renderProfitabilityDashboardWidget, getProfitabilitySummary, hasCommercialIntelligenceAccess } from "./pricing.js";
 
 export function initDashboardDrag() {
   applyDashboardOrder();
   renderDashboardCustomizer();
   applyDashboardVisibility();
+  bindDashboardCollapsibles();
   document.querySelectorAll("[data-dashboard-card]").forEach((card) => {
     card.addEventListener("dragstart", () => {
       state.draggedDashboardCard = card;
@@ -32,6 +33,17 @@ export function initDashboardDrag() {
       const rect = card.getBoundingClientRect();
       const after = event.clientY > rect.top + rect.height / 2;
       grid.insertBefore(dragging, after ? card.nextSibling : card);
+    });
+  });
+}
+
+export function bindDashboardCollapsibles() {
+  document.querySelectorAll("[data-collapsible-toggle]").forEach((toggle) => {
+    toggle.addEventListener("click", () => {
+      const card = toggle.closest("[data-dashboard-card]");
+      if (!card) return;
+      const collapsed = card.classList.toggle("collapsed");
+      toggle.setAttribute("aria-expanded", String(!collapsed));
     });
   });
 }
@@ -57,12 +69,12 @@ export function saveDashboardOrder() {
 }
 
 export const DASHBOARD_CARD_LABELS = {
-  "operations-overview": "Visão operacional",
-  focus: "Atenção da semana",
-  alerts: "Alertas",
+  financial: "Financeiro",
+  "status-breakdown": "Encomendas por status",
+  "material-breakdown": "Encomendas por material",
+  "daily-cash": "Movimento por dia",
   "integration-health": "Integrações",
   "top-open": "Top valores em aberto",
-  upcoming: "Próximas entregas",
   logistics: "Status das Entregas",
   profitability: "Saúde dos Anúncios",
   "material-summary": "Resumo por material",
@@ -163,22 +175,23 @@ export function renderDashboard() {
     { label: "A receber", value: receivable, color: "var(--blue)", format: money.format }
   ]);
 
-  renderBarChart("statusChart", countBy(state.data.orders, (item) => item.status || "Sem status")
+  const statusCounts = countBy(state.data.orders, (item) => item.status || "Sem status");
+  renderBarChart("statusChart", statusCounts
     .map((item) => ({ ...item, color: item.label === "Entregue" ? "var(--green)" : "var(--amber)" })));
 
-  renderLineChart("dailyCashChart", cashByDate(state.data.cash).map((item) => ({ label: formatDateShort(item.date), value: item.income - item.expense, income: item.income, expense: item.expense })), { valueLabel: "Saldo" });
-  renderAlerts();
-  renderWeeklyFocus();
+  const dailyRows = cashByDate(state.data.cash).map((item) => ({ label: formatDateShort(item.date), value: item.income - item.expense, income: item.income, expense: item.expense }));
+  renderLineChart("dailyCashChart", dailyRows, { valueLabel: "Saldo" });
+  renderAttentionNeeded();
   renderTopOpenOrders();
 
-  renderBarChart("materialChart", countBy(state.data.orders, (item) => item.material || "Não informado")
-    .map((item) => ({ ...item, color: "var(--teal)" })));
+  const materialCounts = countBy(state.data.orders, (item) => item.material || "Não informado");
+  renderBarChart("materialChart", materialCounts.map((item) => ({ ...item, color: "var(--teal)" })));
 
   const upcoming = [...state.data.orders]
     .filter((item) => item.status !== "Entregue")
     .sort((a, b) => (a.deliveryDate || "9999-99-99").localeCompare(b.deliveryDate || "9999-99-99"))
-    .slice(0, 6);
-  byId("upcomingList").innerHTML = upcoming.map((item) => `
+    .slice(0, 4);
+  byId("upcomingList").innerHTML = upcoming.length ? upcoming.map((item) => `
     <div class="list-row">
       <div>
         <strong>${html(item.description)}</strong>
@@ -186,7 +199,7 @@ export function renderDashboard() {
       </div>
       <span class="badge queue">${html(item.status)}</span>
     </div>
-  `).join("");
+  `).join("") : `<div class="empty-chart">Nenhuma entrega pendente.</div>`;
 
   const materials = new Map();
   state.data.orders.forEach((item) => {
@@ -201,6 +214,7 @@ export function renderDashboard() {
   `).join("");
   renderDeliveryStatusWidget();
   renderProfitabilityDashboardWidget();
+  updateDashboardCollapsibleSummaries({ income, expense, receivable, statusCounts, materialCounts, dailyRows });
   applyDashboardVisibility();
 }
 
@@ -251,6 +265,63 @@ export function renderIntegrationHealth() {
        `<div class="integration-alert ${tokenAlert.level}">${html(tokenAlert.message)}</div>`
       : `<div class="integration-alert success">Tokens dentro do prazo.</div>`;
   }
+}
+
+export function renderAttentionNeeded() {
+  const open = state.data.orders.filter((item) => item.status !== "Entregue" && !item.quoteStage);
+  const noDate = open.filter((item) => !item.deliveryDate).length;
+  const soon = open.filter((item) => getOrderPriority(item).key === "soon").length;
+  const urgent = open.filter((item) => ["urgent", "high"].includes(getOrderPriority(item).key)).length;
+  const noValue = open.filter((item) => !Number(item.charged || 0)).length;
+  const lowStock = state.inventoryItems.filter((item) => Number(item.quantity || 0) <= Number(item.minimum_quantity || 0)).length;
+  const subscriptionAlert = getSubscriptionAlert();
+
+  byId("attentionNoDate").textContent = noDate;
+  byId("attentionSoon").textContent = soon;
+  byId("attentionUrgent").textContent = urgent;
+  byId("attentionNoValue").textContent = noValue;
+  byId("attentionLowStock").textContent = lowStock;
+  const subscriptionBadge = byId("attentionSubscriptionBadge");
+  if (subscriptionBadge) {
+    subscriptionBadge.textContent = subscriptionAlert ? subscriptionAlert.title : subscriptionStatusText(state.subscription?.status);
+    subscriptionBadge.className = `badge ${subscriptionAlert ? (subscriptionAlert.level === "critical" ? "danger-badge" : "queue") : "done"}`;
+  }
+  bindActions();
+}
+
+export function updateDashboardCollapsibleSummaries({ income, expense, receivable, statusCounts, materialCounts, dailyRows }) {
+  const setSummary = (id, text) => {
+    const el = byId(id);
+    if (el) el.textContent = text;
+  };
+  setSummary("summaryFinancial", `Saldo ${money.format(income - expense)}`);
+  const topStatus = statusCounts[0];
+  setSummary("summaryStatusBreakdown", topStatus ? `${topStatus.label}: ${topStatus.value}` : "Sem dados");
+  const topMaterial = materialCounts[0];
+  setSummary("summaryMaterialBreakdown", topMaterial ? `${topMaterial.label}: ${topMaterial.value}` : "Sem dados");
+  const lastDay = dailyRows[dailyRows.length - 1];
+  setSummary("summaryDailyCash", lastDay ? `Último dia: ${money.format(lastDay.value)}` : "Sem dados");
+  setSummary("summaryIntegrations", `${getRecentIntegrationErrors().length} erro(s) recente(s)`);
+  setSummary("summaryTopOpen", `A receber: ${money.format(receivable)}`);
+  const deliveryCounts = getDeliveryStatusCounts();
+  setSummary("summaryLogistics", `${deliveryCounts.inTransit} em trânsito, ${deliveryCounts.late} atrasado(s)`);
+  setSummary("summaryProfitability", hasCommercialIntelligenceAccess()
+    ? (() => {
+      const counts = getProfitabilitySummary();
+      return `${counts.healthy + counts.excellent} anúncio(s) saudável(is)`;
+    })()
+    : "Recurso premium");
+  const materials = new Set(state.data.orders.map((item) => item.material || "Não informado"));
+  setSummary("summaryMaterialSummary", `${materials.size} material(is) em uso`);
+  const newLeads = state.leads.filter((lead) => lead.status === "Novo").length;
+  setSummary("summaryCommercial", `${newLeads} lead(s) novo(s)`);
+  setSummary("summaryTopProducts", "Ranking dos últimos 30 dias");
+  const followUpCount = state.leads.filter((lead) => getLeadFollowUp(lead)).length +
+    state.data.orders.filter((item) =>
+      ["Orçamento enviado", "Aguardando cliente"].includes(item.quoteStage)
+      && Math.floor((Date.now() - new Date(item.quoteUpdatedAt || 0).getTime()) / 86400000) > 7
+    ).length;
+  setSummary("summaryFollowUp", followUpCount ? `${followUpCount} pendente(s)` : "Nenhum pendente");
 }
 
 export function renderAlerts() {
