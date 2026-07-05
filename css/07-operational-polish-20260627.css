@@ -1653,6 +1653,21 @@ html[data-theme="dark"] .materials-tabs button.active {
   color: #72d4c8;
 }
 
+/* Redesign visual - verificacao final: mesmo "blob" gradiente decorativo do .kpi (mudanca 4/7), so que nos KPIs da view de Relatorios */
+.report-kpi::before {
+  display: none;
+}
+
+.report-kpi {
+  min-height: 0;
+  padding: 16px;
+}
+
+.report-kpi strong {
+  font-size: 18px;
+  font-weight: 500;
+}
+
 /* Redesign visual - mudanca 4: tipografia e espacamento global (cont.) */
 
 .kpi,
