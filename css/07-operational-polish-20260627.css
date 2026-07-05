@@ -2215,3 +2215,22 @@ html[data-theme="dark"] .materials-tabs button.active {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* Inteligencia Comercial - ranking Onde investir */
+
+.investment-ranking-row {
+  align-items: center;
+}
+
+.investment-ranking-position {
+  color: var(--muted);
+  font-size: 12px;
+  margin-right: 6px;
+}
+
+.investment-ranking-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}

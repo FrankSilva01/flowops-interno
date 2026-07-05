@@ -305,6 +305,49 @@ export function bindPerformanceTableToggles() {
   });
 }
 
+// --- Ranking "Onde investir" ---
+function investmentTier(score) {
+  if (score >= 70) return { className: "done", label: "Investir", color: "var(--green)" };
+  if (score >= 45) return { className: "queue", label: "Ajustar antes", color: "var(--amber)" };
+  return { className: "danger-badge", label: "Não investir agora", color: "var(--red)" };
+}
+
+export function renderInvestmentRanking() {
+  const target = byId("investmentRankingList");
+  if (!target) return;
+  const portfolioAvgConversion = computePortfolioAvgConversion();
+  const ranked = state.marketplaceListings
+    .map((listing) => {
+      const analytics = getListingAnalytics(listing.marketplace, listing.external_id);
+      const profitability = getListingProfitability(listing);
+      const composite = computeCompositeScore(listing, analytics, profitability);
+      const suggestion = getPriceSuggestionScenario(listing, analytics, profitability, portfolioAvgConversion);
+      return { listing, composite, suggestion };
+    })
+    .filter((row) => row.composite)
+    .sort((a, b) => b.composite.score - a.composite.score)
+    .slice(0, 10);
+
+  target.innerHTML = ranked.length ? ranked.map(({ listing, composite, suggestion }, index) => {
+    const tier = investmentTier(composite.score);
+    const factorsTooltip = composite.factors.map(([label, value, weight]) => `${label}: ${value.toFixed(0)} × ${(weight * 100).toFixed(0)}%`).join(" | ");
+    const text = suggestion ? suggestion.text : `Score ${composite.score} de 100 - ${tier.label.toLowerCase()}.`;
+    return `
+      <div class="list-row investment-ranking-row">
+        <div>
+          <span class="investment-ranking-position">#${index + 1}</span>
+          <strong>${html(listing.title)}</strong>
+          <span>${html(text)}</span>
+        </div>
+        <div class="investment-ranking-side">
+          <strong style="color:${tier.color}" title="${html(factorsTooltip)}">${composite.score}</strong>
+          <span class="badge ${tier.className}">${html(tier.label)}</span>
+        </div>
+      </div>
+    `;
+  }).join("") : `<div class="empty-chart">Sincronize as métricas para ver o ranking.</div>`;
+}
+
 // --- Reputacao do vendedor ---
 // Limiares de alerta sao uma referencia aproximada nossa (documentada aqui
 // e na propria UI), nao os valores oficiais/exatos do programa MercadoLider,
@@ -368,6 +411,7 @@ export function renderMarketplaceAnalyticsPanel() {
   }
   renderSellerReputationPanel();
   renderPerformanceTable();
+  renderInvestmentRanking();
 }
 
 // --- Raio-X: diagnostico completo por anuncio (drawer com 6 blocos) ---
