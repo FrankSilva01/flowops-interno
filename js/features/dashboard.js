@@ -223,10 +223,11 @@ export function renderCompanySidebarStatus() {
   const mlConnected = state.marketplaceAccounts.some((item) => item.marketplace === "Mercado Livre");
   const lastBackup = state.backupRuns[0];
   const active = ["active", "trial", "free"].includes(state.subscription?.status);
-  byId("sidebarPlan").textContent = `Plano ${String(plan?.name || state.subscription?.plan_code || "-").toUpperCase()}`;
+  const planName = String(plan?.name || state.subscription?.plan_code || "-");
+  byId("sidebarPlan").textContent = `Plano ${planName}`;
   byId("sidebarCompanyStatus").textContent = active ? "Empresa ativa" : "Empresa com atenção";
   byId("sidebarCompanyStatusDot").className = `status-dot ${active ? "ok" : "alert"}`;
-  byId("sidebarPlanStatus").textContent = `Plano ${String(plan?.name || state.subscription?.plan_code || "-").toUpperCase()}`;
+  byId("sidebarPlanStatus").textContent = `Plano ${planName}`;
   byId("sidebarMarketplaceStatus").textContent = mlConnected ? "Mercado Livre conectado" : "Mercado Livre pendente";
   byId("sidebarMarketplaceStatusDot").className = `status-dot ${mlConnected ? "ok" : "neutral"}`;
   byId("sidebarBackupStatus").textContent = lastBackup?.status === "success" ? "Último backup OK" : "Backup pendente";

@@ -1262,11 +1262,15 @@ button.attention-item:hover {
 /* Redesign visual - menu lateral e topbar (unifica as regras espalhadas
    em 00/02/03/04/05 num unico visual limpo, sem gradiente/borda pesada) */
 
+.app-shell {
+  grid-template-columns: 220px minmax(0, 1fr);
+}
+
 .sidebar {
   gap: 18px;
   padding: 16px 12px;
-  background: #101a20;
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  background: #131619;
+  border-right: 0.5px solid rgba(255, 255, 255, 0.08);
   box-shadow: none;
 }
 
@@ -1275,13 +1279,13 @@ button.attention-item:hover {
 }
 
 .brand-mark {
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   border-radius: 8px;
   background: var(--teal);
   color: #fff;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
   letter-spacing: 0;
 }
 
@@ -1289,11 +1293,11 @@ button.attention-item:hover {
   display: block;
   color: #f1f5f9;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .brand span {
-  color: #7f92a1;
+  color: #7f8a93;
   font-size: 11px;
 }
 
@@ -1303,10 +1307,11 @@ button.attention-item:hover {
 
 .sidebar-group-label {
   margin: 16px 8px 6px;
-  color: #62747f;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  color: #6b7580;
+  font-size: 11px;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .tabs .sidebar-group-label:first-child {
@@ -1318,26 +1323,27 @@ button.attention-item:hover {
   gap: 10px;
   padding: 0 8px;
   border: 0;
-  border-radius: 7px;
-  color: #a7b6c2;
+  border-radius: 6px;
+  color: #9ba3ab;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 400;
   transition: background-color 120ms ease, color 120ms ease;
 }
 
 .tab:hover {
   transform: none;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.045);
   border-color: transparent;
   color: #e2e8f0;
 }
 
 .tab.active,
 .sidebar button.active {
-  background: rgba(20, 124, 114, 0.22);
+  background: rgba(255, 255, 255, 0.07);
   border-color: transparent;
   box-shadow: none;
-  color: #fff;
+  color: #f1f5f9;
+  font-weight: 500;
 }
 
 .tab .nav-icon {
@@ -1346,12 +1352,12 @@ button.attention-item:hover {
   justify-content: center;
   width: 18px;
   flex: 0 0 18px;
-  color: #71879a;
+  color: #6b7580;
   font-size: 15px;
 }
 
 .tab.active .nav-icon {
-  color: #5eead4;
+  color: #2dd4bf;
 }
 
 .sidebar-notifications-btn strong {
@@ -1409,7 +1415,7 @@ button.attention-item:hover {
 .session-card span {
   color: #e2e8f0;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .bell-glyph {
