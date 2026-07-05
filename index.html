@@ -1188,6 +1188,36 @@
                 </div>
               </div>
               <div class="panel">
+                <div class="panel-head">
+                  <div>
+                    <h3>Performance dos anúncios</h3>
+                    <small id="analyticsSyncedAtLabel">Ainda não sincronizado</small>
+                  </div>
+                  <div class="inline-actions">
+                    <select id="performanceTableHealthFilter" aria-label="Filtrar por saúde do anúncio">
+                      <option value="all">Todas as saúdes</option>
+                      <option value="healthy">Boa</option>
+                      <option value="attention">Média</option>
+                      <option value="risk">Baixa</option>
+                    </select>
+                    <select id="performanceTableSort" aria-label="Ordenar por">
+                      <option value="score_desc">Maior score</option>
+                      <option value="conversion_desc">Maior conversão</option>
+                      <option value="visits_desc">Mais visitas</option>
+                      <option value="margin_desc">Maior margem</option>
+                    </select>
+                    <button id="syncAnalyticsBtn" class="secondary-btn" type="button" data-action="sync-analytics-full">Atualizar métricas</button>
+                  </div>
+                </div>
+                <div class="table-wrap">
+                  <table>
+                    <thead><tr><th>Produto</th><th>Preço</th><th>vs Média</th><th>Visitas</th><th>Conversão</th><th>Vendas</th><th>Margem</th><th>Saúde</th><th>Score</th><th>Sugestão</th></tr></thead>
+                    <tbody id="performanceTable"></tbody>
+                    <tfoot id="performanceTableTotals"></tfoot>
+                  </table>
+                </div>
+              </div>
+              <div class="panel">
                 <div class="panel-head"><h3>Sugestões automáticas</h3></div>
                 <div id="suggestionsList" class="stack-list"></div>
               </div>

@@ -6,6 +6,7 @@ import { loadResponsibles, loadAccessRequests, loadActiveUsers } from "../featur
 import { ensureOperationalNotifications } from "../features/notifications.js";
 import { getSubscriptionAccessStatus } from "../features/subscription.js";
 import { loadMarketplaces } from "../features/marketplace.js";
+import { loadListingAnalytics, loadSellerMetrics } from "../features/marketplace-analytics.js";
 import { loadRemoteData, subscribeRemote } from "../data/remote.js";
 
 export async function setupBackend() {
@@ -318,6 +319,8 @@ export async function enterOnlineApp(user) {
       await loadAccessRequests();
       await loadActiveUsers();
       await loadMarketplaces();
+      await loadListingAnalytics();
+      await loadSellerMetrics();
     }
     if (!state.supportMode) {
       await ensureOperationalNotifications();

@@ -10,6 +10,7 @@ import { getOrderCode, syncOrderFilterControls } from "./orders.js";
 import { recordAudit, isWithinDateRange } from "./logs.js";
 import { getTokenAlert } from "./dashboard.js";
 import { renderProfitabilityBadge, renderCommercialIntelligence } from "./pricing.js";
+import { renderMarketplaceAnalyticsPanel } from "./marketplace-analytics.js";
 
 const MARKETPLACE_CHANNELS = [
   { id: "mercado-livre", label: "Mercado Livre" },
@@ -124,6 +125,7 @@ export function renderMarketplaces() {
   renderIntegrationSummary();
   renderStorefrontAdmin();
   renderCommercialIntelligence();
+  renderMarketplaceAnalyticsPanel();
   if (channelCards) channelCards.innerHTML = renderMarketplaceChannelCards();
   status.innerHTML = state.marketplaceAccounts.length ?
      `<span class="badge done">Mercado Livre conectado</span><small>${state.marketplaceListings.length} anúncio${state.marketplaceListings.length === 1 ? "" : "s"} importado${state.marketplaceListings.length === 1 ? "" : "s"}</small>`

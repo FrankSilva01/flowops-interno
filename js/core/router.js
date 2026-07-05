@@ -65,6 +65,9 @@ import {
   bindProductProfitPreview, openBulkCostDialog, saveBulkCosts, renderListingProfitabilityTable,
   openPriceCalculatorForListing, dismissInsight,
 } from "../features/pricing.js";
+import {
+  syncAnalyticsFull, renderPerformanceTable, bindPerformanceTableToggles,
+} from "../features/marketplace-analytics.js";
 
 function bindFilter(elementId, filterKey) {
   const element = byId(elementId);
@@ -395,6 +398,15 @@ export function bindEvents() {
     state.intelligenceTableSort = event.target.value;
     renderListingProfitabilityTable();
   });
+  byId("performanceTableHealthFilter")?.addEventListener("change", (event) => {
+    state.performanceTableHealthFilter = event.target.value;
+    renderPerformanceTable();
+  });
+  byId("performanceTableSort")?.addEventListener("change", (event) => {
+    state.performanceTableSort = event.target.value;
+    renderPerformanceTable();
+  });
+  bindPerformanceTableToggles();
   updateMarketplaceCodePlaceholder();
   updateOrderFormStatusColor();
   updateStorefrontTargetFields();
@@ -611,6 +623,10 @@ export function bindActions() {
       }
       if (action === "dismiss-insight") {
         dismissInsight(button.dataset.insightKey);
+        return;
+      }
+      if (action === "sync-analytics-full") {
+        await syncAnalyticsFull();
         return;
       }
       if (action === "resolve-suggestion") {

@@ -2054,3 +2054,16 @@ html[data-theme="dark"] .materials-tabs button.active {
   color: var(--muted);
   font-size: 12px;
 }
+
+/* Inteligencia Comercial - centro de comando: tabela de performance */
+
+.performance-suggestion-row td {
+  padding: 8px 12px;
+  color: var(--muted);
+  font-size: 12px;
+  background: var(--canvas);
+}
+
+.performance-suggestion-btn {
+  white-space: nowrap;
+}
