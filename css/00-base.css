@@ -17,6 +17,8 @@
   --text: var(--ink);
   --surface: var(--panel);
   --surface-1: var(--panel);
+  --border-strong: color-mix(in srgb, var(--line), var(--muted) 45%);
+  --text-muted: var(--muted);
 }
 
 * {

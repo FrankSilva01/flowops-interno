@@ -1,4 +1,39 @@
 /* 2026-06-27: operational polish */
+
+/* Redesign visual - mudanca 9: scrollbars customizados (regra global, nao por elemento) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+.sidebar,
+.drawer-body {
+  scrollbar-width: none;
+}
+
+.sidebar::-webkit-scrollbar,
+.drawer-body::-webkit-scrollbar {
+  display: none;
+}
+
 .notification-dropdown {
   width: min(480px, calc(100vw - 24px));
   max-height: min(650px, calc(100vh - 86px));
