@@ -76,6 +76,7 @@ export async function syncAnalyticsFull(force = false) {
   } finally {
     state.analyticsSyncing = false;
     renderMarketplaceAnalyticsPanel();
+    renderMarketplaceCommandWidget();
   }
 }
 

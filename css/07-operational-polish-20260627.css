@@ -1740,11 +1740,25 @@ html[data-theme="dark"] .materials-tabs button.active {
 }
 
 .dashboard-grid,
-.kpi-grid,
 .operational-summary-grid,
 .attention-row,
 .highlights-row {
   gap: 8px;
+}
+
+/* Feedback de usabilidade: expandir um card colapsavel esticava o vizinho
+   na mesma linha (grid estica todos os itens da linha por padrao -
+   align-items:stretch). Cada card agora so cresce com o proprio conteudo. */
+.dashboard-grid {
+  align-items: start;
+}
+
+/* Feedback de usabilidade: KPIs (Entradas/Saidas/Saldo etc.) estavam
+   apertados - largura minima maior e gap mais generoso, com wrap
+   automatico em vez de forcar sempre 5 colunas fixas. */
+.kpi-grid {
+  grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+  gap: 12px;
 }
 
 
@@ -2274,4 +2288,66 @@ html[data-theme="dark"] .materials-tabs button.active {
 
 .danger-text {
   color: var(--red);
+}
+
+/* Feedback de usabilidade: paineis colapsaveis fora do dashboard (aba
+   Inteligencia), reaproveitando o visual de .dashboard-collapsible-* sem
+   herdar o cursor de arrastar do .dashboard-card (esses paineis nao sao
+   arrastaveis). */
+.panel-collapsible .panel-head {
+  align-items: center;
+  gap: 12px;
+}
+
+.panel-collapsible .panel-head > .dashboard-collapsible-toggle {
+  flex: 1;
+  min-width: 0;
+}
+
+.panel-collapsible.collapsed .dashboard-collapsible-toggle .ti-chevron-down {
+  transform: rotate(-90deg);
+}
+
+.panel-collapsible.collapsed .dashboard-collapsible-body,
+.panel-collapsible.collapsed .table-wrap,
+.panel-collapsible.collapsed form {
+  display: none;
+}
+
+/* Feedback de usabilidade: filtros em selects nativos pareciam soltos ao
+   lado dos botoes - agrupa visualmente e reduz a altura pra ficar mais
+   parecido com uma barra de ferramentas do que com um formulario. */
+.panel-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--canvas);
+}
+
+.panel-filters select {
+  min-height: 30px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+
+.panel-filters .secondary-btn,
+.panel-filters .primary-btn {
+  min-height: 30px;
+}
+
+/* Feedback de usabilidade: atalho pra sincronizar metricas direto do
+   dashboard, sem precisar entrar em Marketplace > Inteligencia. */
+.dashboard-card-head-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dashboard-card-head-row .dashboard-collapsible-toggle {
+  flex: 1;
+  min-width: 0;
 }

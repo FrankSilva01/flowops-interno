@@ -288,10 +288,13 @@
               </div>
             </section>
             <section class="panel dashboard-card dashboard-collapsible collapsed" data-dashboard-card="marketplace-command" draggable="true">
-              <button class="dashboard-collapsible-toggle" type="button" data-collapsible-toggle aria-expanded="false">
-                <span class="dashboard-collapsible-head"><strong>Centro de comando do marketplace</strong><small id="summaryMarketplaceCommand">-</small></span>
-                <i class="ti ti-chevron-down" aria-hidden="true"></i>
-              </button>
+              <div class="dashboard-card-head-row">
+                <button class="dashboard-collapsible-toggle" type="button" data-collapsible-toggle aria-expanded="false">
+                  <span class="dashboard-collapsible-head"><strong>Centro de comando do marketplace</strong><small id="summaryMarketplaceCommand">-</small></span>
+                  <i class="ti ti-chevron-down" aria-hidden="true"></i>
+                </button>
+                <button class="icon-btn" type="button" data-action="sync-analytics-full" title="Atualizar métricas do marketplace"><i class="ti ti-refresh" aria-hidden="true"></i></button>
+              </div>
               <div class="dashboard-collapsible-body">
                 <div id="marketplaceCommandWidget"></div>
               </div>
@@ -1156,24 +1159,48 @@
             </div>
 
             <div id="intelligenceAnalysisSection">
-              <div class="panel">
-                <div class="panel-head"><h3>Rentabilidade geral</h3></div>
-                <div id="intelligenceSummaryGrid" class="integration-summary-grid"></div>
+              <div class="panel panel-collapsible" data-panel-collapsible="profitability-summary">
+                <div class="panel-head">
+                  <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="true">
+                    <span class="dashboard-collapsible-head"><strong>Rentabilidade geral</strong></span>
+                    <i class="ti ti-chevron-down" aria-hidden="true"></i>
+                  </button>
+                </div>
+                <div class="dashboard-collapsible-body">
+                  <div id="intelligenceSummaryGrid" class="integration-summary-grid"></div>
+                </div>
               </div>
               <div class="intelligence-charts-row">
-                <div class="panel">
-                  <div class="panel-head"><h3>Distribuição de margem</h3></div>
-                  <div id="profitabilityDistributionChart" class="chart-bars"></div>
+                <div class="panel panel-collapsible collapsed" data-panel-collapsible="margin-distribution-chart">
+                  <div class="panel-head">
+                    <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="false">
+                      <span class="dashboard-collapsible-head"><strong>Distribuição de margem</strong></span>
+                      <i class="ti ti-chevron-down" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                  <div class="dashboard-collapsible-body">
+                    <div id="profitabilityDistributionChart" class="chart-bars"></div>
+                  </div>
                 </div>
-                <div class="panel">
-                  <div class="panel-head"><h3>Lucro por produto (top 10)</h3></div>
-                  <div id="topProductsProfitChart" class="chart-bars"></div>
+                <div class="panel panel-collapsible collapsed" data-panel-collapsible="top-products-chart">
+                  <div class="panel-head">
+                    <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="false">
+                      <span class="dashboard-collapsible-head"><strong>Lucro por produto (top 10)</strong></span>
+                      <i class="ti ti-chevron-down" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                  <div class="dashboard-collapsible-body">
+                    <div id="topProductsProfitChart" class="chart-bars"></div>
+                  </div>
                 </div>
               </div>
-              <div class="panel">
+              <div class="panel panel-collapsible collapsed" data-panel-collapsible="profitability-table">
                 <div class="panel-head">
-                  <h3>Rentabilidade por anúncio</h3>
-                  <div class="inline-actions">
+                  <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="false">
+                    <span class="dashboard-collapsible-head"><strong>Rentabilidade por anúncio</strong></span>
+                    <i class="ti ti-chevron-down" aria-hidden="true"></i>
+                  </button>
+                  <div class="panel-filters">
                     <select id="intelligenceTableLevelFilter" aria-label="Filtrar por faixa de rentabilidade">
                       <option value="all">Todas as faixas</option>
                       <option value="loss">Prejuízo</option>
@@ -1198,21 +1225,23 @@
                     </select>
                   </div>
                 </div>
-                <div class="table-wrap">
-                  <table>
-                    <thead><tr><th>Produto</th><th>Marketplace</th><th>Preço</th><th>Custo</th><th>Taxas</th><th>Lucro líquido</th><th>Margem</th><th>Ação</th></tr></thead>
-                    <tbody id="listingProfitabilityTable"></tbody>
-                    <tfoot id="listingProfitabilityTotals"></tfoot>
-                  </table>
+                <div class="dashboard-collapsible-body">
+                  <div class="table-wrap">
+                    <table>
+                      <thead><tr><th>Produto</th><th>Marketplace</th><th>Preço</th><th>Custo</th><th>Taxas</th><th>Lucro líquido</th><th>Margem</th><th>Ação</th></tr></thead>
+                      <tbody id="listingProfitabilityTable"></tbody>
+                      <tfoot id="listingProfitabilityTotals"></tfoot>
+                    </table>
+                  </div>
                 </div>
               </div>
-              <div id="marketplacePerformancePanel" class="panel">
+              <div id="marketplacePerformancePanel" class="panel panel-collapsible" data-panel-collapsible="performance-table">
                 <div class="panel-head">
-                  <div>
-                    <h3>Performance dos anúncios</h3>
-                    <small id="analyticsSyncedAtLabel">Ainda não sincronizado</small>
-                  </div>
-                  <div class="inline-actions">
+                  <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="true">
+                    <span class="dashboard-collapsible-head"><strong>Performance dos anúncios</strong><small id="analyticsSyncedAtLabel">Ainda não sincronizado</small></span>
+                    <i class="ti ti-chevron-down" aria-hidden="true"></i>
+                  </button>
+                  <div class="panel-filters">
                     <select id="performanceTableHealthFilter" aria-label="Filtrar por saúde do anúncio">
                       <option value="all">Todas as saúdes</option>
                       <option value="healthy">Boa</option>
@@ -1228,54 +1257,81 @@
                     <button id="syncAnalyticsBtn" class="secondary-btn" type="button" data-action="sync-analytics-full">Atualizar métricas</button>
                   </div>
                 </div>
-                <div class="table-wrap">
-                  <table>
-                    <thead><tr><th>Produto</th><th>Preço</th><th>vs Média</th><th>Visitas</th><th>Conversão</th><th>Vendas</th><th>Margem</th><th>Saúde</th><th>Score</th><th>Sugestão</th></tr></thead>
-                    <tbody id="performanceTable"></tbody>
-                    <tfoot id="performanceTableTotals"></tfoot>
-                  </table>
-                </div>
-              </div>
-              <div id="investmentRankingPanel" class="panel">
-                <div class="panel-head">
-                  <div>
-                    <h3>Onde investir</h3>
-                    <small>Ranking por score composto (conversão, margem, visitas, competitividade e tendência)</small>
+                <div class="dashboard-collapsible-body">
+                  <div class="table-wrap">
+                    <table>
+                      <thead><tr><th>Produto</th><th>Preço</th><th>vs Média</th><th>Visitas</th><th>Conversão</th><th>Vendas</th><th>Margem</th><th>Saúde</th><th>Score</th><th>Sugestão</th></tr></thead>
+                      <tbody id="performanceTable"></tbody>
+                      <tfoot id="performanceTableTotals"></tfoot>
+                    </table>
                   </div>
                 </div>
-                <div id="investmentRankingList" class="stack-list"></div>
               </div>
-              <div class="panel">
-                <div class="panel-head"><h3>Sugestões automáticas</h3></div>
-                <div id="suggestionsList" class="stack-list"></div>
-              </div>
-              <div class="panel">
-                <div class="panel-head"><h3>Simulador: quantas vendas para bater a meta?</h3></div>
-                <form id="profitSimulatorForm" class="compact-form">
-                  <select id="simulatorProductSelect" name="listing"></select>
-                  <input name="goal" type="number" min="0" step="0.01" placeholder="Meta de lucro (R$)" required />
-                  <button class="primary-btn" type="submit">Simular</button>
-                </form>
-                <div id="simulatorResult"></div>
-              </div>
-              <div class="panel">
-                <div class="panel-head"><h3>Comparação entre marketplaces</h3></div>
-                <div class="table-wrap">
-                  <table>
-                    <thead><tr><th>Marketplace</th><th>Anúncios</th><th>Margem média</th><th>Lucro médio por venda</th><th>Recomendação</th></tr></thead>
-                    <tbody id="marketplaceComparisonTable"></tbody>
-                  </table>
-                </div>
-                <p id="marketplaceComparisonInsight" class="form-hint" hidden></p>
-              </div>
-              <div id="categoryTrendsPanel" class="panel">
+              <div id="investmentRankingPanel" class="panel panel-collapsible" data-panel-collapsible="investment-ranking">
                 <div class="panel-head">
-                  <div>
-                    <h3>Tendências e demanda</h3>
-                    <small>Termos mais buscados nas categorias onde você vende</small>
-                  </div>
+                  <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="true">
+                    <span class="dashboard-collapsible-head"><strong>Onde investir</strong><small>Score composto: conversão, margem, visitas, competitividade e tendência</small></span>
+                    <i class="ti ti-chevron-down" aria-hidden="true"></i>
+                  </button>
                 </div>
-                <div id="categoryTrendsContent"></div>
+                <div class="dashboard-collapsible-body">
+                  <div id="investmentRankingList" class="stack-list"></div>
+                </div>
+              </div>
+              <div class="panel panel-collapsible" data-panel-collapsible="suggestions">
+                <div class="panel-head">
+                  <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="true">
+                    <span class="dashboard-collapsible-head"><strong>Sugestões automáticas</strong></span>
+                    <i class="ti ti-chevron-down" aria-hidden="true"></i>
+                  </button>
+                </div>
+                <div class="dashboard-collapsible-body">
+                  <div id="suggestionsList" class="stack-list"></div>
+                </div>
+              </div>
+              <div class="panel panel-collapsible collapsed" data-panel-collapsible="simulator">
+                <div class="panel-head">
+                  <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="false">
+                    <span class="dashboard-collapsible-head"><strong>Simulador: quantas vendas para bater a meta?</strong></span>
+                    <i class="ti ti-chevron-down" aria-hidden="true"></i>
+                  </button>
+                </div>
+                <div class="dashboard-collapsible-body">
+                  <form id="profitSimulatorForm" class="compact-form">
+                    <select id="simulatorProductSelect" name="listing"></select>
+                    <input name="goal" type="number" min="0" step="0.01" placeholder="Meta de lucro (R$)" required />
+                    <button class="primary-btn" type="submit">Simular</button>
+                  </form>
+                  <div id="simulatorResult"></div>
+                </div>
+              </div>
+              <div class="panel panel-collapsible collapsed" data-panel-collapsible="marketplace-comparison">
+                <div class="panel-head">
+                  <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="false">
+                    <span class="dashboard-collapsible-head"><strong>Comparação entre marketplaces</strong></span>
+                    <i class="ti ti-chevron-down" aria-hidden="true"></i>
+                  </button>
+                </div>
+                <div class="dashboard-collapsible-body">
+                  <div class="table-wrap">
+                    <table>
+                      <thead><tr><th>Marketplace</th><th>Anúncios</th><th>Margem média</th><th>Lucro médio por venda</th><th>Recomendação</th></tr></thead>
+                      <tbody id="marketplaceComparisonTable"></tbody>
+                    </table>
+                  </div>
+                  <p id="marketplaceComparisonInsight" class="form-hint" hidden></p>
+                </div>
+              </div>
+              <div id="categoryTrendsPanel" class="panel panel-collapsible" data-panel-collapsible="category-trends">
+                <div class="panel-head">
+                  <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="true">
+                    <span class="dashboard-collapsible-head"><strong>Tendências e demanda</strong><small>Termos mais buscados nas categorias onde você vende</small></span>
+                    <i class="ti ti-chevron-down" aria-hidden="true"></i>
+                  </button>
+                </div>
+                <div class="dashboard-collapsible-body">
+                  <div id="categoryTrendsContent"></div>
+                </div>
               </div>
             </div>
           </div>

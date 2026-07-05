@@ -96,6 +96,50 @@ export function renderTables() {
   renderInventory();
 }
 
+// Paineis colapsaveis genericos (fora do dashboard, ex: aba Inteligencia).
+// O dashboard tem seu proprio binding (dashboard.js), especifico pros
+// cards arrastaveis (data-dashboard-card). Aqui o estado e persistido por
+// painel via localStorage, pra nao voltar sempre aberto.
+const PANEL_COLLAPSE_STORAGE_KEY = "flowops-panel-collapsed";
+
+function bindPanelCollapsibles() {
+  document.querySelectorAll("[data-panel-toggle]").forEach((toggle) => {
+    toggle.addEventListener("click", () => {
+      const panel = toggle.closest("[data-panel-collapsible]");
+      if (!panel) return;
+      const collapsed = panel.classList.toggle("collapsed");
+      toggle.setAttribute("aria-expanded", String(!collapsed));
+      const key = panel.dataset.panelCollapsible;
+      if (!key) return;
+      let stored = {};
+      try {
+        stored = JSON.parse(localStorage.getItem(PANEL_COLLAPSE_STORAGE_KEY) || "{}");
+      } catch {
+        stored = {};
+      }
+      stored[key] = collapsed;
+      localStorage.setItem(PANEL_COLLAPSE_STORAGE_KEY, JSON.stringify(stored));
+    });
+  });
+}
+
+function applyPanelCollapsedPreferences() {
+  let stored = {};
+  try {
+    stored = JSON.parse(localStorage.getItem(PANEL_COLLAPSE_STORAGE_KEY) || "{}");
+  } catch {
+    stored = {};
+  }
+  document.querySelectorAll("[data-panel-collapsible]").forEach((panel) => {
+    const key = panel.dataset.panelCollapsible;
+    if (!key || !(key in stored)) return;
+    const collapsed = Boolean(stored[key]);
+    panel.classList.toggle("collapsed", collapsed);
+    const toggle = panel.querySelector("[data-panel-toggle]");
+    if (toggle) toggle.setAttribute("aria-expanded", String(!collapsed));
+  });
+}
+
 export function bindEvents() {
   byId("sidebarToggle")?.addEventListener("click", toggleSidebar);
   document.querySelectorAll(".tab[data-view]").forEach((button) => {
@@ -411,6 +455,8 @@ export function bindEvents() {
   });
   bindPerformanceTableToggles();
   bindListingDrawer();
+  bindPanelCollapsibles();
+  applyPanelCollapsedPreferences();
   updateMarketplaceCodePlaceholder();
   updateOrderFormStatusColor();
   updateStorefrontTargetFields();
