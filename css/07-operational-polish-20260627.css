@@ -1617,6 +1617,16 @@ html[data-theme="dark"] .materials-tabs button.active {
   padding: 16px;
 }
 
+/* Redesign visual - mudanca 5: dashboard com os novos tokens (remove a barra colorida grossa) */
+.dashboard-welcome {
+  border-left: 1px solid var(--border);
+  padding: 16px;
+}
+
+.dashboard-welcome span {
+  font-size: 18px;
+}
+
 .dashboard-grid,
 .kpi-grid,
 .operational-summary-grid,
