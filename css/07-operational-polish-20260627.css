@@ -1139,3 +1139,72 @@ button.attention-item:hover {
   }
 }
 
+/* Redesign visual - mudanca 4: notificacoes agrupadas */
+
+.notification-filters button,
+.notification-page-filters button {
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.notification-filters button.active,
+.notification-page-filters button.active {
+  border-color: var(--teal);
+}
+
+.notification-group {
+  margin-bottom: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.notification-group summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--canvas);
+  list-style: none;
+}
+
+.notification-group summary > span:first-of-type {
+  flex: 1;
+}
+
+.notification-group summary::-webkit-details-marker {
+  display: none;
+}
+
+.notification-group summary::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  margin-right: 4px;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg);
+  transition: transform 160ms ease;
+}
+
+.notification-group[open] summary::before {
+  transform: rotate(-135deg);
+}
+
+.notification-group-count {
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 12px;
+}
+
+.notification-group-list {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+}
+

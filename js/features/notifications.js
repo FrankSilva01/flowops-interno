@@ -138,16 +138,42 @@ export function renderNotifications() {
   if (openAllBtn) openAllBtn.textContent = visible.length ? `Ver todas (${visible.length})` : "Ver todas";
   const pageList = byId("notificationsPageList");
   if (pageList) {
-    pageList.innerHTML = visible.length ? visible.map((item) => `
-      <article class="notification-page-item ${item.is_read ? "" : "unread"} ${html(item.priority)}">
-        <button type="button" data-action="open-notification" data-id="${html(item.id)}">
-          <span class="notification-dot ${html(item.priority)}"></span>
-          <span><strong>${html(item.title)}</strong><small>${html(item.message || "")}</small></span>
-          <time>${formatDateTime(item.created_at)}</time>
-        </button>
-      </article>`).join("") : `<div class="empty-chart">Nenhuma notificação para este filtro.</div>`;
+    pageList.innerHTML = visible.length ? groupNotifications(visible).map((group) => `
+      <details class="notification-group" open>
+        <summary><span>${html(group.label)}</span><span class="notification-group-count">${group.items.length}</span></summary>
+        <div class="notification-group-list">
+          ${group.items.map((item) => `
+            <article class="notification-page-item ${item.is_read ? "" : "unread"} ${html(item.priority)}">
+              <button type="button" data-action="open-notification" data-id="${html(item.id)}">
+                <span class="notification-dot ${notificationTone(item)}"></span>
+                <span><strong>${html(item.title)}</strong><small>${html(item.message || "")}</small></span>
+                <time title="${formatDateTime(item.created_at)}">${formatRelativeTime(item.created_at)}</time>
+              </button>
+            </article>
+          `).join("")}
+        </div>
+      </details>
+    `).join("") : `<div class="empty-chart">Nenhuma notificação para este filtro.</div>`;
   }
   bindActions();
+}
+
+const NOTIFICATION_GROUPS = [
+  { key: "marketplace", label: "Marketplace", match: (item) => item.type === "marketplace" },
+  { key: "logistics", label: "Rastreio", match: (item) => item.type === "logistics" },
+  { key: "quotes", label: "Orçamentos", match: (item) => ["quote", "lead"].includes(item.type) },
+  { key: "system", label: "Sistema", match: () => true },
+];
+
+function groupNotifications(items) {
+  const claimed = new Set();
+  return NOTIFICATION_GROUPS
+    .map((group) => {
+      const groupItems = items.filter((item) => !claimed.has(item.id) && group.match(item));
+      groupItems.forEach((item) => claimed.add(item.id));
+      return { ...group, items: groupItems };
+    })
+    .filter((group) => group.items.length);
 }
 
 function notificationTone(item) {
