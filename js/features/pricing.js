@@ -215,6 +215,25 @@ async function addProductImageFiles(files) {
 // Previa de custos/lucro no proprio cadastro rapido - reaproveita a mesma
 // matematica usada na rentabilidade de anuncios/vendas (computeMarginBreakdown).
 // Recurso de analise: so aparece para planos com acesso a Inteligencia Comercial.
+// Card com o breakdown visual tipo funil (preco -> taxas -> imposto -> frete/
+// embalagem -> custo -> lucro). Reaproveitado na previa de cadastro de produto
+// e na calculadora de preco.
+function renderPriceBreakdownCard(label, breakdown) {
+  return `
+    <article class="profit-preview-card">
+      <div class="profit-preview-head"><strong>${html(label)}</strong><span class="badge ${breakdown.level.className}">${html(breakdown.level.label)}</span></div>
+      <dl class="profit-preview-rows">
+        <div><dt>Preço de venda</dt><dd>${money.format(breakdown.revenue)}</dd></div>
+        <div><dt>Custo do produto</dt><dd>-${money.format(breakdown.cost)}</dd></div>
+        <div><dt>Taxa do marketplace (${breakdown.feePct.toFixed(1)}%)</dt><dd>-${money.format(breakdown.feeAmount)}</dd></div>
+        <div><dt>Imposto (${breakdown.taxPct}%)</dt><dd>-${money.format(breakdown.taxAmount)}</dd></div>
+        <div><dt>Frete + embalagem</dt><dd>-${money.format(breakdown.shipping + breakdown.packaging)}</dd></div>
+        <div class="profit-preview-total"><dt>Sobra líquida estimada</dt><dd>${money.format(breakdown.netProfit)} (${breakdown.marginPct.toFixed(1)}%)</dd></div>
+      </dl>
+    </article>
+  `;
+}
+
 export function renderProductProfitPreview() {
   const target = byId("productProfitPreview");
   if (!target) return;
@@ -238,19 +257,7 @@ export function renderProductProfitPreview() {
       shipping: settings.default_shipping_cost, packaging: settings.default_packaging_cost,
     });
     const label = channel === "direct" ? "Venda direta (estimativa)" : marketplaceDisplayName(channel);
-    return `
-      <article class="profit-preview-card">
-        <div class="profit-preview-head"><strong>${html(label)}</strong><span class="badge ${breakdown.level.className}">${html(breakdown.level.label)}</span></div>
-        <dl class="profit-preview-rows">
-          <div><dt>Preço de venda</dt><dd>${money.format(breakdown.revenue)}</dd></div>
-          <div><dt>Custo do produto</dt><dd>-${money.format(breakdown.cost)}</dd></div>
-          <div><dt>Taxa do marketplace (${feePct}%)</dt><dd>-${money.format(breakdown.feeAmount)}</dd></div>
-          <div><dt>Imposto (${breakdown.taxPct}%)</dt><dd>-${money.format(breakdown.taxAmount)}</dd></div>
-          <div><dt>Frete + embalagem</dt><dd>-${money.format(breakdown.shipping + breakdown.packaging)}</dd></div>
-          <div class="profit-preview-total"><dt>Sobra líquida estimada</dt><dd>${money.format(breakdown.netProfit)} (${breakdown.marginPct.toFixed(1)}%)</dd></div>
-        </dl>
-      </article>
-    `;
+    return renderPriceBreakdownCard(label, breakdown);
   }).join("");
 }
 
@@ -668,18 +675,27 @@ export function updatePriceCalculatorResult() {
     : marketplace === "shopee" ? Number(rules.shopee?.default ?? 14)
       : marketplace === "amazon" ? Number(rules.amazon?.default ?? 15)
         : Number(rules.direct?.default ?? 0);
-  const output = buildPriceCalculatorResult({
+  const inputs = {
     cost: number(data.get("cost")),
     feePct,
     taxPct: number(data.get("taxPct")),
     shipping: number(data.get("shipping")),
     packaging: number(data.get("packaging")),
-  });
-  result.innerHTML = `
-    <article><span>Preço mínimo</span><strong>${output.minPrice ? money.format(output.minPrice) : "-"}</strong><small>Cobre custo e taxas (margem 0%)</small></article>
-    <article><span>Preço recomendado</span><strong>${output.recommendedPrice ? money.format(output.recommendedPrice) : "-"}</strong><small>Margem saudável (${settings.profitability_thresholds.healthy}%)</small></article>
-    <article><span>Preço premium</span><strong>${output.premiumPrice ? money.format(output.premiumPrice) : "-"}</strong><small>Margem excelente (${settings.profitability_thresholds.excellent}%)</small></article>
-  `;
+  };
+  const output = buildPriceCalculatorResult(inputs);
+  const cards = [];
+  if (output.minPrice) cards.push(renderPriceBreakdownCard("Preço mínimo (margem 0%)", computeMarginBreakdown({ ...inputs, revenue: output.minPrice })));
+  if (output.recommendedPrice) cards.push(renderPriceBreakdownCard(`Preço recomendado (margem ${settings.profitability_thresholds.healthy}%)`, computeMarginBreakdown({ ...inputs, revenue: output.recommendedPrice })));
+  if (output.premiumPrice) cards.push(renderPriceBreakdownCard(`Preço premium (margem ${settings.profitability_thresholds.excellent}%)`, computeMarginBreakdown({ ...inputs, revenue: output.premiumPrice })));
+
+  const targetMarginPct = number(data.get("targetMargin"));
+  if (targetMarginPct > 0) {
+    const targetPrice = calculatePriceSuggestion({ ...inputs, targetMarginPct });
+    cards.push(targetPrice
+      ? renderPriceBreakdownCard(`Meta de margem: ${targetMarginPct}%`, computeMarginBreakdown({ ...inputs, revenue: targetPrice }))
+      : `<div class="empty-chart">Não é possível atingir ${targetMarginPct}% de margem com as taxas configuradas.</div>`);
+  }
+  result.innerHTML = cards.length ? cards.join("") : `<div class="empty-chart">Informe o custo do produto.</div>`;
 }
 
 export function bindPriceCalculatorForm() {
@@ -1299,6 +1315,7 @@ export function openPriceCalculatorForListing(marketplace, externalId) {
   form.elements.taxPct.value = profitability.taxPct;
   form.elements.shipping.value = profitability.shipping;
   form.elements.packaging.value = profitability.packaging;
+  form.elements.targetMargin.value = "";
   form.dataset.initialized = "true";
   byId("priceCalculatorListingType").hidden = form.elements.marketplace.value !== "mercado_livre";
   updatePriceCalculatorResult();

@@ -1496,8 +1496,9 @@
         <label>Taxa de imposto (%)<input name="taxPct" type="number" min="0" step="0.01" /></label>
         <label>Frete (R$)<input name="shipping" type="number" min="0" step="0.01" /></label>
         <label>Embalagem (R$)<input name="packaging" type="number" min="0" step="0.01" /></label>
+        <label>Meta de margem (%) <small>opcional</small><input name="targetMargin" type="number" min="0" step="0.1" placeholder="Ex: 25" /></label>
       </form>
-      <div id="priceCalculatorResult" class="integration-summary-grid"></div>
+      <div id="priceCalculatorResult" class="profit-preview-grid"></div>
     </dialog>
     <dialog id="financialSettingsDialog" class="history-dialog marketplace-dialog">
       <div class="panel-head">
