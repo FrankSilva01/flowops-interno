@@ -26,6 +26,9 @@ export function renderOrders() {
   byId("ordersTable").innerHTML = rows.map(renderOrderTableRow).join("");
   byId("ordersCardList").innerHTML = rows.length ? rows.map(renderOrderCard).join("")
     : `<div class="empty-state compact"><strong>Nenhuma encomenda encontrada</strong><span>Ajuste os filtros ou cadastre uma nova encomenda.</span></div>`;
+  byId("ordersCardList").querySelectorAll(".order-card-link").forEach((link) => {
+    link.addEventListener("click", (event) => event.stopPropagation());
+  });
   applyOrdersViewMode();
   bindActions();
 }
@@ -89,6 +92,7 @@ function renderOrderCard(item) {
   const isLate = sla.className === "danger-badge" && status !== "Entregue";
   const edgeClass = status === "Entregue" ? "order-card-paid" : isLate ? "order-card-late" : "";
   const thumbUrl = safeUrl(item.referenceImageUrl);
+  const stlLink = safeUrl(item.stlLink);
   return `
     <article class="order-card ${edgeClass}" data-action="open-order-drawer" data-id="${html(item.id)}" tabindex="0" role="button" aria-label="Ver detalhes de ${html(getOrderCode(item))}">
       <div class="order-card-thumb">
@@ -104,6 +108,7 @@ function renderOrderCard(item) {
           <span>${html(item.material || "Material não informado")}</span>
           <span><i class="ti ti-clock" aria-hidden="true"></i> ${item.deliveryDate ? formatDate(item.deliveryDate) : "Sem data"}</span>
           ${item.responsible ? `<span><i class="ti ti-user" aria-hidden="true"></i> ${html(item.responsible)}</span>` : ""}
+          ${stlLink ? `<a class="order-link order-card-link" href="${html(stlLink)}" target="_blank" rel="noopener"><i class="ti ti-file-3d" aria-hidden="true"></i> STL/origem</a>` : ""}
         </div>
       </div>
       <div class="order-card-side">
@@ -158,6 +163,7 @@ export function openOrderDrawer(id) {
   byId("orderDrawerFields").innerHTML = rows.map(([label, value]) => `
     <div class="drawer-field-row"><span>${html(label)}</span><strong>${html(String(value))}</strong></div>
   `).join("");
+  byId("orderDrawerReference").innerHTML = renderOrderReferences(item);
   const notesTarget = byId("orderDrawerNotes");
   if (item.internalNotes) {
     notesTarget.hidden = false;

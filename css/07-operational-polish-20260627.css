@@ -1051,6 +1051,14 @@ button.attention-item:hover {
   font-size: 13px;
 }
 
+.order-card-row2 .order-card-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 400;
+}
+
 .order-card-side {
   flex: 0 0 auto;
   display: flex;
