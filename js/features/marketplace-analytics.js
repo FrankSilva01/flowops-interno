@@ -353,6 +353,7 @@ export function openListingDrawer(marketplace, externalId) {
   simulateBtn.onclick = () => {
     closeListingDrawer();
     openPriceCalculatorForListing(marketplace, externalId);
+    showCalculatorSuggestion(suggestion);
   };
 
   const openMlBtn = byId("listingDrawerOpenMlBtn");
@@ -483,6 +484,26 @@ function renderListingDrawerShipping(analytics) {
       ? `<div class="listing-drawer-suggestion">O frete representa ${shipping.shipping_share_pct.toFixed(0)}% do preço. Considere embutir o frete no preço.</div>`
       : ""}
   `;
+}
+
+// Preenche o box de sugestao dentro do dialog da calculadora de preco -
+// reaproveitado tanto pelo botao "Simular novo preco" do drawer quanto
+// pela acao "simulate-listing" (tabela de rentabilidade/sugestoes agrupadas).
+export function showCalculatorSuggestion(suggestion) {
+  const target = byId("priceCalculatorSuggestion");
+  if (!target) return;
+  target.hidden = !suggestion;
+  if (suggestion) {
+    target.textContent = suggestion.text + (suggestion.impact ? ` (+${money.format(suggestion.impact)}/venda estimado)` : "");
+  }
+}
+
+export function getSuggestionForListing(marketplace, externalId) {
+  const listing = state.marketplaceListings.find((item) => item.marketplace === marketplace && item.external_id === externalId);
+  if (!listing) return null;
+  const analytics = getListingAnalytics(marketplace, externalId);
+  const profitability = getListingProfitability(listing);
+  return getPriceSuggestionScenario(listing, analytics, profitability, computePortfolioAvgConversion());
 }
 
 export function bindListingDrawer() {

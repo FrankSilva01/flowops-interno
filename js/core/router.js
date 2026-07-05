@@ -68,6 +68,7 @@ import {
 import {
   syncAnalyticsFull, renderPerformanceTable, bindPerformanceTableToggles,
   openListingDrawer, bindListingDrawer, closeListingDrawer,
+  showCalculatorSuggestion, getSuggestionForListing,
 } from "../features/marketplace-analytics.js";
 
 function bindFilter(elementId, filterKey) {
@@ -608,6 +609,7 @@ export function bindActions() {
       }
       if (action === "open-price-calculator") {
         openPriceCalculatorDialog();
+        showCalculatorSuggestion(null);
         return;
       }
       if (action === "open-financial-settings") {
@@ -622,6 +624,7 @@ export function bindActions() {
       }
       if (action === "simulate-listing") {
         openPriceCalculatorForListing(button.dataset.marketplace, button.dataset.externalId);
+        showCalculatorSuggestion(getSuggestionForListing(button.dataset.marketplace, button.dataset.externalId));
         return;
       }
       if (action === "dismiss-insight") {
