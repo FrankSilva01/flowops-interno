@@ -70,9 +70,9 @@
 .section-heading span { color: var(--muted); font-size: 13px; }
 .inventory-panel { margin-top: 18px; }
 .inventory-form { grid-template-columns: repeat(4, minmax(130px, 1fr)); }
-.inventory-summary { font-size: 13px; font-weight: 700; }
+.inventory-summary { font-size: 13px; font-weight: 500; }
 .inventory-summary.ok { color: var(--green); }
-.inventory-summary.low, .limit-warning { color: var(--red); font-weight: 700; }
+.inventory-summary.low, .limit-warning { color: var(--red); font-weight: 500; }
 .low-stock-row { background: #fff8ed; }
 .app-message-dialog { width: min(480px, calc(100% - 28px)); padding: 0; border: 0; border-radius: 8px; box-shadow: 0 24px 70px rgb(10 25 32 / 35%); }
 .app-message-dialog::backdrop { background: rgb(7 20 27 / 62%); }
@@ -85,7 +85,7 @@
 .support-form button { grid-column: 1 / -1; justify-self: start; }
 .support-ticket p, .announcement-row p, .changelog-row p { margin: 8px 0 0; white-space: pre-wrap; }
 .support-response { margin-top: 12px; padding: 10px 12px; border-left: 3px solid var(--teal); background: var(--canvas); }
-.version-badge { min-width: 62px; font-weight: 800; color: var(--teal); }
+.version-badge { min-width: 62px; font-weight: 500; color: var(--teal); }
 html[data-theme="dark"] .trial-banner,
 html[data-theme="dark"] .subscription-metrics article,
 html[data-theme="dark"] .subscription-hero,

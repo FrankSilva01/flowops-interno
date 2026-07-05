@@ -153,7 +153,7 @@ label {
   gap: 6px;
   color: #344054;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 input,
@@ -275,7 +275,7 @@ code {
   border-radius: 8px;
   background: var(--teal);
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 500;
 }
 
 .brand span,
@@ -445,7 +445,7 @@ code {
   background-color: transparent;
   color: #24364b;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   box-shadow: none;
 }
 
@@ -522,7 +522,7 @@ code {
   text-align: center;
   font-size: 14px;
   line-height: 1.15;
-  font-weight: 800;
+  font-weight: 500;
   overflow-wrap: anywhere;
 }
 
@@ -609,7 +609,7 @@ code {
   padding: 10px 18px;
   background: transparent;
   color: var(--text);
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .report-tabs button.active {
@@ -698,7 +698,7 @@ code {
 
 .report-section-heading > span {
   color: var(--muted);
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .report-kpi-grid-compact {
@@ -751,7 +751,7 @@ code {
   border-radius: 10px;
   background: rgba(15, 143, 126, .14);
   color: var(--teal);
-  font-weight: 900;
+  font-weight: 500;
 }
 
 .report-insight p {
@@ -913,8 +913,8 @@ code {
 .focus-card span {
   color: var(--muted);
   font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
+  font-weight: 500;
+  text-transform: none;
 }
 
 .focus-card strong {
@@ -964,7 +964,7 @@ code {
 
 .marketplace-status small {
   color: var(--muted);
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .view-tabs {
@@ -986,8 +986,8 @@ code {
   margin-right: 4px;
   color: var(--muted);
   font-size: 12px;
-  font-weight: 800;
-  text-transform: uppercase;
+  font-weight: 500;
+  text-transform: none;
 }
 
 .view-tab {
@@ -998,7 +998,7 @@ code {
   border-radius: 0;
   background: transparent;
   color: var(--muted);
-  font-weight: 800;
+  font-weight: 500;
 }
 
 .view-tab.active {
@@ -1064,7 +1064,7 @@ code {
 
 .marketplace-brand {
   color: var(--teal);
-  font-weight: 800;
+  font-weight: 500;
 }
 
 .marketplace-listing-id {
@@ -1114,13 +1114,13 @@ code {
 .marketplace-channel-card dt {
   color: var(--muted);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .marketplace-channel-card dd {
   margin: 4px 0 0;
   overflow-wrap: anywhere;
-  font-weight: 800;
+  font-weight: 500;
 }
 
 .connect-dropdown {
@@ -1151,7 +1151,7 @@ code {
   background: transparent;
   color: var(--text);
   font: inherit;
-  font-weight: 700;
+  font-weight: 500;
   text-align: left;
   cursor: pointer;
 }
@@ -1175,13 +1175,13 @@ code {
 .marketplace-sale-details dt {
   color: var(--muted);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .marketplace-sale-details dd {
   margin: 0;
   overflow-wrap: anywhere;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .automation-badge {
@@ -1194,7 +1194,7 @@ code {
   background: #e9f8f2;
   color: #116b54;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 500;
 }
 
 .integration-summary-grid {
@@ -1216,7 +1216,7 @@ code {
 .integration-summary-grid span {
   color: var(--muted);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .integration-summary-grid strong {
@@ -1255,7 +1255,7 @@ code {
   border: 1px solid var(--line);
   border-radius: 7px;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .integration-alert.success {
@@ -1336,7 +1336,7 @@ code {
   padding: 0 8px;
   border-radius: 5px;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 500;
 }
 
 .api-kind {
@@ -1392,7 +1392,7 @@ code {
 
 .api-log-message {
   margin: 0;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .api-log-meta {
@@ -1410,13 +1410,13 @@ code {
 .api-log-meta dt {
   color: var(--muted);
   font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
+  font-weight: 500;
+  text-transform: none;
 }
 
 .api-log-meta dd {
   margin: 0;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .api-log-relation {
@@ -1430,7 +1430,7 @@ code {
   border-radius: 6px;
   background: #eefaf5;
   color: #116b54;
-  font-weight: 800;
+  font-weight: 500;
 }
 
 .api-log-changes {
@@ -1491,7 +1491,7 @@ code {
   gap: 5px;
   color: #40516a;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .storefront-product-form input,
@@ -1533,7 +1533,7 @@ code {
   padding: 0 6px;
   color: var(--teal);
   font-size: 12px;
-  font-weight: 900;
+  font-weight: 500;
 }
 
 .publish-targets label {
@@ -1557,8 +1557,8 @@ code {
   margin-top: 4px;
   color: var(--teal);
   font-size: 12px;
-  font-weight: 900;
-  text-transform: uppercase;
+  font-weight: 500;
+  text-transform: none;
 }
 
 .marketplace-extra-fields {
@@ -1636,7 +1636,7 @@ code {
 
 .storefront-image-dropzone span {
   color: var(--ink);
-  font-weight: 900;
+  font-weight: 500;
 }
 
 .storefront-image-dropzone small {
@@ -1739,7 +1739,7 @@ code {
 
 .listing-price {
   font-size: 18px;
-  font-weight: 800;
+  font-weight: 500;
 }
 
 .stats-grid {
@@ -1760,7 +1760,7 @@ code {
 .stats-grid span {
   color: var(--muted);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .stats-grid strong {
@@ -1976,7 +1976,7 @@ td small {
   display: block;
   color: var(--teal);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
   text-decoration: none;
 }
 
@@ -1996,7 +1996,7 @@ td small {
   border-radius: 999px;
   padding: 0 28px 0 10px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .inline-select.done {
@@ -2022,25 +2022,25 @@ td small {
 .status-select-input.neutral {
   background: #eef2f6;
   color: #475467;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .status-select-input.done {
   background: #dff5e8;
   color: var(--green);
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .status-select-input.queue {
   background: #fff4d6;
   color: var(--amber);
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .status-select-input.info-badge {
   background: #dbeafe;
   color: var(--blue);
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .date-pill {
@@ -2050,7 +2050,7 @@ td small {
   padding: 0 9px;
   border-radius: 999px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .date-pill.done {
@@ -2081,7 +2081,7 @@ td small {
   padding: 0 9px;
   border-radius: 999px;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 500;
 }
 
 .sla-badge.done {
@@ -2109,7 +2109,7 @@ td small {
   margin-bottom: 4px;
   color: var(--teal);
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 500;
 }
 
 .marketplace-order-code {
@@ -2117,7 +2117,7 @@ td small {
   min-width: 96px;
   color: #344054;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .marketplace-code-line {
@@ -2132,7 +2132,7 @@ td small {
   display: block;
   color: var(--muted);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .marketplace-code-cell {
@@ -2162,7 +2162,7 @@ td small {
   display: block;
   color: var(--muted);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .copy-btn {
@@ -2215,7 +2215,7 @@ td small {
   background: var(--teal-2);
   color: var(--teal);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .tag-list span.marketplace-ml {
@@ -2273,8 +2273,8 @@ td small {
 .order-note span {
   color: #8a6200;
   font-size: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
+  font-weight: 500;
+  text-transform: none;
 }
 
 .order-note p {
@@ -2311,7 +2311,7 @@ th {
   background: #f7f9fb;
   color: #344054;
   font-size: 12px;
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: 0;
 }
 
@@ -2324,7 +2324,7 @@ th {
   background: #eef2f6;
   color: #344054;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .badge.done {
@@ -2354,12 +2354,12 @@ th {
 
 .money-in {
   color: var(--green);
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .money-out {
   color: var(--red);
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .user-grid {
@@ -2409,8 +2409,8 @@ th {
   margin-right: 4px;
   color: var(--muted);
   font-size: 12px;
-  font-weight: 800;
-  text-transform: uppercase;
+  font-weight: 500;
+  text-transform: none;
 }
 
 .filter-chip {
@@ -2421,7 +2421,7 @@ th {
   background: #fff;
   color: #344054;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .filter-chip.active {
@@ -2468,7 +2468,7 @@ th {
   background: #eef2f6;
   color: #344054;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 500;
 }
 
 .kanban-dropzone {
@@ -2521,7 +2521,7 @@ th {
   background: #17202a;
   color: #fff;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
   box-shadow: var(--shadow);
 }
 
@@ -2706,7 +2706,7 @@ th {
   background: transparent;
   color: var(--teal);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 500;
 }
 
 .notification-filters {
@@ -2797,7 +2797,7 @@ th {
 .top-product-row em {
   color: var(--green);
   font-style: normal;
-  font-weight: 800;
+  font-weight: 500;
 }
 
 .production-quote-summary {
