@@ -560,6 +560,15 @@ export function getProfitabilitySummary() {
   return counts;
 }
 
+// Cobertura de custos cadastrados - decide se mostramos o painel completo
+// de rentabilidade ou o guia de cadastro em lote (renderCommercialIntelligence).
+export function getCostCoverage() {
+  const total = state.marketplaceListings.length;
+  const withCost = state.marketplaceListings.filter((listing) => getListingProfitability(listing).hasCost).length;
+  const pct = total ? Math.round((withCost / total) * 100) : 0;
+  return { total, withCost, pct };
+}
+
 export function getProfitPotential() {
   const settings = getFinancialSettings();
   let currentProfit = 0;
@@ -831,17 +840,125 @@ export function renderProfitabilityDashboardWidget() {
   `;
 }
 
+// --- Cadastro de custo em lote ---
+
+export function openBulkCostDialog() {
+  renderBulkCostRows();
+  byId("bulkCostMessage").textContent = "";
+  byId("bulkCostDialog").showModal();
+}
+
+function renderBulkCostRows() {
+  const target = byId("bulkCostRows");
+  if (!target) return;
+  const listings = state.marketplaceListings.slice().sort((a, b) => (a.title || "").localeCompare(b.title || "", "pt-BR"));
+  target.innerHTML = listings.length ? listings.map((listing) => {
+    const product = getProductForListing(listing.marketplace, listing.external_id);
+    return `
+      <div class="bulk-cost-row" data-bulk-cost-row data-marketplace="${html(listing.marketplace)}" data-external-id="${html(listing.external_id)}">
+        <div class="bulk-cost-row-info">
+          <strong>${html(listing.title)}</strong>
+          <span class="badge neutral">${html(marketplaceDisplayName(listing.marketplace))}</span>
+        </div>
+        <span class="bulk-cost-row-price">${money.format(Number(listing.price || 0))}</span>
+        <input type="number" min="0" step="0.01" name="cost" placeholder="Custo (R$)" value="${product && product.cost_price ? Number(product.cost_price) : ""}" />
+      </div>
+    `;
+  }).join("") : `<div class="empty-chart">Nenhum anúncio sincronizado ainda.</div>`;
+}
+
+export async function saveBulkCosts(event) {
+  event.preventDefault();
+  if (!ensureCanEdit()) return;
+  const message = byId("bulkCostMessage");
+  const rows = Array.from(byId("bulkCostRows").querySelectorAll("[data-bulk-cost-row]"));
+  message.textContent = "Salvando custos...";
+  let savedCount = 0;
+  for (const row of rows) {
+    const input = row.querySelector("input[name='cost']");
+    const raw = input.value.trim();
+    if (!raw) continue;
+    const cost = number(raw);
+    const marketplace = row.dataset.marketplace;
+    const externalId = row.dataset.externalId;
+    const listing = state.marketplaceListings.find((item) => item.marketplace === marketplace && item.external_id === externalId);
+    if (!listing) continue;
+    const existingProduct = getProductForListing(marketplace, externalId);
+    if (existingProduct) {
+      if (Number(existingProduct.cost_price || 0) === cost) continue;
+      const payload = {
+        id: existingProduct.id,
+        organization_id: state.organizationId,
+        sku: existingProduct.sku,
+        name: existingProduct.name,
+        category: existingProduct.category,
+        cost_price: cost,
+        notes: existingProduct.notes,
+        updated_at: new Date().toISOString(),
+      };
+      const { data: saved, error } = await state.supabase.from("products").upsert(payload).select().single();
+      if (error) continue;
+      const index = state.products.findIndex((item) => item.id === saved.id);
+      if (index >= 0) state.products[index] = saved;
+      await recordAudit("update", "product", saved.id, saved.sku, existingProduct, saved, "manual");
+      savedCount++;
+    } else {
+      const name = listing.title || externalId;
+      const sku = nextProductSku(null, name);
+      const payload = {
+        organization_id: state.organizationId,
+        sku,
+        name,
+        category: null,
+        cost_price: cost,
+        updated_at: new Date().toISOString(),
+      };
+      const { data: saved, error } = await state.supabase.from("products").insert(payload).select().single();
+      if (error) continue;
+      state.products.push(saved);
+      await recordAudit("create", "product", saved.id, saved.sku, null, saved, "manual");
+      await syncProductListingLink(saved.id, `${marketplace}:${externalId}`);
+      savedCount++;
+    }
+  }
+  byId("bulkCostDialog").close();
+  flashActionMessage(savedCount ? `${savedCount} custo(s) salvo(s) com sucesso.` : "Nenhum custo novo informado.");
+  renderProductCatalogTable();
+  renderCommercialIntelligence();
+  renderMarketplaces();
+}
+
 // --- Aba "Inteligência" dentro de Marketplace ---
+
+function renderIntelligenceEmptyState(coverage) {
+  byId("intelligenceCoverageFill").style.width = `${coverage.pct}%`;
+  byId("intelligenceCoverageLabel").textContent = `${coverage.withCost} de ${coverage.total} anúncios com custo cadastrado (${coverage.pct}%)`;
+}
 
 export function renderCommercialIntelligence() {
   renderProductCatalogTable();
   const analysisSection = byId("intelligenceAnalysisSection");
   const upsell = byId("intelligenceUpsell");
+  const emptyState = byId("intelligenceEmptyState");
   if (!analysisSection || !upsell) return;
   const access = hasCommercialIntelligenceAccess();
-  analysisSection.hidden = !access;
   upsell.hidden = access;
-  if (!access) return;
+  if (!access) {
+    analysisSection.hidden = true;
+    if (emptyState) emptyState.hidden = true;
+    return;
+  }
+  const coverage = getCostCoverage();
+  const showEmptyState = coverage.total > 0 && coverage.pct < 50;
+  if (emptyState) {
+    emptyState.hidden = !showEmptyState;
+    if (showEmptyState) renderIntelligenceEmptyState(coverage);
+  }
+  analysisSection.hidden = showEmptyState;
+  if (showEmptyState) {
+    bindActions();
+    return;
+  }
   renderProfitabilitySummaryPanel();
   renderSuggestions();
   renderProfitSimulator();

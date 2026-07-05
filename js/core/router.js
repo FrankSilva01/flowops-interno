@@ -62,7 +62,7 @@ import {
   openPriceCalculatorDialog, bindPriceCalculatorForm, openFinancialSettingsDialog, saveFinancialSettings,
   renderCommercialIntelligence, dismissSuggestion, resolveSuggestion, simulateSalesForGoal,
   renderOrderProductOptions, bindProductMarketplaceCheckboxes, bindProductImageInputs,
-  bindProductProfitPreview,
+  bindProductProfitPreview, openBulkCostDialog, saveBulkCosts,
 } from "../features/pricing.js";
 
 function bindFilter(elementId, filterKey) {
@@ -377,6 +377,7 @@ export function bindEvents() {
   bindPriceCalculatorForm();
   byId("financialSettingsForm").addEventListener("submit", saveFinancialSettings);
   byId("profitSimulatorForm").addEventListener("submit", simulateSalesForGoal);
+  byId("bulkCostForm").addEventListener("submit", saveBulkCosts);
   byId("productSearchInput")?.addEventListener("input", (event) => {
     state.productSearch = event.target.value.trim().toLowerCase();
     renderCommercialIntelligence();
@@ -584,6 +585,11 @@ export function bindActions() {
       if (action === "open-financial-settings") {
         if (!ensureCanEdit()) return;
         openFinancialSettingsDialog();
+        return;
+      }
+      if (action === "open-bulk-cost-dialog") {
+        if (!ensureCanEdit()) return;
+        openBulkCostDialog();
         return;
       }
       if (action === "resolve-suggestion") {

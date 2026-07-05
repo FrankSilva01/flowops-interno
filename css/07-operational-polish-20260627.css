@@ -1819,3 +1819,126 @@ html[data-theme="dark"] .materials-tabs button.active {
 .plan-comparison-table thead th strong {
   text-transform: none;
 }
+
+/* Inteligencia Comercial - empty state guiado + cadastro de custo em lote */
+
+.intelligence-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 20px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  background: var(--canvas);
+}
+
+.intelligence-empty-state > strong {
+  font-size: 15px;
+}
+
+.intelligence-empty-state > span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.intelligence-coverage-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 420px;
+}
+
+.intelligence-coverage-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.intelligence-coverage-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--teal);
+}
+
+.intelligence-coverage-bar span {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.intelligence-empty-preview {
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--panel);
+  font-size: 13px;
+}
+
+.intelligence-empty-preview strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.intelligence-empty-preview ul {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+}
+
+.intelligence-empty-preview li {
+  margin-bottom: 2px;
+}
+
+.bulk-cost-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.bulk-cost-row {
+  display: grid;
+  grid-template-columns: 1fr auto 120px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-1);
+}
+
+.bulk-cost-row-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.bulk-cost-row-info strong {
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bulk-cost-row-price {
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.bulk-cost-row input[name="cost"] {
+  width: 100%;
+}
+
+.form-hint {
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 12px;
+}

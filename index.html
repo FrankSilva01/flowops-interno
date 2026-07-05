@@ -1093,6 +1093,7 @@
                 <small>Catálogo de produtos, rentabilidade, sugestões e simulações.</small>
               </div>
               <div class="inline-actions">
+                <button id="openBulkCostBtn" class="secondary-btn" type="button" data-action="open-bulk-cost-dialog">Cadastrar custos em lote</button>
                 <button id="openFinancialSettingsBtn" class="secondary-btn" type="button" data-action="open-financial-settings">Configurações financeiras</button>
               </div>
             </div>
@@ -1114,6 +1115,25 @@
               <strong>Análises de rentabilidade disponíveis nos planos pagos</strong>
               <span>Assine um plano para liberar rentabilidade por anúncio, sugestões automáticas, simulador e comparação entre marketplaces.</span>
               <button class="primary-btn" type="button" data-action="open-subscription">Ver planos</button>
+            </div>
+
+            <div id="intelligenceEmptyState" class="panel intelligence-empty-state" hidden>
+              <strong>Cadastre o custo dos seus produtos para desbloquear a análise de rentabilidade</strong>
+              <span>A maioria dos seus anúncios ainda não tem custo cadastrado — sem isso não é possível calcular margem ou lucro.</span>
+              <div class="intelligence-coverage-bar">
+                <div class="intelligence-coverage-track"><div id="intelligenceCoverageFill" class="intelligence-coverage-fill"></div></div>
+                <span id="intelligenceCoverageLabel"></span>
+              </div>
+              <button class="primary-btn" type="button" data-action="open-bulk-cost-dialog">Cadastrar custos em lote</button>
+              <div class="intelligence-empty-preview">
+                <strong>Quando você cadastrar os custos, você verá:</strong>
+                <ul>
+                  <li>Margem por anúncio</li>
+                  <li>Lucro líquido</li>
+                  <li>Sugestões de preço</li>
+                  <li>Comparativo entre marketplaces</li>
+                </ul>
+              </div>
             </div>
 
             <div id="intelligenceAnalysisSection">
@@ -1391,6 +1411,18 @@
         <label>Observações<textarea name="notes" rows="2" placeholder="Opcional"></textarea></label>
         <p class="form-error" id="productFormMessage"></p>
         <button class="primary-btn" type="submit">Salvar produto</button>
+      </form>
+    </dialog>
+    <dialog id="bulkCostDialog" class="history-dialog marketplace-dialog">
+      <div class="panel-head">
+        <h3>Cadastrar custos em lote</h3>
+        <button class="icon-btn" type="button" data-close-dialog="bulkCostDialog">Fechar</button>
+      </div>
+      <form id="bulkCostForm" class="login-form">
+        <p class="form-hint">Preencha o custo de cada anúncio e salve tudo de uma vez. Deixe em branco os que não quiser alterar agora.</p>
+        <div id="bulkCostRows" class="bulk-cost-rows"></div>
+        <p class="form-error" id="bulkCostMessage"></p>
+        <button class="primary-btn" type="submit">Salvar custos</button>
       </form>
     </dialog>
     <dialog id="priceCalculatorDialog" class="history-dialog marketplace-dialog">
