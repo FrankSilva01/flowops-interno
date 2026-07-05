@@ -9,6 +9,7 @@ import { getSubscriptionAlert, subscriptionStatusText } from "./subscription.js"
 import { normalizeMarketplaceChannel } from "./marketplace.js";
 import { renderDeliveryStatusWidget, getDeliveryStatusCounts } from "./logistics.js";
 import { renderProfitabilityDashboardWidget, getProfitabilitySummary, hasCommercialIntelligenceAccess } from "./pricing.js";
+import { renderMarketplaceCommandWidget } from "./marketplace-analytics.js";
 
 export function initDashboardDrag() {
   applyDashboardOrder();
@@ -214,6 +215,7 @@ export function renderDashboard() {
   `).join("");
   renderDeliveryStatusWidget();
   renderProfitabilityDashboardWidget();
+  renderMarketplaceCommandWidget();
   updateDashboardCollapsibleSummaries({ income, expense, receivable, statusCounts, materialCounts, dailyRows });
   applyDashboardVisibility();
 }
@@ -314,6 +316,9 @@ export function updateDashboardCollapsibleSummaries({ income, expense, receivabl
       return `${counts.healthy + counts.excellent} anúncio(s) saudável(is)`;
     })()
     : "Recurso premium");
+  setSummary("summaryMarketplaceCommand", state.sellerMetrics
+    ? (state.sellerMetrics.seller_level || "Sincronizado")
+    : "Sincronize as métricas");
   const materials = new Set(state.data.orders.map((item) => item.material || "Não informado"));
   setSummary("summaryMaterialSummary", `${materials.size} material(is) em uso`);
   const newLeads = state.leads.filter((lead) => lead.status === "Novo").length;

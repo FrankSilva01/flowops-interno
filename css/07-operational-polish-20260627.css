@@ -2243,3 +2243,35 @@ html[data-theme="dark"] .materials-tabs button.active {
   gap: 6px;
   margin-bottom: 10px;
 }
+
+/* Inteligencia Comercial - widget dashboard Centro de comando */
+
+.marketplace-command-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.marketplace-command-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px;
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-1);
+}
+
+.marketplace-command-block span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.marketplace-command-block strong {
+  font-size: 14px;
+}
+
+.danger-text {
+  color: var(--red);
+}

@@ -450,6 +450,95 @@ export function renderMarketplaceAnalyticsPanel() {
   renderCategoryTrendsPanel();
 }
 
+// --- Widget do dashboard: "Centro de comando" ---
+// Visitas subindo/descendo e um dado real (soma dos valores diarios de
+// raw_summary.visits_series, 1a metade dos 30 dias vs 2a metade) - nao um
+// numero inventado, diferente da tendencia de categoria (que nao temos
+// como calcular de forma confiavel, ver renderCategoryTrendsPanel).
+function computeVisitsTrend() {
+  let firstHalf = 0;
+  let secondHalf = 0;
+  Object.values(state.listingAnalytics).forEach((row) => {
+    const series = row.raw_summary?.visits_series || [];
+    const mid = Math.floor(series.length / 2);
+    series.forEach((point, index) => {
+      const value = Number(point.total || 0);
+      if (index < mid) firstHalf += value;
+      else secondHalf += value;
+    });
+  });
+  if (!firstHalf && !secondHalf) return null;
+  const diffPct = firstHalf > 0 ? ((secondHalf - firstHalf) / firstHalf) * 100 : (secondHalf > 0 ? 100 : 0);
+  const direction = diffPct > 10 ? "up" : diffPct < -10 ? "down" : "stable";
+  return { direction, diffPct };
+}
+
+function getTopListingsByConversion(limit = 3) {
+  return state.marketplaceListings
+    .map((listing) => ({ listing, analytics: getListingAnalytics(listing.marketplace, listing.external_id) }))
+    .filter((row) => row.analytics && row.analytics.conversion_rate != null)
+    .sort((a, b) => b.analytics.conversion_rate - a.analytics.conversion_rate)
+    .slice(0, limit);
+}
+
+function getListingsNeedingAttention(limit = 5) {
+  const analyticsRows = Object.values(state.listingAnalytics);
+  const maxVisits = Math.max(...analyticsRows.map((row) => Number(row.visits || 0)), 1);
+  const portfolioAvgConversion = computePortfolioAvgConversion();
+  return state.marketplaceListings
+    .map((listing) => ({ listing, analytics: getListingAnalytics(listing.marketplace, listing.external_id) }))
+    .filter(({ analytics }) => {
+      if (!analytics) return false;
+      const highVisits = Number(analytics.visits || 0) >= maxVisits * 0.5;
+      const lowConversion = portfolioAvgConversion != null && analytics.conversion_rate != null && analytics.conversion_rate < portfolioAvgConversion * 0.6;
+      const priceOff = analytics.price_competitiveness === "above";
+      return (highVisits && lowConversion) || priceOff;
+    })
+    .slice(0, limit);
+}
+
+export function renderMarketplaceCommandWidget() {
+  const target = byId("marketplaceCommandWidget");
+  const card = target?.closest("[data-dashboard-card]");
+  if (!target) return;
+  if (card) card.hidden = !state.isAdmin;
+  if (!state.isAdmin) return;
+  if (!hasCommercialIntelligenceAccess()) {
+    target.innerHTML = `<div class="premium-upsell compact"><strong>Recurso premium</strong><span>Disponível nos planos pagos.</span><button class="secondary-btn" type="button" data-action="open-subscription">Ver planos</button></div>`;
+    bindActions();
+    return;
+  }
+  const metrics = state.sellerMetrics;
+  const top3 = getTopListingsByConversion();
+  const attention = getListingsNeedingAttention();
+  const visitsTrend = computeVisitsTrend();
+  const trendLabel = visitsTrend
+    ? (visitsTrend.direction === "up" ? `<i class="ti ti-trending-up" aria-hidden="true"></i> Visitas subindo` : visitsTrend.direction === "down" ? `<i class="ti ti-trending-down" aria-hidden="true"></i> Visitas caindo` : `<i class="ti ti-minus" aria-hidden="true"></i> Visitas estáveis`)
+    : "Sem dados de visitas ainda";
+
+  target.innerHTML = `
+    <div class="marketplace-command-row">
+      <div class="marketplace-command-block">
+        <span>Reputação</span>
+        <strong>${metrics ? html(metrics.seller_level || "N/D") : "Não sincronizado"}</strong>
+        ${metrics && metrics.claims_rate != null && metrics.claims_rate >= 4 ? `<small class="danger-text">Reclamações em ${metrics.claims_rate.toFixed(1)}%</small>` : ""}
+      </div>
+      <div class="marketplace-command-block">
+        <span>Tendência de visitas</span>
+        <strong>${trendLabel}</strong>
+      </div>
+    </div>
+    <div class="drawer-section-title">Top 3 por conversão</div>
+    ${top3.length ? `<div class="stack-list">${top3.map(({ listing, analytics }) => `
+      <div class="list-row"><div><strong>${html(listing.title)}</strong><span>${analytics.conversion_rate.toFixed(1)}% de conversão</span></div></div>
+    `).join("")}</div>` : `<div class="empty-chart">Sem dados de conversão ainda.</div>`}
+    <div class="drawer-section-title">Precisam de atenção</div>
+    ${attention.length ? `<div class="stack-list">${attention.map(({ listing, analytics }) => `
+      <div class="list-row"><div><strong>${html(listing.title)}</strong><span>${analytics.price_competitiveness === "above" ? "Preço acima da média" : "Muita visita, pouca conversão"}</span></div></div>
+    `).join("")}</div>` : `<div class="empty-chart">Nenhum anúncio precisando de atenção agora.</div>`}
+  `;
+}
+
 // --- Raio-X: diagnostico completo por anuncio (drawer com 6 blocos) ---
 
 export function closeListingDrawer() {
