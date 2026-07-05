@@ -204,8 +204,9 @@ export function renderOperationalSummary(viewId, summaryId, metrics) {
   }
   target.innerHTML = metrics.map(([label, value, note, tone]) => `
     <article class="operational-summary-card ${html(tone || "teal")}">
-      <i aria-hidden="true"></i>
-      <div><span>${html(label)}</span><strong>${html(String(value))}</strong><small>${html(note || "")}</small></div>
+      <span>${html(label)}</span>
+      <strong>${html(String(value))}</strong>
+      <small>${html(note || "")}</small>
     </article>
   `).join("");
 }
