@@ -312,6 +312,41 @@ function investmentTier(score) {
   return { className: "danger-badge", label: "Não investir agora", color: "var(--red)" };
 }
 
+// --- Tendencias e demanda ---
+// Nao mostramos badge de "categoria em alta/queda": a API de trends do ML
+// devolve so termos ranqueados, sem volume numerico, entao nao ha como
+// calcular uma direcao (up/down) ou % de crescimento honestos. O que
+// exibimos e real: os termos mais buscados nas categorias sincronizadas, e
+// se o proprio anuncio aparece nos destaques da categoria (sinal genuino,
+// vindo de /highlights).
+export function renderCategoryTrendsPanel() {
+  const target = byId("categoryTrendsContent");
+  if (!target) return;
+  const keywords = new Set();
+  const highlightedListings = [];
+  state.marketplaceListings.forEach((listing) => {
+    const analytics = getListingAnalytics(listing.marketplace, listing.external_id);
+    (analytics?.raw_summary?.trend_keywords || []).forEach((word) => keywords.add(word));
+    if (analytics?.raw_summary?.category_highlighted) highlightedListings.push(listing);
+  });
+  if (!keywords.size && !highlightedListings.length) {
+    target.innerHTML = `<div class="empty-chart">Sincronize as métricas para ver tendências de demanda.</div>`;
+    return;
+  }
+  target.innerHTML = `
+    ${keywords.size ? `
+      <div class="drawer-section-title">Termos mais buscados nas suas categorias</div>
+      <div class="trend-keyword-list">${[...keywords].slice(0, 20).map((word) => `<span class="badge neutral">${html(word)}</span>`).join("")}</div>
+    ` : ""}
+    ${highlightedListings.length ? `
+      <div class="drawer-section-title">Destaques da categoria</div>
+      <div class="stack-list">${highlightedListings.map((listing) => `
+        <div class="list-row"><div><strong>${html(listing.title)}</strong><span>Está entre os destaques da categoria no Mercado Livre.</span></div></div>
+      `).join("")}</div>
+    ` : ""}
+  `;
+}
+
 export function renderInvestmentRanking() {
   const target = byId("investmentRankingList");
   if (!target) return;
@@ -412,6 +447,7 @@ export function renderMarketplaceAnalyticsPanel() {
   renderSellerReputationPanel();
   renderPerformanceTable();
   renderInvestmentRanking();
+  renderCategoryTrendsPanel();
 }
 
 // --- Raio-X: diagnostico completo por anuncio (drawer com 6 blocos) ---

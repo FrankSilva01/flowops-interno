@@ -2234,3 +2234,12 @@ html[data-theme="dark"] .materials-tabs button.active {
   align-items: flex-end;
   gap: 4px;
 }
+
+/* Inteligencia Comercial - tendencias e demanda */
+
+.trend-keyword-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}

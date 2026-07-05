@@ -716,7 +716,9 @@ async function getListingAnalyticsSnapshot(
   };
   let trend: Record<string, unknown> | null = trendCacheByCategory.has(item.category_id)
     ? trendCacheByCategory.get(item.category_id) || null
-    : (lastRow && lastRow.category_trend ? { category_trend: lastRow.category_trend } : null);
+    : (lastRow && lastRow.raw_summary
+        ? { keywords: lastRow.raw_summary.trend_keywords, highlighted: lastRow.raw_summary.category_highlighted }
+        : null);
 
   if (refreshCompetition) {
     const [priceStats, searchPosition, categoryTrend] = await Promise.all([
@@ -724,7 +726,7 @@ async function getListingAnalyticsSnapshot(
       getSearchPosition(item.title, listing.external_id, account).catch(() => null),
       trendCacheByCategory.has(item.category_id)
         ? Promise.resolve(trendCacheByCategory.get(item.category_id) || null)
-        : getCategoryTrends(item.category_id, account).catch(() => null),
+        : getCategoryTrends(item.category_id, listing.external_id, account).catch(() => null),
     ]);
     if (priceStats) Object.assign(competitionFields, priceStats);
     competitionFields.search_position = searchPosition;
@@ -751,13 +753,14 @@ async function getListingAnalyticsSnapshot(
     price_position_max: competitionFields.price_position_max ?? null,
     price_competitiveness: competitionFields.price_competitiveness ?? null,
     search_position: competitionFields.search_position ?? null,
-    category_trend: trend && trend.category_trend ? trend.category_trend : null,
+    category_trend: null,
     health_score: item.health ?? null,
     health_checklist: healthChecklist,
     raw_summary: {
       visits_series: visits ? visits.results : null,
       shipping,
       trend_keywords: trend ? trend.keywords : null,
+      category_highlighted: trend ? Boolean(trend.highlighted) : null,
     },
     synced_at: new Date().toISOString(),
   };
@@ -891,7 +894,12 @@ async function getSellerReputation(account: Record<string, any>, organizationId:
 }
 
 // /highlights nao e garantido pra toda categoria - degrada sem quebrar o resto.
-async function getCategoryTrends(categoryId: string, account: Record<string, any>) {
+// Nao inventamos uma direcao de tendencia (up/down) sem um sinal real: a API
+// de trends devolve so termos ranqueados, sem volume numerico, entao nao da
+// pra calcular "cresceu X%" de forma honesta. category_trend fica null (nao
+// "stable") ate existir um jeito confiavel de comparar. O sinal real que
+// conseguimos expor e se o proprio anuncio aparece nos destaques da categoria.
+async function getCategoryTrends(categoryId: string, itemId: string, account: Record<string, any>) {
   if (!categoryId) return null;
   const headers = { Authorization: `Bearer ${account.access_token}` };
   const [trendsResponse, highlightsResult] = await Promise.all([
@@ -900,12 +908,17 @@ async function getCategoryTrends(categoryId: string, account: Record<string, any
   ]);
   const trends = trendsResponse.ok ? await trendsResponse.json() : [];
   const keywords = Array.isArray(trends) ? trends.slice(0, 10).map((row: any) => row.keyword).filter(Boolean) : [];
-  let highlights: unknown = null;
+  let highlighted = false;
   if (highlightsResult && highlightsResult.ok) {
-    highlights = await highlightsResult.json().catch(() => null);
+    const highlights = await highlightsResult.json().catch(() => null);
+    const list = Array.isArray(highlights) ? highlights
+      : Array.isArray((highlights as any)?.content) ? (highlights as any).content
+      : Array.isArray((highlights as any)?.items) ? (highlights as any).items
+      : [];
+    highlighted = list.some((entry: any) => {
+      const id = typeof entry === "string" ? entry : entry?.id || entry?.item_id;
+      return String(id) === String(itemId);
+    });
   }
-  // Sem historico anterior pra comparar, marcamos como "stable" - vira
-  // "up"/"down" so quando houver uma leitura anterior da mesma categoria
-  // pra comparar (feito no front, cruzando snapshots de listing_analytics).
-  return { category_trend: "stable", keywords, highlights };
+  return { category_trend: null, keywords, highlighted };
 }
