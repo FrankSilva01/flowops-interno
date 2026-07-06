@@ -127,7 +127,9 @@ html[data-theme="dark"] {
 .metric,
 .profit-preview-card,
 .suggestion-insight-card,
-.marketplace-command-block {
+.marketplace-command-block,
+.table-wrap,
+.operational-summary-card {
   border-radius: var(--radius-card);
 }
 
@@ -518,3 +520,16 @@ button,
     grid-template-columns: 1fr;
   }
 }
+
+/* ==========================================================================
+   Fase 7 - Fluxo de caixa
+   Os 5 stat cards (renderOperationalSummary), formulario de lancamento e
+   tabela de extrato ja usam var(--panel)/var(--line)/var(--green)/
+   var(--red) em todo o CSS legado (00-07) - nada hardcoded pro tema
+   escuro antigo aqui, entao a retemizacao acontece sozinha pelos tokens
+   do Fase 1. Unico ajuste real: .table-wrap e .operational-summary-card
+   ainda usavam o raio antigo de 8px (fixado em 04/06) em vez da escala
+   nova - adicionados a regra de --radius-card no bloco da Fase 1 acima,
+   o que tambem alinha essas duas classes (usadas em varias telas alem
+   de Fluxo de caixa) ao resto do sistema de cards.
+   ========================================================================== */
