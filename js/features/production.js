@@ -5,10 +5,13 @@ import {
   sortOrders, getOrderPriority, getMarketplaceLabel, getOrderCode, getOrderMarketplaceChannel,
   renderSlaBadge, renderInlineSelect, updateOrderInline,
 } from "./orders.js";
-// O card do kanban passa a abrir o mesmo painel lateral de detalhe de
-// Encomendas (data-action="open-order-drawer", ja tratado de forma
-// generica em router.js/bindActions) em vez de exigir clicar em "Editar"
-// pra ver qualquer detalhe - decisao explicita do design novo.
+// O card do kanban abre o painel deslizante generico (#orderDrawer,
+// data-action="open-order-drawer") em vez de exigir clicar em "Editar"
+// pra ver qualquer detalhe. Encomendas passou a usar um painel FIXO
+// inline (mestre-detalhe, ver orders.js:renderOrderDetailPanel) em vez
+// desse painel deslizante - mas o kanban continua com o deslizante, ja
+// que aqui nao ha uma lista mestre pra acompanhar um painel fixo (o
+// board e a view principal, precisa da largura toda).
 import { getResponsibleNames } from "./users.js";
 
 export function renderProduction() {

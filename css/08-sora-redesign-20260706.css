@@ -450,15 +450,71 @@ button,
 
 /* ==========================================================================
    Fase 4 - Encomendas
-   O painel lateral de detalhe (.order-drawer) e os cards de pedido ja sao
-   exatamente o padrao "mestre-detalhe" que o design novo pede - so
-   precisavam de re-tema pontual, nao reconstrucao. Os chips de status
-   (.filter-chip) tambem ja existiam com a logica de ativo/inativo certa;
-   so o fundo/texto do estado INATIVO estava hardcoded pro tema claro
-   antigo (branco fixo), o que ficaria errado no tema escuro atual.
+   Revisao: o painel lateral original era um drawer deslizante por cima
+   (.order-drawer, overlay+backdrop). O padrao real pedido pelo design novo
+   e mestre-detalhe FIXO (lista + painel sempre visiveis lado a lado, sem
+   overlay) - o mesmo ja usado em Clientes e Leads (.leads-grid). Aqui a
+   view passa a usar o mesmo formato: #ordersGrid (2 colunas) com a lista
+   de cards a esquerda e #orderDetailPanel (.order-detail-card) fixo a
+   direita, reaproveitando as classes internas do drawer (.drawer-header/
+   .drawer-body/etc) que ja sao selectors independentes (nao aninhados sob
+   .order-drawer), entao funcionam sem alteracao dentro do novo container
+   estatico. O drawer deslizante em si (.order-drawer) continua existindo
+   pro kanban de Producao (ver production.js).
+   Os chips de status (.filter-chip) tambem ja existiam com a logica de
+   ativo/inativo certa; so o fundo/texto do estado INATIVO estava
+   hardcoded pro tema claro antigo (branco fixo), o que ficaria errado no
+   tema escuro atual.
    ========================================================================== */
 
 .filter-chip {
   background: var(--card-alt);
   color: var(--muted);
+}
+
+#ordersView .orders-grid {
+  display: grid;
+  grid-template-columns: minmax(320px, .8fr) minmax(520px, 1.2fr);
+  align-items: start;
+  gap: 14px;
+}
+
+#ordersView .orders-card-list {
+  margin-bottom: 0;
+}
+
+#ordersView .order-card.selected {
+  border-color: color-mix(in srgb, var(--accent) 65%, var(--line));
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.order-detail-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 370px;
+  max-height: calc(100vh - 160px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--panel);
+  overflow: hidden;
+}
+
+.order-detail-card .drawer-header {
+  flex: 0 0 auto;
+}
+
+.order-detail-card .drawer-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.order-detail-card .drawer-footer {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 900px) {
+  #ordersView .orders-grid {
+    grid-template-columns: 1fr;
+  }
 }

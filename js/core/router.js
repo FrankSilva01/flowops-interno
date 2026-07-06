@@ -14,7 +14,7 @@ import {
   duplicateOrder, removeReferenceImage, updateOrderInline, removeOrderTag, copyMarketplaceCode,
   syncOrderFilterControls, updateQuoteStage, convertQuoteToProduction, applyDeliveredPaymentDefault,
   appendHistory, syncOrderPaymentCash, renderOrders, deleteCustomTag,
-  setOrdersViewMode, openOrderDrawer, closeOrderDrawer, bindOrderDrawer,
+  setOrdersViewMode, openOrderDrawer, closeOrderDrawer, bindOrderDrawer, selectOrder,
 } from "../features/orders.js";
 import { renderProduction } from "../features/production.js";
 import { renderCash, saveCash, startCashEdit, cancelCashEdit } from "../features/cash.js";
@@ -589,6 +589,10 @@ export function bindActions() {
       }
       if (action === "open-order-drawer") {
         openOrderDrawer(id);
+        return;
+      }
+      if (action === "select-order") {
+        selectOrder(id);
         return;
       }
       if (action === "duplicate-order") {

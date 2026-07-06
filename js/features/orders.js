@@ -24,13 +24,81 @@ export function renderOrders() {
   const searchInput = byId("ordersSearchInput");
   if (searchInput && document.activeElement !== searchInput) searchInput.value = state.query;
   byId("ordersTable").innerHTML = rows.map(renderOrderTableRow).join("");
-  byId("ordersCardList").innerHTML = rows.length ? rows.map(renderOrderCard).join("")
+  const selectedOrder = rows.find((item) => item.id === state.selectedOrderId) || rows[0] || null;
+  byId("ordersCardList").innerHTML = rows.length ? rows.map((item) => renderOrderCard(item, selectedOrder)).join("")
     : `<div class="empty-state compact"><strong>Nenhuma encomenda encontrada</strong><span>Ajuste os filtros ou cadastre uma nova encomenda.</span></div>`;
   byId("ordersCardList").querySelectorAll(".order-card-link").forEach((link) => {
     link.addEventListener("click", (event) => event.stopPropagation());
   });
+  renderOrderDetailPanel(selectedOrder);
   applyOrdersViewMode();
   bindActions();
+}
+
+export function selectOrder(id) {
+  state.selectedOrderId = id;
+  renderOrders();
+}
+
+// Painel fixo de detalhe ao lado da lista (mestre-detalhe, mesmo padrao
+// usado em Clientes e Leads) - substitui o antigo painel deslizante por
+// cima so na view de Encomendas. O painel deslizante (#orderDrawer/
+// openOrderDrawer) continua existindo e sendo usado em Producao (kanban),
+// onde nao ha uma lista mestre pra acompanhar um painel fixo.
+function renderOrderDetailPanel(item) {
+  const target = byId("orderDetailPanel");
+  if (!target) return;
+  if (!item) {
+    target.innerHTML = `<div class="empty-state compact"><strong>Nenhuma encomenda selecionada</strong></div>`;
+    return;
+  }
+  const status = normalizeOrderStatus(item.status);
+  const rows = [
+    ["Cliente", item.client || "-"],
+    ["Quantidade", Number(item.quantity || 1)],
+    ["Material", item.material || "-"],
+    ["Status", status],
+    ["Prioridade", item.priority || getOrderPriority(item).label],
+    ["Etapa de produção", item.productionStage || "Em fila"],
+    ["Responsável", item.responsible || "-"],
+    ["Data de entrega", item.deliveryDate ? formatDate(item.deliveryDate) : "Sem data"],
+    ["Valor cobrado", item.charged ? money.format(item.charged) : "-"],
+    ["Valor recebido", item.received ? money.format(item.received) : "-"],
+    ["Código marketplace", item.marketplaceOrderCode || "-"],
+  ];
+  const timelineEvents = (item.history || []).slice(0, 5);
+  target.innerHTML = `
+    <div class="drawer-header">
+      <div>
+        <span class="order-code">${html(getOrderCode(item))}</span>
+        <h3>${html(item.description)}</h3>
+        <small>${html(getMarketplaceLabel(item))}</small>
+      </div>
+    </div>
+    <div class="drawer-body">
+      <div class="drawer-field-list">
+        ${rows.map(([label, value]) => `<div class="drawer-field-row"><span>${html(label)}</span><strong>${html(String(value))}</strong></div>`).join("")}
+      </div>
+      ${renderOrderReferences(item)}
+      ${item.internalNotes ? `<div class="drawer-notes"><strong>Nota interna</strong><p>${html(item.internalNotes)}</p></div>` : ""}
+      <div class="drawer-section-title">Histórico recente</div>
+      <div class="drawer-timeline">
+        ${timelineEvents.length ? timelineEvents.map((entry) => `
+          <div class="drawer-timeline-row">
+            <strong>${entry.changes.map((change) => `${html(change.field)}: ${html(change.from)} → ${html(change.to)}`).join(", ")}</strong>
+            <span title="${formatDateTime(entry.at)}">${formatRelativeTime(entry.at)}</span>
+          </div>
+        `).join("") : `<div class="empty-chart">Nenhum evento registrado.</div>`}
+      </div>
+    </div>
+    ${state.canEdit ? `
+      <div class="drawer-footer">
+        <button class="secondary-btn" type="button" data-action="edit-order-modal" data-id="${html(item.id)}">Editar</button>
+        <button class="primary-btn" type="button" data-action="toggle-order" data-id="${html(item.id)}">${status === "Entregue" ? "Reabrir" : "Entregar"}</button>
+        <button class="secondary-btn" type="button" data-action="history-order" data-id="${html(item.id)}">Histórico completo</button>
+      </div>
+    ` : ""}
+  `;
 }
 
 function renderOrderTableRow(item) {
@@ -84,17 +152,18 @@ function renderOrderTableRow(item) {
     `;
 }
 
-function renderOrderCard(item) {
+function renderOrderCard(item, selectedOrder) {
   const priority = getOrderPriority(item);
   const status = normalizeOrderStatus(item.status);
   const marketplaceLabel = getMarketplaceLabel(item);
   const sla = getSlaState(item);
   const isLate = sla.className === "danger-badge" && status !== "Entregue";
   const edgeClass = status === "Entregue" ? "order-card-paid" : isLate ? "order-card-late" : "";
+  const selectedClass = selectedOrder?.id === item.id ? "selected" : "";
   const thumbUrl = safeUrl(item.referenceImageUrl);
   const stlLink = safeUrl(item.stlLink);
   return `
-    <article class="order-card ${edgeClass}" data-action="open-order-drawer" data-id="${html(item.id)}" tabindex="0" role="button" aria-label="Ver detalhes de ${html(getOrderCode(item))}">
+    <article class="order-card ${edgeClass} ${selectedClass}" data-action="select-order" data-id="${html(item.id)}" tabindex="0" role="button" aria-label="Ver detalhes de ${html(getOrderCode(item))}">
       <div class="order-card-thumb">
         ${thumbUrl ? `<img src="${html(thumbUrl)}" alt="" loading="lazy" />` : `<i class="ti ti-package" aria-hidden="true"></i>`}
       </div>
@@ -133,9 +202,9 @@ export function setOrdersViewMode(mode) {
 export function applyOrdersViewMode() {
   const isTable = state.ordersViewMode === "table";
   const tableWrap = byId("ordersTableWrap");
-  const cardList = byId("ordersCardList");
+  const ordersGrid = byId("ordersGrid");
   if (tableWrap) tableWrap.hidden = !isTable;
-  if (cardList) cardList.hidden = isTable;
+  if (ordersGrid) ordersGrid.hidden = isTable;
   byId("ordersViewCardsBtn")?.setAttribute("aria-pressed", String(!isTable));
   byId("ordersViewTableBtn")?.setAttribute("aria-pressed", String(isTable));
 }
