@@ -5,6 +5,10 @@ import {
   sortOrders, getOrderPriority, getMarketplaceLabel, getOrderCode, getOrderMarketplaceChannel,
   renderSlaBadge, renderInlineSelect, updateOrderInline,
 } from "./orders.js";
+// O card do kanban passa a abrir o mesmo painel lateral de detalhe de
+// Encomendas (data-action="open-order-drawer", ja tratado de forma
+// generica em router.js/bindActions) em vez de exigir clicar em "Editar"
+// pra ver qualquer detalhe - decisao explicita do design novo.
 import { getResponsibleNames } from "./users.js";
 
 export function renderProduction() {
@@ -37,6 +41,9 @@ export function renderProduction() {
       </section>
     `;
   }).join("");
+  board.querySelectorAll(".kanban-card button, .kanban-card select").forEach((el) => {
+    el.addEventListener("click", (event) => event.stopPropagation());
+  });
   bindKanban();
   bindActions();
 }
@@ -86,7 +93,7 @@ export function renderKanbanCard(item) {
   const status = normalizeOrderStatus(item.status);
   const marketplaceLabel = getMarketplaceLabel(item);
   return `
-    <article class="kanban-card" draggable="${state.canEdit}" data-id="${html(item.id)}">
+    <article class="kanban-card" draggable="${state.canEdit}" data-id="${html(item.id)}" data-action="open-order-drawer" tabindex="0" role="button" aria-label="Ver detalhes de ${html(getOrderCode(item))}">
       <div class="kanban-card-head">
         <span class="order-code">${html(getOrderCode(item))}</span>
         ${state.canEdit ? `<button class="icon-btn compact" type="button" data-action="edit-order-modal" data-id="${html(item.id)}">Editar</button>` : ""}
