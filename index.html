@@ -21,6 +21,7 @@
     <link rel="stylesheet" href="./css/05-dense-dark-sidebar-v110.css?v=115" />
     <link rel="stylesheet" href="./css/06-dense-operational-views.css?v=115" />
     <link rel="stylesheet" href="./css/07-operational-polish-20260627.css?v=115" />
+    <link rel="stylesheet" href="./css/08-sora-redesign-20260706.css?v=115" />
     <script src="./supabase-config.js?v=110" defer></script>
     <script type="module" src="./js/app.js?v=115"></script>
   </head>
@@ -71,6 +72,11 @@
           <div class="status-row"><i class="status-dot" id="sidebarBackupStatusDot"></i><span id="sidebarBackupStatus">Backup pendente</span></div>
         </div>
 
+        <button id="themeToggle" class="theme-switch-track" type="button" aria-label="Alterar tema" title="Tema: escuro">
+          <span id="themeToggleLabelDark" class="theme-switch-label">Escuro</span>
+          <span id="themeToggleLabelLight" class="theme-switch-label">Claro</span>
+        </button>
+
         <div class="session-card">
           <span id="activeUserName">Modo teste</span>
           <small id="activeUserRole">Acesso direto sem login</small>
@@ -90,9 +96,6 @@
             <kbd class="search-kbd">Ctrl K</kbd>
           </div>
           <div class="topbar-actions">
-            <button id="themeToggle" class="topbar-icon-btn" type="button" aria-label="Alterar tema" title="Tema: escuro">
-              <i id="themeToggleIcon" class="ti ti-moon" aria-hidden="true"></i>
-            </button>
             <div class="notification-center">
               <button id="notificationBell" class="notification-bell" type="button" aria-label="Notificações">
                 <i class="ti ti-bell bell-glyph" aria-hidden="true"></i>

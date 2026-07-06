@@ -1,0 +1,227 @@
+/* 2026-07-06: Redesign v3 - direcao "clean e moderno" (fonte Sora, tema
+   claro/escuro com cor de destaque propria por tema - indigo no claro,
+   teal no escuro, ver design_handoff_saas_redesign/README.md).
+   Este arquivo carrega por ultimo e vence a cascata sobre os tokens dos
+   redesigns anteriores (00-07) - a estrategia de "arquivo novo por cima"
+   se manteve a mesma usada durante toda a sessao. */
+
+@font-face {
+  font-family: "Sora";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../assets/fonts/sora/sora-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Sora";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../assets/fonts/sora/sora-500.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Sora";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("../assets/fonts/sora/sora-600.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Sora";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../assets/fonts/sora/sora-700.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Sora";
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("../assets/fonts/sora/sora-800.woff2") format("woff2");
+}
+
+html, body {
+  font-family: "Sora", system-ui, sans-serif;
+}
+
+/* --- Tokens de tema claro (novo padrao, indigo) --- */
+:root {
+  /* Aliases pra --teal/--teal-2 apontarem pro accent novo (indigo no claro,
+     teal no escuro, definido no bloco dark abaixo) - assim as ~100+
+     referencias existentes a var(--teal) em todo o CSS ja herdam a cor
+     nova automaticamente, sem precisar tocar arquivo por arquivo. */
+  --accent: #4f46e5;
+  --accent-soft: rgba(79, 70, 229, 0.1);
+  --teal: var(--accent);
+  --teal-2: var(--accent-soft);
+
+  --ink: #18181b;
+  --text-faint: #a1a1aa;
+  --muted: #71717a;
+  --line: #ececec;
+  --border-strong: #dcdcdc;
+  --panel: #ffffff;
+  --canvas: #fafafa;
+  --bg-alt: #ffffff;
+  --card-alt: #f4f4f5;
+
+  --green: #16a34a;
+  --success-soft: rgba(22, 163, 74, 0.1);
+  --red: #dc2626;
+  --danger-soft: rgba(220, 38, 38, 0.1);
+  --amber: #d97706;
+  --warning-soft: rgba(217, 119, 6, 0.1);
+  --purple: #7c3aed;
+  --purple-soft: rgba(124, 58, 237, 0.1);
+
+  --accent-contrast: #ffffff;
+
+  --radius-card: 16px;
+  --radius-kanban: 14px;
+  --radius-control: 10px;
+  --radius-pill: 999px;
+}
+
+/* --- Tokens de tema escuro (novo padrao, teal) --- */
+html[data-theme="dark"] {
+  --accent: #14b8a6;
+  --accent-soft: rgba(20, 184, 166, 0.18);
+  --teal: var(--accent);
+  --teal-2: var(--accent-soft);
+
+  --ink: #f3f4f6;
+  --text-faint: #6b7684;
+  --muted: #9aa4b2;
+  --line: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --panel: #131820;
+  --canvas: #0b0e13;
+  --bg-alt: #0f131a;
+  --card-alt: #171d26;
+
+  --green: #34d399;
+  --success-soft: rgba(52, 211, 153, 0.14);
+  --red: #f87171;
+  --danger-soft: rgba(248, 113, 113, 0.14);
+  --amber: #fbbf24;
+  --warning-soft: rgba(251, 191, 36, 0.14);
+  --purple: #a78bfa;
+  --purple-soft: rgba(167, 139, 250, 0.14);
+
+  /* Texto sobre botao de accent no escuro fica quase preto (contraste
+     melhor com teal claro do que branco). */
+  --accent-contrast: #04201c;
+}
+
+/* --- Escala de radius por tipo de componente (substitui o 8px unico
+   usado nos redesigns anteriores) --- */
+.panel,
+.kpi,
+.card,
+.dashboard-welcome,
+.metric,
+.profit-preview-card,
+.suggestion-insight-card,
+.marketplace-command-block {
+  border-radius: var(--radius-card);
+}
+
+.kanban-column {
+  border-radius: var(--radius-kanban);
+}
+
+button,
+input,
+select,
+textarea,
+.primary-btn,
+.secondary-btn,
+.icon-btn {
+  border-radius: var(--radius-control);
+}
+
+.badge,
+.pill,
+.filter-chip {
+  border-radius: var(--radius-pill);
+}
+
+.brand-mark,
+.avatar,
+.session-avatar {
+  border-radius: var(--radius-pill);
+}
+
+/* --- Botao primario usa o texto de contraste certo por tema (branco no
+   claro, quase-preto no escuro - teal claro nao tem contraste bom com
+   branco puro) --- */
+.primary-btn {
+  color: var(--accent-contrast);
+}
+
+/* --- Tipografia: pesos usados com intencao especifica (o redesign
+   anterior forcava tudo pra 400/500; esse novo padrao usa ate 800 nos
+   papeis definidos no design_handoff - titulo de pagina, valor de stat
+   card, titulo de secao/card, rotulo de grupo maiusculo, botoes). Nao e
+   uma reversao geral - so esses papeis especificos ganham peso maior. */
+button,
+.primary-btn,
+.secondary-btn {
+  font-weight: 700;
+}
+
+#viewTitle,
+.topbar-title h2 {
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.kpi strong,
+.profit-preview-total dd {
+  font-weight: 800;
+}
+
+.panel-head h3,
+.dashboard-collapsible-head strong {
+  font-weight: 700;
+}
+
+.sidebar-group-label {
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+/* --- Toggle de tema no rodape da sidebar (track+thumb, com rotulos
+   "Escuro"/"Claro"), substitui o botao de icone que ficava na topbar. --- */
+.theme-switch-track {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0.5px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--card-alt);
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.theme-switch-label {
+  position: relative;
+  z-index: 1;
+  padding: 4px 6px;
+  transition: color 160ms ease, font-weight 160ms ease;
+}
+
+.theme-switch-label.active {
+  color: var(--ink);
+  font-weight: 700;
+}

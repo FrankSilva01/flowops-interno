@@ -957,12 +957,11 @@ export function applyTheme(theme) {
   const resolved = theme === "light" ? "light" : "dark";
   document.documentElement.dataset.theme = resolved;
   const button = byId("themeToggle");
-  const icon = byId("themeToggleIcon");
   const labels = { light: "claro", dark: "escuro" };
-  const icons = { light: "ti-sun", dark: "ti-moon" };
   if (button) {
     button.title = `Tema: ${labels[theme]}. Clique para alterar.`;
     button.setAttribute("aria-label", button.title);
   }
-  if (icon) icon.className = `ti ${icons[theme]}`;
+  byId("themeToggleLabelDark")?.classList.toggle("active", resolved === "dark");
+  byId("themeToggleLabelLight")?.classList.toggle("active", resolved === "light");
 }
