@@ -208,7 +208,7 @@
 #leadsView .lead-card {
   min-height: 0;
   padding: 16px;
-  cursor: default;
+  cursor: pointer;
   transition: border-color .18s ease, transform .18s ease;
 }
 

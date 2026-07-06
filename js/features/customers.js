@@ -31,7 +31,7 @@ export function renderLeads() {
     const initials = getInitials(lead.name || lead.email || "Cliente");
     const photo = lead.photo_url || lead.avatar_url || lead.image_url || "";
     return `
-      <article class="lead-card ${followUp ? "follow-up" : ""} ${selectedLead?.id === lead.id ? "selected" : ""}">
+      <article class="lead-card ${followUp ? "follow-up" : ""} ${selectedLead?.id === lead.id ? "selected" : ""}" data-action="select-lead" data-id="${html(lead.id)}" tabindex="0" role="button" aria-label="Selecionar ${html(lead.name)}">
         <div class="lead-card-head">
           <div class="lead-identity">
             ${photo ? `<img src="${html(photo)}" alt="" />` : `<span class="lead-avatar">${html(initials)}</span>`}
@@ -83,6 +83,11 @@ export function renderLeads() {
       </aside>`;
   }
   bindActions();
+}
+
+export function selectLead(id) {
+  state.selectedLeadId = id;
+  renderLeads();
 }
 
 export function getInitials(value) {

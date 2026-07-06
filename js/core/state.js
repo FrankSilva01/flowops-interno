@@ -221,6 +221,7 @@ export const state = {
   leadSearch: "",
   leadStatusFilter: "all",
   leadOriginFilter: "all",
+  selectedLeadId: null,
   notificationFilter: "all",
   notificationLimit: 20,
   topProductsPeriod: "30",
