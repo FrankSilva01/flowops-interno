@@ -129,7 +129,8 @@ html[data-theme="dark"] {
 .suggestion-insight-card,
 .marketplace-command-block,
 .table-wrap,
-.operational-summary-card {
+.operational-summary-card,
+.report-kpi {
   border-radius: var(--radius-card);
 }
 
@@ -378,13 +379,19 @@ button,
    ========================================================================== */
 
 .kpi,
-.operational-summary-card {
+.operational-summary-card,
+.report-kpi {
   position: relative;
   padding-top: 28px;
 }
 
 .kpi::before,
-.operational-summary-card::before {
+.operational-summary-card::before,
+.report-kpi::before {
+  /* .kpi::before/.report-kpi::before ficavam com display:none (05/07
+     desligaram o "blob" gradiente antigo) - sem resetar aqui o dot novo
+     nunca aparecia. */
+  display: block;
   content: "";
   position: absolute;
   top: 16px;
@@ -397,31 +404,37 @@ button,
 
 .kpi[data-tone="success"]::before,
 .operational-summary-card.green::before,
-.operational-summary-card.success::before {
+.operational-summary-card.success::before,
+.report-kpi.green::before {
   background: var(--green);
 }
 
 .kpi[data-tone="danger"]::before,
 .operational-summary-card.red::before,
-.operational-summary-card.danger::before {
+.operational-summary-card.danger::before,
+.report-kpi.red::before {
   background: var(--red);
 }
 
 .kpi[data-tone="info"]::before,
 .operational-summary-card.blue::before,
 .operational-summary-card.teal::before,
-.operational-summary-card.info::before {
+.operational-summary-card.info::before,
+.report-kpi.blue::before,
+.report-kpi.teal::before {
   background: var(--accent);
 }
 
 .kpi[data-tone="purple"]::before,
-.operational-summary-card.purple::before {
+.operational-summary-card.purple::before,
+.report-kpi.purple::before {
   background: var(--purple);
 }
 
 .kpi[data-tone="warning"]::before,
 .operational-summary-card.amber::before,
-.operational-summary-card.warning::before {
+.operational-summary-card.warning::before,
+.report-kpi.amber::before {
   background: var(--amber);
 }
 
@@ -430,7 +443,8 @@ button,
   font-weight: 800;
 }
 
-.operational-summary-card strong {
+.operational-summary-card strong,
+.report-kpi strong {
   font-weight: 800;
 }
 
@@ -533,3 +547,28 @@ button,
    o que tambem alinha essas duas classes (usadas em varias telas alem
    de Fluxo de caixa) ao resto do sistema de cards.
    ========================================================================== */
+
+/* ==========================================================================
+   Fase 9 - Relatorios
+   Achado importante: os stat cards de Relatorios usam uma classe propria
+   (.report-kpi, nao .kpi nem .operational-summary-card) que nunca foi
+   incluida na regra do dot semantico da Fase 3 - por isso ela ja foi
+   estendida pra incluir .report-kpi acima (no bloco da Fase 3). De
+   quebra, achei que o dot do proprio .kpi (Dashboard) nunca aparecia:
+   um arquivo antigo (07) da .kpi::before "display:none" (pra apagar o
+   blob gradiente antigo) e a regra da Fase 3 nunca resetava esse
+   display - corrigido no mesmo bloco (display:block explicito).
+   .report-kpi tambem tinha sombra/borda do padrao antigo (pre-Fase 1) -
+   alinhado aqui ao tratamento flat sem sombra que .kpi/.panel ja usam.
+   As abas (Visao geral/Financeiro/Producao/etc, .report-tabs) ja
+   compartilham a regra unificada corrigida na Fase 8.
+   ========================================================================== */
+
+.report-kpi {
+  border-width: 0.5px;
+  box-shadow: none;
+}
+
+.report-kpi:hover {
+  box-shadow: none;
+}
