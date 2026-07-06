@@ -201,6 +201,8 @@ export const state = {
   sellerMetrics: null,
   analyticsSyncedAt: null,
   analyticsSyncing: false,
+  listingFeeSync: {},
+  feeSyncing: false,
   performanceTableSort: "score_desc",
   performanceTableHealthFilter: "all",
   productSearch: "",

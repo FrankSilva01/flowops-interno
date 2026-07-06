@@ -68,7 +68,7 @@ import {
 import {
   syncAnalyticsFull, renderPerformanceTable, bindPerformanceTableToggles,
   openListingDrawer, bindListingDrawer, closeListingDrawer,
-  showCalculatorSuggestion, getSuggestionForListing,
+  showCalculatorSuggestion, getSuggestionForListing, syncFeeCalculatorFull,
 } from "../features/marketplace-analytics.js";
 
 function bindFilter(elementId, filterKey) {
@@ -684,6 +684,10 @@ export function bindActions() {
       }
       if (action === "sync-analytics-full") {
         await syncAnalyticsFull();
+        return;
+      }
+      if (action === "sync-fee-calculator") {
+        await syncFeeCalculatorFull();
         return;
       }
       if (action === "open-listing-drawer") {

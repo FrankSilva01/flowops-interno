@@ -12,7 +12,7 @@ import { renderLineChart } from "../core/charts.js";
 import { marketplaceRequest } from "./marketplace.js";
 import {
   hasCommercialIntelligenceAccess, getListingProfitability, getFinancialSettings,
-  computeMarginBreakdown, openPriceCalculatorForListing,
+  computeMarginBreakdown, openPriceCalculatorForListing, renderCommercialIntelligence,
 } from "./pricing.js";
 
 const ANALYTICS_URL = "https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-sync?marketplace=ml&action=analytics-full";
@@ -56,6 +56,50 @@ export async function loadSellerMetrics() {
     .eq("marketplace", "Mercado Livre")
     .maybeSingle();
   state.sellerMetrics = error ? null : data || null;
+}
+
+// Mesmo padrao de loadListingAnalytics: so a leitura mais recente por
+// anuncio (state.listingFeeSync), usada por resolveListingFeeInfo em
+// pricing.js pra priorizar a taxa real sobre a estimativa por tabela.
+export async function loadListingFeeSync() {
+  if (!state.supabase || !state.organizationId) return;
+  const { data, error } = await state.supabase
+    .from("listing_fee_sync")
+    .select("*")
+    .eq("organization_id", state.organizationId)
+    .order("synced_at", { ascending: false })
+    .limit(300);
+  if (error) return;
+  const latestByListing = {};
+  for (const row of data || []) {
+    const key = analyticsKey(row.marketplace, row.external_id);
+    if (!latestByListing[key]) latestByListing[key] = row;
+  }
+  state.listingFeeSync = latestByListing;
+}
+
+const FEE_CALCULATOR_URL = "https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-sync?marketplace=ml&action=fee-calculator-full";
+
+export async function syncFeeCalculatorFull(force = false) {
+  if (!ensureCanEdit()) return;
+  if (state.feeSyncing) return;
+  state.feeSyncing = true;
+  renderMarketplaceAnalyticsPanel();
+  try {
+    const url = force ? `${FEE_CALCULATOR_URL}&force=true` : FEE_CALCULATOR_URL;
+    const result = await marketplaceRequest(url);
+    await loadListingFeeSync();
+    const failed = (result.listings || []).filter((item) => !item.ok).length;
+    flashActionMessage(failed
+      ? `Taxas atualizadas com ${failed} erro(s) - veja Logs API para detalhes.`
+      : "Taxas reais do Mercado Livre atualizadas.");
+  } catch (error) {
+    flashActionMessage(`Não foi possível atualizar as taxas: ${error.message}`);
+  } finally {
+    state.feeSyncing = false;
+    renderMarketplaceAnalyticsPanel();
+    if (byId("intelligenceAnalysisSection")) renderCommercialIntelligence();
+  }
 }
 
 export async function syncAnalyticsFull(force = false) {
@@ -151,7 +195,7 @@ export function getPriceSuggestionScenario(listing, analytics, profitability, po
   const conversion = analytics.conversion_rate;
 
   const projectAt = (targetPrice) => computeMarginBreakdown({
-    cost: profitability.cost, revenue: targetPrice, feePct: profitability.feePct,
+    cost: profitability.cost, revenue: targetPrice, feePct: profitability.feePct, fixedFee: profitability.fixedFee,
     taxPct: profitability.taxPct, shipping: profitability.shipping, packaging: profitability.packaging,
   });
 
@@ -612,12 +656,15 @@ function renderListingDrawerFinancial(profitability, suggestion) {
     target.innerHTML = `<div class="empty-chart">Cadastre o custo deste produto para ver o resumo financeiro.</div>`;
     return;
   }
-  const feesTotal = profitability.feeAmount + profitability.taxAmount + profitability.shipping + profitability.packaging;
+  const feesTotal = profitability.feeAmount + (profitability.fixedFee || 0) + profitability.taxAmount + profitability.shipping + profitability.packaging;
   const profitColor = profitability.netProfit >= 0 ? "var(--green)" : "var(--red)";
+  const feeSourceTag = profitability.real
+    ? `<span class="badge done" title="Taxa sincronizada da API do Mercado Livre">real</span>`
+    : `<span class="badge neutral" title="Estimativa por tabela">estimado</span>`;
   target.innerHTML = `
     <div class="drawer-field-row"><span>Preço</span><strong>${money.format(profitability.revenue)}</strong></div>
     <div class="drawer-field-row"><span>Custo</span><strong>${money.format(profitability.cost)}</strong></div>
-    <div class="drawer-field-row"><span>Taxas</span><strong>${money.format(feesTotal)}</strong></div>
+    <div class="drawer-field-row"><span>Taxas</span><strong>${money.format(feesTotal)} ${feeSourceTag}</strong></div>
     <div class="drawer-field-row"><span>Lucro</span><strong style="color:${profitColor}">${money.format(profitability.netProfit)}</strong></div>
     <div class="drawer-field-row"><span>Margem</span><strong><span class="badge ${profitability.level.className}">${profitability.marginPct.toFixed(1)}% - ${html(profitability.level.label)}</span></strong></div>
     ${suggestion ? `<div class="listing-drawer-suggestion">${html(suggestion.text)}${suggestion.impact ? ` <strong>(+${money.format(suggestion.impact)}/venda estimado)</strong>` : ""}</div>` : ""}

@@ -15,17 +15,56 @@ let productUploadedImages = [];
 
 const DEFAULT_FINANCIAL_SETTINGS = {
   marketplace_fee_rules: {
-    mercado_livre: { classic: 12, premium: 16 },
-    shopee: { default: 14 },
-    amazon: { default: 15 },
+    // fixed_fee_threshold/fixed_fee_amount: o ML cobra uma taxa fixa (alem
+    // da comissao %) em itens de baixo valor - some ao valor da comissao,
+    // nao substitui ela. Os outros canais tambem podem ter isso, mas por
+    // enquanto so ML tem valores default (sem integracao de API pros demais).
+    mercado_livre: { classic: 12, premium: 16, fixed_fee_threshold: 79, fixed_fee_amount: 6.25 },
+    shopee: { default: 14, service_fee_pct: 2, fixed_fee_threshold: 0, fixed_fee_amount: 0 },
+    amazon: { default: 15, fulfillment_fee_pct: 0, fixed_fee_threshold: 0, fixed_fee_amount: 0 },
+    tiktok_shop: { default: 7, fixed_fee_threshold: 0, fixed_fee_amount: 0 },
     direct: { default: 0 },
   },
   default_tax_pct: 6,
   default_shipping_cost: 0,
   default_packaging_cost: 0,
+  // Faixas de frete por peso (R$), usadas quando nao ha frete real
+  // sincronizado da API e o produto tem peso cadastrado - ver
+  // resolveShippingCost(). max_kg e o teto de cada faixa, em ordem crescente.
+  shipping_weight_tiers: [
+    { max_kg: 0.3, cost: 15 },
+    { max_kg: 1, cost: 20 },
+    { max_kg: 5, cost: 30 },
+    { max_kg: 30, cost: 50 },
+  ],
   profitability_thresholds: { critical: 0, attention: 10, healthy: 20, excellent: 35 },
   category_prefixes: {},
 };
+
+// --- Taxa fixa (itens de baixo valor) e frete por peso (fallback sem API) ---
+
+export function resolveFixedFeeRule(channel) {
+  const rules = getFinancialSettings().marketplace_fee_rules;
+  const key = channel === "mercado-livre" ? "mercado_livre" : channel === "tiktok-shop" ? "tiktok_shop" : channel;
+  const config = rules?.[key];
+  return { threshold: Number(config?.fixed_fee_threshold || 0), amount: Number(config?.fixed_fee_amount || 0) };
+}
+
+export function resolveFixedFee(channel, revenue) {
+  const rule = resolveFixedFeeRule(channel);
+  if (!rule.amount || !rule.threshold) return 0;
+  return Number(revenue || 0) < rule.threshold ? rule.amount : 0;
+}
+
+export function resolveShippingCost(weightKg, manualShipping) {
+  const settings = getFinancialSettings();
+  if (manualShipping != null && manualShipping !== "" && Number(manualShipping) > 0) return Number(manualShipping);
+  const weight = Number(weightKg || 0);
+  if (weight <= 0) return Number(settings.default_shipping_cost || 0);
+  const tiers = (settings.shipping_weight_tiers || []).slice().sort((a, b) => a.max_kg - b.max_kg);
+  const match = tiers.find((tier) => weight <= Number(tier.max_kg));
+  return Number((match || tiers[tiers.length - 1])?.cost || settings.default_shipping_cost || 0);
+}
 
 export function getFinancialSettings() {
   return state.financialSettings || DEFAULT_FINANCIAL_SETTINGS;
@@ -132,6 +171,7 @@ export function openProductQuickDialog(productId = "") {
   form.elements.name.value = product?.name || "";
   form.elements.category.value = product?.category || "";
   form.elements.costPrice.value = product?.cost_price ?? "";
+  form.elements.weightKg.value = product?.weight_kg ?? "";
   form.elements.notes.value = product?.notes || "";
   form.elements.sku.value = product?.sku || "";
   form.dataset.skuTouched = product ? "true" : "false";
@@ -226,6 +266,7 @@ function renderPriceBreakdownCard(label, breakdown) {
         <div><dt>Preço de venda</dt><dd>${money.format(breakdown.revenue)}</dd></div>
         <div><dt>Custo do produto</dt><dd>-${money.format(breakdown.cost)}</dd></div>
         <div><dt>Taxa do marketplace (${breakdown.feePct.toFixed(1)}%)</dt><dd>-${money.format(breakdown.feeAmount)}</dd></div>
+        ${breakdown.fixedFee > 0 ? `<div><dt>Taxa fixa (item de baixo valor)</dt><dd>-${money.format(breakdown.fixedFee)}</dd></div>` : ""}
         <div><dt>Imposto (${breakdown.taxPct}%)</dt><dd>-${money.format(breakdown.taxAmount)}</dd></div>
         <div><dt>Frete + embalagem</dt><dd>-${money.format(breakdown.shipping + breakdown.packaging)}</dd></div>
         <div class="profit-preview-total"><dt>Sobra líquida estimada</dt><dd>${money.format(breakdown.netProfit)} (${breakdown.marginPct.toFixed(1)}%)</dd></div>
@@ -247,14 +288,15 @@ export function renderProductProfitPreview() {
   const data = new FormData(form);
   const cost = number(data.get("costPrice"));
   const price = number(data.get("price"));
+  const weight = number(data.get("weightKg"));
   const settings = getFinancialSettings();
   const checkedChannels = CREATABLE_MARKETPLACES.filter((channel) => form.elements[MARKETPLACE_CHECKBOX_NAMES[channel]]?.checked);
   const previewChannels = checkedChannels.length ? checkedChannels : ["direct"];
   target.innerHTML = previewChannels.map((channel) => {
     const feePct = resolveChannelFeePct(channel, "classic");
     const breakdown = computeMarginBreakdown({
-      cost, revenue: price, feePct, taxPct: settings.default_tax_pct,
-      shipping: settings.default_shipping_cost, packaging: settings.default_packaging_cost,
+      cost, revenue: price, feePct, fixedFee: resolveFixedFee(channel, price), taxPct: settings.default_tax_pct,
+      shipping: resolveShippingCost(weight, null), packaging: settings.default_packaging_cost,
     });
     const label = channel === "direct" ? "Venda direta (estimativa)" : marketplaceDisplayName(channel);
     return renderPriceBreakdownCard(label, breakdown);
@@ -317,6 +359,7 @@ export async function saveProduct(event) {
     name,
     category,
     cost_price: number(data.get("costPrice")),
+    weight_kg: data.get("weightKg") ? number(data.get("weightKg")) : null,
     notes: String(data.get("notes") || "").trim() || null,
     updated_at: new Date().toISOString(),
   };
@@ -476,22 +519,49 @@ export function resolveListingFeePct(listing) {
   return resolveChannelFeePct(channel, tier);
 }
 
+// Taxa real sincronizada da API (Bloco 1.B, ver marketplace-analytics.js
+// getListingFeeSync) tem prioridade sobre a estimativa por tabela. Devolve
+// {pct, fixedFee, shipping, real} no mesmo formato de resolveOrderFeeInfo,
+// pra getListingProfitability usar sem se importar se o dado e real ou estimado.
+export function resolveListingFeeInfo(listing) {
+  const channel = normalizeMarketplaceChannel(listing.marketplace);
+  const product = getProductForListing(listing.marketplace, listing.external_id);
+  const realSync = state.listingFeeSync?.[`${listing.marketplace}:${listing.external_id}`];
+  if (realSync) {
+    return {
+      pct: Number(realSync.real_fee_pct || 0),
+      fixedFee: Number(realSync.real_fee_fixed || 0),
+      shipping: Number(realSync.shipping_cost || 0) - Number(realSync.shipping_subsidized || 0),
+      real: true,
+    };
+  }
+  const tier = channel === "mercado-livre" ? classifyMlListingType(listing.raw_payload || {}) : "classic";
+  return {
+    pct: resolveChannelFeePct(channel, tier),
+    fixedFee: resolveFixedFee(channel, Number(listing.price || 0)),
+    shipping: resolveShippingCost(product?.weight_kg, null),
+    real: false,
+  };
+}
+
 // Matematica de margem compartilhada entre anuncios, vendas reais e a previa do cadastro de produto.
-export function computeMarginBreakdown({ cost, revenue, feePct = 0, taxPct = 0, shipping = 0, packaging = 0 }) {
+// fixedFee: taxa fixa (R$) de itens de baixo valor, somada a comissao % (resolveFixedFee).
+export function computeMarginBreakdown({ cost, revenue, feePct = 0, taxPct = 0, shipping = 0, packaging = 0, fixedFee = 0 }) {
   const normalizedCost = Number(cost || 0);
   const normalizedRevenue = Number(revenue || 0);
+  const normalizedFixedFee = Number(fixedFee || 0);
   if (normalizedRevenue <= 0) {
     return {
-      revenue: 0, cost: normalizedCost, feePct, feeAmount: 0, taxPct, taxAmount: 0, shipping, packaging,
-      netProfit: -normalizedCost, marginPct: 0, level: getProfitabilityLevel(0),
+      revenue: 0, cost: normalizedCost, feePct, feeAmount: 0, fixedFee: normalizedFixedFee, taxPct, taxAmount: 0, shipping, packaging,
+      netProfit: -normalizedCost - normalizedFixedFee, marginPct: 0, level: getProfitabilityLevel(0),
     };
   }
   const feeAmount = normalizedRevenue * (feePct / 100);
   const taxAmount = normalizedRevenue * (taxPct / 100);
-  const netProfit = normalizedRevenue - normalizedCost - feeAmount - taxAmount - shipping - packaging;
+  const netProfit = normalizedRevenue - normalizedCost - feeAmount - normalizedFixedFee - taxAmount - shipping - packaging;
   const marginPct = (netProfit / normalizedRevenue) * 100;
   return {
-    revenue: normalizedRevenue, cost: normalizedCost, feePct, feeAmount, taxPct, taxAmount, shipping, packaging,
+    revenue: normalizedRevenue, cost: normalizedCost, feePct, feeAmount, fixedFee: normalizedFixedFee, taxPct, taxAmount, shipping, packaging,
     netProfit, marginPct, level: getProfitabilityLevel(marginPct),
   };
 }
@@ -499,18 +569,21 @@ export function computeMarginBreakdown({ cost, revenue, feePct = 0, taxPct = 0, 
 export function resolveOrderFeeInfo(order) {
   const channel = getOrderMarketplaceChannel(order);
   const rules = getFinancialSettings().marketplace_fee_rules;
-  if (channel === "direct") return { pct: Number(rules.direct?.default ?? 0), real: false };
+  if (channel === "direct") return { pct: Number(rules.direct?.default ?? 0), real: false, fixedFee: 0 };
   const link = state.marketplaceSales.find((sale) => sale.internal_order_id === order.id);
   const items = link?.raw_payload?.order_items || [];
   const realFee = items.reduce((total, item) => total + Number(item.sale_fee || 0), 0);
   if (realFee > 0) {
     const amount = Number(link.raw_payload?.total_amount
       || items.reduce((total, item) => total + Number(item.unit_price || 0) * Number(item.quantity || 1), 0));
-    return { pct: amount > 0 ? (realFee / amount) * 100 : 0, real: true, feeAmount: realFee };
+    // Fee real da venda ja vem com qualquer taxa fixa embutida (sale_fee e o
+    // valor total cobrado pelo marketplace) - nao soma fixedFee de novo aqui.
+    return { pct: amount > 0 ? (realFee / amount) * 100 : 0, real: true, feeAmount: realFee, fixedFee: 0 };
   }
-  if (channel === "mercado-livre") return { pct: Number(rules.mercado_livre?.classic ?? 12), real: false };
-  const key = channel === "shopee" ? "shopee" : "amazon";
-  return { pct: Number(rules[key]?.default ?? 0), real: false };
+  const fixedFee = resolveFixedFee(channel, Number(order.received || order.charged || 0));
+  if (channel === "mercado-livre") return { pct: Number(rules.mercado_livre?.classic ?? 12), real: false, fixedFee };
+  const key = channel === "shopee" ? "shopee" : channel === "tiktok-shop" ? "tiktok_shop" : "amazon";
+  return { pct: Number(rules[key]?.default ?? 0), real: false, fixedFee };
 }
 
 // --- Rentabilidade (por anuncio e por venda real) ---
@@ -519,15 +592,17 @@ export function getListingProfitability(listing) {
   const product = getProductForListing(listing.marketplace, listing.external_id);
   if (!product) return { hasCost: false };
   const settings = getFinancialSettings();
+  const feeInfo = resolveListingFeeInfo(listing);
   const breakdown = computeMarginBreakdown({
     cost: product.cost_price,
     revenue: listing.price,
-    feePct: resolveListingFeePct(listing),
+    feePct: feeInfo.pct,
+    fixedFee: feeInfo.fixedFee,
     taxPct: settings.default_tax_pct,
-    shipping: settings.default_shipping_cost,
+    shipping: feeInfo.shipping,
     packaging: settings.default_packaging_cost,
   });
-  return { hasCost: true, product, ...breakdown };
+  return { hasCost: true, product, ...breakdown, real: feeInfo.real };
 }
 
 export function getOrderProfitability(order) {
@@ -541,8 +616,9 @@ export function getOrderProfitability(order) {
     cost,
     revenue,
     feePct: feeInfo.feeAmount != null && revenue > 0 ? (feeInfo.feeAmount / revenue) * 100 : feeInfo.pct,
+    fixedFee: feeInfo.fixedFee,
     taxPct: settings.default_tax_pct,
-    shipping: settings.default_shipping_cost,
+    shipping: resolveShippingCost(product.weight_kg, settings.default_shipping_cost),
     packaging: settings.default_packaging_cost,
   });
   return { hasCost: true, product, ...breakdown, real: feeInfo.real };
@@ -588,9 +664,11 @@ export function getProfitPotential() {
     currentProfit += profitability.netProfit;
     if (["loss", "critical", "attention"].includes(profitability.level.key)) {
       itemsBelowHealthy++;
+      const fixedFeeRule = resolveFixedFeeRule(normalizeMarketplaceChannel(listing.marketplace));
       const suggestedPrice = calculatePriceSuggestion({
         cost: profitability.cost, feePct: profitability.feePct, taxPct: settings.default_tax_pct,
-        shipping: settings.default_shipping_cost, packaging: settings.default_packaging_cost,
+        shipping: profitability.shipping, packaging: profitability.packaging,
+        fixedFee: fixedFeeRule.amount, fixedFeeThreshold: fixedFeeRule.threshold,
         targetMarginPct: settings.profitability_thresholds.healthy,
       });
       potentialProfit += suggestedPrice ? suggestedPrice * (settings.profitability_thresholds.healthy / 100) : Math.max(profitability.netProfit, 0);
@@ -617,7 +695,7 @@ export function getPortfolioTotals() {
     if (!profitability.hasCost) return;
     revenueTotal += profitability.revenue;
     costTotal += profitability.cost;
-    feeTotal += profitability.feeAmount + profitability.taxAmount + profitability.shipping + profitability.packaging;
+    feeTotal += profitability.feeAmount + (profitability.fixedFee || 0) + profitability.taxAmount + profitability.shipping + profitability.packaging;
     netProfitTotal += profitability.netProfit;
     marginSum += profitability.marginPct;
     count++;
@@ -627,10 +705,19 @@ export function getPortfolioTotals() {
 
 // --- Calculadora de preco/lucro (disponivel para todos os planos) ---
 
-export function calculatePriceSuggestion({ cost, feePct = 0, taxPct = 0, shipping = 0, packaging = 0, targetMarginPct }) {
+// fixedFeeThreshold/fixedFee: a taxa fixa so entra se o preco resultante
+// ficar abaixo do limiar (mesma regra de resolveFixedFee) - por isso o
+// calculo e feito em duas passagens (o preco sugerido e o que decide se a
+// taxa fixa se aplica, entao nao da pra saber de antemao sem calcular 1x sem
+// ela primeiro).
+export function calculatePriceSuggestion({ cost, feePct = 0, taxPct = 0, shipping = 0, packaging = 0, fixedFee = 0, fixedFeeThreshold = 0, targetMarginPct }) {
   const denominator = 1 - (feePct / 100) - (taxPct / 100) - (targetMarginPct / 100);
   if (denominator <= 0) return null;
-  const price = (Number(cost || 0) + Number(shipping || 0) + Number(packaging || 0)) / denominator;
+  const base = Number(cost || 0) + Number(shipping || 0) + Number(packaging || 0);
+  let price = base / denominator;
+  if (fixedFeeThreshold > 0 && fixedFee > 0 && price < fixedFeeThreshold) {
+    price = (base + Number(fixedFee)) / denominator;
+  }
   return Math.round(price * 100) / 100;
 }
 
@@ -662,6 +749,8 @@ export function renderPriceCalculator() {
   updatePriceCalculatorResult();
 }
 
+const CALCULATOR_CHANNEL_MAP = { mercado_livre: "mercado-livre", shopee: "shopee", amazon: "amazon", tiktok_shop: "tiktok-shop", direct: "direct" };
+
 export function updatePriceCalculatorResult() {
   const form = byId("priceCalculatorForm");
   const result = byId("priceCalculatorResult");
@@ -669,19 +758,19 @@ export function updatePriceCalculatorResult() {
   const data = new FormData(form);
   const marketplace = String(data.get("marketplace") || "direct");
   const listingType = String(data.get("listingType") || "classic");
-  const settings = getFinancialSettings();
-  const rules = settings.marketplace_fee_rules;
-  const feePct = marketplace === "mercado_livre" ? Number(rules.mercado_livre?.[listingType] ?? 12)
-    : marketplace === "shopee" ? Number(rules.shopee?.default ?? 14)
-      : marketplace === "amazon" ? Number(rules.amazon?.default ?? 15)
-        : Number(rules.direct?.default ?? 0);
+  const channel = CALCULATOR_CHANNEL_MAP[marketplace] || "direct";
+  const feePct = resolveChannelFeePct(channel, channel === "mercado-livre" ? listingType : "classic");
+  const fixedFeeRule = resolveFixedFeeRule(channel);
   const inputs = {
     cost: number(data.get("cost")),
     feePct,
+    fixedFee: fixedFeeRule.amount,
+    fixedFeeThreshold: fixedFeeRule.threshold,
     taxPct: number(data.get("taxPct")),
-    shipping: number(data.get("shipping")),
+    shipping: resolveShippingCost(number(data.get("weightKg")), data.get("shipping")),
     packaging: number(data.get("packaging")),
   };
+  const settings = getFinancialSettings();
   const output = buildPriceCalculatorResult(inputs);
   const cards = [];
   if (output.minPrice) cards.push(renderPriceBreakdownCard("Preço mínimo (margem 0%)", computeMarginBreakdown({ ...inputs, revenue: output.minPrice })));
@@ -724,9 +813,11 @@ export async function generateSuggestions() {
     // "Acao necessaria" de renderSuggestions, calculado a partir de getCostCoverage.
     if (!profitability.hasCost) return;
     if (["loss", "critical"].includes(profitability.level.key) && !openKeys.has(`reprice:${listing.external_id}`)) {
+      const fixedFeeRule = resolveFixedFeeRule(normalizeMarketplaceChannel(listing.marketplace));
       const suggestedPrice = calculatePriceSuggestion({
         cost: profitability.cost, feePct: profitability.feePct, taxPct: settings.default_tax_pct,
-        shipping: settings.default_shipping_cost, packaging: settings.default_packaging_cost,
+        shipping: profitability.shipping, packaging: profitability.packaging,
+        fixedFee: fixedFeeRule.amount, fixedFeeThreshold: fixedFeeRule.threshold,
         targetMarginPct: settings.profitability_thresholds.healthy,
       });
       queue.push({
@@ -771,9 +862,11 @@ function getHighVolumeLowMarginInsights() {
     if (!profitability.hasCost || profitability.marginPct >= settings.profitability_thresholds.healthy) return;
     const salesCount = countRecentSalesForListing(listing);
     if (salesCount < 5) return;
+    const fixedFeeRule = resolveFixedFeeRule(normalizeMarketplaceChannel(listing.marketplace));
     const suggestedPrice = calculatePriceSuggestion({
       cost: profitability.cost, feePct: profitability.feePct, taxPct: profitability.taxPct,
       shipping: profitability.shipping, packaging: profitability.packaging,
+      fixedFee: fixedFeeRule.amount, fixedFeeThreshold: fixedFeeRule.threshold,
       targetMarginPct: settings.profitability_thresholds.healthy,
     });
     const priceIncrease = suggestedPrice ? suggestedPrice - profitability.revenue : 0;
@@ -1147,6 +1240,8 @@ function renderIntelligenceEmptyState(coverage) {
 
 export function renderCommercialIntelligence() {
   renderProductCatalogTable();
+  const syncFeeBtn = byId("syncFeeCalculatorBtn");
+  if (syncFeeBtn) syncFeeBtn.hidden = !isMarketplaceAccountConnected("mercado-livre");
   const analysisSection = byId("intelligenceAnalysisSection");
   const upsell = byId("intelligenceUpsell");
   const emptyState = byId("intelligenceEmptyState");
@@ -1256,16 +1351,21 @@ export function renderListingProfitabilityTable() {
   if (!target) return;
   const rows = getListingsProfitabilityTable();
   target.innerHTML = rows.length ? rows.map(({ listing, profitability }) => {
-    const feesTotal = profitability.feeAmount + profitability.taxAmount + profitability.shipping + profitability.packaging;
-    const feeBreakdown = `Comissão ${profitability.feePct.toFixed(1)}%: ${money.format(profitability.feeAmount)} + Imposto: ${money.format(profitability.taxAmount)} + Frete/embalagem: ${money.format(profitability.shipping + profitability.packaging)}`;
+    const feesTotal = profitability.feeAmount + (profitability.fixedFee || 0) + profitability.taxAmount + profitability.shipping + profitability.packaging;
+    const feeBreakdown = `Comissão ${profitability.feePct.toFixed(1)}%: ${money.format(profitability.feeAmount)}`
+      + (profitability.fixedFee > 0 ? ` + Taxa fixa: ${money.format(profitability.fixedFee)}` : "")
+      + ` + Imposto: ${money.format(profitability.taxAmount)} + Frete/embalagem: ${money.format(profitability.shipping + profitability.packaging)}`;
     const profitColor = profitability.netProfit >= 0 ? "var(--green)" : "var(--red)";
+    const feeSourceTag = profitability.real
+      ? `<span class="badge done" title="Taxa sincronizada da API do Mercado Livre">real</span>`
+      : `<span class="badge neutral" title="Estimativa por tabela - conecte o Mercado Livre e sincronize as taxas para o valor real">estimado</span>`;
     return `
       <tr>
         <td class="listing-profitability-name" title="${html(listing.title)}">${html(listing.title)}</td>
         <td><span class="badge neutral">${html(marketplaceDisplayName(listing.marketplace))}</span></td>
         <td>${money.format(Number(listing.price || 0))}</td>
         <td>${money.format(profitability.cost)}</td>
-        <td title="${html(feeBreakdown)}">${money.format(feesTotal)}</td>
+        <td title="${html(feeBreakdown)}">${money.format(feesTotal)} ${feeSourceTag}</td>
         <td style="color:${profitColor}">${money.format(profitability.netProfit)}</td>
         <td><span class="badge ${profitability.level.className}">${profitability.marginPct.toFixed(1)}%</span></td>
         <td><button class="icon-btn" type="button" data-action="simulate-listing" data-marketplace="${html(listing.marketplace)}" data-external-id="${html(listing.external_id)}">Simular</button></td>
@@ -1285,7 +1385,7 @@ function renderListingProfitabilityTotals(rows) {
   }
   const revenueTotal = rows.reduce((sum, row) => sum + row.profitability.revenue, 0);
   const costTotal = rows.reduce((sum, row) => sum + row.profitability.cost, 0);
-  const feeTotal = rows.reduce((sum, row) => sum + row.profitability.feeAmount + row.profitability.taxAmount + row.profitability.shipping + row.profitability.packaging, 0);
+  const feeTotal = rows.reduce((sum, row) => sum + row.profitability.feeAmount + (row.profitability.fixedFee || 0) + row.profitability.taxAmount + row.profitability.shipping + row.profitability.packaging, 0);
   const netProfitTotal = rows.reduce((sum, row) => sum + row.profitability.netProfit, 0);
   const avgMargin = rows.reduce((sum, row) => sum + row.profitability.marginPct, 0) / rows.length;
   target.innerHTML = `
@@ -1327,13 +1427,24 @@ export function openPriceCalculatorForListing(marketplace, externalId) {
 export function openFinancialSettingsDialog() {
   const settings = getFinancialSettings();
   const form = byId("financialSettingsForm");
-  form.elements.mlClassicFee.value = settings.marketplace_fee_rules?.mercado_livre?.classic ?? 12;
-  form.elements.mlPremiumFee.value = settings.marketplace_fee_rules?.mercado_livre?.premium ?? 16;
-  form.elements.shopeeFee.value = settings.marketplace_fee_rules?.shopee?.default ?? 14;
-  form.elements.amazonFee.value = settings.marketplace_fee_rules?.amazon?.default ?? 15;
+  const rules = settings.marketplace_fee_rules || {};
+  const tiers = settings.shipping_weight_tiers || [];
+  form.elements.mlClassicFee.value = rules.mercado_livre?.classic ?? 12;
+  form.elements.mlPremiumFee.value = rules.mercado_livre?.premium ?? 16;
+  form.elements.mlFixedFeeAmount.value = rules.mercado_livre?.fixed_fee_amount ?? 0;
+  form.elements.mlFixedFeeThreshold.value = rules.mercado_livre?.fixed_fee_threshold ?? 0;
+  form.elements.shopeeFee.value = rules.shopee?.default ?? 14;
+  form.elements.shopeeServiceFee.value = rules.shopee?.service_fee_pct ?? 0;
+  form.elements.amazonFee.value = rules.amazon?.default ?? 15;
+  form.elements.amazonFulfillmentFee.value = rules.amazon?.fulfillment_fee_pct ?? 0;
+  form.elements.tiktokFee.value = rules.tiktok_shop?.default ?? 7;
   form.elements.taxPct.value = settings.default_tax_pct;
   form.elements.shippingCost.value = settings.default_shipping_cost;
   form.elements.packagingCost.value = settings.default_packaging_cost;
+  form.elements.shippingTier1.value = tiers[0]?.cost ?? 15;
+  form.elements.shippingTier2.value = tiers[1]?.cost ?? 20;
+  form.elements.shippingTier3.value = tiers[2]?.cost ?? 30;
+  form.elements.shippingTier4.value = tiers[3]?.cost ?? 50;
   form.elements.thresholdAttention.value = settings.profitability_thresholds.attention;
   form.elements.thresholdHealthy.value = settings.profitability_thresholds.healthy;
   form.elements.thresholdExcellent.value = settings.profitability_thresholds.excellent;
@@ -1347,14 +1458,24 @@ export async function saveFinancialSettings(event) {
   const payload = {
     organization_id: state.organizationId,
     marketplace_fee_rules: {
-      mercado_livre: { classic: number(data.get("mlClassicFee")), premium: number(data.get("mlPremiumFee")) },
-      shopee: { default: number(data.get("shopeeFee")) },
-      amazon: { default: number(data.get("amazonFee")) },
+      mercado_livre: {
+        classic: number(data.get("mlClassicFee")), premium: number(data.get("mlPremiumFee")),
+        fixed_fee_amount: number(data.get("mlFixedFeeAmount")), fixed_fee_threshold: number(data.get("mlFixedFeeThreshold")),
+      },
+      shopee: { default: number(data.get("shopeeFee")), service_fee_pct: number(data.get("shopeeServiceFee")) },
+      amazon: { default: number(data.get("amazonFee")), fulfillment_fee_pct: number(data.get("amazonFulfillmentFee")) },
+      tiktok_shop: { default: number(data.get("tiktokFee")) },
       direct: { default: 0 },
     },
     default_tax_pct: number(data.get("taxPct")),
     default_shipping_cost: number(data.get("shippingCost")),
     default_packaging_cost: number(data.get("packagingCost")),
+    shipping_weight_tiers: [
+      { max_kg: 0.3, cost: number(data.get("shippingTier1")) },
+      { max_kg: 1, cost: number(data.get("shippingTier2")) },
+      { max_kg: 5, cost: number(data.get("shippingTier3")) },
+      { max_kg: 30, cost: number(data.get("shippingTier4")) },
+    ],
     profitability_thresholds: {
       critical: 0,
       attention: number(data.get("thresholdAttention")),

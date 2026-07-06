@@ -1114,6 +1114,7 @@
                 <small>Catálogo de produtos, rentabilidade, sugestões e simulações.</small>
               </div>
               <div class="inline-actions">
+                <button id="syncFeeCalculatorBtn" class="secondary-btn" type="button" data-action="sync-fee-calculator" hidden>Sincronizar taxas</button>
                 <button id="openBulkCostBtn" class="secondary-btn" type="button" data-action="open-bulk-cost-dialog">Cadastrar custos em lote</button>
                 <button id="openFinancialSettingsBtn" class="secondary-btn" type="button" data-action="open-financial-settings">Configurações financeiras</button>
               </div>
@@ -1599,6 +1600,7 @@
         <label>Custo do produto<input name="costPrice" type="number" min="0" step="0.01" placeholder="0,00" required /></label>
         <label>Preço de venda<input name="price" type="number" min="0" step="0.01" placeholder="0,00" required /></label>
         <label>Estoque disponível<input name="stock" type="number" min="0" step="1" value="1" required /></label>
+        <label>Peso (kg) <small>opcional, estima o frete por faixa quando não há frete real sincronizado</small><input name="weightKg" type="number" min="0" step="0.01" /></label>
         <label id="productImageDropzone" class="storefront-image-dropzone wide">
           <span>Imagens do produto</span>
           <small id="productImageStatus">Selecionar, arrastar ou soltar imagens aqui</small>
@@ -1650,6 +1652,7 @@
             <option value="mercado_livre">Mercado Livre</option>
             <option value="shopee">Shopee</option>
             <option value="amazon">Amazon</option>
+            <option value="tiktok_shop">TikTok Shop</option>
             <option value="direct">Venda direta</option>
           </select>
         </label>
@@ -1660,7 +1663,8 @@
           </select>
         </label>
         <label>Taxa de imposto (%)<input name="taxPct" type="number" min="0" step="0.01" /></label>
-        <label>Frete (R$)<input name="shipping" type="number" min="0" step="0.01" /></label>
+        <label>Peso (kg) <small>opcional, estima o frete por faixa</small><input name="weightKg" type="number" min="0" step="0.01" /></label>
+        <label>Frete (R$) <small>se preenchido, tem prioridade sobre o peso</small><input name="shipping" type="number" min="0" step="0.01" /></label>
         <label>Embalagem (R$)<input name="packaging" type="number" min="0" step="0.01" /></label>
         <label>Meta de margem (%) <small>opcional</small><input name="targetMargin" type="number" min="0" step="0.1" placeholder="Ex: 25" /></label>
       </form>
@@ -1676,13 +1680,23 @@
         <div class="form-section-title">Taxas do Mercado Livre</div>
         <label>Anúncio clássico (%)<input name="mlClassicFee" type="number" min="0" step="0.01" required /></label>
         <label>Anúncio premium (%)<input name="mlPremiumFee" type="number" min="0" step="0.01" required /></label>
-        <div class="form-section-title">Outros marketplaces</div>
-        <label>Shopee (%)<input name="shopeeFee" type="number" min="0" step="0.01" required /></label>
-        <label>Amazon (%)<input name="amazonFee" type="number" min="0" step="0.01" required /></label>
+        <label>Taxa fixa - valor (R$)<small>somada à comissão em itens de baixo valor</small><input name="mlFixedFeeAmount" type="number" min="0" step="0.01" /></label>
+        <label>Taxa fixa - limite (R$)<small>aplica a taxa fixa em itens abaixo deste preço</small><input name="mlFixedFeeThreshold" type="number" min="0" step="0.01" /></label>
+        <div class="form-section-title">Outros marketplaces (estimativa - sem integração de API)</div>
+        <label>Shopee - comissão (%)<input name="shopeeFee" type="number" min="0" step="0.01" required /></label>
+        <label>Shopee - taxa de serviço (%)<input name="shopeeServiceFee" type="number" min="0" step="0.01" /></label>
+        <label>Amazon - comissão (%)<input name="amazonFee" type="number" min="0" step="0.01" required /></label>
+        <label>Amazon - taxa de fulfillment (%)<input name="amazonFulfillmentFee" type="number" min="0" step="0.01" /></label>
+        <label>TikTok Shop - comissão (%)<input name="tiktokFee" type="number" min="0" step="0.01" /></label>
         <div class="form-section-title">Custos gerais</div>
         <label>Imposto padrão (%)<input name="taxPct" type="number" min="0" step="0.01" required /></label>
-        <label>Frete padrão (R$)<input name="shippingCost" type="number" min="0" step="0.01" required /></label>
+        <label>Frete padrão (R$)<small>usado quando não há peso cadastrado no produto</small><input name="shippingCost" type="number" min="0" step="0.01" required /></label>
         <label>Embalagem padrão (R$)<input name="packagingCost" type="number" min="0" step="0.01" required /></label>
+        <div class="form-section-title">Frete por peso (R$)<small>usado quando o produto tem peso cadastrado e não há frete real sincronizado</small></div>
+        <label>Até 0,3 kg<input name="shippingTier1" type="number" min="0" step="0.01" /></label>
+        <label>Até 1 kg<input name="shippingTier2" type="number" min="0" step="0.01" /></label>
+        <label>Até 5 kg<input name="shippingTier3" type="number" min="0" step="0.01" /></label>
+        <label>Até 30 kg<input name="shippingTier4" type="number" min="0" step="0.01" /></label>
         <div class="form-section-title">Classificação de rentabilidade (margem mínima de cada nível, %)</div>
         <label>Atenção<input name="thresholdAttention" type="number" min="0" step="0.01" required /></label>
         <label>Saudável<input name="thresholdHealthy" type="number" min="0" step="0.01" required /></label>

@@ -109,6 +109,25 @@ Deno.serve(async (req) => {
       return json({ ok: true, ...summary });
     }
 
+    if (action === "fee-calculator") {
+      if (!itemId) return json({ ok: false, error: "item_id obrigatorio." }, { status: 400 });
+      const force = url.searchParams.get("force") === "true";
+      const summary = await syncFeeCalculatorForItem(itemId, account, activeOrganizationId, actorEmail, force);
+      return json({ ok: true, ...summary });
+    }
+
+    if (action === "fee-calculator-full") {
+      const force = url.searchParams.get("force") === "true";
+      const summary = await syncFeeCalculatorFull(account, activeOrganizationId, actorEmail, force);
+      return json({ ok: true, ...summary });
+    }
+
+    if (action === "intent-score") {
+      const force = url.searchParams.get("force") === "true";
+      const summary = await syncIntentScoreQuestions(account, activeOrganizationId, actorEmail, force);
+      return json({ ok: true, ...summary });
+    }
+
     const response = await fetch("https://api.mercadolibre.com/orders/search?seller=" + account.external_seller_id + "&sort=date_desc&limit=20", {
       headers: { Authorization: `Bearer ${account.access_token}` },
     });
@@ -775,6 +794,233 @@ async function getVisitsTimeWindow(itemId: string, account: Record<string, any>)
   const data = await response.json();
   if (!response.ok) throw new Error(`Falha ao consultar visitas: ${JSON.stringify(data)}`);
   return { total_visits: Number(data.total_visits || 0), results: data.results || [] };
+}
+
+// --- Bloco 1.B: taxas reais por anuncio (fee-calculator) ---
+// Cache 6h (mesma faixa dos dados mais caros/sujeitos a rate limit em
+// syncAnalyticsFull) - "force=true" ignora o cache. Nunca inventamos valor:
+// se a API nao devolver o dado, os campos ficam 0/null e o front mostra
+// "estimado" em vez de "sincronizado" (ver resolveListingFeeInfo em
+// pricing.js). Usa o endpoint oficial de simulacao de precos do ML
+// (/sites/MLB/listing_prices) - a fonte real da comissao (% + taxa fixa)
+// pro preco/categoria/tipo de anuncio atual, em vez de uma tabela estimada.
+
+async function getListingFeeSyncSnapshot(itemId: string, account: Record<string, any>, force: boolean) {
+  const supabase = adminClient();
+  const { data: lastRow } = await supabase
+    .from("listing_fee_sync")
+    .select("*")
+    .eq("organization_id", account.organization_id)
+    .eq("marketplace", "Mercado Livre")
+    .eq("external_id", itemId)
+    .order("synced_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const ageMs = lastRow ? Date.now() - new Date(lastRow.synced_at).getTime() : Infinity;
+  if (!force && lastRow && ageMs < SIX_HOURS_MS) return null;
+
+  const headers = { Authorization: `Bearer ${account.access_token}` };
+  const itemResponse = await fetch(`https://api.mercadolibre.com/items/${itemId}`, { headers });
+  const item = await itemResponse.json();
+  if (!itemResponse.ok) throw new Error(`Falha ao consultar anuncio ${itemId}: ${JSON.stringify(item)}`);
+
+  const priceParams = new URLSearchParams({
+    price: String(item.price || 0),
+    listing_type_id: String(item.listing_type_id || "gold_special"),
+  });
+  if (item.category_id) priceParams.set("category_id", item.category_id);
+  const priceResponse = await fetch(`https://api.mercadolibre.com/sites/MLB/listing_prices?${priceParams.toString()}`, { headers });
+  const priceData = await priceResponse.json();
+  const priceInfo = Array.isArray(priceData) ? priceData[0] : priceData;
+  if (!priceResponse.ok || !priceInfo) throw new Error(`Falha ao consultar taxas de ${itemId}: ${JSON.stringify(priceData)}`);
+
+  const shipping = await getShippingCosts(itemId, item, account).catch(() => null);
+  const freeShipping = Boolean(item.shipping?.free_shipping);
+  const knownShippingCosts = shipping
+    ? (Object.values(shipping.costs_by_city).filter((value): value is number => value !== null))
+    : [];
+  // O custo de frete so pesa na margem do vendedor quando o anuncio tem
+  // frete gratis (o vendedor absorve o custo) - se o comprador paga o
+  // frete, isso nao afeta a margem do vendedor.
+  const rawShippingCost = knownShippingCosts.length
+    ? knownShippingCosts.reduce((sum, value) => sum + value, 0) / knownShippingCosts.length
+    : 0;
+
+  const price = Number(item.price || 0);
+  const saleFeeAmount = Number(priceInfo.sale_fee_amount || 0);
+  const feeDetails = priceInfo.sale_fee_details || {};
+  const fixedFeeReal = Number(feeDetails.fixed_fee || 0);
+  const percentageFeeReal = feeDetails.percentage_fee != null
+    ? Number(feeDetails.percentage_fee)
+    : (price > 0 ? ((saleFeeAmount - fixedFeeReal) / price) * 100 : 0);
+
+  return {
+    listing_type_id: item.listing_type_id || null,
+    category_id: item.category_id || null,
+    price,
+    real_fee_pct: percentageFeeReal,
+    real_fee_fixed: fixedFeeReal,
+    shipping_cost: freeShipping ? rawShippingCost : 0,
+    // A API publica do ML nao expoe quanto do frete gratis e subsidiado pelo
+    // ML vs pago pelo vendedor - fica 0 (nao inventamos), o shipping_cost
+    // inteiro e tratado como custo do vendedor quando ha frete gratis.
+    shipping_subsidized: 0,
+    free_shipping: freeShipping,
+    raw_payload: { price_info: priceInfo, shipping },
+    synced_at: new Date().toISOString(),
+  };
+}
+
+async function syncFeeCalculatorForItem(
+  itemId: string,
+  account: Record<string, any>,
+  organizationId: string,
+  actorEmail: string,
+  force: boolean,
+) {
+  const supabase = adminClient();
+  const { data: listing } = await supabase
+    .from("marketplace_listings")
+    .select("id,external_id")
+    .eq("organization_id", organizationId)
+    .eq("marketplace", "Mercado Livre")
+    .eq("external_id", itemId)
+    .maybeSingle();
+  const snapshot = await getListingFeeSyncSnapshot(itemId, account, force);
+  if (!snapshot) {
+    await logSync("Mercado Livre", "fee-calculator", "success", `Taxas de ${itemId} dentro do cache (6h), nao sincronizado de novo.`, {
+      organizationId, externalItemId: itemId, actorEmail,
+    });
+    return { external_id: itemId, skipped: true };
+  }
+  const { error: insertError } = await supabase.from("listing_fee_sync").insert({
+    organization_id: organizationId,
+    listing_id: listing?.id || null,
+    external_id: itemId,
+    marketplace: "Mercado Livre",
+    ...snapshot,
+  });
+  if (insertError) throw insertError;
+  await logSync("Mercado Livre", "fee-calculator", "success", `Taxas reais de ${itemId} sincronizadas.`, {
+    organizationId, externalItemId: itemId, actorEmail, rawPayload: snapshot,
+  });
+  return { external_id: itemId, skipped: false, snapshot };
+}
+
+async function syncFeeCalculatorFull(
+  account: Record<string, any>,
+  organizationId: string,
+  actorEmail: string,
+  force: boolean,
+) {
+  const supabase = adminClient();
+  const { data: listings, error: listingsError } = await supabase
+    .from("marketplace_listings")
+    .select("id,external_id")
+    .eq("organization_id", organizationId)
+    .eq("marketplace", "Mercado Livre");
+  if (listingsError) throw listingsError;
+
+  const results: Array<Record<string, unknown>> = [];
+  for (const listing of listings || []) {
+    try {
+      const result = await syncFeeCalculatorForItem(listing.external_id, account, organizationId, actorEmail, force);
+      results.push({ external_id: listing.external_id, ok: true, skipped: Boolean(result.skipped) });
+    } catch (error) {
+      results.push({ external_id: listing.external_id, ok: false, error: error instanceof Error ? error.message : String(error) });
+    }
+  }
+  const okCount = results.filter((item) => item.ok && !item.skipped).length;
+  const skippedCount = results.filter((item) => item.skipped).length;
+  const failedCount = results.filter((item) => !item.ok).length;
+  await logSync(
+    "Mercado Livre", "fee-calculator-full", failedCount ? "error" : "success",
+    `${okCount} anuncio(s) com taxa sincronizada, ${skippedCount} dentro do cache, ${failedCount} erro(s).`,
+    { organizationId, actorEmail, rawPayload: { results } },
+  );
+  return { synced_at: new Date().toISOString(), listings: results };
+}
+
+// --- Bloco 2: perguntas recentes por anuncio (score de intencao) ---
+// Cache 1h (mesma faixa de visitas/vendas em syncAnalyticsFull). Anexa
+// questions_total/questions_unanswered na linha mais recente de
+// listing_analytics (excecao deliberada ao padrao "so insert" dessa tabela -
+// perguntas tem ciclo de cache proprio e nao vale reduplicar visitas/
+// conversao so pra isso).
+
+async function getQuestionsCountForItem(itemId: string, account: Record<string, any>) {
+  const response = await fetch(
+    `https://api.mercadolibre.com/questions/search?item=${itemId}&status=UNANSWERED,ANSWERED&limit=50`,
+    { headers: { Authorization: `Bearer ${account.access_token}` } },
+  );
+  const data = await response.json();
+  if (!response.ok) throw new Error(`Falha ao consultar perguntas de ${itemId}: ${JSON.stringify(data)}`);
+  const cutoff = Date.now() - 30 * 24 * ONE_HOUR_MS;
+  const questions = (data.questions || []).filter((question: Record<string, any>) => {
+    const when = new Date(question.date_created || 0).getTime();
+    return when >= cutoff;
+  });
+  const unanswered = questions.filter((question: Record<string, any>) => question.status === "UNANSWERED").length;
+  return { total: questions.length, unanswered };
+}
+
+async function syncIntentScoreQuestions(
+  account: Record<string, any>,
+  organizationId: string,
+  actorEmail: string,
+  force: boolean,
+) {
+  const supabase = adminClient();
+  const { data: listings, error: listingsError } = await supabase
+    .from("marketplace_listings")
+    .select("id,external_id")
+    .eq("organization_id", organizationId)
+    .eq("marketplace", "Mercado Livre");
+  if (listingsError) throw listingsError;
+
+  const results: Array<Record<string, unknown>> = [];
+  for (const listing of listings || []) {
+    try {
+      const { data: lastRow } = await supabase
+        .from("listing_analytics")
+        .select("id,synced_at")
+        .eq("organization_id", organizationId)
+        .eq("marketplace", "Mercado Livre")
+        .eq("external_id", listing.external_id)
+        .order("synced_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const ageMs = lastRow ? Date.now() - new Date(lastRow.synced_at).getTime() : Infinity;
+      if (!lastRow) {
+        // Sem snapshot de analytics ainda pra anexar as perguntas - rode
+        // "Sincronizar" na aba Inteligencia primeiro.
+        results.push({ external_id: listing.external_id, ok: true, skipped: true });
+        continue;
+      }
+      if (!force && ageMs < ONE_HOUR_MS) {
+        results.push({ external_id: listing.external_id, ok: true, skipped: true });
+        continue;
+      }
+      const questions = await getQuestionsCountForItem(listing.external_id, account);
+      const { error: updateError } = await supabase
+        .from("listing_analytics")
+        .update({ questions_total: questions.total, questions_unanswered: questions.unanswered })
+        .eq("id", lastRow.id);
+      if (updateError) throw updateError;
+      results.push({ external_id: listing.external_id, ok: true, skipped: false, questions });
+    } catch (error) {
+      results.push({ external_id: listing.external_id, ok: false, error: error instanceof Error ? error.message : String(error) });
+    }
+  }
+  const okCount = results.filter((item) => item.ok && !item.skipped).length;
+  const skippedCount = results.filter((item) => item.skipped).length;
+  const failedCount = results.filter((item) => !item.ok).length;
+  await logSync(
+    "Mercado Livre", "intent-score", failedCount ? "error" : "success",
+    `${okCount} anuncio(s) com perguntas atualizadas, ${skippedCount} dentro do cache ou sem analytics, ${failedCount} erro(s).`,
+    { organizationId, actorEmail, rawPayload: { results } },
+  );
+  return { synced_at: new Date().toISOString(), listings: results };
 }
 
 // A API publica do ML nao documenta um endpoint dedicado de "checklist de
