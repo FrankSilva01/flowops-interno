@@ -447,3 +447,18 @@ button,
 .panel-head > div > h3 {
   font-weight: 700;
 }
+
+/* ==========================================================================
+   Fase 4 - Encomendas
+   O painel lateral de detalhe (.order-drawer) e os cards de pedido ja sao
+   exatamente o padrao "mestre-detalhe" que o design novo pede - so
+   precisavam de re-tema pontual, nao reconstrucao. Os chips de status
+   (.filter-chip) tambem ja existiam com a logica de ativo/inativo certa;
+   so o fundo/texto do estado INATIVO estava hardcoded pro tema claro
+   antigo (branco fixo), o que ficaria errado no tema escuro atual.
+   ========================================================================== */
+
+.filter-chip {
+  background: var(--card-alt);
+  color: var(--muted);
+}

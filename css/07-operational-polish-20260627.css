@@ -115,7 +115,7 @@
 }
 
 .notification-item:hover {
-  background: color-mix(in srgb, var(--panel) 96%, #fff 4%);
+  background: color-mix(in srgb, var(--panel) 96%, var(--card-alt) 4%);
 }
 
 .notification-item.unread {
@@ -986,7 +986,7 @@ button.attention-item:hover {
 .order-card:hover,
 .order-card:focus-visible {
   border-color: var(--teal);
-  background: color-mix(in srgb, var(--panel) 96%, #fff 4%);
+  background: color-mix(in srgb, var(--panel) 96%, var(--card-alt) 4%);
 }
 
 .order-card.order-card-paid {
