@@ -379,17 +379,14 @@ html[data-theme="dark"] .icon-btn,
 html[data-theme="dark"] .marketplace-subview button:not(.primary-btn):not(.danger-btn),
 html[data-theme="dark"] .backup-actions-panel button:not(.primary-btn):not(.danger-btn),
 html[data-theme="dark"] .support-ticket button:not(.primary-btn) {
-  border-color: #536170;
-  background: #25313b;
-  color: #f3f7fa;
+  /* border-color/color ja vem certo de .secondary-btn/.ghost-btn/.icon-btn
+     (var(--line)/var(--ink), 00-base.css:205-212) - so o fundo (fixo em
+     #fff na regra base) realmente precisa de um valor proprio pro escuro. */
+  background: var(--card-alt);
 }
 
-html[data-theme="dark"] .muted,
 html[data-theme="dark"] small,
-html[data-theme="dark"] .panel-head span,
-html[data-theme="dark"] .integration-summary-grid span,
-html[data-theme="dark"] .backup-history-actions span,
-html[data-theme="dark"] .backup-history-panel span {
+html[data-theme="dark"] .panel-head span {
   color: #b8c5cf;
 }
 

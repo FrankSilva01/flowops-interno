@@ -572,3 +572,44 @@ button,
 .report-kpi:hover {
   box-shadow: none;
 }
+
+/* ==========================================================================
+   Fase 10 - Marketplace (7 abas: Anuncios, Vitrine, Vendas, Integracoes,
+   Inteligencia - centro de comando da Fase C, Logs API, Backup)
+   As abas (.view-tab) e o dot semantico dos stat cards (.operational-
+   summary-card, via renderOperationalSummary) ja foram corrigidos nas
+   fases anteriores (8 e 3/9) e cobrem essa view tambem, sem trabalho
+   extra aqui. O centro de comando (marketplace-analytics.js) nao foi
+   tocado - so os cards/paineis abaixo ganham o raio novo (--radius-card),
+   que a essa altura já e o padrao de toda card/painel do sistema. Achei
+   tambem dois overrides hardcoded de tema escuro (cor de texto/fundo de
+   botao secundario) que reapareciam so nas abas de Marketplace e Backup -
+   ja tinham correspondente tokenizado nas regras base, corrigido junto
+   com o restante desse achado em 02-nav-materials-dashboard-subscription.css.
+   ========================================================================== */
+
+.marketplace-sale-card,
+.marketplace-channel-card,
+.integration-summary-grid article,
+.integration-error-card,
+.api-log-card,
+.marketplace-listing-card,
+.storefront-product-form,
+.publish-targets,
+.marketplace-extra-fields,
+.storefront-image-dropzone,
+.storefront-product-row,
+.stats-grid article,
+.backup-actions-panel,
+.backup-restore-panel,
+.backup-simulation-summary article,
+.marketplace-listing-table-wrap,
+.marketplace-listing-detail,
+.premium-upsell,
+.intelligence-empty-state,
+.intelligence-empty-preview,
+.suggestion-action-card,
+.suggestion-group,
+.listing-drawer-suggestion {
+  border-radius: var(--radius-card);
+}
