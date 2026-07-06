@@ -411,4 +411,11 @@ export function setSessionInfo(name, role, mode, canLogout) {
   byId("activeUserRole").textContent = role;
   byId("syncMode").textContent = mode;
   byId("logoutBtn").hidden = !canLogout;
+  const avatar = byId("topbarAvatar");
+  if (avatar) {
+    const words = String(name || "").trim().split(/\s+/).filter(Boolean);
+    const initials = words.length >= 2 ? `${words[0][0]}${words[1][0]}` : (words[0] || "?").slice(0, 2);
+    avatar.textContent = initials.toUpperCase();
+    avatar.title = name || "";
+  }
 }

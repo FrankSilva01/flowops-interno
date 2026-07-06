@@ -225,3 +225,141 @@ button,
   color: var(--ink);
   font-weight: 700;
 }
+
+/* ==========================================================================
+   Fase 2 - Shell (sidebar + topbar)
+   O sidebar do redesign anterior (Linear/Shopify) usava cores hardcoded
+   so pro tema escuro (nunca precisava responder a tema claro, ja que a
+   regra na epoca era "tema escuro unico"). Agora que o tema claro e real
+   e alternavel, essas cores viram tokens - o sidebar passa a se retemizar
+   corretamente nos dois temas.
+   ========================================================================== */
+
+.app-shell {
+  grid-template-columns: 260px minmax(0, 1fr);
+}
+
+.sidebar {
+  background: var(--bg-alt);
+  border-right: 1px solid var(--line);
+}
+
+.brand-mark {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-control);
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 700;
+}
+
+.brand strong {
+  color: var(--ink);
+}
+
+.brand span {
+  color: var(--text-faint);
+}
+
+/* Pill do plano ("Plano PRO"), fundo accentSoft + texto accent */
+#sidebarPlan {
+  display: inline-block;
+  margin-top: 2px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Rotulo de grupo em maiusculas - excecao explicita do design novo a
+   regra geral "sentence case sempre" do redesign anterior. */
+.sidebar-group-label {
+  color: var(--text-faint);
+  text-transform: uppercase;
+}
+
+.tab {
+  color: var(--muted);
+}
+
+.tab:hover {
+  background: var(--card-alt);
+  color: var(--ink);
+}
+
+/* Item ativo ganha fundo accentSoft (nao mais neutro/fill-ghost) - o
+   design novo usa cor com intencao pra indicar selecao, nao so peso de
+   fonte. */
+.tab.active,
+.sidebar button.active {
+  background: var(--accent-soft);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.tab .nav-icon {
+  color: var(--text-faint);
+}
+
+.tab.active .nav-icon {
+  color: var(--accent);
+}
+
+.company-status-card {
+  border-top-color: var(--line);
+}
+
+.status-row {
+  color: var(--muted);
+}
+
+.status-dot {
+  background: var(--text-faint);
+}
+
+.session-card {
+  border-color: var(--line);
+  background: var(--card-alt);
+}
+
+.session-card span {
+  color: var(--ink);
+}
+
+/* Topbar vira uma barra propria (fundo bgAlt, padding proprio) em vez de
+   herdar o padding uniforme de .workspace - a area de conteudo abaixo
+   ganha seu proprio padding equivalente ao que a .workspace tinha antes,
+   entao o espacamento visual final e o mesmo, so a origem muda. */
+.workspace {
+  padding: 0;
+}
+
+.topbar {
+  margin-bottom: 0;
+  padding: 16px 28px;
+  background: var(--bg-alt);
+}
+
+.view.active-view {
+  display: block;
+  padding: 28px 32px;
+}
+
+.topbar-new-order-btn {
+  white-space: nowrap;
+}
+
+.topbar-avatar {
+  display: grid;
+  place-items: center;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+}

@@ -96,6 +96,8 @@
             <kbd class="search-kbd">Ctrl K</kbd>
           </div>
           <div class="topbar-actions">
+            <button class="primary-btn topbar-new-order-btn" type="button" data-quick-action="order">+ Novo pedido</button>
+            <button id="topbarHelpBtn" class="icon-btn" type="button" aria-label="Ajuda" title="Ajuda">?</button>
             <div class="notification-center">
               <button id="notificationBell" class="notification-bell" type="button" aria-label="Notificações">
                 <i class="ti ti-bell bell-glyph" aria-hidden="true"></i>
@@ -121,16 +123,17 @@
               </div>
             </div>
             <input id="importFileInput" type="file" accept=".json,.csv,.xlsx,.xls" hidden />
-            <button id="importBtn" class="topbar-btn" type="button">Importar</button>
             <div class="topbar-menu">
               <button id="topbarMoreBtn" class="topbar-icon-btn" type="button" aria-label="Mais opções" aria-haspopup="true" aria-expanded="false">
                 <i class="ti ti-dots-vertical" aria-hidden="true"></i>
               </button>
               <div id="topbarMoreMenu" class="topbar-more-menu" hidden>
+                <button id="importBtn" type="button"><i class="ti ti-upload" aria-hidden="true"></i> Importar</button>
                 <button id="emailDigestBtn" type="button"><i class="ti ti-mail" aria-hidden="true"></i> Resumo e-mail</button>
                 <button id="exportBtn" type="button"><i class="ti ti-download" aria-hidden="true"></i> Exportar JSON</button>
               </div>
             </div>
+            <div id="topbarAvatar" class="topbar-avatar" title="">F</div>
           </div>
         </header>
 

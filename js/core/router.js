@@ -219,6 +219,7 @@ export function bindEvents() {
     renderReports();
   });
   byId("themeToggle").addEventListener("click", cycleTheme);
+  byId("topbarHelpBtn")?.addEventListener("click", () => setView("support"));
   byId("notificationBell").addEventListener("click", () => {
     byId("notificationDropdown").hidden = !byId("notificationDropdown").hidden;
   });
