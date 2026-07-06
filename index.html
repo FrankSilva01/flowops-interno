@@ -1142,16 +1142,23 @@
               <div id="sellerReputationContent"></div>
             </div>
 
-            <div class="panel">
+            <div class="panel panel-collapsible collapsed" data-panel-collapsible="product-catalog">
               <div class="panel-head">
-                <h3>Catálogo de produtos</h3>
-                <input type="search" id="productSearchInput" placeholder="Buscar produto por nome, SKU ou categoria..." aria-label="Buscar produto" />
+                <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="false">
+                  <span class="dashboard-collapsible-head"><strong>Catálogo de produtos</strong></span>
+                  <i class="ti ti-chevron-down" aria-hidden="true"></i>
+                </button>
+                <div class="panel-filters">
+                  <input type="search" id="productSearchInput" placeholder="Buscar produto por nome, SKU ou categoria..." aria-label="Buscar produto" />
+                </div>
               </div>
-              <div class="table-wrap">
-                <table>
-                  <thead><tr><th>SKU</th><th>Nome</th><th>Categoria</th><th>Custo</th><th>Ações</th></tr></thead>
-                  <tbody id="productCatalogTable"></tbody>
-                </table>
+              <div class="dashboard-collapsible-body">
+                <div class="table-wrap">
+                  <table>
+                    <thead><tr><th>SKU</th><th>Nome</th><th>Categoria</th><th>Custo</th><th>Ações</th></tr></thead>
+                    <tbody id="productCatalogTable"></tbody>
+                  </table>
+                </div>
               </div>
             </div>
 

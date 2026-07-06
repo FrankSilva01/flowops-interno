@@ -1,5 +1,5 @@
 import { state, money } from "../core/state.js";
-import { byId, html, formatDate, formatDateShort, formatDateTime, countBy, sum, showAppMessage } from "../core/dom.js";
+import { byId, html, formatDate, formatDateShort, formatDateTime, countBy, sum, showAppMessage, renderPagination } from "../core/dom.js";
 import { renderLineChart } from "../core/charts.js";
 import { getOrderCode } from "./orders.js";
 import { normalizeMarketplaceChannel } from "./marketplace.js";
@@ -60,7 +60,7 @@ export function renderReports() {
         </div>
         <table>
           <thead><tr><th>Data</th><th>Itens</th><th>Entradas</th><th>Saídas</th><th>Lucro</th><th>Pedidos</th><th>Ticket médio</th></tr></thead>
-          <tbody>${tableRows.map((item) => `<tr><td>${html(formatReportGroupLabel(item.date))}</td><td>${html(item.items || "-")}</td><td>${money.format(item.income)}</td><td>${money.format(item.expense)}</td><td>${money.format(item.income - item.expense)}</td><td>${item.orders}</td><td>${money.format(item.orders ? item.income / item.orders : 0)}</td></tr>`).join("") || `<tr><td colspan="7">Nenhum dado no período.</td></tr>`}</tbody>
+          <tbody>${tableRows.map((item) => `<tr><td>${html(formatReportGroupLabel(item.date))}</td><td>${renderReportItemsCell(item)}</td><td>${money.format(item.income)}</td><td>${money.format(item.expense)}</td><td>${money.format(item.income - item.expense)}</td><td>${item.orders}</td><td>${money.format(item.orders ? item.income / item.orders : 0)}</td></tr>`).join("") || `<tr><td colspan="7">Nenhum dado no período.</td></tr>`}</tbody>
         </table>
       </section>
       <aside class="panel report-insights">
@@ -87,6 +87,18 @@ export function renderReports() {
   renderLineChart("reportCashLine", dailyRows.map((item) => ({ label: formatReportGroupLabel(item.date, true), value: item.income - item.expense })), { valueLabel: "Saldo" });
 }
 
+// Uma celula de tabela de relatorio normalmente e string/numero, mas pode
+// ser { text, title } quando o texto exibido na tela e truncado (coluna
+// "Itens") e precisa levar junto a versao completa pra exportacao e pro
+// tooltip - cellText() mostra o truncado, cellExportText() sempre a
+// versao completa (a exportacao nunca deve herdar a limitacao da tela).
+function cellText(cell) {
+  return cell && typeof cell === "object" && "text" in cell ? cell.text : cell;
+}
+function cellExportText(cell) {
+  return cell && typeof cell === "object" && "text" in cell ? (cell.title ?? cell.text) : cell;
+}
+
 export function renderReportTabContent(content, tab, rows, financial, dailyRows) {
   const definitions = {
     financial: {
@@ -101,7 +113,9 @@ export function renderReportTabContent(content, tab, rows, financial, dailyRows)
       chartRows: dailyRows.map((item) => ({ label: formatReportGroupLabel(item.date, true), value: item.income - item.expense })),
       headers: ["Data", "Itens", "Entradas", "Saídas", "Resultado"],
       body: dailyRows.slice().reverse().map((item) => [
-        formatReportGroupLabel(item.date), item.items || "-", money.format(item.income), money.format(item.expense), money.format(item.income - item.expense),
+        formatReportGroupLabel(item.date),
+        { text: item.items || "-", title: (item.itemsFull || []).join(", ") || "-" },
+        money.format(item.income), money.format(item.expense), money.format(item.income - item.expense),
       ]),
     },
     production: {
@@ -157,7 +171,11 @@ export function renderReportTabContent(content, tab, rows, financial, dailyRows)
     pricing: reportPricingDefinition(),
   };
   const definition = definitions[tab] || definitions.financial;
-  const limitedBody = definition.body.slice(0, 100);
+  const pageSize = 15;
+  const totalPages = Math.max(1, Math.ceil(definition.body.length / pageSize));
+  state.reportTablePage = Math.min(Math.max(1, state.reportTablePage || 1), totalPages);
+  const pageStart = (state.reportTablePage - 1) * pageSize;
+  const limitedBody = definition.body.slice(pageStart, pageStart + pageSize);
   content.innerHTML = `
     <div class="report-section-heading"><div><p class="eyebrow">Relatórios</p><h2>${html(definition.title)}</h2></div><span>${html(reportPeriodLabel())}</span></div>
     <div class="report-kpi-grid report-kpi-grid-compact">
@@ -178,7 +196,13 @@ export function renderReportTabContent(content, tab, rows, financial, dailyRows)
           </div>
         </div>
         <div class="table-scroll"><table><thead><tr>${definition.headers.map((item) => `<th>${html(item)}</th>`).join("")}</tr></thead>
-        <tbody>${limitedBody.length ? limitedBody.map((row) => `<tr>${row.map((cell) => `<td>${html(String(cell ?? "-"))}</td>`).join("")}</tr>`).join("") : `<tr><td colspan="${definition.headers.length}">Nenhum dado no período selecionado.</td></tr>`}</tbody></table></div>
+        <tbody>${limitedBody.length ? limitedBody.map((row) => `<tr>${row.map((cell) => {
+          const isObjectCell = cell && typeof cell === "object" && "text" in cell;
+          return isObjectCell
+            ? `<td title="${html(String(cell.title ?? ""))}">${html(String(cell.text ?? "-"))}</td>`
+            : `<td>${html(String(cell ?? "-"))}</td>`;
+        }).join("")}</tr>`).join("") : `<tr><td colspan="${definition.headers.length}">Nenhum dado no período selecionado.</td></tr>`}</tbody></table></div>
+        ${renderPagination(state.reportTablePage, totalPages, "report-table-page")}
       </section>
     </div>`;
   content.querySelectorAll("[data-report-tab-export]").forEach((button) => {
@@ -371,11 +395,11 @@ export function exportReportTable(format, headers, body) {
     return;
   }
   if (format === "xlsx") {
-    const table = `<table><thead><tr>${headers.map((item) => `<th>${html(item)}</th>`).join("")}</tr></thead><tbody>${body.map((row) => `<tr>${row.map((cell) => `<td>${html(String(cell))}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+    const table = `<table><thead><tr>${headers.map((item) => `<th>${html(item)}</th>`).join("")}</tr></thead><tbody>${body.map((row) => `<tr>${row.map((cell) => `<td>${html(String(cellExportText(cell)))}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
     downloadTextFile(table, `flowops-${state.reportTab}-${new Date().toISOString().slice(0, 10)}.xls`, "application/vnd.ms-excel;charset=utf-8");
     return;
   }
-  const csv = [headers, ...body].map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(";")).join("\n");
+  const csv = [headers, ...body].map((row) => row.map((cell) => `"${String(cellExportText(cell)).replaceAll('"', '""')}"`).join(";")).join("\n");
   downloadTextFile(csv, `flowops-${state.reportTab}-${new Date().toISOString().slice(0, 10)}.csv`, "text/csv;charset=utf-8");
 }
 
@@ -383,7 +407,7 @@ export function exportReport(format, rows) {
   const headers = ["Data", "Itens", "Entradas", "Saídas", "Lucro", "Pedidos", "Ticket médio"];
   const body = rows.map((item) => [
     formatReportGroupLabel(item.date),
-    item.items || "-",
+    (item.itemsFull && item.itemsFull.length ? item.itemsFull.join(", ") : "-"),
     money.format(Number(item.income || 0)),
     money.format(Number(item.expense || 0)),
     money.format(Number((item.income || 0) - (item.expense || 0))),
@@ -506,7 +530,14 @@ export function reportDailyRows(cashRows, orderRows) {
     row.itemNames.add(item.description || item.orderCode || item.id || "Encomenda");
   });
   return [...map.values()]
-    .map((item) => ({ ...item, items: [...item.itemNames].slice(0, 4).join(", ") + (item.itemNames.size > 4 ? ` +${item.itemNames.size - 4}` : "") }))
+    .map((item) => {
+      const names = [...item.itemNames];
+      return {
+        ...item,
+        items: names.slice(0, 4).join(", ") + (names.length > 4 ? ` +${names.length - 4}` : ""),
+        itemsFull: names,
+      };
+    })
     .sort((a, b) => a.date.localeCompare(b.date));
 }
 
@@ -582,7 +613,7 @@ export function openReportPrintView(headers, body) {
     <h2>Detalhamento do período</h2>
     <table><thead><tr>${headers.map((item) => `<th>${html(item)}</th>`).join("")}</tr></thead>
     <tbody>${body.map((row) => `<tr>${row.map((cell, index) => {
-      const value = html(String(cell));
+      const value = html(String(cellExportText(cell)));
       return index === itemColumn ? `<td><div class="items">${value.split(", ").map((part) => `<span>${part}</span>`).join("")}</div></td>` : `<td>${value}</td>`;
     }).join("")}</tr>`).join("")}</tbody></table>
     <footer class="footer">Relatório gerado pelo FlowOps. Os valores refletem os registros disponíveis no período selecionado.</footer></main>
@@ -596,6 +627,15 @@ export function reportMarketplaceRows(orderRows, salesRows) {
   orderRows.forEach((item) => add(item.marketplace || item.source || "Venda direta", item.received || item.charged || 0));
   salesRows.forEach((item) => add(item.marketplace || "Marketplace", item.total || item.amount || 0));
   return [...map.entries()].map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value).slice(0, 6);
+}
+
+// Coluna "Itens" na tela: mostra o texto truncado (4 itens + "+N") mas com
+// tooltip nativo (title) revelando a lista completa - sem precisar de JS de
+// hover proprio. A exportacao (csv/xlsx/pdf) usa a lista completa direto,
+// nunca esse texto truncado (ver exportReport/exportReportTable).
+function renderReportItemsCell(item) {
+  const full = (item.itemsFull || []).join(", ") || "-";
+  return `<span title="${html(full)}">${html(item.items || "-")}</span>`;
 }
 
 export function reportKpi(label, value, note, tone) {

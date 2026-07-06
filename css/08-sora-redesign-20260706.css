@@ -687,6 +687,74 @@ button,
   white-space: nowrap;
 }
 
+/* ==========================================================================
+   Bloco 3.1 - Gestao de Usuarios sem scroll horizontal
+   Causa raiz: "table { min-width: 1040px }" (00-base.css) e global, pensada
+   pras tabelas grandes de Encomendas/Materiais/etc - nas tabelas de 3-5
+   colunas de #approvalsView isso forcava um scroll horizontal sem
+   necessidade nenhuma. Zera o min-width so aqui e trunca e-mails longos
+   com reticencias (title mostra o e-mail completo ao passar o mouse).
+   ========================================================================== */
+
+#approvalsView table {
+  min-width: 0;
+}
+
+.cell-truncate {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   Bloco 3.4 - Paginacao numerada nas tabelas de detalhamento de Relatorios
+   ========================================================================== */
+
+.report-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.report-pagination .icon-btn {
+  min-width: 32px;
+  padding: 0 8px;
+}
+
+.report-pagination .icon-btn.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.report-pagination-ellipsis {
+  color: var(--text-faint);
+  padding: 0 2px;
+}
+
+/* ==========================================================================
+   Bloco 3.5 - Espacamento entre secoes do Dashboard
+   Achado: nao havia NENHUM espaco entre .kpi-grid e .attention-row (nem
+   margin-bottom num nem margin-top no outro), e os espacamentos entre as
+   outras secoes eram uma mistura inconsistente de 14/14/12/10px definidos
+   em arquivos diferentes. Em vez de rastrear e alinhar cada margin
+   individual, uma regra unica no pai cobre as 7 secoes (.trial-banner,
+   .dashboard-welcome, .dashboard-toolbar, .kpi-grid, .attention-row,
+   .highlights-row, #dashboardGrid) de uma vez - margens adjacentes colapsam
+   pelo maior valor (nao somam), entao isso vira o minimo garantido de 22px
+   em todas as transicoes, mesmo onde ja havia um margin-bottom menor.
+   ========================================================================== */
+
+#dashboardView > * + * {
+  margin-top: 22px;
+}
+
 .listing-quick-filters input[type="checkbox"] {
   margin: 0;
 }

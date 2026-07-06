@@ -17,7 +17,7 @@ export function renderApprovals() {
     <tr>
       <td>${formatDateTime(request.requested_at)}</td>
       <td>${html(request.name || "-")}</td>
-      <td>${html(request.email)}</td>
+      <td class="cell-truncate" title="${html(request.email)}">${html(request.email)}</td>
       <td><span class="badge ${request.status === "approved" ? "done" : request.status === "rejected" ? "danger-badge" : "queue"}">${html(request.status || "pending")}</span></td>
       <td>
         <button class="icon-btn" type="button" data-action="approve-access" data-email="${html(request.email)}">Aprovar</button>
@@ -58,7 +58,7 @@ export function renderActiveUsers() {
   }
   table.innerHTML = state.activeUsers.length ? state.activeUsers.map((user) => `
     <tr>
-      <td>${html(user.email)}</td>
+      <td class="cell-truncate" title="${html(user.email)}">${html(user.email)}</td>
       <td>
         <select class="role-select" data-action="change-user-role" data-email="${html(user.email)}" ${user.email === state.activeUserEmail ? "disabled" : ""}>
           <option value="Administrador" ${user.role === "Administrador" ? "selected" : ""}>Administrador</option>

@@ -218,6 +218,7 @@ export const state = {
   reportPeriod: "30",
   reportCompare: "previous",
   reportGroup: "day",
+  reportTablePage: 1,
   subscription: null,
   organizationInfo: null,
   subscriptionPlans: [],

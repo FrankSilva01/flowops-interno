@@ -227,3 +227,30 @@ export function renderOperationalSummary(viewId, summaryId, metrics) {
     </article>
   `).join("");
 }
+
+// Paginacao numerada generica (Anterior / 1 2 3 ... / Proxima) - usada nas
+// tabelas de detalhamento de Relatorios (Bloco 3.4). actionName e o
+// data-action generico que o roteador central ja trata, recebendo o
+// numero da pagina clicada via data-page.
+export function renderPagination(currentPage, totalPages, actionName) {
+  if (totalPages <= 1) return "";
+  const windowSize = 2;
+  const pages = [];
+  for (let page = 1; page <= totalPages; page++) {
+    if (page === 1 || page === totalPages || Math.abs(page - currentPage) <= windowSize) {
+      pages.push(page);
+    } else if (pages[pages.length - 1] !== "...") {
+      pages.push("...");
+    }
+  }
+  return `
+    <nav class="report-pagination" aria-label="Paginação">
+      <button class="secondary-btn" type="button" data-action="${html(actionName)}" data-page="${currentPage - 1}" ${currentPage <= 1 ? "disabled" : ""}>Anterior</button>
+      ${pages.map((page) => page === "..."
+        ? `<span class="report-pagination-ellipsis">…</span>`
+        : `<button class="icon-btn ${page === currentPage ? "active" : ""}" type="button" data-action="${html(actionName)}" data-page="${page}">${page}</button>`
+      ).join("")}
+      <button class="secondary-btn" type="button" data-action="${html(actionName)}" data-page="${currentPage + 1}" ${currentPage >= totalPages ? "disabled" : ""}>Próxima</button>
+    </nav>
+  `;
+}

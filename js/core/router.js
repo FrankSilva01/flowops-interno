@@ -189,6 +189,7 @@ export function bindEvents() {
   document.querySelectorAll("[data-report-tab]").forEach((button) => {
     button.addEventListener("click", () => {
       state.reportTab = button.dataset.reportTab;
+      state.reportTablePage = 1;
       document.querySelectorAll("[data-report-tab]").forEach((item) => item.classList.toggle("active", item === button));
       renderReports();
     });
@@ -206,6 +207,7 @@ export function bindEvents() {
     state.reportPeriod = byId("reportPeriodFilter")?.value || "30";
     state.reportCompare = byId("reportCompareFilter")?.value || "previous";
     state.reportGroup = byId("reportGroupFilter")?.value || "day";
+    state.reportTablePage = 1;
     renderReports();
     flashActionMessage("Filtros aplicados.");
   });
@@ -213,6 +215,7 @@ export function bindEvents() {
     state.reportPeriod = "30";
     state.reportCompare = "previous";
     state.reportGroup = "day";
+    state.reportTablePage = 1;
     byId("reportPeriodFilter").value = state.reportPeriod;
     byId("reportCompareFilter").value = state.reportCompare;
     byId("reportGroupFilter").value = state.reportGroup;
@@ -718,6 +721,11 @@ export function bindActions() {
         state.filters[button.dataset.filter] = button.dataset.value;
         syncOrderFilterControls();
         renderProduction();
+        return;
+      }
+      if (action === "report-table-page") {
+        state.reportTablePage = Number(button.dataset.page || 1);
+        renderReports();
         return;
       }
       if (action === "focus-orders") {
