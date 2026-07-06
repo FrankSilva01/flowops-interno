@@ -363,3 +363,87 @@ button,
   font-size: 12px;
   font-weight: 700;
 }
+
+/* ==========================================================================
+   Fase 3 - Dashboard
+   .kpi e .operational-summary-card (esse ultimo e o "stat card" generico
+   reaproveitado em Encomendas/Marketplace/etc via renderOperationalSummary)
+   ja usavam var(--panel)/var(--line), entao a cor de fundo/borda ja
+   acompanha o tema novo automaticamente - o trabalho aqui e so tipografia
+   mais pesada (conforme o design novo) e o dot semantico de volta (bem
+   mais discreto que o "blob" gradiente removido no redesign anterior:
+   12px solido, sem gradiente, sem sombra).
+   ========================================================================== */
+
+.kpi,
+.operational-summary-card {
+  position: relative;
+  padding-top: 28px;
+}
+
+.kpi::before,
+.operational-summary-card::before {
+  content: "";
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--text-faint);
+}
+
+.kpi[data-tone="success"]::before,
+.operational-summary-card.green::before,
+.operational-summary-card.success::before {
+  background: var(--green);
+}
+
+.kpi[data-tone="danger"]::before,
+.operational-summary-card.red::before,
+.operational-summary-card.danger::before {
+  background: var(--red);
+}
+
+.kpi[data-tone="info"]::before,
+.operational-summary-card.blue::before,
+.operational-summary-card.teal::before,
+.operational-summary-card.info::before {
+  background: var(--accent);
+}
+
+.kpi[data-tone="purple"]::before,
+.operational-summary-card.purple::before {
+  background: var(--purple);
+}
+
+.kpi[data-tone="warning"]::before,
+.operational-summary-card.amber::before,
+.operational-summary-card.warning::before {
+  background: var(--amber);
+}
+
+.kpi strong {
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.operational-summary-card strong {
+  font-weight: 800;
+}
+
+.dashboard-welcome span {
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.attention-item strong {
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.dashboard-collapsible-head strong,
+.panel-head h3,
+.panel-head > div > h3 {
+  font-weight: 700;
+}
