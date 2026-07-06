@@ -416,15 +416,6 @@ html[data-theme="dark"] .badge.aberto {
   color: #ffd2ce;
 }
 
-html[data-theme="dark"] .materials-tabs button {
-  background: transparent;
-  color: #aebbc5;
-}
-
-html[data-theme="dark"] .materials-tabs button.active {
-  color: #72d4c8;
-}
-
 @media (max-width: 760px) {
   .subscription-metrics, .support-form { grid-template-columns: 1fr; }
   .renewal-box, .inventory-form { grid-template-columns: 1fr; }

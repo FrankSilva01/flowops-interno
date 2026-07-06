@@ -73,7 +73,7 @@
 .inventory-summary { font-size: 13px; font-weight: 500; }
 .inventory-summary.ok { color: var(--green); }
 .inventory-summary.low, .limit-warning { color: var(--red); font-weight: 500; }
-.low-stock-row { background: #fff8ed; }
+.low-stock-row { background: var(--warning-soft); }
 .app-message-dialog { width: min(480px, calc(100% - 28px)); padding: 0; border: 0; border-radius: 8px; box-shadow: 0 24px 70px rgb(10 25 32 / 35%); }
 .app-message-dialog::backdrop { background: rgb(7 20 27 / 62%); }
 .app-message-content { padding: 22px; }
@@ -93,7 +93,6 @@ html[data-theme="dark"] .renewal-box,
 html[data-theme="dark"] .renewal-box > div,
 html[data-theme="dark"] .app-message-dialog,
 html[data-theme="dark"] .app-message-content,
-html[data-theme="dark"] .low-stock-row,
 html[data-theme="dark"] .support-response { background: #1d2a33; color: #eef4f7; border-color: #43535f; }
 html[data-theme="dark"] .health-score { background: #17372c; color: #dff7e9; }
 html[data-theme="dark"] .health-score.attention { background: #3d3218; color: #fff0b3; }

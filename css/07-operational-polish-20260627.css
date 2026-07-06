@@ -1679,23 +1679,6 @@ button.attention-item:hover {
   font-weight: 500;
 }
 
-html[data-theme="dark"] .view-tab,
-html[data-theme="dark"] .report-tabs button,
-html[data-theme="dark"] .materials-tabs button {
-  background: none;
-  border-color: transparent;
-  border-bottom-color: transparent;
-  color: #aebbc5;
-}
-
-html[data-theme="dark"] .view-tab.active,
-html[data-theme="dark"] .report-tabs button.active,
-html[data-theme="dark"] .materials-tabs button.active {
-  background: none;
-  border-bottom-color: #2dd4bf;
-  color: #72d4c8;
-}
-
 /* Redesign visual - verificacao final: mesmo "blob" gradiente decorativo do .kpi (mudanca 4/7), so que nos KPIs da view de Relatorios */
 .report-kpi::before {
   display: none;
