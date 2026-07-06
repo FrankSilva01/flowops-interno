@@ -613,3 +613,42 @@ button,
 .listing-drawer-suggestion {
   border-radius: var(--radius-card);
 }
+
+/* ==========================================================================
+   Fase 11 - Logistica, Suporte, Novidades, Assinatura, Gestao de usuarios,
+   Historico
+   Logistica/Suporte/Novidades/Usuarios/Historico ja renderizam tudo dentro
+   de .panel/.table-wrap/.operational-summary-card (raio e dot ja cobertos
+   pelas fases anteriores), sem nada hardcoded pro tema escuro proprio
+   dessas telas - nao precisaram de ajuste.
+   Assinatura teve achados reais: .subscription-hero/.health-score/
+   .renewal-box (css/01) sao classes MORTAS - a tela de assinatura foi
+   evoluida pra um layout "premium" (.subscription-premium-hero/
+   .subscription-health-visual/.subscription-payment-premium) que nunca
+   usa essas classes antigas, entao nao mexi nelas (nao ha efeito visivel
+   possivel). Nas classes REALMENTE usadas, achei radio antigo (8px/7px)
+   sem token e uma barra de progresso com verde fixo - corrigidos abaixo.
+   Tambem achei (fora da Assinatura) dois botoes/avisos com cor 100%
+   hardcoded nos dois temas (nao so uma sobra de override escuro): botao
+   "Excluir cartao"/"Desconectar" (.secondary-btn.danger, usado tambem em
+   Marketplace) e o aviso de "Alteracao agendada" (.scheduled-plan-change)
+   - convertidos pros tokens --red/--danger-soft e --amber/--warning-soft
+   direto em 02-nav-materials-dashboard-subscription.css (owner desses
+   estilos), removendo tambem os overrides de tema escuro que ficaram
+   redundantes.
+   ========================================================================== */
+
+.subscription-premium-hero,
+.subscription-usage-grid article,
+.subscription-metrics article,
+.notification-page-item {
+  border-radius: var(--radius-card);
+}
+
+.subscription-health-visual > i {
+  border-radius: var(--radius-control);
+}
+
+.subscription-usage-grid i {
+  background: var(--accent);
+}

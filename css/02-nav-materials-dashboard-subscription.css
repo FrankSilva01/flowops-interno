@@ -141,11 +141,10 @@
 .subscription-payment-actions > div strong, .subscription-payment-actions > div span { display: block; }
 .subscription-payment-actions > div span { margin-top: 4px; color: var(--muted); }
 .subscription-card-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-.secondary-btn.danger { color: #b91c1c; border-color: #fecaca; background: #fff7f7; }
-html[data-theme="dark"] .secondary-btn.danger { color: #fecaca; border-color: #7f1d1d; background: rgba(127, 29, 29, .18); }
+.secondary-btn.danger { color: var(--red); border-color: var(--red); background: var(--danger-soft); }
 .scheduled-plan-change {
   display: flex; gap: 10px; align-items: baseline; margin: 14px 0; padding: 14px;
-  border-left: 4px solid #d69a19; background: #fff8e6; color: #5b430b;
+  border-left: 4px solid var(--amber); background: var(--warning-soft); color: var(--ink);
 }
 .downgrade-user-list { display: grid; gap: 8px; max-height: 280px; overflow: auto; margin: 14px 0; }
 .downgrade-user-list label {
@@ -234,8 +233,6 @@ html[data-theme="dark"] .secondary-btn.danger { color: #fecaca; border-color: #7
 .password-reset-dialog form, .downgrade-dialog form, .payment-method-dialog { padding: 24px; }
 .password-reset-dialog label { display: grid; gap: 6px; margin: 12px 0; }
 .password-reset-dialog input { min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 6px; }
-html[data-theme="dark"] .notification-page-item { background: #1d2a33; }
-html[data-theme="dark"] .scheduled-plan-change { background: #493b17; color: #ffe7a0; }
 
 @media (max-width: 720px) {
   .subscription-payment-actions { align-items: stretch; flex-direction: column; }
