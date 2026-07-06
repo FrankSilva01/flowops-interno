@@ -9,8 +9,8 @@ import { loadRemoteData } from "../data/remote.js";
 import { getOrderCode, syncOrderFilterControls } from "./orders.js";
 import { recordAudit, isWithinDateRange } from "./logs.js";
 import { getTokenAlert } from "./dashboard.js";
-import { renderProfitabilityBadge, renderCommercialIntelligence } from "./pricing.js";
-import { renderMarketplaceAnalyticsPanel } from "./marketplace-analytics.js";
+import { renderProfitabilityBadge, renderCommercialIntelligence, getListingProfitability } from "./pricing.js";
+import { renderMarketplaceAnalyticsPanel, getListingAnalytics, computeIntentScore } from "./marketplace-analytics.js";
 
 const MARKETPLACE_CHANNELS = [
   { id: "mercado-livre", label: "Mercado Livre" },
@@ -92,6 +92,30 @@ export function getIntegrationTokenAlert() {
   return null;
 }
 
+// Filtros rapidos da aba Anuncios (Bloco 2) - busca por texto + checkboxes.
+// Aplica depois do filtro de canal (matchesMarketplaceChannel), antes de
+// renderizar a tabela.
+export function filterListingsForDisplay(listings) {
+  const search = (state.marketplaceListingSearch || "").toLowerCase();
+  const filters = state.marketplaceListingFilters;
+  return listings.filter((item) => {
+    if (search && !`${item.title} ${item.external_id} ${item.sku || ""}`.toLowerCase().includes(search)) return false;
+    const analytics = getListingAnalytics(item.marketplace, item.external_id);
+    const intent = computeIntentScore(analytics);
+    if (filters.noSales && Number(analytics?.sold_quantity || 0) > 0) return false;
+    if (filters.visits100 && Number(analytics?.visits || 0) <= 100) return false;
+    if (filters.questions3 && Number(analytics?.questions_total || 0) <= 3) return false;
+    if (filters.zeroStock && Number(item.stock || item.available_quantity || 0) > 0) return false;
+    if (filters.marginUnder20) {
+      const profitability = getListingProfitability(item);
+      if (!profitability.hasCost || profitability.marginPct >= 20) return false;
+    }
+    if (filters.intentHigh && (!intent || intent.score < 60)) return false;
+    if (filters.intentVeryHigh && (!intent || intent.score < 80)) return false;
+    return true;
+  });
+}
+
 export function renderMarketplaces() {
   const accountsTable = byId("marketplaceAccountsTable");
   const listingsGrid = byId("marketplaceListingsGrid");
@@ -112,7 +136,7 @@ export function renderMarketplaces() {
     return;
   }
   const accounts = state.marketplaceAccounts.filter(matchesMarketplaceChannel);
-  const listings = state.marketplaceListings.filter(matchesMarketplaceChannel);
+  const listings = filterListingsForDisplay(state.marketplaceListings.filter(matchesMarketplaceChannel));
   const sales = state.marketplaceSales.filter(matchesMarketplaceChannel);
   const logs = state.marketplaceLogs.filter(matchesMarketplaceChannel);
   renderOperationalSummary("marketplaceListingsView", "marketplacePageSummary", [
@@ -160,13 +184,12 @@ export function renderMarketplaces() {
   const featuredListing = listings[0];
   listingsGrid.innerHTML = listings.length ? `
     <div class="marketplace-listing-table-wrap">
-      <div class="marketplace-listing-toolbar">
-        <input type="search" placeholder="Buscar anúncio..." aria-label="Buscar anúncio" data-marketplace-local-search />
-        <button class="secondary-btn" type="button">Filtros</button>
-      </div>
       <table class="marketplace-listing-table">
-        <thead><tr><th>Produto</th><th>Marketplace</th><th>Preço</th><th>Estoque</th><th>Visualizações</th><th>Conversão</th><th>Status</th><th>Ações</th></tr></thead>
-        <tbody>${listings.map((item) => `
+        <thead><tr><th>Produto</th><th>Marketplace</th><th>Preço</th><th>Estoque</th><th>Visualizações</th><th>Conversão</th><th>Intenção</th><th>Status</th><th>Ações</th></tr></thead>
+        <tbody>${listings.map((item) => {
+          const analytics = getListingAnalytics(item.marketplace, item.external_id);
+          const intent = computeIntentScore(analytics);
+          return `
           <tr>
             <td><div class="listing-product-cell">${item.thumbnail_url ? `<img src="${html(item.thumbnail_url)}" alt="" loading="lazy" />` : `<span class="listing-placeholder"></span>`}<span><strong>${html(item.title)}</strong><small>${html(item.external_id)}</small></span></div></td>
             <td>${html(marketplaceDisplayName(item.marketplace))}</td>
@@ -174,9 +197,11 @@ export function renderMarketplaces() {
             <td>${Number(item.stock || item.available_quantity || 0).toLocaleString("pt-BR")}</td>
             <td>${Number(item.views || item.views_today || 0).toLocaleString("pt-BR")}</td>
             <td>${Number(item.conversion || 0).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%</td>
+            <td>${intent ? `<span class="badge ${intent.level.className}" title="${html(intent.level.advice)}">${intent.level.emoji} ${intent.score}</span>` : `<span class="badge neutral" title="Sincronize as métricas para calcular">-</span>`}</td>
             <td><span class="badge ${item.status === "active" ? "done" : "neutral"}">${html(item.status || "-")}</span></td>
             <td><div class="inline-actions"><button class="secondary-btn" type="button" data-action="marketplace-stats" data-id="${html(item.external_id)}" data-marketplace="${html(item.marketplace || "Mercado Livre")}">Ver</button><button class="secondary-btn" type="button" data-action="marketplace-edit" data-id="${html(item.external_id)}" data-marketplace="${html(item.marketplace || "Mercado Livre")}">Editar</button></div></td>
-          </tr>`).join("")}
+          </tr>`;
+        }).join("")}
         </tbody>
       </table>
     </div>

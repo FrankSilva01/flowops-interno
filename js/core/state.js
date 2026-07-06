@@ -178,6 +178,11 @@ export const state = {
   marketplaceLogLimit: 30,
   marketplaceLogsCleared: false,
   marketplaceChannelFilter: "all",
+  marketplaceListingSearch: "",
+  marketplaceListingFilters: {
+    noSales: false, visits100: false, questions3: false, zeroStock: false,
+    marginUnder20: false, intentHigh: false, intentVeryHigh: false,
+  },
   marketplaceView: "listings",
   leads: [],
   auditEvents: [],

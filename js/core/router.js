@@ -434,6 +434,16 @@ export function bindEvents() {
     state.productSearch = event.target.value.trim().toLowerCase();
     renderCommercialIntelligence();
   });
+  byId("marketplaceListingSearchInput")?.addEventListener("input", (event) => {
+    state.marketplaceListingSearch = event.target.value.trim().toLowerCase();
+    renderMarketplaces();
+  });
+  document.querySelectorAll("[data-listing-filter]").forEach((checkbox) => {
+    checkbox.addEventListener("change", (event) => {
+      state.marketplaceListingFilters[event.target.dataset.listingFilter] = event.target.checked;
+      renderMarketplaces();
+    });
+  });
   byId("intelligenceTableLevelFilter")?.addEventListener("change", (event) => {
     state.intelligenceTableLevelFilter = event.target.value;
     renderListingProfitabilityTable();

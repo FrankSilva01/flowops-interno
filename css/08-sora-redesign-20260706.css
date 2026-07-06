@@ -652,3 +652,41 @@ button,
 .subscription-usage-grid i {
   background: var(--accent);
 }
+
+/* ==========================================================================
+   Marketplace > Anuncios - filtros rapidos (Bloco 2, score de intencao)
+   .marketplace-listing-toolbar saiu de dentro de .marketplace-listing-table-wrap
+   (06-dense-operational-views.css) pra virar barra estatica acima da grade
+   de anuncios - senao ela sumia junto com a tabela quando a lista estava
+   vazia. Precisa de fundo/raio proprios agora que nao esta mais dentro do
+   wrapper com borda.
+   ========================================================================== */
+
+.marketplace-listing-toolbar {
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 10px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--panel);
+}
+
+.listing-quick-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+
+.listing-quick-filters label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.listing-quick-filters input[type="checkbox"] {
+  margin: 0;
+}

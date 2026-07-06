@@ -16,6 +16,7 @@ import {
 } from "./pricing.js";
 
 const ANALYTICS_URL = "https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-sync?marketplace=ml&action=analytics-full";
+const INTENT_SCORE_URL = "https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-sync?marketplace=ml&action=intent-score";
 
 function analyticsKey(marketplace, externalId) {
   return `${marketplace}:${externalId}`;
@@ -110,8 +111,13 @@ export async function syncAnalyticsFull(force = false) {
   try {
     const url = force ? `${ANALYTICS_URL}&force=true` : ANALYTICS_URL;
     const result = await marketplaceRequest(url);
+    // Perguntas recentes (pro score de intencao de compra) sincronizam
+    // junto do resto das metricas, no mesmo botao - o usuario nao precisa
+    // saber que sao rotas separadas na Edge Function.
+    const intentResult = await marketplaceRequest(force ? `${INTENT_SCORE_URL}&force=true` : INTENT_SCORE_URL).catch((error) => ({ listings: [], error }));
     await Promise.all([loadListingAnalytics(), loadSellerMetrics()]);
-    const failed = (result.listings || []).filter((item) => !item.ok).length;
+    const failed = (result.listings || []).filter((item) => !item.ok).length
+      + (intentResult.listings || []).filter((item) => !item.ok).length;
     flashActionMessage(failed
       ? `Métricas atualizadas com ${failed} erro(s) - veja Logs API para detalhes.`
       : "Métricas do Mercado Livre atualizadas.");
@@ -176,6 +182,71 @@ export function computeCompositeScore(listing, analytics, profitability) {
       ["Visitas (normalizado)", visitsSub, SCORE_WEIGHTS.visits],
       ["Competitividade de preço", competitivenessSub, SCORE_WEIGHTS.competitiveness],
       ["Tendência da categoria", trendSub, SCORE_WEIGHTS.trend],
+    ],
+  };
+}
+
+// --- Score de Intencao de Compra (Bloco 2) ---
+// Diferente do score composto acima (que mistura margem + demanda pra
+// responder "onde vale investir"), esse mede so o interesse/demanda no
+// anuncio nos ultimos dias - deliberadamente sem margem. Os 2 convivem
+// lado a lado: um responde "isso e lucrativo?", o outro "isso esta
+// interessando?". Formula e escalas fixas e documentadas aqui (sem
+// "caixa preta"), iguais as descritas na tela.
+const INTENT_SCALE = { sales30d: 10, questions30d: 5, visits7d: 100, conversionPct: 3 };
+
+export const INTENT_LEVELS = {
+  "very-high": { key: "very-high", label: "Muito alta", emoji: "🔥", className: "done", advice: "Grande chance de vender. Considere aumentar estoque." },
+  high: { key: "high", label: "Alta", emoji: "🟢", className: "done", advice: "Interesse crescente. Anúncio bem posicionado." },
+  medium: { key: "medium", label: "Média", emoji: "🟡", className: "queue", advice: "Algum interesse. Revise fotos e título." },
+  low: { key: "low", label: "Baixa", emoji: "🔴", className: "danger-badge", advice: "Pouco interesse. Considere ajustar preço ou pausar." },
+};
+
+function intentLevelFor(score) {
+  if (score >= 80) return INTENT_LEVELS["very-high"];
+  if (score >= 60) return INTENT_LEVELS.high;
+  if (score >= 40) return INTENT_LEVELS.medium;
+  return INTENT_LEVELS.low;
+}
+
+// A serie diaria de visitas (raw_summary.visits_series, ja capturada pelo
+// analytics-full de 30 dias) e a unica fonte pra "ultimos 7 dias" - nao faz
+// uma chamada nova so pra isso.
+function visitsLast7Days(series) {
+  if (!Array.isArray(series) || !series.length) return { current: 0, previous: 0 };
+  const sorted = [...series].sort((a, b) => new Date(a.date) - new Date(b.date));
+  const totals = sorted.map((day) => Number(day.total || 0));
+  const current = totals.slice(-7).reduce((sum, value) => sum + value, 0);
+  const previous = totals.slice(-14, -7).reduce((sum, value) => sum + value, 0);
+  return { current, previous };
+}
+
+export function computeIntentScore(analytics) {
+  if (!analytics) return null;
+  const salesScore = Math.min(Number(analytics.sold_quantity || 0), INTENT_SCALE.sales30d) / INTENT_SCALE.sales30d * 40;
+  const questionsScore = Math.min(Number(analytics.questions_total || 0), INTENT_SCALE.questions30d) / INTENT_SCALE.questions30d * 20;
+  const { current, previous } = visitsLast7Days(analytics.raw_summary?.visits_series);
+  const visitsScore = Math.min(current, INTENT_SCALE.visits7d) / INTENT_SCALE.visits7d * 15;
+  const growth = current > previous ? "up" : current < previous ? "down" : "stable";
+  const growthScore = growth === "up" ? 10 : growth === "down" ? 0 : 5;
+  const conversion = Number(analytics.conversion_rate || 0);
+  const conversionScore = Math.min(conversion, INTENT_SCALE.conversionPct) / INTENT_SCALE.conversionPct * 15;
+  const score = Math.round(salesScore + questionsScore + visitsScore + growthScore + conversionScore);
+  return {
+    score,
+    level: intentLevelFor(score),
+    visits7d: current,
+    visitsGrowth: growth,
+    questions: Number(analytics.questions_total || 0),
+    questionsUnanswered: Number(analytics.questions_unanswered || 0),
+    sales30d: Number(analytics.sold_quantity || 0),
+    conversion,
+    factors: [
+      ["Vendas recentes (30d)", salesScore, 40],
+      ["Perguntas recentes", questionsScore, 20],
+      ["Visitas (7d)", visitsScore, 15],
+      ["Crescimento de visitas", growthScore, 10],
+      ["Conversão", conversionScore, 15],
     ],
   };
 }
@@ -428,6 +499,91 @@ export function renderInvestmentRanking() {
   }).join("") : `<div class="empty-chart">Sincronize as métricas para ver o ranking.</div>`;
 }
 
+// --- Ranking "Intencao de compra" (Bloco 2, aba Inteligencia) ---
+export function renderIntentScoreRanking() {
+  const target = byId("intentScoreRankingList");
+  if (!target) return;
+  const ranked = state.marketplaceListings
+    .map((listing) => ({ listing, intent: computeIntentScore(getListingAnalytics(listing.marketplace, listing.external_id)) }))
+    .filter((row) => row.intent)
+    .sort((a, b) => b.intent.score - a.intent.score)
+    .slice(0, 10);
+
+  target.innerHTML = ranked.length ? ranked.map(({ listing, intent }, index) => {
+    const factorsTooltip = intent.factors.map(([label, value, max]) => `${label}: ${value.toFixed(0)} de ${max}`).join(" | ");
+    return `
+      <div class="list-row investment-ranking-row">
+        <div>
+          <span class="investment-ranking-position">#${index + 1}</span>
+          <strong>${html(listing.title)}</strong>
+          <span>${intent.visits7d} visita${intent.visits7d === 1 ? "" : "s"} (7d) · ${intent.questions} pergunta${intent.questions === 1 ? "" : "s"} · ${intent.sales30d} venda${intent.sales30d === 1 ? "" : "s"} (30d) · ${intent.conversion.toFixed(1)}% conversão</span>
+        </div>
+        <div class="investment-ranking-side">
+          <strong title="${html(factorsTooltip)}">${intent.level.emoji} ${intent.score}</strong>
+          <span class="badge ${intent.level.className}">${html(intent.level.label)}</span>
+        </div>
+      </div>
+    `;
+  }).join("") : `<div class="empty-chart">Sincronize as métricas e as perguntas para ver o ranking.</div>`;
+}
+
+// --- Insights automaticos de intencao de compra (Bloco 2) ---
+// Mesmo cartao visual de pricing.js (renderInsightCard), mas os insights
+// aqui sao sobre demanda/interesse, nao margem - por isso ficam num modulo
+// separado, junto do resto da logica de intencao de compra.
+function getIntentScoreInsights(limit = 5) {
+  const portfolioAvgConversion = computePortfolioAvgConversion();
+  const results = [];
+  state.marketplaceListings.forEach((listing) => {
+    const analytics = getListingAnalytics(listing.marketplace, listing.external_id);
+    const intent = computeIntentScore(analytics);
+    if (!intent || !analytics) return;
+    if (intent.visits7d >= 50 && intent.questions >= 3 && intent.sales30d === 0) {
+      results.push({
+        key: `intent-no-sales:${listing.marketplace}:${listing.external_id}`,
+        title: listing.title,
+        message: `${intent.visits7d} visitas e ${intent.questions} pergunta${intent.questions === 1 ? "" : "s"} nos últimos dias, mas nenhuma venda em 30 dias. Revise preço, fotos e descrição.`,
+      });
+      return;
+    }
+    if (portfolioAvgConversion != null && intent.conversion >= portfolioAvgConversion * 1.5 && intent.conversion > 0) {
+      results.push({
+        key: `intent-high-conversion:${listing.marketplace}:${listing.external_id}`,
+        title: listing.title,
+        message: `Converteu ${intent.conversion.toFixed(1)}% (acima da média do portfólio de ${portfolioAvgConversion.toFixed(1)}%). Oportunidade de investir em exposição.`,
+      });
+      return;
+    }
+    if (intent.visits7d === 0 && intent.sales30d === 0) {
+      results.push({
+        key: `intent-no-visits:${listing.marketplace}:${listing.external_id}`,
+        title: listing.title,
+        message: `Sem visitas nos últimos 7 dias. Considere pausar ou revisar o título e a categoria.`,
+      });
+    }
+  });
+  return results.slice(0, limit);
+}
+
+export function renderIntentScoreInsights() {
+  const target = byId("intentScoreInsightsList");
+  if (!target) return;
+  const dismissed = state.dismissedInsightKeys;
+  const insights = getIntentScoreInsights().filter((insight) => !dismissed.includes(insight.key));
+  target.innerHTML = insights.length ? insights.map((insight) => `
+    <div class="suggestion-insight-card">
+      <div>
+        <strong>${html(insight.title)}</strong>
+        <span>${html(insight.message)}</span>
+      </div>
+      <div class="inline-actions">
+        <button class="icon-btn" type="button" data-action="dismiss-insight" data-insight-key="${html(insight.key)}">Dispensar</button>
+      </div>
+    </div>
+  `).join("") : `<div class="empty-chart">Nenhum insight de intenção de compra no momento.</div>`;
+  bindActions();
+}
+
 // --- Reputacao do vendedor ---
 // Limiares de alerta sao uma referencia aproximada nossa (documentada aqui
 // e na propria UI), nao os valores oficiais/exatos do programa MercadoLider,
@@ -480,7 +636,7 @@ export function renderMarketplaceAnalyticsPanel() {
   if (!hasCommercialIntelligenceAccess()) return;
   const connected = state.marketplaceAccounts.length > 0;
   const emptyState = byId("marketplaceAnalyticsEmptyState");
-  const panels = ["sellerReputationPanel", "marketplacePerformancePanel", "investmentRankingPanel", "categoryTrendsPanel"];
+  const panels = ["sellerReputationPanel", "marketplacePerformancePanel", "investmentRankingPanel", "intentScoreRankingPanel", "categoryTrendsPanel"];
   if (emptyState) emptyState.hidden = connected;
   if (!connected) {
     panels.forEach((id) => {
@@ -489,7 +645,7 @@ export function renderMarketplaceAnalyticsPanel() {
     });
     return;
   }
-  ["marketplacePerformancePanel", "investmentRankingPanel", "categoryTrendsPanel"].forEach((id) => {
+  ["marketplacePerformancePanel", "investmentRankingPanel", "intentScoreRankingPanel", "categoryTrendsPanel"].forEach((id) => {
     const panel = byId(id);
     if (panel) panel.hidden = false;
   });
@@ -508,6 +664,8 @@ export function renderMarketplaceAnalyticsPanel() {
   renderSellerReputationPanel();
   renderPerformanceTable();
   renderInvestmentRanking();
+  renderIntentScoreRanking();
+  renderIntentScoreInsights();
   renderCategoryTrendsPanel();
 }
 
@@ -542,6 +700,15 @@ function getTopListingsByConversion(limit = 3) {
     .slice(0, limit);
 }
 
+// "Anuncios quentes" (Bloco 2) - top N por score de intencao de compra.
+function getTopListingsByIntentScore(limit = 3) {
+  return state.marketplaceListings
+    .map((listing) => ({ listing, intent: computeIntentScore(getListingAnalytics(listing.marketplace, listing.external_id)) }))
+    .filter((row) => row.intent)
+    .sort((a, b) => b.intent.score - a.intent.score)
+    .slice(0, limit);
+}
+
 function getListingsNeedingAttention(limit = 5) {
   const analyticsRows = Object.values(state.listingAnalytics);
   const maxVisits = Math.max(...analyticsRows.map((row) => Number(row.visits || 0)), 1);
@@ -571,6 +738,7 @@ export function renderMarketplaceCommandWidget() {
   }
   const metrics = state.sellerMetrics;
   const top3 = getTopListingsByConversion();
+  const hotListings = getTopListingsByIntentScore();
   const attention = getListingsNeedingAttention();
   const visitsTrend = computeVisitsTrend();
   const trendLabel = visitsTrend
@@ -589,6 +757,10 @@ export function renderMarketplaceCommandWidget() {
         <strong>${trendLabel}</strong>
       </div>
     </div>
+    <div class="drawer-section-title">Anúncios quentes (intenção de compra)</div>
+    ${hotListings.length ? `<div class="stack-list">${hotListings.map(({ listing, intent }) => `
+      <div class="list-row"><div><strong>${html(listing.title)}</strong><span>${intent.level.emoji} ${intent.score} - ${html(intent.level.label)}</span></div></div>
+    `).join("")}</div>` : `<div class="empty-chart">Sincronize as métricas e as perguntas para ver o ranking.</div>`}
     <div class="drawer-section-title">Top 3 por conversão</div>
     ${top3.length ? `<div class="stack-list">${top3.map(({ listing, analytics }) => `
       <div class="list-row"><div><strong>${html(listing.title)}</strong><span>${analytics.conversion_rate.toFixed(1)}% de conversão</span></div></div>

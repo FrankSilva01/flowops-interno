@@ -934,6 +934,18 @@
               </div>
             </div>
             <div id="marketplaceStatus" class="marketplace-status"></div>
+            <div class="marketplace-listing-toolbar">
+              <input id="marketplaceListingSearchInput" type="search" placeholder="Buscar anúncio..." aria-label="Buscar anúncio" />
+              <div class="listing-quick-filters">
+                <label><input type="checkbox" data-listing-filter="noSales" /> Sem vendas</label>
+                <label><input type="checkbox" data-listing-filter="visits100" /> Mais de 100 visitas</label>
+                <label><input type="checkbox" data-listing-filter="questions3" /> Mais de 3 perguntas</label>
+                <label><input type="checkbox" data-listing-filter="zeroStock" /> Estoque zerado</label>
+                <label><input type="checkbox" data-listing-filter="marginUnder20" /> Margem &lt; 20%</label>
+                <label><input type="checkbox" data-listing-filter="intentHigh" /> Alta intenção (60+)</label>
+                <label><input type="checkbox" data-listing-filter="intentVeryHigh" /> Muito alta intenção (80+)</label>
+              </div>
+            </div>
             <div id="marketplaceListingsGrid" class="marketplace-listings-grid"></div>
           </div>
 
@@ -1286,6 +1298,19 @@
                 </div>
                 <div class="dashboard-collapsible-body">
                   <div id="investmentRankingList" class="stack-list"></div>
+                </div>
+              </div>
+              <div id="intentScoreRankingPanel" class="panel panel-collapsible" data-panel-collapsible="intent-score-ranking">
+                <div class="panel-head">
+                  <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="true">
+                    <span class="dashboard-collapsible-head"><strong>Intenção de compra</strong><small>Vendas recentes, perguntas, visitas e conversão - top 10 anúncios com maior interesse</small></span>
+                    <i class="ti ti-chevron-down" aria-hidden="true"></i>
+                  </button>
+                </div>
+                <div class="dashboard-collapsible-body">
+                  <div id="intentScoreRankingList" class="stack-list"></div>
+                  <div class="drawer-section-title">Insights automáticos</div>
+                  <div id="intentScoreInsightsList" class="stack-list"></div>
                 </div>
               </div>
               <div class="panel panel-collapsible" data-panel-collapsible="suggestions">
