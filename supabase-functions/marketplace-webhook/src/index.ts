@@ -2,7 +2,6 @@ import {
   adminClient,
   applyCors,
   corsHeaders,
-  getMlAccountByUserId,
   json,
   logSync,
 } from "../_shared/marketplace.ts";
@@ -144,26 +143,48 @@ async function syncFeeForWebhook(
       };
     }
 
-    // Busca frete (mesmo logic de getShippingCosts)
+    // Busca frete usando mesma lógica de getShippingCosts
     let shipping = null;
-    try {
-      const shippingResponse = await fetch(
-        `https://api.mercadolibre.com/shipments/costs?item_id=${itemId}`,
-        { headers },
-      );
-      const shippingData = await shippingResponse.json();
-      shipping = shippingData;
-    } catch (e) {
-      console.warn("Falha ao buscar frete:", e);
+    const SHIPPING_REFERENCE_ZIPS: Record<string, string> = { SP: "01310100", RJ: "20040020", BH: "30130010" };
+    const freeShipping = Boolean(item.shipping?.free_shipping);
+    const costsByCity: Record<string, number | null> = {};
+    const grossCostsByCity: Record<string, number | null> = {};
+
+    for (const city of Object.keys(SHIPPING_REFERENCE_ZIPS)) {
+      const zip = SHIPPING_REFERENCE_ZIPS[city];
+      try {
+        const shippingResponse = await fetch(
+          `https://api.mercadolibre.com/shipments/costs?item_id=${itemId}&zip_code=${zip}`,
+          { headers },
+        );
+        if (!shippingResponse.ok) {
+          costsByCity[city] = null;
+          grossCostsByCity[city] = null;
+          continue;
+        }
+        const data = await shippingResponse.json();
+        const grossAmount = Number(data.gross_amount ?? data.cost ?? 0);
+        const senderCost = Array.isArray(data.senders) && data.senders.length
+          ? Number(data.senders[0]?.cost ?? grossAmount)
+          : Number(data.cost ?? grossAmount);
+        costsByCity[city] = senderCost;
+        grossCostsByCity[city] = grossAmount;
+      } catch (e) {
+        costsByCity[city] = null;
+        grossCostsByCity[city] = null;
+      }
     }
 
-    // Calcula custo real vs subsídio
-    const freeShipping = Boolean(item.shipping?.free_shipping);
-    const avgSellerCost = Number(shipping?.senders?.[0]?.cost || 0);
-    const avgGrossCost = Number(shipping?.shipping_option?.cost || 0);
+    const knownCosts = Object.values(costsByCity).filter((value): value is number => value !== null);
+    const knownGrossCosts = Object.values(grossCostsByCity).filter((value): value is number => value !== null);
+    const avgSellerCost = knownCosts.length ? knownCosts.reduce((sum, value) => sum + value, 0) / knownCosts.length : 0;
+    const avgGrossCost = knownGrossCosts.length ? knownGrossCosts.reduce((sum, value) => sum + value, 0) / knownGrossCosts.length : 0;
+
     const sellerShippingCost = freeShipping ? avgSellerCost : 0;
     const grossShippingCost = freeShipping ? (avgGrossCost || avgSellerCost) : 0;
     const shippingSubsidized = Math.max(grossShippingCost - sellerShippingCost, 0);
+
+    shipping = { free_shipping: freeShipping, costs_by_city: costsByCity, gross_costs_by_city: grossCostsByCity, avg_seller_cost: avgSellerCost, avg_gross_cost: avgGrossCost };
 
     // Calcula taxa real
     const price = Number(item.price || 0);
