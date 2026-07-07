@@ -1293,7 +1293,10 @@ function renderIntelligenceEmptyState(coverage) {
 export function renderCommercialIntelligence() {
   renderProductCatalogTable();
   const syncFeeBtn = byId("syncFeeCalculatorBtn");
-  if (syncFeeBtn) syncFeeBtn.hidden = !isMarketplaceAccountConnected("mercado-livre");
+  if (syncFeeBtn) syncFeeBtn.hidden = false;
+  if (isMarketplaceAccountConnected("mercado-livre")) {
+    syncFeeCalculatorFull();
+  }
   const analysisSection = byId("intelligenceAnalysisSection");
   const upsell = byId("intelligenceUpsell");
   const emptyState = byId("intelligenceEmptyState");
