@@ -172,6 +172,7 @@ export function openProductQuickDialog(productId = "") {
   form.elements.category.value = product?.category || "";
   form.elements.costPrice.value = product?.cost_price ?? "";
   form.elements.weightKg.value = product?.weight_kg ?? "";
+  form.elements.description.value = product?.description || "";
   form.elements.notes.value = product?.notes || "";
   form.elements.sku.value = product?.sku || "";
   form.dataset.skuTouched = product ? "true" : "false";
@@ -185,6 +186,9 @@ export function openProductQuickDialog(productId = "") {
   form.elements.price.value = linkedListingData ? Number(linkedListingData.price || 0) : "";
   form.elements.stock.value = linkedListingData ? Number(linkedListingData.raw_payload?.available_quantity || 1) : 1;
   form.elements.mlCategoryId.value = linkedListingData?.raw_payload?.category_id || "";
+  // Se o produto ja tem um anuncio real vinculado, usa o tipo real (evita
+  // presumir "Classico" quando o anuncio de verdade e Premium).
+  form.elements.listingType.value = linkedListingData ? classifyMlListingType(linkedListingData.raw_payload || {}) : "classic";
 
   renderProductListingOptions(product);
   updateProductMarketplaceStatusHints();
@@ -207,6 +211,7 @@ export function updateProductMarketplaceStatusHints() {
     }
   });
   byId("productMlCategoryField").hidden = !form.elements.publish_ml.checked;
+  byId("productListingTypeField").hidden = !form.elements.publish_ml.checked;
 }
 
 export function bindProductMarketplaceCheckboxes() {
@@ -214,7 +219,10 @@ export function bindProductMarketplaceCheckboxes() {
   if (!form) return;
   form.elements.publish_ml.addEventListener("change", () => {
     byId("productMlCategoryField").hidden = !form.elements.publish_ml.checked;
+    byId("productListingTypeField").hidden = !form.elements.publish_ml.checked;
+    renderProductProfitPreview();
   });
+  form.elements.listingType.addEventListener("change", renderProductProfitPreview);
 }
 
 export function bindProductImageInputs() {
@@ -258,7 +266,7 @@ async function addProductImageFiles(files) {
 // Card com o breakdown visual tipo funil (preco -> taxas -> imposto -> frete/
 // embalagem -> custo -> lucro). Reaproveitado na previa de cadastro de produto
 // e na calculadora de preco.
-function renderPriceBreakdownCard(label, breakdown) {
+function renderPriceBreakdownCard(label, breakdown, note = "") {
   return `
     <article class="profit-preview-card">
       <div class="profit-preview-head"><strong>${html(label)}</strong><span class="badge ${breakdown.level.className}">${html(breakdown.level.label)}</span></div>
@@ -271,6 +279,7 @@ function renderPriceBreakdownCard(label, breakdown) {
         <div><dt>Frete + embalagem</dt><dd>-${money.format(breakdown.shipping + breakdown.packaging)}</dd></div>
         <div class="profit-preview-total"><dt>Sobra líquida estimada</dt><dd>${money.format(breakdown.netProfit)} (${breakdown.marginPct.toFixed(1)}%)</dd></div>
       </dl>
+      ${note ? `<small class="form-hint">${html(note)}</small>` : ""}
     </article>
   `;
 }
@@ -289,17 +298,21 @@ export function renderProductProfitPreview() {
   const cost = number(data.get("costPrice"));
   const price = number(data.get("price"));
   const weight = number(data.get("weightKg"));
+  const listingType = String(data.get("listingType") || "classic");
   const settings = getFinancialSettings();
   const checkedChannels = CREATABLE_MARKETPLACES.filter((channel) => form.elements[MARKETPLACE_CHECKBOX_NAMES[channel]]?.checked);
   const previewChannels = checkedChannels.length ? checkedChannels : ["direct"];
+  // Sem peso cadastrado e sem anuncio real ainda, o frete cai no default (as
+  // vezes R$0) - deixa isso explicito em vez de parecer "frete gratis calculado".
+  const shippingNote = weight > 0 ? "" : "Frete estimado sem peso cadastrado — informe o peso do produto para uma estimativa mais próxima da real.";
   target.innerHTML = previewChannels.map((channel) => {
-    const feePct = resolveChannelFeePct(channel, "classic");
+    const feePct = resolveChannelFeePct(channel, channel === "mercado-livre" ? listingType : "classic");
     const breakdown = computeMarginBreakdown({
       cost, revenue: price, feePct, fixedFee: resolveFixedFee(channel, price), taxPct: settings.default_tax_pct,
       shipping: resolveShippingCost(weight, null), packaging: settings.default_packaging_cost,
     });
     const label = channel === "direct" ? "Venda direta (estimativa)" : marketplaceDisplayName(channel);
-    return renderPriceBreakdownCard(label, breakdown);
+    return renderPriceBreakdownCard(label, breakdown, shippingNote);
   }).join("");
 }
 
@@ -353,6 +366,15 @@ export async function saveProduct(event) {
   const sku = String(data.get("sku") || "").trim() || nextProductSku(category, name);
   const price = number(data.get("price"));
   const stock = Math.max(Number(data.get("stock") || 1), 0);
+  const listingValue = String(data.get("listingLink") || "");
+  const selectedChannels = CREATABLE_MARKETPLACES.filter((channel) => Boolean(data.get(MARKETPLACE_CHECKBOX_NAMES[channel])));
+  // So exige as 3 fotos quando o cadastro vai CRIAR um anuncio novo (mesmo
+  // padrao do Mercado Livre) - vincular a um anuncio ja existente reaproveita
+  // as fotos que ja estao la, entao nao entra nessa exigencia.
+  if (!listingValue && selectedChannels.length && productUploadedImages.length < 3) {
+    message.textContent = `Adicione pelo menos 3 fotos do produto para publicar em um marketplace (${productUploadedImages.length} de 3).`;
+    return;
+  }
   const payload = {
     organization_id: state.organizationId,
     sku,
@@ -360,6 +382,7 @@ export async function saveProduct(event) {
     category,
     cost_price: number(data.get("costPrice")),
     weight_kg: data.get("weightKg") ? number(data.get("weightKg")) : null,
+    description: String(data.get("description") || "").trim() || null,
     notes: String(data.get("notes") || "").trim() || null,
     updated_at: new Date().toISOString(),
   };
@@ -375,7 +398,6 @@ export async function saveProduct(event) {
   else state.products.push(saved);
   await recordAudit(previous ? "update" : "create", "product", saved.id, saved.sku, previous, saved, "manual");
 
-  const listingValue = String(data.get("listingLink") || "");
   if (listingValue) {
     await syncProductListingLink(saved.id, listingValue);
     byId("productDialog").close();
@@ -385,7 +407,6 @@ export async function saveProduct(event) {
     return;
   }
 
-  const selectedChannels = CREATABLE_MARKETPLACES.filter((channel) => Boolean(data.get(MARKETPLACE_CHECKBOX_NAMES[channel])));
   if (!selectedChannels.length) {
     byId("productDialog").close();
     flashActionMessage("Produto salvo no catálogo.");
@@ -416,6 +437,7 @@ export async function saveProduct(event) {
       continue;
     }
     try {
+      const listingType = String(data.get("listingType") || "classic");
       const created = await marketplaceRequest("https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-sync?marketplace=ml&action=create-listing", {
         method: "POST",
         body: JSON.stringify({
@@ -423,12 +445,12 @@ export async function saveProduct(event) {
           price,
           available_quantity: stock,
           category_id: mlCategoryId,
-          listing_type_id: "gold_special",
+          listing_type_id: listingType === "premium" ? "gold_pro" : "gold_special",
           condition: "new",
           warranty: "Sem garantia",
           sku,
           pictures: productUploadedImages,
-          description: name,
+          description: String(data.get("description") || "").trim() || name,
           attributes: [],
         }),
       });
