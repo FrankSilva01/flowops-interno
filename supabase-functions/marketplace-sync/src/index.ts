@@ -863,7 +863,10 @@ async function getListingFeeSyncSnapshot(itemId: string, account: Record<string,
     price,
     real_fee_pct: percentageFeeReal,
     real_fee_fixed: fixedFeeReal,
-    shipping_cost: grossShippingCost,
+    // shipping_cost guarda sempre o custo que o VENDEDOR paga de verdade
+    // (ja descontado o subsídio do ML). shipping_subsidized guarda quanto
+    // foi coberto pelo ML pra auditoria, mas nao entra no calculo de margem.
+    shipping_cost: sellerShippingCost,
     shipping_subsidized: shippingSubsidized,
     free_shipping: freeShipping,
     raw_payload: { price_info: priceInfo, shipping },
