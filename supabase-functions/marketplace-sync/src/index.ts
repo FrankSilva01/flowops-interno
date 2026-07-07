@@ -836,15 +836,18 @@ async function getListingFeeSyncSnapshot(itemId: string, account: Record<string,
 
   const shipping = await getShippingCosts(itemId, item, account).catch(() => null);
   const freeShipping = Boolean(item.shipping?.free_shipping);
-  const knownShippingCosts = shipping
-    ? (Object.values(shipping.costs_by_city).filter((value): value is number => value !== null))
-    : [];
   // O custo de frete so pesa na margem do vendedor quando o anuncio tem
   // frete gratis (o vendedor absorve o custo) - se o comprador paga o
-  // frete, isso nao afeta a margem do vendedor.
-  const rawShippingCost = knownShippingCosts.length
-    ? knownShippingCosts.reduce((sum, value) => sum + value, 0) / knownShippingCosts.length
-    : 0;
+  // frete, isso nao afeta a margem do vendedor. Quando ha frete gratis,
+  // avg_seller_cost ja e o valor liquido que o vendedor paga de fato
+  // (senders[0].cost em /shipments/costs) - o Mercado Livre cobre a
+  // diferenca ate o valor cheio (avg_gross_cost) em boa parte dos casos de
+  // vendedores com bom nivel/reputacao. shipping_subsidized guarda essa
+  // diferenca pra fins de auditoria/exibicao; o que de fato entra na
+  // margem e sempre o custo liquido do vendedor.
+  const sellerShippingCost = freeShipping ? Number(shipping?.avg_seller_cost || 0) : 0;
+  const grossShippingCost = freeShipping ? Number(shipping?.avg_gross_cost ?? shipping?.avg_seller_cost ?? 0) : 0;
+  const shippingSubsidized = Math.max(grossShippingCost - sellerShippingCost, 0);
 
   const price = Number(item.price || 0);
   const saleFeeAmount = Number(priceInfo.sale_fee_amount || 0);
@@ -860,11 +863,8 @@ async function getListingFeeSyncSnapshot(itemId: string, account: Record<string,
     price,
     real_fee_pct: percentageFeeReal,
     real_fee_fixed: fixedFeeReal,
-    shipping_cost: freeShipping ? rawShippingCost : 0,
-    // A API publica do ML nao expoe quanto do frete gratis e subsidiado pelo
-    // ML vs pago pelo vendedor - fica 0 (nao inventamos), o shipping_cost
-    // inteiro e tratado como custo do vendedor quando ha frete gratis.
-    shipping_subsidized: 0,
+    shipping_cost: grossShippingCost,
+    shipping_subsidized: shippingSubsidized,
     free_shipping: freeShipping,
     raw_payload: { price_info: priceInfo, shipping },
     synced_at: new Date().toISOString(),
@@ -1081,9 +1081,18 @@ async function getSearchPosition(title: string, itemId: string, account: Record<
 // tratamos o calculo por CEP como um extra que pode nao estar disponivel.
 const SHIPPING_REFERENCE_ZIPS: Record<string, string> = { SP: "01310100", RJ: "20040020", BH: "30130010" };
 
+// /shipments/costs devolve o custo bruto do frete (gross_amount) e, quando
+// ha frete gratis, o valor que o VENDEDOR de fato paga vem em senders[0].cost
+// (o Mercado Livre ou o proprio anuncio - via bonificacao de reputacao/nivel -
+// cobre a diferenca ate o gross_amount). Sem isso, o custo de frete ficava
+// zerado sempre que o item tinha frete gratis, o que subestimava o custo real
+// do vendedor. costs_by_city guarda o custo REAL do vendedor por cidade
+// (usado tambem no drawer de diagnostico do anuncio); gross_costs_by_city
+// guarda o valor cheio, usado so pra calcular o quanto foi subsidiado.
 async function getShippingCosts(itemId: string, item: Record<string, any>, account: Record<string, any>) {
   const freeShipping = Boolean(item.shipping && item.shipping.free_shipping);
   const costsByCity: Record<string, number | null> = {};
+  const grossCostsByCity: Record<string, number | null> = {};
   for (const city of Object.keys(SHIPPING_REFERENCE_ZIPS)) {
     const zip = SHIPPING_REFERENCE_ZIPS[city];
     try {
@@ -1092,17 +1101,36 @@ async function getShippingCosts(itemId: string, item: Record<string, any>, accou
         { headers: { Authorization: `Bearer ${account.access_token}` } },
       );
       const data = await response.json();
-      costsByCity[city] = response.ok ? Number(data.cost ?? data.gross_amount ?? 0) : null;
+      if (!response.ok) {
+        costsByCity[city] = null;
+        grossCostsByCity[city] = null;
+        continue;
+      }
+      const grossAmount = Number(data.gross_amount ?? data.cost ?? 0);
+      const senderCost = Array.isArray(data.senders) && data.senders.length
+        ? Number(data.senders[0]?.cost ?? grossAmount)
+        : Number(data.cost ?? grossAmount);
+      costsByCity[city] = senderCost;
+      grossCostsByCity[city] = grossAmount;
     } catch {
       costsByCity[city] = null;
+      grossCostsByCity[city] = null;
     }
   }
   const price = Number(item.price || 0);
   const knownCosts = Object.values(costsByCity).filter((value): value is number => value !== null);
-  const shippingSharePct = knownCosts.length && price > 0
-    ? ((knownCosts.reduce((sum, value) => sum + value, 0) / knownCosts.length) / price) * 100
-    : null;
-  return { free_shipping: freeShipping, costs_by_city: costsByCity, shipping_share_pct: shippingSharePct };
+  const knownGrossCosts = Object.values(grossCostsByCity).filter((value): value is number => value !== null);
+  const avgSellerCost = knownCosts.length ? knownCosts.reduce((sum, value) => sum + value, 0) / knownCosts.length : null;
+  const avgGrossCost = knownGrossCosts.length ? knownGrossCosts.reduce((sum, value) => sum + value, 0) / knownGrossCosts.length : null;
+  const shippingSharePct = avgSellerCost != null && price > 0 ? (avgSellerCost / price) * 100 : null;
+  return {
+    free_shipping: freeShipping,
+    costs_by_city: costsByCity,
+    gross_costs_by_city: grossCostsByCity,
+    avg_seller_cost: avgSellerCost,
+    avg_gross_cost: avgGrossCost,
+    shipping_share_pct: shippingSharePct,
+  };
 }
 
 async function getSellerReputation(account: Record<string, any>, organizationId: string, force: boolean) {

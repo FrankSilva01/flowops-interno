@@ -297,6 +297,32 @@ export function renderProductProfitPreview() {
   const data = new FormData(form);
   const cost = number(data.get("costPrice"));
   const price = number(data.get("price"));
+
+  // Ja vinculado a um anuncio real: usa a rentabilidade de verdade (que ja
+  // prioriza taxa/frete sincronizados da API, ver resolveListingFeeInfo) em
+  // vez de reestimar do zero por tabela - assim a previa bate com o que a
+  // tabela de rentabilidade/o simulador real do Mercado Livre mostram.
+  const listingValue = String(data.get("listingLink") || "");
+  if (listingValue) {
+    const [linkedMarketplace, ...idParts] = listingValue.split(":");
+    const linkedExternalId = idParts.join(":");
+    const linkedListing = state.marketplaceListings.find((item) => item.marketplace === linkedMarketplace && item.external_id === linkedExternalId);
+    if (linkedListing) {
+      const settings = getFinancialSettings();
+      const feeInfo = resolveListingFeeInfo(linkedListing);
+      const breakdown = computeMarginBreakdown({
+        cost, revenue: price || Number(linkedListing.price || 0),
+        feePct: feeInfo.pct, fixedFee: feeInfo.fixedFee, taxPct: settings.default_tax_pct,
+        shipping: feeInfo.shipping, packaging: settings.default_packaging_cost,
+      });
+      const note = feeInfo.real
+        ? "Taxa e frete sincronizados da API do Mercado Livre."
+        : "Estimativa por tabela - sincronize as taxas em Marketplace > Inteligência para o valor real.";
+      target.innerHTML = renderPriceBreakdownCard(`${marketplaceDisplayName(linkedMarketplace)} (anúncio vinculado)`, breakdown, note);
+      return;
+    }
+  }
+
   const weight = number(data.get("weightKg"));
   const listingType = String(data.get("listingType") || "classic");
   const settings = getFinancialSettings();
