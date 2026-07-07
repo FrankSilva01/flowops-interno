@@ -5,6 +5,7 @@ import { ensureCanEdit } from "../core/permissions.js";
 import { renderBarChart } from "../core/charts.js";
 import { recordAudit } from "./logs.js";
 import { getOrderMarketplaceChannel } from "./orders.js";
+import { syncFeeCalculatorFull } from "./marketplace-analytics.js";
 import {
   normalizeMarketplaceChannel, marketplaceDisplayName, renderMarketplaces, loadMarketplaces,
   marketplaceRequest, resizeImageFileForStorefront,
