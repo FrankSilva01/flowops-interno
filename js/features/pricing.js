@@ -19,7 +19,10 @@ const DEFAULT_FINANCIAL_SETTINGS = {
     // da comissao %) em itens de baixo valor - some ao valor da comissao,
     // nao substitui ela. Os outros canais tambem podem ter isso, mas por
     // enquanto so ML tem valores default (sem integracao de API pros demais).
-    mercado_livre: { classic: 12, premium: 16, fixed_fee_threshold: 79, fixed_fee_amount: 6.25 },
+    // Percentuais confirmados pelo usuario contra o simulador real do ML
+    // (varia um pouco por categoria - isso e so o default, editavel em
+    // Configuracoes financeiras).
+    mercado_livre: { classic: 11.5, premium: 16.5, fixed_fee_threshold: 79, fixed_fee_amount: 6.25 },
     shopee: { default: 14, service_fee_pct: 2, fixed_fee_threshold: 0, fixed_fee_amount: 0 },
     amazon: { default: 15, fulfillment_fee_pct: 0, fixed_fee_threshold: 0, fixed_fee_amount: 0 },
     tiktok_shop: { default: 7, fixed_fee_threshold: 0, fixed_fee_amount: 0 },
@@ -276,7 +279,8 @@ function renderPriceBreakdownCard(label, breakdown, note = "") {
         <div><dt>Taxa do marketplace (${breakdown.feePct.toFixed(1)}%)</dt><dd>-${money.format(breakdown.feeAmount)}</dd></div>
         ${breakdown.fixedFee > 0 ? `<div><dt>Taxa fixa (item de baixo valor)</dt><dd>-${money.format(breakdown.fixedFee)}</dd></div>` : ""}
         <div><dt>Imposto (${breakdown.taxPct}%)</dt><dd>-${money.format(breakdown.taxAmount)}</dd></div>
-        <div><dt>Frete + embalagem</dt><dd>-${money.format(breakdown.shipping + breakdown.packaging)}</dd></div>
+        <div><dt>Frete</dt><dd>-${money.format(breakdown.shipping)}</dd></div>
+        <div><dt>Embalagem</dt><dd>-${money.format(breakdown.packaging)}</dd></div>
         <div class="profit-preview-total"><dt>Sobra líquida estimada</dt><dd>${money.format(breakdown.netProfit)} (${breakdown.marginPct.toFixed(1)}%)</dd></div>
       </dl>
       ${note ? `<small class="form-hint">${html(note)}</small>` : ""}
@@ -555,7 +559,7 @@ export function classifyMlListingType(payload) {
 
 export function resolveChannelFeePct(channel, tier = "classic") {
   const rules = getFinancialSettings().marketplace_fee_rules;
-  if (channel === "mercado-livre") return Number(rules.mercado_livre?.[tier] ?? rules.mercado_livre?.classic ?? 12);
+  if (channel === "mercado-livre") return Number(rules.mercado_livre?.[tier] ?? rules.mercado_livre?.classic ?? 11.5);
   if (channel === "shopee") return Number(rules.shopee?.default ?? 14);
   if (channel === "amazon") return Number(rules.amazon?.default ?? 15);
   return Number(rules.direct?.default ?? 0);
@@ -629,7 +633,7 @@ export function resolveOrderFeeInfo(order) {
     return { pct: amount > 0 ? (realFee / amount) * 100 : 0, real: true, feeAmount: realFee, fixedFee: 0 };
   }
   const fixedFee = resolveFixedFee(channel, Number(order.received || order.charged || 0));
-  if (channel === "mercado-livre") return { pct: Number(rules.mercado_livre?.classic ?? 12), real: false, fixedFee };
+  if (channel === "mercado-livre") return { pct: Number(rules.mercado_livre?.classic ?? 11.5), real: false, fixedFee };
   const key = channel === "shopee" ? "shopee" : channel === "tiktok-shop" ? "tiktok_shop" : "amazon";
   return { pct: Number(rules[key]?.default ?? 0), real: false, fixedFee };
 }
@@ -1477,8 +1481,8 @@ export function openFinancialSettingsDialog() {
   const form = byId("financialSettingsForm");
   const rules = settings.marketplace_fee_rules || {};
   const tiers = settings.shipping_weight_tiers || [];
-  form.elements.mlClassicFee.value = rules.mercado_livre?.classic ?? 12;
-  form.elements.mlPremiumFee.value = rules.mercado_livre?.premium ?? 16;
+  form.elements.mlClassicFee.value = rules.mercado_livre?.classic ?? 11.5;
+  form.elements.mlPremiumFee.value = rules.mercado_livre?.premium ?? 16.5;
   form.elements.mlFixedFeeAmount.value = rules.mercado_livre?.fixed_fee_amount ?? 0;
   form.elements.mlFixedFeeThreshold.value = rules.mercado_livre?.fixed_fee_threshold ?? 0;
   form.elements.shopeeFee.value = rules.shopee?.default ?? 14;

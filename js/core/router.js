@@ -696,11 +696,14 @@ export function bindActions() {
         return;
       }
       if (action === "sync-analytics-full") {
-        await syncAnalyticsFull();
+        // Clique manual e uma acao deliberada - ignora o cache (1h/6h) que
+        // existe pra evitar sync automatico repetido, nao pra travar um
+        // pedido explicito do usuario.
+        await syncAnalyticsFull(true);
         return;
       }
       if (action === "sync-fee-calculator") {
-        await syncFeeCalculatorFull();
+        await syncFeeCalculatorFull(true);
         return;
       }
       if (action === "open-listing-drawer") {
