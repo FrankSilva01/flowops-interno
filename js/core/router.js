@@ -63,7 +63,7 @@ import {
   renderCommercialIntelligence, dismissSuggestion, resolveSuggestion, simulateSalesForGoal,
   renderOrderProductOptions, bindProductMarketplaceCheckboxes, bindProductImageInputs,
   bindProductProfitPreview, openBulkCostDialog, saveBulkCosts, renderListingProfitabilityTable,
-  openPriceCalculatorForListing, dismissInsight,
+  openPriceCalculatorForListing, dismissInsight, initProductSteps,
 } from "../features/pricing.js";
 import {
   syncAnalyticsFull, renderPerformanceTable, bindPerformanceTableToggles,
@@ -428,6 +428,7 @@ export function bindEvents() {
   bindProductMarketplaceCheckboxes();
   bindProductImageInputs();
   bindProductProfitPreview();
+  initProductSteps();
   byId("priceCalculatorForm").addEventListener("submit", (event) => event.preventDefault());
   bindPriceCalculatorForm();
   byId("financialSettingsForm").addEventListener("submit", saveFinancialSettings);

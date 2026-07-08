@@ -758,3 +758,75 @@ button,
 .listing-quick-filters input[type="checkbox"] {
   margin: 0;
 }
+
+/* ==========================================================================
+   Modal com Steps - Cadastro de Produto
+   ========================================================================== */
+
+.product-steps-dialog {
+  max-width: 600px;
+}
+
+.steps-progress {
+  display: flex;
+  gap: 12px;
+  margin: 20px 0;
+  padding: 0 20px;
+  overflow-x: auto;
+}
+
+.step-indicator {
+  flex: 1;
+  min-width: 140px;
+  padding: 10px;
+  text-align: center;
+  font-size: 0.9em;
+  border-radius: 6px;
+  background: var(--surface-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.step-indicator.active {
+  background: var(--accent);
+  color: white;
+  font-weight: 500;
+}
+
+.step-indicator.completed {
+  background: var(--success-light, #e8f5e9);
+  color: var(--success, #4caf50);
+}
+
+.form-step {
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.form-actions button {
+  flex: 1;
+}
+
+#mlConfigSection {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+}

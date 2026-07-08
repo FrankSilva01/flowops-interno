@@ -1618,54 +1618,88 @@
       <div class="panel-head subhead"><h3>Custo e rentabilidade</h3></div>
       <button class="secondary-btn" type="button" id="editListingProductBtn" data-action="edit-listing-product">Cadastrar/editar custo deste produto</button>
     </dialog>
-    <dialog id="productDialog" class="history-dialog marketplace-dialog">
+    <dialog id="productDialog" class="history-dialog marketplace-dialog product-steps-dialog">
       <div class="panel-head">
         <h3 id="productDialogTitle">Cadastrar produto</h3>
         <button class="icon-btn" type="button" data-close-dialog="productDialog">Fechar</button>
       </div>
+
+      <!-- Progress bar -->
+      <div class="steps-progress">
+        <div class="step-indicator" data-step="1">1. Dados básicos</div>
+        <div class="step-indicator" data-step="2">2. Preços</div>
+        <div class="step-indicator" data-step="3">3. Marketplace</div>
+        <div class="step-indicator" data-step="4">4. Resumo</div>
+      </div>
+
       <form id="productForm" class="login-form">
         <input name="id" type="hidden" />
-        <label>Nome do produto<input name="name" placeholder="Ex: Action Figure Deadpool" required /></label>
-        <label>Categoria<input name="category" placeholder="Ex: Action figures" list="productCategoryList" /></label>
-        <datalist id="productCategoryList"></datalist>
-        <label>SKU<input name="sku" placeholder="Gerado automaticamente" /></label>
-        <label>Custo do produto<input name="costPrice" type="number" min="0" step="0.01" placeholder="0,00" required /></label>
-        <label>Preço de venda<input name="price" type="number" min="0" step="0.01" placeholder="0,00" required /></label>
-        <label>Estoque disponível<input name="stock" type="number" min="0" step="1" value="1" required /></label>
-        <label>Peso (kg) <small>opcional, estima o frete por faixa quando não há frete real sincronizado</small><input name="weightKg" type="number" min="0" step="0.01" /></label>
-        <label>Descrição<textarea name="description" rows="4" placeholder="Descreva o produto: material, tamanho, cores disponíveis, etc."></textarea></label>
-        <label id="productImageDropzone" class="storefront-image-dropzone wide">
-          <span>Imagens do produto</span>
-          <small id="productImageStatus">Selecionar, arrastar ou soltar imagens aqui</small>
-          <input id="productImageFiles" type="file" accept="image/*" multiple />
-        </label>
-        <p class="form-hint">Mínimo de 3 fotos para publicar em um marketplace. Siga o padrão do Mercado Livre: fundo único e liso (branco, preto ou neutro), sem molduras, marcas d'água ou colagens — só o produto em destaque.</p>
 
-        <div class="form-section-title">Publicar nos marketplaces</div>
-        <fieldset class="publish-targets" id="productMarketplaceTargets">
-          <legend>Selecione onde criar o anúncio</legend>
-          <label><input name="publish_ml" type="checkbox" value="Mercado Livre" /> Mercado Livre <small data-marketplace-status="mercado-livre"></small></label>
-          <label><input name="publish_shopee" type="checkbox" value="Shopee" /> Shopee <small data-marketplace-status="shopee"></small></label>
-          <label><input name="publish_amazon" type="checkbox" value="Amazon" /> Amazon <small data-marketplace-status="amazon"></small></label>
-          <label><input name="publish_tiktok" type="checkbox" value="TikTok Shop" /> TikTok Shop <small data-marketplace-status="tiktok-shop"></small></label>
-        </fieldset>
-        <label id="productMlCategoryField">ID da categoria no Mercado Livre<input name="mlCategoryId" placeholder="Ex: MLB1839" /></label>
-        <label id="productListingTypeField" hidden>Tipo de anúncio (ML)
-          <select name="listingType">
-            <option value="classic">Clássico</option>
-            <option value="premium">Premium</option>
-          </select>
-        </label>
+        <!-- STEP 1: Dados básicos -->
+        <div class="form-step" data-step="1" style="display:block">
+          <label>Nome do produto*<input name="name" placeholder="Ex: Action Figure Deadpool" required /></label>
+          <label>Categoria<input name="category" placeholder="Ex: Action figures" list="productCategoryList" /></label>
+          <datalist id="productCategoryList"></datalist>
+          <label>SKU<input name="sku" placeholder="Gerado automaticamente" /></label>
 
-        <div class="form-section-title">Custos e lucro estimado</div>
-        <div id="productProfitPreview" class="profit-preview-grid"></div>
+          <label id="productImageDropzone" class="storefront-image-dropzone wide">
+            <span>Imagens do produto</span>
+            <small id="productImageStatus">Selecionar, arrastar ou soltar imagens aqui</small>
+            <input id="productImageFiles" type="file" accept="image/*" multiple />
+          </label>
+          <p class="form-hint">Mínimo de 3 fotos para publicar em um marketplace. Siga o padrão do Mercado Livre: fundo único e liso (branco, preto ou neutro), sem molduras, marcas d'água ou colagens — só o produto em destaque.</p>
 
-        <label>Vincular a um anúncio já existente (em vez de criar um novo)
-          <select name="listingLink"></select>
-        </label>
-        <label>Observações<textarea name="notes" rows="2" placeholder="Opcional"></textarea></label>
-        <p class="form-error" id="productFormMessage"></p>
-        <button class="primary-btn" type="submit">Salvar produto</button>
+          <label>Descrição<textarea name="description" rows="3" placeholder="Descreva o produto: material, tamanho, cores disponíveis, etc."></textarea></label>
+          <label>Peso (kg) <small>opcional</small><input name="weightKg" type="number" min="0" step="0.01" /></label>
+          <label>Observações<textarea name="notes" rows="2" placeholder="Opcional"></textarea></label>
+        </div>
+
+        <!-- STEP 2: Preços -->
+        <div class="form-step" data-step="2" style="display:none">
+          <label>Custo do produto*<input name="costPrice" type="number" min="0" step="0.01" placeholder="0,00" required /></label>
+          <label>Preço de venda*<input name="price" type="number" min="0" step="0.01" placeholder="0,00" required /></label>
+          <label>Estoque disponível*<input name="stock" type="number" min="0" step="1" value="1" required /></label>
+          <p class="form-hint">Estes preços serão usados como base. Se publicar em um marketplace específico, o preço pode ser ajustado lá.</p>
+        </div>
+
+        <!-- STEP 3: Marketplace -->
+        <div class="form-step" data-step="3" style="display:none">
+          <div class="form-section-title">Onde publicar</div>
+          <fieldset class="publish-targets" id="productMarketplaceTargets">
+            <legend>Selecione os marketplaces</legend>
+            <label><input name="publish_ml" type="checkbox" value="Mercado Livre" /> Mercado Livre <small data-marketplace-status="mercado-livre"></small></label>
+            <label><input name="publish_shopee" type="checkbox" value="Shopee" /> Shopee <small data-marketplace-status="shopee"></small></label>
+            <label><input name="publish_amazon" type="checkbox" value="Amazon" /> Amazon <small data-marketplace-status="amazon"></small></label>
+            <label><input name="publish_tiktok" type="checkbox" value="TikTok Shop" /> TikTok Shop <small data-marketplace-status="tiktok-shop"></small></label>
+          </fieldset>
+
+          <div id="mlConfigSection" style="display:none; margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd">
+            <div class="form-section-title">Configuração Mercado Livre</div>
+            <label>ID da categoria no Mercado Livre*<input name="mlCategoryId" placeholder="Ex: MLB1839" required /></label>
+            <label>Tipo de anúncio
+              <select name="listingType">
+                <option value="classic">Clássico (11,5% comissão)</option>
+                <option value="premium">Premium (16,5% comissão)</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <!-- STEP 4: Resumo -->
+        <div class="form-step" data-step="4" style="display:none">
+          <div class="form-section-title">Resumo e lucro estimado</div>
+          <div id="productProfitPreview" class="profit-preview-grid"></div>
+          <p class="form-hint" id="productFormMessage"></p>
+          <p class="form-hint" style="margin-top: 15px; font-size: 0.9em; color: #666">
+            Os valores mostrados são baseados na sincronização com o Mercado Livre. Se publicado em outros marketplaces, taxas e frete podem variar.
+          </p>
+        </div>
+
+        <div class="form-actions" style="display: flex; gap: 10px; margin-top: 20px">
+          <button type="button" class="secondary-btn" id="productPrevBtn" style="display:none">← Anterior</button>
+          <button type="button" class="secondary-btn" id="productNextBtn">Próximo →</button>
+          <button type="submit" class="primary-btn" id="productSubmitBtn" style="display:none">Salvar produto</button>
+        </div>
       </form>
     </dialog>
     <dialog id="bulkCostDialog" class="history-dialog marketplace-dialog">

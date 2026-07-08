@@ -13,6 +13,7 @@ import {
 
 const CREATABLE_MARKETPLACES = ["mercado-livre", "shopee", "amazon", "tiktok-shop"];
 let productUploadedImages = [];
+let currentProductStep = 1;
 
 const DEFAULT_FINANCIAL_SETTINGS = {
   marketplace_fee_rules: {
@@ -199,6 +200,11 @@ export function openProductQuickDialog(productId = "") {
   renderProductProfitPreview();
   byId("productDialogTitle").textContent = product ? `Editar produto - ${product.sku}` : "Cadastrar produto";
   byId("productFormMessage").textContent = "";
+
+  // Reset para step 1
+  currentProductStep = 0;
+  goToProductStep(1);
+
   byId("productDialog").showModal();
 }
 
@@ -1598,4 +1604,105 @@ export function reportPricingDefinition() {
     headers: ["Anúncio", "Marketplace", "Custo", "Preço", "Margem", "Nível"],
     body: rows,
   };
+}
+
+// ==========================================================================
+// Navegação entre Steps do Modal de Cadastro de Produto
+// ==========================================================================
+
+export function initProductSteps() {
+  const form = byId("productForm");
+  if (!form) return;
+
+  byId("productNextBtn")?.addEventListener("click", () => goToProductStep(currentProductStep + 1));
+  byId("productPrevBtn")?.addEventListener("click", () => goToProductStep(currentProductStep - 1));
+
+  form.elements.publish_ml?.addEventListener("change", () => {
+    const mlSection = byId("mlConfigSection");
+    if (mlSection) {
+      mlSection.style.display = form.elements.publish_ml.checked ? "block" : "none";
+    }
+  });
+}
+
+export function goToProductStep(step) {
+  const form = byId("productForm");
+  if (!form) return;
+
+  // Validar step atual antes de passar
+  if (!validateProductStep(currentProductStep)) {
+    return;
+  }
+
+  step = Math.max(1, Math.min(4, step)); // Limita entre 1 e 4
+  currentProductStep = step;
+
+  // Atualizar visibilidade dos steps
+  document.querySelectorAll(".form-step").forEach((el) => {
+    el.style.display = el.dataset.step == step ? "block" : "none";
+  });
+
+  // Atualizar indicadores
+  document.querySelectorAll(".step-indicator").forEach((el) => {
+    const stepNum = parseInt(el.dataset.step);
+    el.classList.toggle("active", stepNum === step);
+    el.classList.toggle("completed", stepNum < step);
+  });
+
+  // Atualizar botões
+  const prevBtn = byId("productPrevBtn");
+  const nextBtn = byId("productNextBtn");
+  const submitBtn = byId("productSubmitBtn");
+
+  if (prevBtn) prevBtn.style.display = step > 1 ? "block" : "none";
+  if (nextBtn) nextBtn.style.display = step < 4 ? "block" : "none";
+  if (submitBtn) submitBtn.style.display = step === 4 ? "block" : "none";
+
+  // No passo 3 (Marketplace) ou 4 (Resumo), atualizar preview
+  if (step === 3 || step === 4) {
+    updateProductMarketplaceStatusHints();
+    renderProductProfitPreview();
+  }
+}
+
+function validateProductStep(step) {
+  const form = byId("productForm");
+  if (!form) return true;
+
+  switch (step) {
+    case 1:
+      // Passo 1: Validar Nome (obrigatório)
+      if (!form.elements.name.value.trim()) {
+        showAppMessage("Por favor, preencha o nome do produto", "error");
+        form.elements.name.focus();
+        return false;
+      }
+      return true;
+
+    case 2:
+      // Passo 2: Validar Preços
+      if (!form.elements.costPrice.value) {
+        showAppMessage("Por favor, preencha o custo do produto", "error");
+        form.elements.costPrice.focus();
+        return false;
+      }
+      if (!form.elements.price.value) {
+        showAppMessage("Por favor, preencha o preço de venda", "error");
+        form.elements.price.focus();
+        return false;
+      }
+      return true;
+
+    case 3:
+      // Passo 3: Se marcou ML, validar categoria
+      if (form.elements.publish_ml.checked && !form.elements.mlCategoryId.value.trim()) {
+        showAppMessage("Por favor, preencha o ID da categoria no Mercado Livre", "error");
+        form.elements.mlCategoryId.focus();
+        return false;
+      }
+      return true;
+
+    default:
+      return true;
+  }
 }
