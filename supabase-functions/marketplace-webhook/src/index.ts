@@ -157,19 +157,26 @@ async function syncFeeForWebhook(
           `https://api.mercadolibre.com/shipments/costs?item_id=${itemId}&zip_code=${zip}`,
           { headers },
         );
+
         if (!shippingResponse.ok) {
+          console.warn(`⚠️ /shipments/costs falhou pra ${city}: ${shippingResponse.status}`);
           costsByCity[city] = null;
           grossCostsByCity[city] = null;
           continue;
         }
+
         const data = await shippingResponse.json();
-        const grossAmount = Number(data.gross_amount ?? data.cost ?? 0);
+        console.log(`📦 /shipments/costs resposta ${city}:`, JSON.stringify(data).slice(0, 200));
+
+        const grossAmount = Number(data.gross_amount ?? data.cost ?? data.shipping?.cost ?? 0);
         const senderCost = Array.isArray(data.senders) && data.senders.length
           ? Number(data.senders[0]?.cost ?? grossAmount)
-          : Number(data.cost ?? grossAmount);
+          : Number(data.cost ?? data.shipping?.cost ?? grossAmount);
+
         costsByCity[city] = senderCost;
         grossCostsByCity[city] = grossAmount;
       } catch (e) {
+        console.error(`❌ Erro fetching frete ${city}:`, e instanceof Error ? e.message : String(e));
         costsByCity[city] = null;
         grossCostsByCity[city] = null;
       }
