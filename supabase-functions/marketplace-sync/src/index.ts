@@ -722,7 +722,7 @@ async function getListingAnalyticsSnapshot(
   const [visits, healthChecklist, shipping] = await Promise.all([
     getVisitsTimeWindow(listing.external_id, account).catch(() => null),
     estimateHealthChecklist(item, account).catch(() => null),
-    getShippingCosts(listing.external_id, item, account).catch(() => null),
+    getShippingCosts(listing.external_id, item, account, account.organization_id).catch(() => null),
   ]);
 
   let competitionFields: Record<string, unknown> = {
@@ -834,7 +834,7 @@ async function getListingFeeSyncSnapshot(itemId: string, account: Record<string,
   const priceInfo = Array.isArray(priceData) ? priceData[0] : priceData;
   if (!priceResponse.ok || !priceInfo) throw new Error(`Falha ao consultar taxas de ${itemId}: ${JSON.stringify(priceData)}`);
 
-  const shipping = await getShippingCosts(itemId, item, account).catch(() => null);
+  const shipping = await getShippingCosts(itemId, item, account, account.organization_id).catch(() => null);
   const freeShipping = Boolean(item.shipping?.free_shipping);
   // O custo de frete so pesa na margem do vendedor quando o anuncio tem
   // frete gratis (o vendedor absorve o custo) - se o comprador paga o
@@ -1092,7 +1092,7 @@ const SHIPPING_REFERENCE_ZIPS: Record<string, string> = { SP: "01310100", RJ: "2
 // do vendedor. costs_by_city guarda o custo REAL do vendedor por cidade
 // (usado tambem no drawer de diagnostico do anuncio); gross_costs_by_city
 // guarda o valor cheio, usado so pra calcular o quanto foi subsidiado.
-async function getShippingCosts(itemId: string, item: Record<string, any>, account: Record<string, any>) {
+async function getShippingCosts(itemId: string, item: Record<string, any>, account: Record<string, any>, organizationId?: string) {
   const freeShipping = Boolean(item.shipping && item.shipping.free_shipping);
   const costsByCity: Record<string, number | null> = {};
   const grossCostsByCity: Record<string, number | null> = {};
@@ -1123,8 +1123,18 @@ async function getShippingCosts(itemId: string, item: Record<string, any>, accou
   const price = Number(item.price || 0);
   const knownCosts = Object.values(costsByCity).filter((value): value is number => value !== null);
   const knownGrossCosts = Object.values(grossCostsByCity).filter((value): value is number => value !== null);
-  const avgSellerCost = knownCosts.length ? knownCosts.reduce((sum, value) => sum + value, 0) / knownCosts.length : null;
-  const avgGrossCost = knownGrossCosts.length ? knownGrossCosts.reduce((sum, value) => sum + value, 0) / knownGrossCosts.length : null;
+  let avgSellerCost = knownCosts.length ? knownCosts.reduce((sum, value) => sum + value, 0) / knownCosts.length : null;
+  let avgGrossCost = knownGrossCosts.length ? knownGrossCosts.reduce((sum, value) => sum + value, 0) / knownGrossCosts.length : null;
+
+  // Se frete grátis mas /shipments/costs retornou null, tenta buscar dados REAIS de uma order
+  if (freeShipping && avgSellerCost === null && organizationId) {
+    const realShippingData = await getRealShippingCostFromOrder(itemId, organizationId, account);
+    if (realShippingData) {
+      avgSellerCost = realShippingData.seller_cost;
+      avgGrossCost = realShippingData.list_cost;
+    }
+  }
+
   const shippingSharePct = avgSellerCost != null && price > 0 ? (avgSellerCost / price) * 100 : null;
   return {
     free_shipping: freeShipping,
@@ -1134,6 +1144,84 @@ async function getShippingCosts(itemId: string, item: Record<string, any>, accou
     avg_gross_cost: avgGrossCost,
     shipping_share_pct: shippingSharePct,
   };
+}
+
+async function getRealShippingCostFromOrder(itemId: string, organizationId: string, account: Record<string, any>) {
+  const supabase = adminClient();
+  try {
+    // Busca as orders recentes dessa organização
+    const { data: orderLinks, error } = await supabase
+      .from("marketplace_order_links")
+      .select("external_order_id,raw_payload")
+      .eq("marketplace", "Mercado Livre")
+      .eq("organization_id", organizationId)
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    if (error || !orderLinks || orderLinks.length === 0) return null;
+
+    // Filtra no código a order que contém o item procurado
+    const matching = orderLinks.find(o => {
+      const orderItems = o.raw_payload?.order_items || [];
+      return orderItems.some((oi: any) => oi?.item?.id === itemId);
+    });
+
+    if (!matching) return null;
+
+    const orderId = matching.external_order_id;
+    console.log(`🔍 Buscando frete real da order ${orderId} para item ${itemId}...`);
+
+    const headers = { Authorization: `Bearer ${account.access_token}` };
+
+    // 1) Busca a ordem pra pegar o shipping.id
+    const orderResponse = await fetch(
+      `https://api.mercadolibre.com/orders/${orderId}`,
+      { headers },
+    );
+
+    if (!orderResponse.ok) {
+      console.warn(`⚠️ Falha ao consultar ordem ${orderId}`);
+      return null;
+    }
+
+    const order = await orderResponse.json();
+    const shippingId = order.shipping?.id;
+
+    if (!shippingId) {
+      console.warn(`⚠️ Ordem ${orderId} não tem shipping.id`);
+      return null;
+    }
+
+    // 2) Busca os dados reais do shipment
+    const shipmentResponse = await fetch(
+      `https://api.mercadolibre.com/shipments/${shippingId}`,
+      { headers },
+    );
+
+    if (!shipmentResponse.ok) {
+      console.warn(`⚠️ Falha ao consultar shipment ${shippingId}`);
+      return null;
+    }
+
+    const shipment = await shipmentResponse.json();
+
+    // 3) Extrai os dados reais de custo
+    const listCost = Number(shipment.shipping_option?.list_cost || 0);
+    const customerCost = Number(shipment.shipping_option?.cost || 0);
+    const sellerCost = listCost - customerCost;
+
+    if (sellerCost > 0) {
+      console.log(`✅ Frete real encontrado: R$ ${sellerCost} (vendedor) / R$ ${listCost} (cheio)`);
+      return {
+        seller_cost: sellerCost,
+        list_cost: listCost,
+        subsidized: customerCost,
+      };
+    }
+  } catch (e) {
+    console.error(`❌ Erro buscando frete real: ${e instanceof Error ? e.message : String(e)}`);
+  }
+  return null;
 }
 
 async function getSellerReputation(account: Record<string, any>, organizationId: string, force: boolean) {
