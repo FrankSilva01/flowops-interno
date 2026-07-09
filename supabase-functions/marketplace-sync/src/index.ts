@@ -552,13 +552,38 @@ async function syncMlListings(account: Record<string, any>) {
     const item = await itemResponse.json();
     if (!itemResponse.ok) continue;
     const description = await fetchMlDescription(itemId, account);
+    const currentPrice = Number(item.price || 0);
+
+    // Detectar mudança de preço para histórico
+    const { data: lastListing } = await supabase
+      .from("marketplace_listings")
+      .select("price")
+      .eq("organization_id", account.organization_id)
+      .eq("marketplace", "Mercado Livre")
+      .eq("external_id", String(item.id))
+      .maybeSingle();
+
+    const lastPrice = lastListing?.price;
+    if (lastPrice && lastPrice !== currentPrice) {
+      const priceChangePercent = ((currentPrice - lastPrice) / lastPrice) * 100;
+      await supabase.from("price_history").insert({
+        organization_id: account.organization_id,
+        marketplace: "Mercado Livre",
+        external_listing_id: String(item.id),
+        old_price: lastPrice,
+        new_price: currentPrice,
+        change_percent: Number(priceChangePercent.toFixed(2)),
+        changed_at: new Date().toISOString(),
+      }).catch(() => {}); // Não falha sync se price_history falhar
+    }
+
     await supabase.from("marketplace_listings").upsert({
       organization_id: account.organization_id,
       marketplace: "Mercado Livre",
       external_id: String(item.id),
       title: item.title || "",
       sku: item.seller_custom_field || null,
-      price: Number(item.price || 0),
+      price: currentPrice,
       status: item.status || null,
       permalink: item.permalink || null,
       thumbnail_url: item.thumbnail || null,
