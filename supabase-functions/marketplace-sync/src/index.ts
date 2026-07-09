@@ -309,10 +309,16 @@ async function downloadMlDocument(
   });
   const shipment = await shipmentResponse.json();
   if (!shipmentResponse.ok) throw new Error(`Falha ao consultar envio ${shippingId}: ${JSON.stringify(shipment)}`);
-  const printable = shipment.status === "ready_to_ship" &&
-    ["ready_to_print", "printed"].includes(String(shipment.substatus || ""));
+
+  // FIX CRÍTICO: Etiqueta está disponível se:
+  // 1. ready_to_ship + (ready_to_print OR printed) = pronto pra imprimir
+  // 2. shipped OR delivered = já foi postado, etiqueta já existe
+  const printable =
+    (shipment.status === "ready_to_ship" && ["ready_to_print", "printed"].includes(String(shipment.substatus || ""))) ||
+    ["shipped", "delivered"].includes(shipment.status);
+
   if (!printable) {
-    const message = `Documento ainda nao disponivel: envio ${shipment.status || "-"} / ${shipment.substatus || "-"}.`;
+    const message = `Etiqueta não disponível: envio ${shipment.status || "-"} / ${shipment.substatus || "-"}.`;
     await saveDocumentStatus("unavailable", {
       external_document_id: shippingId,
       last_error: message,
@@ -329,7 +335,7 @@ async function downloadMlDocument(
   }
 
   const labelResponse = await fetch(
-    `https://api.mercadolibre.com/shipment_labelsshipment_ids=${encodeURIComponent(shippingId)}&response_type=pdf`,
+    `https://api.mercadolibre.com/shipment_labels?shipment_ids=${encodeURIComponent(shippingId)}&response_type=pdf`,
     { headers: { Authorization: `Bearer ${account.access_token}` } },
   );
   if (!labelResponse.ok) {
@@ -845,9 +851,16 @@ async function getListingFeeSyncSnapshot(itemId: string, account: Record<string,
   // vendedores com bom nivel/reputacao. shipping_subsidized guarda essa
   // diferenca pra fins de auditoria/exibicao; o que de fato entra na
   // margem e sempre o custo liquido do vendedor.
-  const sellerShippingCost = freeShipping ? Number(shipping?.avg_seller_cost || 0) : 0;
-  const grossShippingCost = freeShipping ? Number(shipping?.avg_gross_cost ?? shipping?.avg_seller_cost ?? 0) : 0;
-  const shippingSubsidized = Math.max(grossShippingCost - sellerShippingCost, 0);
+  // CRÍTICO: NULL != 0. NULL = nao conseguiu calcular. 0 = cliente paga tudo.
+  const sellerShippingCost = freeShipping
+    ? (Number(shipping?.avg_seller_cost) > 0 ? Number(shipping.avg_seller_cost) : null)
+    : 0;
+  const grossShippingCost = freeShipping
+    ? (Number(shipping?.avg_gross_cost ?? shipping?.avg_seller_cost) > 0 ? Number(shipping?.avg_gross_cost ?? shipping?.avg_seller_cost) : null)
+    : 0;
+  const shippingSubsidized = (grossShippingCost != null && sellerShippingCost != null)
+    ? Math.max(grossShippingCost - sellerShippingCost, 0)
+    : null;
 
   const price = Number(item.price || 0);
   const saleFeeAmount = Number(priceInfo.sale_fee_amount || 0);
@@ -1135,6 +1148,15 @@ async function getShippingCosts(itemId: string, item: Record<string, any>, accou
     }
   }
 
+  // Terceiro fallback: /items/{ITEM_ID}/shipping_options quando nenhum dos anteriores funcionou
+  if (freeShipping && avgSellerCost === null) {
+    const shippingOptionsData = await getShippingOptionsData(itemId, account);
+    if (shippingOptionsData) {
+      avgSellerCost = shippingOptionsData.seller_cost;
+      avgGrossCost = shippingOptionsData.list_cost;
+    }
+  }
+
   const shippingSharePct = avgSellerCost != null && price > 0 ? (avgSellerCost / price) * 100 : null;
   return {
     free_shipping: freeShipping,
@@ -1220,6 +1242,59 @@ async function getRealShippingCostFromOrder(itemId: string, organizationId: stri
     }
   } catch (e) {
     console.error(`❌ Erro buscando frete real: ${e instanceof Error ? e.message : String(e)}`);
+  }
+  return null;
+}
+
+async function getShippingOptionsData(itemId: string, account: Record<string, any>) {
+  try {
+    const headers = { Authorization: `Bearer ${account.access_token}` };
+    const costs: number[] = [];
+    const grossCosts: number[] = [];
+
+    // Tenta buscar shipping_options para cada CEP de referência
+    for (const zip of Object.values(SHIPPING_REFERENCE_ZIPS)) {
+      try {
+        const response = await fetch(
+          `https://api.mercadolibre.com/items/${itemId}/shipping_options?zip_code=${zip}`,
+          { headers },
+        );
+
+        if (!response.ok) continue;
+
+        const data = await response.json();
+        const options = data.shipping_options || [];
+
+        if (!Array.isArray(options) || options.length === 0) continue;
+
+        // Busca a opção de frete (geralmente a primeira é a padrão)
+        const option = options[0];
+        const cost = Number(option.cost || option.list_cost || 0);
+        const listCost = Number(option.list_cost || option.cost || 0);
+
+        if (cost > 0) {
+          costs.push(cost);
+          grossCosts.push(listCost);
+        }
+      } catch {
+        // Continua para o próximo CEP
+      }
+    }
+
+    if (costs.length > 0) {
+      const avgSellerCost = costs.reduce((sum, c) => sum + c, 0) / costs.length;
+      const avgGrossCost = grossCosts.reduce((sum, c) => sum + c, 0) / grossCosts.length;
+      const subsidized = avgGrossCost - avgSellerCost;
+
+      console.log(`✅ Frete via shipping_options: R$ ${avgSellerCost.toFixed(2)} (vendedor) / R$ ${avgGrossCost.toFixed(2)} (cheio)`);
+      return {
+        seller_cost: avgSellerCost,
+        list_cost: avgGrossCost,
+        subsidized,
+      };
+    }
+  } catch (e) {
+    console.error(`❌ Erro em getShippingOptionsData: ${e instanceof Error ? e.message : String(e)}`);
   }
   return null;
 }

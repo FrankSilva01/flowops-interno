@@ -176,9 +176,7 @@ export function openProductQuickDialog(productId = "") {
   form.elements.name.value = product?.name || "";
   form.elements.category.value = product?.category || "";
   form.elements.costPrice.value = product?.cost_price ?? "";
-  form.elements.weightKg.value = product?.weight_kg ?? "";
   form.elements.description.value = product?.description || "";
-  form.elements.notes.value = product?.notes || "";
   form.elements.sku.value = product?.sku || "";
   form.dataset.skuTouched = product ? "true" : "false";
   productUploadedImages = [];
@@ -220,16 +218,21 @@ export function updateProductMarketplaceStatusHints() {
       hint.textContent = "(ainda não disponível para criação automática)";
     }
   });
-  byId("productMlCategoryField").hidden = !form.elements.publish_ml.checked;
-  byId("productListingTypeField").hidden = !form.elements.publish_ml.checked;
+  // Mostrar/esconder configuração ML baseado na checkbox
+  const mlConfigSection = byId("mlConfigSection");
+  if (mlConfigSection) {
+    mlConfigSection.style.display = form.elements.publish_ml.checked ? "block" : "none";
+  }
 }
 
 export function bindProductMarketplaceCheckboxes() {
   const form = byId("productForm");
   if (!form) return;
   form.elements.publish_ml.addEventListener("change", () => {
-    byId("productMlCategoryField").hidden = !form.elements.publish_ml.checked;
-    byId("productListingTypeField").hidden = !form.elements.publish_ml.checked;
+    const mlConfigSection = byId("mlConfigSection");
+    if (mlConfigSection) {
+      mlConfigSection.style.display = form.elements.publish_ml.checked ? "block" : "none";
+    }
     renderProductProfitPreview();
   });
   form.elements.listingType.addEventListener("change", renderProductProfitPreview);
@@ -326,9 +329,14 @@ export function renderProductProfitPreview() {
         feePct: feeInfo.pct, fixedFee: feeInfo.fixedFee, taxPct: settings.default_tax_pct,
         shipping: feeInfo.shipping, packaging: settings.default_packaging_cost,
       });
-      const note = feeInfo.real
+      let note = feeInfo.real
         ? "Taxa e frete sincronizados da API do Mercado Livre."
         : "Estimativa por tabela - sincronize as taxas em Marketplace > Inteligência para o valor real.";
+      // CRÍTICO: Alertar se free_shipping está ativo mas frete não foi calculado
+      const hasFreShipping = linkedListing.shipping?.free_shipping || linkedListing.raw_payload?.shipping?.free_shipping;
+      if (hasFreShipping && (feeInfo.shipping === 0 || feeInfo.shipping === null || feeInfo.shipping === undefined)) {
+        note = "⚠️ Frete não calculado — o anúncio tem frete grátis mas não conseguimos determinar o custo. Informe o peso do produto para uma estimativa.";
+      }
       target.innerHTML = renderPriceBreakdownCard(`${marketplaceDisplayName(linkedMarketplace)} (anúncio vinculado)`, breakdown, note);
       return;
     }
@@ -418,9 +426,7 @@ export async function saveProduct(event) {
     name,
     category,
     cost_price: number(data.get("costPrice")),
-    weight_kg: data.get("weightKg") ? number(data.get("weightKg")) : null,
     description: String(data.get("description") || "").trim() || null,
-    notes: String(data.get("notes") || "").trim() || null,
     updated_at: new Date().toISOString(),
   };
   if (id) payload.id = id;
@@ -590,7 +596,7 @@ export function resolveListingFeeInfo(listing) {
     return {
       pct: Number(realSync.real_fee_pct || 0),
       fixedFee: Number(realSync.real_fee_fixed || 0),
-      shipping: Number(realSync.shipping_cost || 0) - Number(realSync.shipping_subsidized || 0),
+      shipping: Number(realSync.shipping_cost || 0),
       real: true,
     };
   }
@@ -804,7 +810,8 @@ export function renderPriceCalculator() {
     form.elements.packaging.value = settings.default_packaging_cost;
     form.dataset.initialized = "true";
   }
-  byId("priceCalculatorListingType").hidden = form.elements.marketplace.value !== "mercado_livre";
+  const calcListingTypeEl = byId("priceCalculatorListingType");
+  if (calcListingTypeEl) calcListingTypeEl.hidden = form.elements.marketplace.value !== "mercado_livre";
   updatePriceCalculatorResult();
 }
 
@@ -851,7 +858,8 @@ export function bindPriceCalculatorForm() {
   if (!form) return;
   form.addEventListener("input", updatePriceCalculatorResult);
   form.elements.marketplace.addEventListener("change", () => {
-    byId("priceCalculatorListingType").hidden = form.elements.marketplace.value !== "mercado_livre";
+    const calcListingTypeEl = byId("priceCalculatorListingType");
+  if (calcListingTypeEl) calcListingTypeEl.hidden = form.elements.marketplace.value !== "mercado_livre";
     updatePriceCalculatorResult();
   });
 }
@@ -1479,7 +1487,8 @@ export function openPriceCalculatorForListing(marketplace, externalId) {
   form.elements.packaging.value = profitability.packaging;
   form.elements.targetMargin.value = "";
   form.dataset.initialized = "true";
-  byId("priceCalculatorListingType").hidden = form.elements.marketplace.value !== "mercado_livre";
+  const calcListingTypeEl = byId("priceCalculatorListingType");
+  if (calcListingTypeEl) calcListingTypeEl.hidden = form.elements.marketplace.value !== "mercado_livre";
   updatePriceCalculatorResult();
   byId("priceCalculatorDialog").showModal();
 }
