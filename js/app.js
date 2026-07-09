@@ -152,6 +152,7 @@ import { renderAdvancedDashboard, advancedDashboardCSS } from "./features/advanc
 import { openMLPricingDialog, applyPriceRecommendation, iaPricingCSS } from "./features/ia-pricing.js";
 import { pushNotificationManager, pushNotificationsCSS } from "./features/push-notifications.js";
 import { accountingIntegration, accountingIntegrationCSS } from "./features/accounting-integration.js";
+import { bindCalendarEvents, renderCalendarWithEvents } from "./features/calendar-navigation.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
   const marketplaceStatus = getMarketplaceStatusFromHash();
@@ -169,6 +170,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
   render();
   showMarketplaceOAuthStatus(marketplaceStatus);
+
+  // Initialize calendar
+  try {
+    bindCalendarEvents();
+    const calendarContainer = byId("calendarWidget");
+    if (calendarContainer) {
+      calendarContainer.innerHTML = renderCalendarWithEvents(new Date());
+    }
+  } catch (err) {
+    console.error("Calendar init error:", err);
+  }
 
   // Initialize advanced features
   try {
