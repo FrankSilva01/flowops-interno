@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rastreio de Pedido - FlowOps</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f5; }
+
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+
+    .header {
+      background: linear-gradient(135deg, #00D084 0%, #00a86b 100%);
+      color: white;
+      padding: 30px 20px;
+      text-align: center;
+      border-radius: 8px 8px 0 0;
+      margin-bottom: 20px;
+    }
+
+    .logo { font-size: 28px; font-weight: bold; margin-bottom: 10px; }
+    .tagline { font-size: 14px; opacity: 0.9; }
+
+    .search-box {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+
+    .search-box input:focus {
+      outline: none;
+      border-color: #00D084;
+    }
+
+    .search-btn {
+      width: 100%;
+      padding: 12px;
+      background: #00D084;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .search-btn:hover { background: #00a86b; }
+
+    .order-card {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .order-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .order-id { font-size: 18px; font-weight: 600; }
+    .order-date { font-size: 12px; color: #666; }
+    .order-status {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .status-processing { background: #FFF3CD; color: #856404; }
+    .status-shipped { background: #D4EDDA; color: #155724; }
+    .status-delivered { background: #D1ECF1; color: #0C5460; }
+
+    .timeline {
+      position: relative;
+      padding-left: 30px;
+    }
+
+    .timeline::before {
+      content: "";
+      position: absolute;
+      left: 6px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: #ddd;
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: 20px;
+    }
+
+    .timeline-item::before {
+      content: "";
+      position: absolute;
+      left: -27px;
+      top: 2px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #ddd;
+      border: 2px solid white;
+    }
+
+    .timeline-item.active::before {
+      background: #00D084;
+    }
+
+    .timeline-item.active::before {
+      box-shadow: 0 0 0 4px rgba(0, 208, 132, 0.2);
+    }
+
+    .timeline-date { font-size: 12px; color: #999; }
+    .timeline-title { font-weight: 600; color: #333; margin-top: 4px; }
+    .timeline-desc { font-size: 14px; color: #666; margin-top: 2px; }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #999;
+    }
+
+    .empty-state-icon { font-size: 48px; margin-bottom: 10px; }
+
+    .footer {
+      text-align: center;
+      padding: 20px;
+      color: #999;
+      font-size: 12px;
+    }
+
+    .footer img { height: 24px; margin-bottom: 10px; opacity: 0.7; }
+
+    @media (max-width: 768px) {
+      .container { padding: 10px; }
+      .header { padding: 20px 15px; }
+      .order-header { flex-direction: column; align-items: flex-start; }
+      .order-status { margin-top: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">📦 FlowOps</div>
+    <div class="tagline">Rastreie seu pedido em tempo real</div>
+  </div>
+
+  <div class="container">
+    <div class="search-box">
+      <input
+        type="text"
+        id="orderInput"
+        placeholder="Digite o código do seu pedido..."
+        autocomplete="off"
+      />
+      <button class="search-btn" onclick="searchOrder()">Rastrear</button>
+    </div>
+
+    <div id="result"></div>
+
+    <div class="footer">
+      <p>Dúvidas? Abra um ticket de suporte.</p>
+      <p style="margin-top: 10px;">© 2026 FlowOps. Todos os direitos reservados.</p>
+    </div>
+  </div>
+
+  <script>
+    const API_KEY = new URLSearchParams(window.location.search).get("key");
+
+    async function searchOrder() {
+      const orderId = document.getElementById("orderInput").value.trim();
+      if (!orderId) {
+        alert("Digite um código de pedido");
+        return;
+      }
+
+      document.getElementById("result").innerHTML = "Carregando...";
+
+      try {
+        const response = await fetch(`/api/tracking?order_id=${orderId}&key=${API_KEY}`);
+        if (!response.ok) throw new Error("Pedido não encontrado");
+
+        const order = await response.json();
+        displayOrder(order);
+      } catch (error) {
+        document.getElementById("result").innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">❌</div>
+            <div>${error.message || "Erro ao buscar pedido"}</div>
+          </div>
+        `;
+      }
+    }
+
+    function displayOrder(order) {
+      const timeline = (order.logistics || []).map((event, idx) => `
+        <div class="timeline-item ${idx === 0 ? "active" : ""}">
+          <div class="timeline-date">${new Date(event.created_at).toLocaleDateString("pt-BR")}</div>
+          <div class="timeline-title">${event.title}</div>
+          <div class="timeline-desc">${event.description || ""}</div>
+        </div>
+      `).join("");
+
+      document.getElementById("result").innerHTML = `
+        <div class="order-card">
+          <div class="order-header">
+            <div>
+              <div class="order-id">Pedido #${order.id}</div>
+              <div class="order-date">${new Date(order.created_at).toLocaleDateString("pt-BR")}</div>
+            </div>
+            <div class="order-status status-${order.status.toLowerCase()}">
+              ${order.status.toUpperCase()}
+            </div>
+          </div>
+
+          <div style="margin-bottom: 20px;">
+            <strong>${order.description}</strong>
+            <div style="font-size: 12px; color: #666; margin-top: 5px;">
+              Entregar em: ${order.address_city}, ${order.address_state}
+            </div>
+          </div>
+
+          <div>
+            <strong style="display: block; margin-bottom: 15px;">Histórico de Entrega</strong>
+            <div class="timeline">
+              ${timeline || '<div class="empty-state-icon">📋</div><p>Sem eventos de entrega</p>'}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Buscar ao carregar se tiver código na URL
+    const params = new URLSearchParams(window.location.search);
+    if (params.has("order")) {
+      document.getElementById("orderInput").value = params.get("order");
+      searchOrder();
+    }
+  </script>
+</body>
+</html>
