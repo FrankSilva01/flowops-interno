@@ -148,6 +148,10 @@ import {
   bindProductImageInputs, resolveChannelFeePct, computeMarginBreakdown, renderProductProfitPreview,
   bindProductProfitPreview,
 } from "./features/pricing.js";
+import { renderAdvancedDashboard, advancedDashboardCSS } from "./features/advanced-dashboard.js";
+import { openMLPricingDialog, applyPriceRecommendation, iaPricingCSS } from "./features/ia-pricing.js";
+import { pushNotificationManager, pushNotificationsCSS } from "./features/push-notifications.js";
+import { accountingIntegration, accountingIntegrationCSS } from "./features/accounting-integration.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
   const marketplaceStatus = getMarketplaceStatusFromHash();
@@ -165,6 +169,51 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
   render();
   showMarketplaceOAuthStatus(marketplaceStatus);
+
+  // Initialize advanced features
+  try {
+    const dashboardContainer = byId("advancedDashboard");
+    if (dashboardContainer) {
+      const style = document.createElement("style");
+      style.textContent = advancedDashboardCSS;
+      document.head.appendChild(style);
+      renderAdvancedDashboard();
+    }
+  } catch (err) {
+    console.error("Advanced dashboard init error:", err);
+  }
+
+  try {
+    const iaPricingStyle = document.createElement("style");
+    iaPricingStyle.textContent = iaPricingCSS;
+    document.head.appendChild(iaPricingStyle);
+  } catch (err) {
+    console.error("IA Pricing CSS init error:", err);
+  }
+
+  try {
+    const pushStyle = document.createElement("style");
+    pushStyle.textContent = pushNotificationsCSS;
+    document.head.appendChild(pushStyle);
+    await pushNotificationManager.init();
+  } catch (err) {
+    console.error("Push notifications init error:", err);
+  }
+
+  try {
+    const accountingStyle = document.createElement("style");
+    accountingStyle.textContent = accountingIntegrationCSS;
+    document.head.appendChild(accountingStyle);
+  } catch (err) {
+    console.error("Accounting integration CSS init error:", err);
+  }
 });
 
 window.addEventListener("popstate", () => setView(getInitialView(), true));
+
+// Global functions for new features
+window.openMLPricingDialog = openMLPricingDialog;
+window.applyPriceRecommendation = applyPriceRecommendation;
+window.openPushNotificationSettings = () => pushNotificationManager.openSettingsDialog();
+window.openAccountingSettings = () => accountingIntegration.openSettingsDialog();
+window.syncAllAccountingData = () => accountingIntegration.syncAllData();
