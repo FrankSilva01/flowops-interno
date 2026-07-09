@@ -291,6 +291,230 @@ export function openListingXRay(listing) {
 }
 
 function renderListingXRayDrawer(xray) {
-  // TODO: Criar drawer com os 6 blocos
-  console.log("XRay:", xray);
+  const { listing, analytics, profitability, intentScore, priceSuggestion, blocks } = xray;
+
+  const drawer = document.createElement("div");
+  drawer.className = "xray-drawer";
+  drawer.innerHTML = `
+    <div class="xray-header">
+      <div class="xray-title">
+        <h2>${html(listing.title || listing.name)}</h2>
+        <span class="xray-close" data-action="close-xray">✕</span>
+      </div>
+      <div class="xray-price-badge">
+        <strong>${money.format(listing.price)}</strong>
+        <span class="intent-badge ${intentScore?.level.className}">
+          ${intentScore?.level.label || "N/A"}
+        </span>
+      </div>
+    </div>
+
+    <div class="xray-content">
+      <!-- Bloco 1: Financeiro -->
+      <div class="xray-block financial-block">
+        <div class="block-title">💰 Financeiro</div>
+        <div class="block-grid">
+          <div class="stat">
+            <div class="stat-label">Preço</div>
+            <div class="stat-value">${money.format(blocks.financial.price)}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Margem</div>
+            <div class="stat-value margin-${profitability.marginPct > 20 ? "good" : "bad"}">
+              ${blocks.financial.margin.toFixed(1)}%
+            </div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Lucro Estimado</div>
+            <div class="stat-value">${money.format(blocks.financial.profit)}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Taxa ML</div>
+            <div class="stat-value">${blocks.financial.feePercentage.toFixed(1)}%</div>
+          </div>
+        </div>
+        ${priceSuggestion?.suggestions?.length ? `
+          <div class="price-suggestions">
+            ${priceSuggestion.suggestions.map(s => {
+              if (s.type === "alert") {
+                return `<div class="suggestion alert">${s.message}</div>`;
+              }
+              return `
+                <div class="suggestion ${s.type}">
+                  <strong>${s.suggestedPrice ? "Sugestão" : "Info"}:</strong> ${s.reason || ""}
+                  ${s.suggestedPrice ? `<br><small>Preço sugerido: ${money.format(s.suggestedPrice)}</small>` : ""}
+                </div>
+              `;
+            }).join("")}
+          </div>
+        ` : ""}
+      </div>
+
+      <!-- Bloco 2: Performance -->
+      <div class="xray-block performance-block">
+        <div class="block-title">📊 Performance (30 dias)</div>
+        <div class="block-grid">
+          <div class="stat">
+            <div class="stat-label">Visitas</div>
+            <div class="stat-value">${blocks.performance.visits.toLocaleString()}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Vendas</div>
+            <div class="stat-value">${blocks.performance.sales}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Conversão</div>
+            <div class="stat-value">${blocks.performance.conversion}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Ticket Médio</div>
+            <div class="stat-value">${money.format(blocks.performance.avgTicket)}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Perguntas</div>
+            <div class="stat-value">${blocks.performance.questions}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Rating Vendedor</div>
+            <div class="stat-value">${blocks.performance.rating.toFixed(1)}/5</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bloco 3: Competitividade -->
+      <div class="xray-block competitiveness-block">
+        <div class="block-title">🏆 Competitividade</div>
+        <div class="block-grid">
+          <div class="stat full-width">
+            <div class="stat-label">Posição de Preço</div>
+            <div class="stat-value">
+              ${blocks.competitiveness.pricePosition === "below" ? "✅ Abaixo da média" :
+                blocks.competitiveness.pricePosition === "above" ? "⚠️ Acima da média" :
+                "→ Na média"}
+            </div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Preço Médio Categoria</div>
+            <div class="stat-value">${money.format(blocks.competitiveness.categoryAvgPrice)}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Ranking</div>
+            <div class="stat-value">${blocks.competitiveness.ranking}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Competidores</div>
+            <div class="stat-value">${blocks.competitiveness.competitors}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bloco 4: Saúde -->
+      <div class="xray-block health-block">
+        <div class="block-title">❤️ Saúde</div>
+        <div class="block-grid">
+          <div class="stat">
+            <div class="stat-label">Status</div>
+            <div class="stat-value">${blocks.health.active ? "🟢 Ativo" : "🔴 Inativo"}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Violações</div>
+            <div class="stat-value ${blocks.health.violations > 0 ? "bad" : "good"}">
+              ${blocks.health.violations}
+            </div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Reclamações</div>
+            <div class="stat-value ${blocks.health.complaints > 0 ? "bad" : "good"}">
+              ${blocks.health.complaints}
+            </div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Feedback</div>
+            <div class="stat-value">${blocks.health.feedbackRating.toFixed(1)}/5</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bloco 5: Frete -->
+      <div class="xray-block shipping-block">
+        <div class="block-title">🚚 Frete</div>
+        <div class="block-grid">
+          <div class="stat full-width">
+            <div class="stat-label">Tipo</div>
+            <div class="stat-value">${blocks.shipping.freeShipping ? "📦 Frete Grátis" : "💰 Frete Pago"}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Custo Estimado</div>
+            <div class="stat-value">${blocks.shipping.estimatedCost}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Transportadora</div>
+            <div class="stat-value">${blocks.shipping.carrier}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bloco 6: Ações -->
+      <div class="xray-block actions-block">
+        <div class="block-title">⚡ Ações Rápidas</div>
+        <div class="actions-grid">
+          ${blocks.actions.actions.map(action => `
+            <button class="action-btn" data-action="${action.action}" title="${action.label}">
+              <span>${action.icon}</span>
+              <span>${action.label}</span>
+            </button>
+          `).join("")}
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(drawer);
+  setupXRayHandlers(drawer, listing);
+}
+
+function setupXRayHandlers(drawer, listing) {
+  // Fechar
+  drawer.querySelector(".xray-close").addEventListener("click", () => {
+    drawer.classList.add("closing");
+    setTimeout(() => drawer.remove(), 300);
+  });
+
+  // Ações
+  drawer.querySelectorAll(".action-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      const action = e.currentTarget.dataset.action;
+      handleXRayAction(action, listing);
+    });
+  });
+
+  // ESC para fechar
+  const handleEsc = (e) => {
+    if (e.key === "Escape") {
+      drawer.classList.add("closing");
+      setTimeout(() => drawer.remove(), 300);
+      document.removeEventListener("keydown", handleEsc);
+    }
+  };
+  document.addEventListener("keydown", handleEsc);
+}
+
+function handleXRayAction(action, listing) {
+  switch(action) {
+    case "edit-price":
+      console.log("TODO: Abrir editor de preço", listing);
+      break;
+    case "pause":
+      console.log("TODO: Pausar anúncio", listing);
+      break;
+    case "copy-sku":
+      if (listing.sku) {
+        navigator.clipboard.writeText(listing.sku);
+        flashActionMessage("SKU copiado!");
+      }
+      break;
+    case "open-ml":
+      if (listing.permalink) window.open(listing.permalink, "_blank");
+      break;
+  }
 }
