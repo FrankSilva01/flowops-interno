@@ -21,10 +21,10 @@ html[data-theme="dark"] {
 }
 
 .calendar-modern {
-  padding: 28px;
+  padding: 20px;
   background: var(--panel);
-  border-radius: 20px;
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
   width: 100%;
   box-sizing: border-box;
   border: 1px solid rgba(0, 208, 132, 0.08);
@@ -41,10 +41,10 @@ html[data-theme="dark"] .calendar-modern {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 28px;
-  padding-bottom: 20px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  gap: 16px;
+  gap: 10px;
 }
 
 html[data-theme="dark"] .calendar-header {
@@ -55,16 +55,16 @@ html[data-theme="dark"] .calendar-header {
   background: transparent;
   border: 1.5px solid var(--line);
   color: var(--ink);
-  padding: 10px 18px;
-  border-radius: 12px;
+  padding: 8px 14px;
+  border-radius: 10px;
   cursor: pointer;
   font-weight: 500;
-  font-size: 13px;
+  font-size: 12px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 html[data-theme="dark"] .calendar-nav-btn {
@@ -88,7 +88,7 @@ html[data-theme="dark"] .calendar-nav-btn:hover {
 
 .calendar-title {
   margin: 0;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--ink);
   letter-spacing: -0.5px;
@@ -102,26 +102,26 @@ html[data-theme="dark"] .calendar-title {
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 40px;
+  gap: 8px;
+  margin-bottom: 20px;
   width: 100%;
 }
 
 .calendar-weekday {
   text-align: center;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   color: var(--muted);
-  padding: 16px 8px;
+  padding: 8px 4px;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
 }
 
 .calendar-day-cell {
   aspect-ratio: 1;
   border: 1.5px solid rgba(0, 0, 0, 0.04);
-  border-radius: 14px;
-  padding: 14px;
+  border-radius: 12px;
+  padding: 10px;
   background: linear-gradient(135deg, var(--canvas) 0%, var(--canvas) 100%);
   cursor: pointer;
   position: relative;
@@ -190,7 +190,7 @@ html[data-theme="dark"] .calendar-day-cell.today {
 
 .calendar-day-number {
   font-weight: 700;
-  font-size: 15px;
+  font-size: 13px;
   color: var(--ink);
   line-height: 1;
 }
@@ -210,10 +210,10 @@ html[data-theme="dark"] .calendar-day-cell.today .calendar-day-number {
 .calendar-day-events {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  margin-top: 10px;
+  gap: 3px;
+  margin-top: 6px;
   min-height: 0;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 500;
 }
 
@@ -541,10 +541,10 @@ html[data-theme="dark"] .calendar-event-detail {
 /* Legenda */
 .calendar-legend {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 14px;
-  margin-top: 40px;
-  padding-top: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 12px;
   border-top: 1px solid rgba(0, 0, 0, 0.05);
 }
 
@@ -555,8 +555,8 @@ html[data-theme="dark"] .calendar-legend {
 .calendar-legend-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 12px;
+  gap: 8px;
+  font-size: 11px;
   color: var(--muted);
   transition: all 0.2s ease;
   cursor: default;
@@ -567,11 +567,11 @@ html[data-theme="dark"] .calendar-legend-item {
 }
 
 .calendar-legend-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
   flex-shrink: 0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .calendar-legend-dot.sales {
@@ -601,8 +601,8 @@ html[data-theme="dark"] .calendar-legend-item {
 /* Ação para adicionar evento */
 .calendar-action-bar {
   display: flex;
-  gap: 12px;
-  margin-top: 32px;
+  gap: 10px;
+  margin-top: 16px;
 }
 
 .calendar-add-event-btn {
@@ -610,16 +610,16 @@ html[data-theme="dark"] .calendar-legend-item {
   background: linear-gradient(135deg, #00D084 0%, #00c078 100%);
   color: white;
   border: none;
-  padding: 14px 20px;
-  border-radius: 12px;
+  padding: 11px 16px;
+  border-radius: 10px;
   cursor: pointer;
   font-weight: 700;
-  font-size: 13px;
+  font-size: 12px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
   box-shadow: 0 4px 12px rgba(0, 208, 132, 0.2);
 }
 
@@ -701,17 +701,17 @@ html[data-theme="dark"] .calendar-form-textarea:focus {
 /* Stats do calendário */
 .calendar-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 10px;
   padding: 0;
-  margin-top: 32px;
+  margin-top: 16px;
 }
 
 .calendar-stat-item {
   text-align: center;
-  padding: 18px 16px;
+  padding: 12px 12px;
   background: linear-gradient(135deg, var(--canvas), var(--canvas));
-  border-radius: 14px;
+  border-radius: 12px;
   border: 1px solid rgba(0, 208, 132, 0.08);
   transition: all 0.3s ease;
 }
@@ -728,10 +728,10 @@ html[data-theme="dark"] .calendar-stat-item {
 
 .calendar-stat-value {
   display: block;
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 800;
   color: #00D084;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   line-height: 1;
 }
 
@@ -741,11 +741,11 @@ html[data-theme="dark"] .calendar-stat-value {
 
 .calendar-stat-label {
   display: block;
-  font-size: 12px;
+  font-size: 10px;
   color: var(--muted);
   text-transform: uppercase;
   font-weight: 700;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 }
 
 html[data-theme="dark"] .calendar-stat-label {

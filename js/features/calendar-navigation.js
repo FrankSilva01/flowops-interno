@@ -344,7 +344,7 @@ function getCalendarEventsForDay(date) {
     events.push({
       type: "custom",
       displayLabel: `📌 ${event}`,
-      tooltip: `Evento: ${event}`,
+      tooltip: `Evento: ${event}\n\n(Clique para editar ou excluir)`,
       count: 1,
       isCustom: true,
       customIndex: idx,
@@ -404,7 +404,7 @@ function attachCalendarEventListeners() {
       });
     }
 
-    // Click nos eventos para navegar
+    // Click nos eventos para navegar ou editar
     dayEl.addEventListener("click", (e) => {
       const eventsData = dayEl.getAttribute("data-events");
       if (eventsData) {
@@ -416,14 +416,14 @@ function attachCalendarEventListeners() {
             const badgeIndex = Array.from(dayEl.querySelectorAll(".calendar-event-badge")).indexOf(clickedBadge);
             if (badgeIndex >= 0 && events[badgeIndex]) {
               const clickedEvent = events[badgeIndex];
-              if (clickedEvent.action) {
+              if (clickedEvent.isCustom) {
+                showCustomEventModal(dayEl.getAttribute("data-date"), clickedEvent);
+              } else if (clickedEvent.action) {
                 navigateToEvent(clickedEvent.action, {
                   itemId: clickedEvent.itemId,
                   itemName: clickedEvent.itemName,
                   itemType: clickedEvent.itemType,
                 });
-              } else if (clickedEvent.isCustom) {
-                showCustomEventMenu(dayEl, clickedEvent, events);
               }
             }
           }
@@ -433,23 +433,6 @@ function attachCalendarEventListeners() {
       }
     });
 
-    // Context menu para eventos customizados
-    dayEl.addEventListener("contextmenu", (e) => {
-      const eventsData = dayEl.getAttribute("data-events");
-      if (eventsData) {
-        try {
-          const events = JSON.parse(eventsData);
-          const customEvents = events.filter(ev => ev.isCustom);
-
-          if (customEvents.length > 0) {
-            e.preventDefault();
-            showCustomEventMenu(dayEl, null, events);
-          }
-        } catch (err) {
-          console.error("Erro:", err);
-        }
-      }
-    });
   });
 }
 
@@ -501,6 +484,140 @@ function navigateToEvent(action, itemData) {
   if (tabs[action]) {
     tabs[action]();
   }
+}
+
+function showCustomEventModal(dateStr, event) {
+  const existingModal = document.querySelector(".calendar-event-modal");
+  if (existingModal) existingModal.remove();
+  const existingOverlay = document.querySelector(".calendar-modal-overlay");
+  if (existingOverlay) existingOverlay.remove();
+
+  const modal = document.createElement("div");
+  modal.className = "calendar-event-modal";
+  modal.style.cssText = `
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--panel);
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    z-index: 10002;
+    min-width: 340px;
+    max-width: 90vw;
+    overflow: hidden;
+  `;
+
+  modal.innerHTML = `
+    <div style="background: linear-gradient(135deg, #00D084, #00c078); padding: 24px; color: white;">
+      <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.9; margin-bottom: 8px;">Evento Customizado</div>
+      <div style="font-size: 18px; font-weight: 700; word-break: break-word;">${event.displayLabel.replace('📌 ', '')}</div>
+    </div>
+
+    <div style="padding: 24px; display: flex; flex-direction: column; gap: 12px;">
+      <div style="display: flex; gap: 10px;">
+        <button id="editBtn" style="
+          flex: 1;
+          background: rgba(0, 208, 132, 0.1);
+          color: #00D084;
+          border: 1.5px solid #00D084;
+          padding: 12px 16px;
+          border-radius: 10px;
+          cursor: pointer;
+          font-weight: 700;
+          font-size: 13px;
+          transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+        ">
+          <i class="ti ti-edit"></i> Editar
+        </button>
+        <button id="deleteBtn" style="
+          flex: 1;
+          background: rgba(255, 107, 107, 0.1);
+          color: #ff6b6b;
+          border: 1.5px solid #ff6b6b;
+          padding: 12px 16px;
+          border-radius: 10px;
+          cursor: pointer;
+          font-weight: 700;
+          font-size: 13px;
+          transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+        ">
+          <i class="ti ti-trash"></i> Excluir
+        </button>
+      </div>
+      <button id="closeBtn" style="
+        width: 100%;
+        background: transparent;
+        color: var(--muted);
+        border: 1px solid var(--line);
+        padding: 10px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 12px;
+        transition: all 0.2s ease;
+      ">Fechar</button>
+    </div>
+  `;
+
+  const overlay = document.createElement("div");
+  overlay.className = "calendar-modal-overlay";
+  overlay.style.cssText = `
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 10001;
+    backdrop-filter: blur(2px);
+  `;
+
+  document.body.appendChild(overlay);
+  document.body.appendChild(modal);
+
+  const editBtn = modal.querySelector("#editBtn");
+  const deleteBtn = modal.querySelector("#deleteBtn");
+  const closeBtn = modal.querySelector("#closeBtn");
+
+  const closeModal = () => {
+    modal.remove();
+    overlay.remove();
+  };
+
+  editBtn.addEventListener("click", () => {
+    closeModal();
+    editCustomEvent(dateStr, event.customIndex);
+  });
+
+  deleteBtn.addEventListener("click", () => {
+    if (confirm("Tem certeza que deseja excluir este evento?")) {
+      closeModal();
+      deleteCustomEvent(dateStr, event.customIndex);
+    }
+  });
+
+  closeBtn.addEventListener("click", closeModal);
+  overlay.addEventListener("click", closeModal);
+
+  editBtn.addEventListener("mouseover", () => {
+    editBtn.style.background = "rgba(0, 208, 132, 0.2)";
+  });
+  editBtn.addEventListener("mouseout", () => {
+    editBtn.style.background = "rgba(0, 208, 132, 0.1)";
+  });
+
+  deleteBtn.addEventListener("mouseover", () => {
+    deleteBtn.style.background = "rgba(255, 107, 107, 0.2)";
+  });
+  deleteBtn.addEventListener("mouseout", () => {
+    deleteBtn.style.background = "rgba(255, 107, 107, 0.1)";
+  });
 }
 
 function showCustomEventMenu(dayEl, event, allEvents) {
