@@ -300,11 +300,12 @@ function getCalendarEventsForDay(date) {
       const totalItems = items.length;
       const orderId = o.id || o.order_id || o.pedido_id || o.numero;
       const status = o.status || o.deliveryStatus || o.statusEntrega || 'Entregue';
+      const origin = o.marketplace || o.origin || o.origem || o.channel || 'Loja';
 
       events.push({
         type: "delivery",
         displayLabel: `📦 Entregue: ${itemName}`,
-        tooltip: `ENTREGUE\nPedido #${orderId || '---'}\n${itemName} (${itemQty}x)${totalItems > 1 ? `\n+${totalItems - 1} item(ns)` : ''}`,
+        tooltip: `ENTREGUE\nPedido #${orderId || '---'}\n${itemName} (${itemQty}x)\nOrigem: ${origin}${totalItems > 1 ? `\n+${totalItems - 1} item(ns)` : ''}`,
         count: 1,
         data: o,
         action: "orders",
@@ -344,38 +345,46 @@ function getCalendarEventsForDay(date) {
 
   // Cash/Financial
   const cash = (state.data?.cash || []).filter(c => {
-    const cashDate = (c.date || c.data || c.dataCaixa || "").split("T")[0];
+    const cashDate = (c.date || c.data || c.dataCaixa || c.data_lancamento || "").split("T")[0];
     return cashDate === dateStr;
   });
 
   if (cash.length) {
     cash.forEach(c => {
-      // Detectar tipo de lançamento
+      // Detectar tipo de lançamento com mais opções
       let type = 'Lançamento';
-      if (c.type === 'in' || c.type === 'entrada' || c.categoria === 'entrada') type = 'Entrada';
-      else if (c.type === 'out' || c.type === 'saida' || c.categoria === 'saida') type = 'Saída';
+      const typeStr = (c.type || c.tipo || c.categoria || '').toString().toLowerCase();
+      if (typeStr.includes('in') || typeStr.includes('entrada') || typeStr.includes('credit') || typeStr === '1') type = 'Entrada';
+      else if (typeStr.includes('out') || typeStr.includes('saida') || typeStr.includes('expense') || typeStr.includes('debit') || typeStr === '2') type = 'Saída';
 
-      // Detectar valor de múltiplos campos
+      // Detectar valor com mais campos possíveis
       let value = 0;
       if (c.value && parseFloat(c.value) > 0) value = c.value;
       else if (c.amount && parseFloat(c.amount) > 0) value = c.amount;
       else if (c.valor && parseFloat(c.valor) > 0) value = c.valor;
       else if (c.montante && parseFloat(c.montante) > 0) value = c.montante;
+      else if (c.total && parseFloat(c.total) > 0) value = c.total;
+      else if (c.price && parseFloat(c.price) > 0) value = c.price;
+      else if (c.sumValue && parseFloat(c.sumValue) > 0) value = c.sumValue;
+      else if (c.sum_value && parseFloat(c.sum_value) > 0) value = c.sum_value;
 
-      const description = c.description || c.note || c.descricao || c.anotacao || 'Sem descrição';
+      const description = c.description || c.note || c.descricao || c.anotacao || c.observacao || 'Sem descrição';
       const cashId = c.id || c.cash_id || c.lancamento_id;
 
-      events.push({
-        type: "cash",
-        displayLabel: `💰 ${type}: R$ ${parseFloat(value).toFixed(2)}`,
-        tooltip: `${type}\nR$ ${parseFloat(value).toFixed(2)}\n${description}`,
-        count: 1,
-        data: c,
-        action: "cash",
-        itemId: cashId,
-        itemName: description,
-        itemType: "cash",
-      });
+      // Só adicionar se tiver um valor válido
+      if (parseFloat(value) > 0) {
+        events.push({
+          type: "cash",
+          displayLabel: `💰 ${type}: R$ ${parseFloat(value).toFixed(2)}`,
+          tooltip: `${type}\nR$ ${parseFloat(value).toFixed(2)}\n${description}`,
+          count: 1,
+          data: c,
+          action: "cash",
+          itemId: cashId,
+          itemName: description,
+          itemType: "cash",
+        });
+      }
     });
   }
 
@@ -1249,27 +1258,47 @@ function updateCalendarStats(year, month) {
   let salesCount = 0, deliveriesCount = 0, logisticsCount = 0, cashCount = 0, totalCount = 0;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
+  // Coletar eventos e contar
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(year, month, day);
     const events = getCalendarEventsForDay(date);
+
     events.forEach(e => {
-      if (e.type === "sales") salesCount += e.count || 1;
-      if (e.type === "delivery") deliveriesCount += e.count || 1;
-      if (e.type === "logistics") logisticsCount += e.count || 1;
-      if (e.type === "cash") cashCount += e.count || 1;
-      if (e.type !== "feriado") totalCount += e.count || 1;
+      if (e.type === "sales") {
+        salesCount += (e.count || 1);
+        totalCount += (e.count || 1);
+      }
+      if (e.type === "delivery") {
+        deliveriesCount += (e.count || 1);
+        totalCount += (e.count || 1);
+      }
+      if (e.type === "logistics") {
+        logisticsCount += (e.count || 1);
+        totalCount += (e.count || 1);
+      }
+      if (e.type === "cash") {
+        cashCount += (e.count || 1);
+        totalCount += (e.count || 1);
+      }
     });
   }
 
+  // Atualizar elementos de resumo
   const salesEl = document.getElementById("monthSales");
   const deliveriesEl = document.getElementById("monthDeliveries");
   const logisticsEl = document.getElementById("monthLogistics");
   const cashEl = document.getElementById("monthCash");
 
-  if (salesEl) salesEl.textContent = salesCount;
-  if (deliveriesEl) deliveriesEl.textContent = deliveriesCount;
-  if (logisticsEl) logisticsEl.textContent = logisticsCount;
-  if (cashEl) cashEl.textContent = cashCount;
+  if (salesEl) salesEl.textContent = salesCount || 0;
+  if (deliveriesEl) deliveriesEl.textContent = deliveriesCount || 0;
+  if (logisticsEl) logisticsEl.textContent = logisticsCount || 0;
+  if (cashEl) cashEl.textContent = cashCount || 0;
+
+  // Atualizar total de eventos
+  const totalEl = document.querySelector('[style*="Total de eventos"]');
+  if (totalEl) {
+    totalEl.textContent = totalCount || 0;
+  }
 
   // Atualizar próximos eventos
   updateUpcomingEvents(year, month);
