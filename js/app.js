@@ -189,7 +189,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const pushStyle = document.createElement("style");
     pushStyle.textContent = pushNotificationsCSS;
     document.head.appendChild(pushStyle);
-    pushNotificationManager.init();
+    pushNotificationManager.init().catch(err => console.error("Push init error:", err));
   } catch (err) {
     console.error("Push notifications init error:", err);
   }
