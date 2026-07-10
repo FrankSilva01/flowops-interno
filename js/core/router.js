@@ -478,7 +478,7 @@ export function bindEvents() {
 }
 
 export function setView(view, replace = false) {
-  const allowed = ["dashboard", "orders", "production", "logistics", "cash", "materials", "reports", "leads", "subscription", "notifications", "support", "whatsnew", "logs", ...(state.isAdmin ? ["marketplace", "approvals"] : [])];
+  const allowed = ["dashboard", "orders", "production", "logistics", "cash", "materials", "reports", "leads", "subscription", "calendar", "notifications", "support", "whatsnew", "logs", ...(state.isAdmin ? ["marketplace", "approvals"] : [])];
   if (!allowed.includes(view)) view = "dashboard";
   state.view = view;
   localStorage.setItem("3daft-active-view", view);
@@ -501,6 +501,7 @@ export function setView(view, replace = false) {
     reports: "Relatórios",
     leads: "Clientes e Leads",
     subscription: "Minha Assinatura",
+    calendar: "Calendário",
     notifications: "Notificações",
     support: "Suporte",
     whatsnew: "Novidades da Plataforma",
