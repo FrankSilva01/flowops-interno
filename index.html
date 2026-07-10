@@ -776,7 +776,50 @@
 
         <section id="calendarView" class="view">
           <p class="view-subtitle">Acompanhe seus eventos e prazos</p>
-          <div id="calendarWidget"></div>
+          <div style="display: grid; grid-template-columns: 1fr 350px; gap: 30px; max-width: 1000px; margin: 0 auto;">
+            <!-- Calendário -->
+            <div id="calendarWidget"></div>
+
+            <!-- Informações Relevantes -->
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+              <!-- Próximos Eventos -->
+              <div style="background: #0f1419; border: 1px solid #222; padding: 20px; border-radius: 8px; border-left: 3px solid #00D084;">
+                <h3 style="margin: 0 0 15px 0; color: #fff; font-size: 13px; text-transform: uppercase;">Próximos Eventos</h3>
+                <div id="upcomingEvents" style="display: flex; flex-direction: column; gap: 10px; font-size: 12px;">
+                  <p style="color: #999; margin: 0;">Carregando...</p>
+                </div>
+              </div>
+
+              <!-- Resumo do Mês -->
+              <div style="background: #0f1419; border: 1px solid #222; padding: 20px; border-radius: 8px;">
+                <h3 style="margin: 0 0 15px 0; color: #fff; font-size: 13px; text-transform: uppercase;">Resumo</h3>
+                <div style="display: flex; flex-direction: column; gap: 8px; font-size: 11px;">
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #999;">Vendas:</span>
+                    <strong id="monthSales" style="color: #00D084;">0</strong>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #999;">Entregas:</span>
+                    <strong id="monthDeliveries" style="color: #4CAF50;">0</strong>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #999;">Logística:</span>
+                    <strong id="monthLogistics" style="color: #ffc107;">0</strong>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #999;">Financeiro:</span>
+                    <strong id="monthCash" style="color: #845ef7;">0</strong>
+                  </div>
+                </div>
+              </div>
+
+              <!-- KPI -->
+              <div style="background: #0f1419; border: 1px solid #222; padding: 15px; border-radius: 8px;">
+                <p style="margin: 0; color: #999; font-size: 11px;">Total de eventos este mês</p>
+                <p style="margin: 5px 0 0 0; color: #fff; font-size: 24px; font-weight: 700;" id="monthTotal">0</p>
+              </div>
+            </div>
+          </div>
         </section>
 
         <section id="subscriptionView" class="view">

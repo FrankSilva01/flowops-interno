@@ -382,4 +382,34 @@ function openEventForm() {
   });
 }
 
-export { bindCalendarEvents, renderCalendarWithEvents, attachCalendarEventListeners };
+function updateCalendarStats(year, month) {
+  let sales = 0, deliveries = 0, logistics = 0, cash = 0;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(year, month, day);
+    const events = getCalendarEventsForDay(date);
+    events.forEach(e => {
+      if (e.type === "sales") sales++;
+      if (e.type === "delivery") deliveries++;
+      if (e.type === "logistics") logistics++;
+      if (e.type === "cash") cash++;
+    });
+  }
+
+  const total = sales + deliveries + logistics + cash;
+
+  const salesesEl = document.getElementById("monthSales");
+  const deliveriesEl = document.getElementById("monthDeliveries");
+  const logisticsEl = document.getElementById("monthLogistics");
+  const cashEl = document.getElementById("monthCash");
+  const totalEl = document.getElementById("monthTotal");
+
+  if (salesesEl) salesesEl.textContent = sales;
+  if (deliveriesEl) deliveriesEl.textContent = deliveries;
+  if (logisticsEl) logisticsEl.textContent = logistics;
+  if (cashEl) cashEl.textContent = cash;
+  if (totalEl) totalEl.textContent = total;
+}
+
+export { bindCalendarEvents, renderCalendarWithEvents, attachCalendarEventListeners, updateCalendarStats };
