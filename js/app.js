@@ -153,6 +153,7 @@ import { renderAdvancedDashboard, advancedDashboardCSS } from "./features/advanc
 import { openMLPricingDialog, applyPriceRecommendation, iaPricingCSS } from "./features/ia-pricing.js";
 import { pushNotificationManager, pushNotificationsCSS } from "./features/push-notifications.js";
 import { accountingIntegration, accountingIntegrationCSS } from "./features/accounting-integration.js";
+import { initGlobalSearch } from "./features/global-search.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
   const marketplaceStatus = getMarketplaceStatusFromHash();
@@ -160,6 +161,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   applySidebarPreference();
   bindEvents();
   initDashboardDrag();
+  initGlobalSearch();
   setView(state.view, true);
   try {
     await setupBackend();
