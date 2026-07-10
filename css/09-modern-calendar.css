@@ -25,8 +25,8 @@ html[data-theme="dark"] {
   background: var(--panel);
   border-radius: 16px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  max-width: 800px;
-  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 html[data-theme="dark"] .calendar-modern {
@@ -40,9 +40,10 @@ html[data-theme="dark"] .calendar-modern {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
   border-bottom: 1px solid var(--line);
+  gap: 12px;
 }
 
 html[data-theme="dark"] .calendar-header {
@@ -96,9 +97,10 @@ html[data-theme="dark"] .calendar-title {
 /* Grid de dias */
 .calendar-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
   margin-bottom: 32px;
+  width: 100%;
 }
 
 .calendar-weekday {
@@ -112,10 +114,10 @@ html[data-theme="dark"] .calendar-title {
 }
 
 .calendar-day-cell {
-  aspect-ratio: 1.2;
+  aspect-ratio: 1;
   border: 1.5px solid var(--line);
-  border-radius: 14px;
-  padding: 14px;
+  border-radius: 12px;
+  padding: 12px;
   background: var(--canvas);
   cursor: pointer;
   position: relative;
@@ -123,7 +125,7 @@ html[data-theme="dark"] .calendar-title {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 100px;
+  min-height: auto;
 }
 
 html[data-theme="dark"] .calendar-day-cell {
@@ -694,25 +696,24 @@ html[data-theme="dark"] .calendar-stat-label {
 }
 
 /* Responsivo */
-@media (max-width: 1024px) {
-  .calendar-modern {
-    max-width: 700px;
+@media (max-width: 900px) {
+  #calendarView > div {
+    grid-template-columns: 1fr !important;
   }
 }
 
 @media (max-width: 768px) {
   .calendar-modern {
     padding: 16px;
-    max-width: 100%;
   }
 
   .calendar-header {
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 10px;
   }
 
   .calendar-title {
-    font-size: 16px;
+    font-size: 15px;
     flex: 1 100%;
     text-align: center;
     order: -1;
