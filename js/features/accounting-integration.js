@@ -1,12 +1,12 @@
 import { state, saveData } from "../core/state.js";
-import { recordAudit } from "./logs.js";
 import { showAppMessage } from "../core/dom.js";
+import { recordAudit } from "./logs.js";
 
 export const ACCOUNTING_PROVIDERS = {
   omie: { name: "OMIE", icon: "📊", description: "NF-e e Contabilidade" },
   sirius: { name: "Sirius", icon: "💼", description: "Sistema Sirius" },
   hubsoft: { name: "Hubsoft", icon: "🔗", description: "ERP Hubsoft" },
-  manual: { name: "Manual", icon: "📝", description: "CSV Export" },
+  manual: { name: "Manual", icon: "📝", description: "Exportar CSV" },
 };
 
 export class AccountingIntegration {
@@ -105,141 +105,76 @@ export class AccountingIntegration {
 
   openSettingsDialog() {
     const modal = document.createElement("dialog");
-    modal.className = "accounting-settings-dialog";
+    modal.className = "modal";
+
     modal.innerHTML = `
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>💼 Integração Contábil</h2>
-          <button onclick="this.closest('dialog').close()">✕</button>
+      <div style="padding: 20px; max-width: 500px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h2 style="margin: 0; font-size: 18px;">💼 Integração Contábil</h2>
+          <button onclick="this.closest('dialog').close()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #999;">✕</button>
         </div>
 
-        <div class="modal-body">
-          <div class="provider-cards">
-            ${Object.entries(ACCOUNTING_PROVIDERS).map(([key, provider]) => `
-              <div class="provider-card ${this.config.provider === key ? "selected" : ""}" data-provider="${key}">
-                <div class="provider-icon">${provider.icon}</div>
-                <div class="provider-info">
-                  <strong>${provider.name}</strong>
-                  <small>${provider.description}</small>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+          ${Object.entries(ACCOUNTING_PROVIDERS).map(([key, provider]) => `
+            <div style="border: 1px solid ${this.config.provider === key ? '#00D084' : '#222'}; padding: 12px; border-radius: 6px; background: ${this.config.provider === key ? '#0f2820' : '#0f1419'}; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; gap: 12px; align-items: center;">
+                <span style="font-size: 24px;">${provider.icon}</span>
+                <div>
+                  <strong style="display: block; font-size: 13px;">${provider.name}</strong>
+                  <small style="color: #999; font-size: 11px;">${provider.description}</small>
                 </div>
-                <button class="provider-select-btn primary-btn" data-provider="${key}">
-                  ${this.config.provider === key ? "✓ Ativo" : "Ativar"}
-                </button>
               </div>
-            `).join("")}
-          </div>
-
-          ${this.config.enabled ? `
-            <div class="sync-info">
-              <h3>Status</h3>
-              <p>Último sync: ${this.config.lastSync ? new Date(this.config.lastSync).toLocaleString("pt-BR") : "Nunca"}</p>
+              <button class="primary-btn" data-provider="${key}" onclick="this.parentElement.querySelector('[data-activate]').click()" style="padding: 6px 14px; font-size: 12px;">
+                ${this.config.provider === key ? "✓ Ativo" : "Ativar"}
+              </button>
+              <button data-activate data-provider="${key}" style="display: none;" onclick="window.activateAccountingProvider('${key}')"></button>
             </div>
-          ` : ""}
+          `).join("")}
         </div>
 
-        <div class="modal-actions">
-          ${this.config.enabled ? `
-            <button class="primary-btn" onclick="syncAllAccountingData()">🔄 Sincronizar</button>
-          ` : ""}
-          <button class="secondary-btn" onclick="this.closest('dialog').close()">Fechar</button>
-        </div>
+        ${this.config.enabled ? `
+          <div style="background: #0f2820; padding: 12px; border-radius: 6px; margin-bottom: 20px; border-left: 3px solid #00D084;">
+            <p style="margin: 0 0 8px 0; font-size: 12px; color: #999;">Último sincronismo:</p>
+            <p style="margin: 0; font-size: 13px; color: #fff;">${this.config.lastSync ? new Date(this.config.lastSync).toLocaleString("pt-BR") : "Nunca"}</p>
+          </div>
+          <button class="primary-btn" onclick="window.syncAllAccountingData()" style="width: 100%; padding: 8px; font-size: 13px; margin-bottom: 10px;">
+            🔄 Sincronizar Agora
+          </button>
+        ` : ""}
+
+        <button class="secondary-btn" onclick="this.closest('dialog').close()" style="width: 100%; padding: 8px; font-size: 13px;">
+          Fechar
+        </button>
       </div>
     `;
 
     document.body.appendChild(modal);
-
-    modal.querySelectorAll(".provider-select-btn").forEach(btn => {
-      btn.addEventListener("click", (e) => {
-        e.preventDefault();
-        const provider = btn.dataset.provider;
-        this.config.provider = provider;
-        this.config.enabled = true;
-        this.saveConfig(this.config);
-        modal.close();
-        showAppMessage(`✅ ${ACCOUNTING_PROVIDERS[provider].name} ativado!`, "success");
-      });
-    });
-
     modal.showModal();
+
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) {
+        modal.close();
+      }
+    });
   }
 }
 
 export const accountingIntegration = new AccountingIntegration();
 
-export const accountingIntegrationCSS = `
-.accounting-settings-dialog {
-  max-width: 700px;
-}
+// Global function for provider activation
+window.activateAccountingProvider = (provider) => {
+  accountingIntegration.config.provider = provider;
+  accountingIntegration.config.enabled = true;
+  accountingIntegration.saveConfig(accountingIntegration.config);
+  recordAudit("accounting", provider, "provider_activated");
+  showAppMessage(`✅ ${ACCOUNTING_PROVIDERS[provider].name} ativado!`, "success");
 
-.provider-cards {
-  display: grid;
-  gap: 15px;
-  margin-bottom: 25px;
-}
+  // Close and reopen dialog to refresh
+  const modal = document.querySelector(".modal");
+  if (modal) {
+    modal.close();
+    setTimeout(() => accountingIntegration.openSettingsDialog(), 100);
+  }
+};
 
-.provider-card {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  padding: 15px;
-  border: 2px solid #ddd;
-  border-radius: 8px;
-  background: #fafafa;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.provider-card:hover {
-  border-color: #00D084;
-  background: #f0f8f5;
-}
-
-.provider-card.selected {
-  border-color: #00D084;
-  background: #e8f7f1;
-}
-
-.provider-icon {
-  font-size: 32px;
-}
-
-.provider-info {
-  flex: 1;
-}
-
-.provider-info strong {
-  display: block;
-  margin-bottom: 4px;
-  color: #333;
-}
-
-.provider-info small {
-  color: #666;
-  font-size: 12px;
-}
-
-.provider-select-btn {
-  padding: 8px 16px;
-  font-size: 12px;
-  white-space: nowrap;
-}
-
-.sync-info {
-  background: #f0f0f0;
-  padding: 15px;
-  border-radius: 6px;
-  margin-top: 20px;
-}
-
-.sync-info h3 {
-  margin: 0 0 10px 0;
-  font-size: 13px;
-  color: #00D084;
-}
-
-.sync-info p {
-  margin: 5px 0;
-  font-size: 12px;
-  color: #666;
-}
-`;
+export const accountingIntegrationCSS = ``;
