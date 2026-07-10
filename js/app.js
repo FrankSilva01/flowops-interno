@@ -238,7 +238,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     accountingIntegration?.openSettingsDialog?.();
   };
 
-  // Bind button event listeners (CSP-compliant)
+  // Bind button event listeners (CSP-compliant) - Temporarily disabled
+  /*
   const iaPricingBtn = byId("iaaPricingBtn");
   if (iaPricingBtn) {
     iaPricingBtn.addEventListener("click", () => {
@@ -254,6 +255,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       accountingIntegration?.openSettingsDialog?.();
     });
   }
+  */
   window.syncAllAccountingData = () => accountingIntegration?.syncAllData?.();
 
 });
