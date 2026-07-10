@@ -1,5 +1,6 @@
 import { state } from "../core/state.js";
 import { byId, html, showAppMessage, flashActionMessage } from "../core/dom.js";
+import { recordAudit } from "./logs.js";
 
 // ========================================================================
 // PRODUTIVIDADE: Busca Global + Lote + Duplicar
@@ -279,33 +280,223 @@ function updateBatchBar() {
 function handleBatchAction(action) {
   switch (action) {
     case "change-status":
-      // TODO: Modal com opções de status
-      flashActionMessage(`Alterando status de ${selectedItems.size} itens...`);
+      openBatchStatusDialog();
       break;
     case "change-stage":
-      flashActionMessage(`Alterando etapa de ${selectedItems.size} itens...`);
+      openBatchStageDialog();
       break;
     case "change-responsible":
-      flashActionMessage(`Alterando responsável de ${selectedItems.size} itens...`);
+      openBatchResponsibleDialog();
       break;
     case "change-priority":
-      flashActionMessage(`Alterando prioridade de ${selectedItems.size} itens...`);
+      openBatchPriorityDialog();
       break;
     case "change-date":
-      flashActionMessage(`Alterando data de ${selectedItems.size} itens...`);
+      openBatchDateDialog();
       break;
     case "delete":
       if (confirm(`Deletar ${selectedItems.size} itens? Isso não pode ser desfeito.`)) {
-        // TODO: Deletar itens
-        flashActionMessage(`${selectedItems.size} itens deletados`);
-        selectedItems.clear();
-        updateBatchBar();
+        deleteBatchItems();
       }
       break;
     case "clear":
       selectedItems.clear();
       updateBatchBar();
       break;
+  }
+}
+
+// Batch action dialogs
+function openBatchStatusDialog() {
+  const dialog = createBatchDialog("Alterar Status");
+  const options = ["Orçamento", "Aprovado", "Em Produção", "Pronto", "Enviado", "Entregue", "Cancelado"];
+
+  const select = document.createElement("select");
+  select.innerHTML = `<option value="">Selecionar status...</option>` +
+    options.map(s => `<option value="${s}">${s}</option>`).join("");
+  select.style.cssText = "width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 6px; margin-bottom: 16px;";
+
+  dialog.querySelector(".batch-dialog-content").appendChild(select);
+
+  dialog.querySelector(".batch-confirm-btn").onclick = () => {
+    const newStatus = select.value;
+    if (!newStatus) {
+      showAppMessage("Selecione um status", "warning");
+      return;
+    }
+    applyBatchChange("status", newStatus);
+    dialog.remove();
+    document.querySelector(".batch-dialog-overlay").remove();
+  };
+}
+
+function openBatchStageDialog() {
+  const dialog = createBatchDialog("Alterar Etapa");
+  const stages = ["Orçamento", "Corte", "Solda", "Pintura", "Montagem", "Empacotamento", "Expedição"];
+
+  const select = document.createElement("select");
+  select.innerHTML = `<option value="">Selecionar etapa...</option>` +
+    stages.map(s => `<option value="${s}">${s}</option>`).join("");
+  select.style.cssText = "width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 6px; margin-bottom: 16px;";
+
+  dialog.querySelector(".batch-dialog-content").appendChild(select);
+
+  dialog.querySelector(".batch-confirm-btn").onclick = () => {
+    const newStage = select.value;
+    if (!newStage) {
+      showAppMessage("Selecione uma etapa", "warning");
+      return;
+    }
+    applyBatchChange("stage", newStage);
+    dialog.remove();
+    document.querySelector(".batch-dialog-overlay").remove();
+  };
+}
+
+function openBatchResponsibleDialog() {
+  const dialog = createBatchDialog("Alterar Responsável");
+  const responsibles = state.responsibles || [];
+
+  const select = document.createElement("select");
+  select.innerHTML = `<option value="">Selecionar responsável...</option>` +
+    responsibles.map(r => `<option value="${r.id}">${r.name}</option>`).join("");
+  select.style.cssText = "width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 6px; margin-bottom: 16px;";
+
+  dialog.querySelector(".batch-dialog-content").appendChild(select);
+
+  dialog.querySelector(".batch-confirm-btn").onclick = () => {
+    const newResponsibleId = select.value;
+    if (!newResponsibleId) {
+      showAppMessage("Selecione um responsável", "warning");
+      return;
+    }
+    applyBatchChange("responsible", newResponsibleId);
+    dialog.remove();
+    document.querySelector(".batch-dialog-overlay").remove();
+  };
+}
+
+function openBatchPriorityDialog() {
+  const dialog = createBatchDialog("Alterar Prioridade");
+  const priorities = ["Baixa", "Normal", "Alta", "Urgente"];
+
+  const select = document.createElement("select");
+  select.innerHTML = `<option value="">Selecionar prioridade...</option>` +
+    priorities.map(p => `<option value="${p}">${p}</option>`).join("");
+  select.style.cssText = "width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 6px; margin-bottom: 16px;";
+
+  dialog.querySelector(".batch-dialog-content").appendChild(select);
+
+  dialog.querySelector(".batch-confirm-btn").onclick = () => {
+    const newPriority = select.value;
+    if (!newPriority) {
+      showAppMessage("Selecione uma prioridade", "warning");
+      return;
+    }
+    applyBatchChange("priority", newPriority);
+    dialog.remove();
+    document.querySelector(".batch-dialog-overlay").remove();
+  };
+}
+
+function openBatchDateDialog() {
+  const dialog = createBatchDialog("Alterar Data de Entrega");
+
+  const input = document.createElement("input");
+  input.type = "date";
+  input.style.cssText = "width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 6px; margin-bottom: 16px;";
+
+  dialog.querySelector(".batch-dialog-content").appendChild(input);
+
+  dialog.querySelector(".batch-confirm-btn").onclick = () => {
+    const newDate = input.value;
+    if (!newDate) {
+      showAppMessage("Selecione uma data", "warning");
+      return;
+    }
+    applyBatchChange("deliveryDate", newDate);
+    dialog.remove();
+    document.querySelector(".batch-dialog-overlay").remove();
+  };
+}
+
+function createBatchDialog(title) {
+  const overlay = document.createElement("div");
+  overlay.className = "batch-dialog-overlay";
+  overlay.style.cssText = `
+    position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999;
+  `;
+
+  const dialog = document.createElement("div");
+  dialog.style.cssText = `
+    background: var(--panel); padding: 24px; border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    min-width: 350px; max-width: 90vw;
+  `;
+
+  dialog.innerHTML = `
+    <h2 style="margin: 0 0 16px 0; font-size: 16px; font-weight: 600; color: var(--ink);">${title}</h2>
+    <div class="batch-dialog-content"></div>
+    <div style="display: flex; gap: 8px;">
+      <button class="batch-confirm-btn" style="flex: 1; background: var(--teal); color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 600;">Aplicar</button>
+      <button class="batch-cancel-btn" style="flex: 1; background: transparent; color: var(--ink); border: 1px solid var(--line); padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 600;">Cancelar</button>
+    </div>
+  `;
+
+  dialog.querySelector(".batch-cancel-btn").onclick = () => {
+    dialog.remove();
+    overlay.remove();
+  };
+
+  overlay.onclick = (e) => {
+    if (e.target === overlay) {
+      dialog.remove();
+      overlay.remove();
+    }
+  };
+
+  overlay.appendChild(dialog);
+  document.body.appendChild(overlay);
+
+  return dialog;
+}
+
+function applyBatchChange(field, value) {
+  let count = 0;
+  selectedItems.forEach((itemData, itemId) => {
+    const order = state.data?.orders?.find(o => o.id === itemId);
+    if (order) {
+      const oldValue = order[field];
+      order[field] = value;
+      count++;
+    }
+  });
+
+  if (count > 0) {
+    flashActionMessage(`${field === "status" ? "Status" : field} de ${count} pedido(s) alterado(s)`);
+    selectedItems.clear();
+    updateBatchBar();
+    window.dispatchEvent(new CustomEvent("orders-updated"));
+  }
+}
+
+function deleteBatchItems() {
+  let deletedCount = 0;
+  selectedItems.forEach((itemData, itemId) => {
+    const idx = state.data?.orders?.findIndex(o => o.id === itemId);
+    if (idx >= 0) {
+      state.data.orders.splice(idx, 1);
+      deletedCount++;
+    }
+  });
+
+  if (deletedCount > 0) {
+    flashActionMessage(`${deletedCount} pedido(s) deletado(s)`);
+    selectedItems.clear();
+    updateBatchBar();
+    window.dispatchEvent(new CustomEvent("orders-updated"));
   }
 }
 
@@ -329,8 +520,7 @@ export async function duplicateOrder(orderId) {
   state.data.orders.push(newOrder);
   flashActionMessage(`Pedido duplicado: ${newOrder.id}`);
 
-  // Log de auditoria
-  // TODO: recordAudit("duplicate", "order", orderId, newOrder.id);
+  await recordAudit("duplicate", "order", orderId, newOrder.id, order, newOrder, "manual");
 
   return newOrder;
 }
@@ -350,8 +540,7 @@ export async function duplicateProduct(productId) {
   state.products.push(newProduct);
   flashActionMessage(`Produto duplicado: ${newProduct.name}`);
 
-  // Log de auditoria
-  // TODO: recordAudit("duplicate", "product", productId, newProduct.id);
+  await recordAudit("duplicate", "product", productId, newProduct.sku, product, newProduct, "manual");
 
   return newProduct;
 }
