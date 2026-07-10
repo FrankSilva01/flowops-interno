@@ -241,16 +241,25 @@ function getCalendarEventsForDay(date) {
 
   // Marketplace sales
   const sales = (state.marketplaceSales || []).filter(s => {
-    const saleDate = (s.date || s.created_at || s.saleDate || "").split("T")[0];
+    const saleDate = (s.date || s.created_at || s.saleDate || s.sale_date || "").split("T")[0];
     return saleDate === dateStr && saleDate;
   });
 
   if (sales.length) {
     sales.forEach(s => {
-      const title = s.title || s.product_name || s.name || 'Produto';
-      const price = s.price || s.value || s.amount || 0;
-      const channel = s.marketplace || s.channel || 'Marketplace';
-      const saleId = s.id || s.sale_id;
+      const title = s.title || s.product_name || s.name || s.produto || 'Produto';
+
+      // Detectar preço de múltiplos campos possíveis
+      let price = 0;
+      if (s.price && parseFloat(s.price) > 0) price = s.price;
+      else if (s.value && parseFloat(s.value) > 0) price = s.value;
+      else if (s.amount && parseFloat(s.amount) > 0) price = s.amount;
+      else if (s.sale_price && parseFloat(s.sale_price) > 0) price = s.sale_price;
+      else if (s.valor && parseFloat(s.valor) > 0) price = s.valor;
+      else if (s.total && parseFloat(s.total) > 0) price = s.total;
+
+      const channel = s.marketplace || s.channel || s.plataforma || 'Marketplace';
+      const saleId = s.id || s.sale_id || s.sale_ID;
 
       events.push({
         type: "sales",
@@ -268,19 +277,19 @@ function getCalendarEventsForDay(date) {
 
   // Orders/Deliveries
   const orders = (state.data?.orders || []).filter(o => {
-    const orderDate = (o.deliveryDate || "").split("T")[0];
+    const orderDate = (o.deliveryDate || o.delivery_date || o.dataEntrega || "").split("T")[0];
     return orderDate === dateStr;
   });
 
   if (orders.length) {
     orders.forEach(o => {
-      const items = o.items || [];
+      const items = o.items || o.produtos || [];
       const firstItem = items[0];
-      const itemName = firstItem?.name || firstItem?.product_name || 'Pedido';
-      const itemQty = firstItem?.quantity || 1;
+      const itemName = firstItem?.name || firstItem?.product_name || firstItem?.produto || 'Pedido';
+      const itemQty = firstItem?.quantity || firstItem?.qtd || firstItem?.quantidade || 1;
       const totalItems = items.length;
-      const orderId = o.id || o.order_id;
-      const status = o.status || o.deliveryStatus || 'Entregue';
+      const orderId = o.id || o.order_id || o.pedido_id || o.numero;
+      const status = o.status || o.deliveryStatus || o.statusEntrega || 'Entregue';
 
       events.push({
         type: "delivery",
@@ -298,16 +307,16 @@ function getCalendarEventsForDay(date) {
 
   // Logistics
   const logistics = (state.orderLogistics || []).filter(l => {
-    const logDate = (l.created_at || "").split("T")[0];
+    const logDate = (l.created_at || l.data_criacao || l.dataCriacao || "").split("T")[0];
     return logDate === dateStr;
   });
 
   if (logistics.length) {
     logistics.forEach(l => {
-      const status = l.status || l.event_type || 'Em trânsito';
-      const description = l.description || l.message || '';
-      const orderId = l.order_id || l.orderId;
-      const productName = l.product_name || l.item_name || 'Produto';
+      const status = l.status || l.event_type || l.tipo_evento || 'Em trânsito';
+      const description = l.description || l.message || l.mensagem || l.descricao || '';
+      const orderId = l.order_id || l.orderId || l.pedido_id || l.numero;
+      const productName = l.product_name || l.item_name || l.produto || l.nome_produto || 'Produto';
 
       events.push({
         type: "logistics",
@@ -325,16 +334,26 @@ function getCalendarEventsForDay(date) {
 
   // Cash/Financial
   const cash = (state.data?.cash || []).filter(c => {
-    const cashDate = (c.date || "").split("T")[0];
+    const cashDate = (c.date || c.data || c.dataCaixa || "").split("T")[0];
     return cashDate === dateStr;
   });
 
   if (cash.length) {
     cash.forEach(c => {
-      const type = c.type === 'in' ? 'Entrada' : c.type === 'out' ? 'Saída' : 'Lançamento';
-      const value = c.value || c.amount || 0;
-      const description = c.description || c.note || 'Sem descrição';
-      const cashId = c.id || c.cash_id;
+      // Detectar tipo de lançamento
+      let type = 'Lançamento';
+      if (c.type === 'in' || c.type === 'entrada' || c.categoria === 'entrada') type = 'Entrada';
+      else if (c.type === 'out' || c.type === 'saida' || c.categoria === 'saida') type = 'Saída';
+
+      // Detectar valor de múltiplos campos
+      let value = 0;
+      if (c.value && parseFloat(c.value) > 0) value = c.value;
+      else if (c.amount && parseFloat(c.amount) > 0) value = c.amount;
+      else if (c.valor && parseFloat(c.valor) > 0) value = c.valor;
+      else if (c.montante && parseFloat(c.montante) > 0) value = c.montante;
+
+      const description = c.description || c.note || c.descricao || c.anotacao || 'Sem descrição';
+      const cashId = c.id || c.cash_id || c.lancamento_id;
 
       events.push({
         type: "cash",
