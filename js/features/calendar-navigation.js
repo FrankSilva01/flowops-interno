@@ -238,14 +238,18 @@ function getCalendarEventsForDay(date) {
       const title = s.title || s.product_name || s.name || 'Produto';
       const price = s.price || s.value || s.amount || 0;
       const channel = s.marketplace || s.channel || 'Marketplace';
+      const saleId = s.id || s.sale_id;
 
       events.push({
         type: "sales",
-        displayLabel: `🛒 ${title}`,
-        tooltip: `${title}\nR$ ${parseFloat(price).toFixed(2)} (${channel})`,
+        displayLabel: `🛒 Venda: ${title}`,
+        tooltip: `VENDA\n${title}\nR$ ${parseFloat(price).toFixed(2)}\n${channel}`,
         count: 1,
         data: s,
         action: "marketplace",
+        itemId: saleId,
+        itemName: title,
+        itemType: "sale",
       });
     });
   }
@@ -263,14 +267,19 @@ function getCalendarEventsForDay(date) {
       const itemName = firstItem?.name || firstItem?.product_name || 'Pedido';
       const itemQty = firstItem?.quantity || 1;
       const totalItems = items.length;
+      const orderId = o.id || o.order_id;
+      const status = o.status || o.deliveryStatus || 'Entregue';
 
       events.push({
         type: "delivery",
-        displayLabel: `📦 ${itemName}`,
-        tooltip: `Pedido ${o.id || o.order_id || '---'}\n${itemName} (${itemQty}x)${totalItems > 1 ? `\n+${totalItems - 1} item(ns)` : ''}`,
+        displayLabel: `📦 Entregue: ${itemName}`,
+        tooltip: `ENTREGUE\nPedido #${orderId || '---'}\n${itemName} (${itemQty}x)${totalItems > 1 ? `\n+${totalItems - 1} item(ns)` : ''}`,
         count: 1,
         data: o,
         action: "orders",
+        itemId: orderId,
+        itemName: itemName,
+        itemType: "delivery",
       });
     });
   }
@@ -283,16 +292,21 @@ function getCalendarEventsForDay(date) {
 
   if (logistics.length) {
     logistics.forEach(l => {
-      const status = l.status || l.event_type || 'Evento';
+      const status = l.status || l.event_type || 'Em trânsito';
       const description = l.description || l.message || '';
+      const orderId = l.order_id || l.orderId;
+      const productName = l.product_name || l.item_name || 'Produto';
 
       events.push({
         type: "logistics",
-        displayLabel: `🚚 ${status}`,
-        tooltip: `${status}${description ? '\n' + description : ''}`,
+        displayLabel: `🚚 ${status}: ${productName}`,
+        tooltip: `EM TRÂNSITO\nPedido #${orderId || '---'}\n${productName}\n${status}${description ? '\n' + description : ''}`,
         count: 1,
         data: l,
         action: "logistics",
+        itemId: orderId,
+        itemName: productName,
+        itemType: "logistics",
       });
     });
   }
@@ -308,14 +322,18 @@ function getCalendarEventsForDay(date) {
       const type = c.type === 'in' ? 'Entrada' : c.type === 'out' ? 'Saída' : 'Lançamento';
       const value = c.value || c.amount || 0;
       const description = c.description || c.note || 'Sem descrição';
+      const cashId = c.id || c.cash_id;
 
       events.push({
         type: "cash",
-        displayLabel: `💰 R$ ${parseFloat(value).toFixed(2)}`,
-        tooltip: `${type}: R$ ${parseFloat(value).toFixed(2)}\n${description}`,
+        displayLabel: `💰 ${type}: R$ ${parseFloat(value).toFixed(2)}`,
+        tooltip: `${type}\nR$ ${parseFloat(value).toFixed(2)}\n${description}`,
         count: 1,
         data: c,
         action: "cash",
+        itemId: cashId,
+        itemName: description,
+        itemType: "cash",
       });
     });
   }
@@ -399,7 +417,11 @@ function attachCalendarEventListeners() {
             if (badgeIndex >= 0 && events[badgeIndex]) {
               const clickedEvent = events[badgeIndex];
               if (clickedEvent.action) {
-                navigateToEvent(clickedEvent.action);
+                navigateToEvent(clickedEvent.action, {
+                  itemId: clickedEvent.itemId,
+                  itemName: clickedEvent.itemName,
+                  itemType: clickedEvent.itemType,
+                });
               } else if (clickedEvent.isCustom) {
                 showCustomEventMenu(dayEl, clickedEvent, events);
               }
@@ -457,7 +479,18 @@ function positionTooltip(dayEl, tooltip) {
   }, 0);
 }
 
-function navigateToEvent(action) {
+function navigateToEvent(action, itemData) {
+  // Armazenar filtro no localStorage
+  if (itemData) {
+    localStorage.setItem("calendarFilter", JSON.stringify({
+      type: action,
+      itemId: itemData.itemId,
+      itemName: itemData.itemName,
+      itemType: itemData.itemType,
+      timestamp: Date.now(),
+    }));
+  }
+
   const tabs = {
     marketplace: () => document.querySelector('[data-view="marketplace"]')?.click(),
     orders: () => document.querySelector('[data-view="orders"]')?.click(),

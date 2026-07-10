@@ -355,21 +355,23 @@ html[data-theme="dark"] .calendar-event-more {
 
 .calendar-tooltip {
   position: fixed;
-  background: var(--ink);
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.95), rgba(20, 20, 30, 0.95));
   color: white;
-  padding: 14px 16px;
-  border-radius: 10px;
+  padding: 16px 18px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   font-size: 12px;
   white-space: pre-wrap;
   word-wrap: break-word;
-  max-width: 300px;
+  max-width: 320px;
   opacity: 0;
   pointer-events: none;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 10000;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-  line-height: 1.5;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5), 0 0 1px rgba(255, 255, 255, 0.1) inset;
+  line-height: 1.6;
   display: none;
+  backdrop-filter: blur(10px);
 }
 
 html[data-theme="dark"] .calendar-tooltip {
@@ -378,6 +380,14 @@ html[data-theme="dark"] .calendar-tooltip {
 
 .calendar-day-cell:hover .calendar-tooltip {
   display: block;
+  opacity: 1;
+}
+
+.calendar-tooltip::first-line {
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
 
 /* Drawer de detalhes - Hidden */
