@@ -310,15 +310,16 @@ async function downloadMlDocument(
   const shipment = await shipmentResponse.json();
   if (!shipmentResponse.ok) throw new Error(`Falha ao consultar envio ${shippingId}: ${JSON.stringify(shipment)}`);
 
-  // FIX CRÍTICO: Etiqueta está disponível se:
-  // 1. ready_to_ship + (ready_to_print OR printed) = pronto pra imprimir
+  // FIX CRÍTICO: Etiqueta está disponível em qualquer um desses casos:
+  // 1. ready_to_ship + qualquer substatus = já foi preparado
   // 2. shipped OR delivered = já foi postado, etiqueta já existe
+  // 3. picked_up = coletado pela transportadora
+  // 4. returned_to_seller = devolvido mas etiqueta já estava gerada
   const printable =
-    (shipment.status === "ready_to_ship" && ["ready_to_print", "printed"].includes(String(shipment.substatus || ""))) ||
-    ["shipped", "delivered"].includes(shipment.status);
+    ["ready_to_ship", "picked_up", "shipped", "delivered", "returned_to_seller"].includes(String(shipment.status || ""));
 
   if (!printable) {
-    const message = `Etiqueta não disponível: envio ${shipment.status || "-"} / ${shipment.substatus || "-"}.`;
+    const message = `Etiqueta não disponível: envio em status "${shipment.status || "-"}" (${shipment.substatus || "sem substatus"}). Espere o anúncio ser postado ou vinculado a um envio válido.`;
     await saveDocumentStatus("unavailable", {
       external_document_id: shippingId,
       last_error: message,

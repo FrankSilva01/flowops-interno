@@ -244,9 +244,9 @@ export function renderMarketplaces() {
           <span class="automation-badge" title="Novas vendas recebidas pelo webhook criam encomendas automaticamente">Integração automática</span>
         </div>
         <div class="sale-document-actions">
-          <button class="secondary-btn" type="button" data-action="marketplace-document" data-document="label" data-id="${html(sale.external_order_id)}" data-marketplace="${html(sale.marketplace || "Mercado Livre")}">Baixar etiqueta</button>
-          <button class="secondary-btn" type="button" data-action="marketplace-document" data-document="declaration" data-id="${html(sale.external_order_id)}" data-marketplace="${html(sale.marketplace || "Mercado Livre")}">Baixar declaração</button>
-          <button class="secondary-btn" type="button" data-action="marketplace-print" data-id="${html(sale.external_order_id)}" data-marketplace="${html(sale.marketplace || "Mercado Livre")}">Imprimir</button>
+          <button class="secondary-btn" type="button" data-action="marketplace-document" data-document="label" data-id="${html(sale.external_order_id)}" data-marketplace="${html(sale.marketplace || "Mercado Livre")}" title="Baixar etiqueta de postagem do Mercado Livre">🏷️ Etiqueta</button>
+          <button class="secondary-btn" type="button" data-action="marketplace-document" data-document="declaration" data-id="${html(sale.external_order_id)}" data-marketplace="${html(sale.marketplace || "Mercado Livre")}" title="Baixar declaração de envio (documentação fiscal)" style="opacity: 0.6; cursor: not-allowed;">📋 Declaração</button>
+          <button class="secondary-btn" type="button" data-action="marketplace-print" data-id="${html(sale.external_order_id)}" data-marketplace="${html(sale.marketplace || "Mercado Livre")}" title="Imprimir etiqueta">🖨️ Imprimir</button>
         </div>
       </article>
     `;
