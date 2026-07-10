@@ -336,7 +336,8 @@ code {
 }
 
 .search-input {
-  width: min(360px, 42vw);
+  width: min(500px, 60vw);
+  font-size: 14px !important;
 }
 
 .view {
