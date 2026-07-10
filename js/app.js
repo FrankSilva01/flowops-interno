@@ -149,11 +149,11 @@ import {
   bindProductProfitPreview,
 } from "./features/pricing.js";
 import { bindCalendarEvents, renderCalendarWithEvents } from "./features/calendar-navigation.js";
-import { accountingIntegration, accountingIntegrationCSS } from "./features/accounting-integration.js";
+import { renderAdvancedDashboard, advancedDashboardCSS } from "./features/advanced-dashboard.js";
 // Temporarily disabled new features
-// import { renderAdvancedDashboard, advancedDashboardCSS } from "./features/advanced-dashboard.js";
 // import { openMLPricingDialog, applyPriceRecommendation, iaPricingCSS } from "./features/ia-pricing.js";
 // import { pushNotificationManager, pushNotificationsCSS } from "./features/push-notifications.js";
+// import { accountingIntegration, accountingIntegrationCSS } from "./features/accounting-integration.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
   const marketplaceStatus = getMarketplaceStatusFromHash();
@@ -184,13 +184,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error("Calendar init error:", err);
   }
 
-  // Initialize Accounting Integration
+  // Initialize Advanced Dashboard
   try {
-    const accountingStyle = document.createElement("style");
-    accountingStyle.textContent = accountingIntegrationCSS;
-    document.head.appendChild(accountingStyle);
+    const dashboardContainer = byId("advancedDashboard");
+    if (dashboardContainer) {
+      const style = document.createElement("style");
+      style.textContent = advancedDashboardCSS;
+      document.head.appendChild(style);
+      renderAdvancedDashboard();
+    }
   } catch (err) {
-    console.error("Accounting integration CSS init error:", err);
+    console.error("Advanced dashboard init error:", err);
   }
 
   // Temporarily disabled new features initialization
