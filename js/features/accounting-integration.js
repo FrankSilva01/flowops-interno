@@ -1,4 +1,5 @@
-import { state, saveData, recordAudit } from "../core/state.js";
+import { state, saveData } from "../core/state.js";
+import { recordAudit } from "./logs.js";
 import { showAppMessage } from "../core/dom.js";
 
 export const ACCOUNTING_PROVIDERS = {

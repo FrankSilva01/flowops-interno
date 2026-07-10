@@ -150,6 +150,9 @@ import {
 } from "./features/pricing.js";
 import { bindCalendarEvents, renderCalendarWithEvents } from "./features/calendar-navigation.js";
 import { renderAdvancedDashboard, advancedDashboardCSS } from "./features/advanced-dashboard.js";
+import { openMLPricingDialog, applyPriceRecommendation, iaPricingCSS } from "./features/ia-pricing.js";
+import { pushNotificationManager, pushNotificationsCSS } from "./features/push-notifications.js";
+import { accountingIntegration, accountingIntegrationCSS } from "./features/accounting-integration.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
   const marketplaceStatus = getMarketplaceStatusFromHash();
@@ -192,6 +195,41 @@ document.addEventListener("DOMContentLoaded", async () => {
   } catch (err) {
     console.error("Advanced dashboard init error:", err);
   }
+
+  // Initialize all remaining features
+  setTimeout(() => {
+    try {
+      const iaPricingStyle = document.createElement("style");
+      iaPricingStyle.textContent = iaPricingCSS;
+      document.head.appendChild(iaPricingStyle);
+    } catch (err) {
+      console.error("IA Pricing CSS error:", err);
+    }
+
+    try {
+      const pushStyle = document.createElement("style");
+      pushStyle.textContent = pushNotificationsCSS;
+      document.head.appendChild(pushStyle);
+      pushNotificationManager.init?.().catch(e => console.error("Push init error:", e));
+    } catch (err) {
+      console.error("Push Notifications error:", err);
+    }
+
+    try {
+      const accountingStyle = document.createElement("style");
+      accountingStyle.textContent = accountingIntegrationCSS;
+      document.head.appendChild(accountingStyle);
+    } catch (err) {
+      console.error("Accounting CSS error:", err);
+    }
+  }, 200);
+
+  // Global functions for new features
+  window.openMLPricingDialog = openMLPricingDialog;
+  window.applyPriceRecommendation = applyPriceRecommendation;
+  window.openPushNotificationSettings = () => pushNotificationManager?.openSettingsDialog?.();
+  window.openAccountingSettings = () => accountingIntegration?.openSettingsDialog?.();
+  window.syncAllAccountingData = () => accountingIntegration?.syncAllData?.();
 
 });
 

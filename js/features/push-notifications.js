@@ -1,4 +1,5 @@
-import { state, recordAudit } from "../core/state.js";
+import { state } from "../core/state.js";
+import { recordAudit } from "./logs.js";
 import { showAppMessage } from "../core/dom.js";
 
 const NOTIFICATION_TYPES = {
