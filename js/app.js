@@ -171,7 +171,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   render();
   showMarketplaceOAuthStatus(marketplaceStatus);
 
-  // Initialize calendar (in account section)
+  // Initialize calendar (temporarily disabled - needs redesign)
+  /*
   try {
     const now = new Date();
     bindCalendarEvents();
@@ -182,6 +183,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   } catch (err) {
     console.error("Calendar init error:", err);
   }
+  */
 
   // Temporarily disabled - will simplify later
   // Initialize Advanced Dashboard
