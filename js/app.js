@@ -179,7 +179,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (calendarContainer) {
       calendarContainer.innerHTML = renderCalendarWithEvents(now.getFullYear(), now.getMonth());
       attachCalendarEventListeners();
-      // updateCalendarStats(now.getFullYear(), now.getMonth());
+      updateCalendarStats(now.getFullYear(), now.getMonth());
     }
   } catch (err) {
     console.error("Calendar init error:", err);
