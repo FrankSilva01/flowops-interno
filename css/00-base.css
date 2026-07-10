@@ -326,6 +326,7 @@ code {
   gap: 18px;
   align-items: center;
   margin-bottom: 20px;
+  padding-left: 8px;
 }
 
 .topbar-actions {
