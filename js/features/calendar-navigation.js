@@ -1,8 +1,21 @@
 import { state } from "../core/state.js";
 import { byId, showAppMessage } from "../core/dom.js";
 
-// Feriados brasileiros
+// Feriados brasileiros - Ano inteiro
 const FERIADOS = {
+  // 2025
+  "2025-01-01": "Ano Novo",
+  "2025-02-01": "Sexta-feira Santa",
+  "2025-02-04": "Terça de Carnaval",
+  "2025-04-21": "Tiradentes",
+  "2025-05-01": "Dia do Trabalho",
+  "2025-09-07": "Independência",
+  "2025-10-12": "Nossa Senhora Aparecida",
+  "2025-11-02": "Finados",
+  "2025-11-15": "Proclamação da República",
+  "2025-11-20": "Consciência Negra",
+  "2025-12-25": "Natal",
+  // 2026
   "2026-01-01": "Ano Novo",
   "2026-02-13": "Sexta-feira Santa",
   "2026-02-17": "Terça de Carnaval",
@@ -14,6 +27,18 @@ const FERIADOS = {
   "2026-11-15": "Proclamação da República",
   "2026-11-20": "Consciência Negra",
   "2026-12-25": "Natal",
+  // 2027
+  "2027-01-01": "Ano Novo",
+  "2027-03-30": "Sexta-feira Santa",
+  "2027-03-02": "Terça de Carnaval",
+  "2027-04-21": "Tiradentes",
+  "2027-05-01": "Dia do Trabalho",
+  "2027-09-07": "Independência",
+  "2027-10-12": "Nossa Senhora Aparecida",
+  "2027-11-02": "Finados",
+  "2027-11-15": "Proclamação da República",
+  "2027-11-20": "Consciência Negra",
+  "2027-12-25": "Natal",
 };
 
 const EVENT_COLORS = {
@@ -459,45 +484,61 @@ function showCustomEventMenu(dayEl, event, allEvents) {
   menu.style.cssText = `
     position: fixed;
     background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     z-index: 10001;
-    min-width: 180px;
+    min-width: 200px;
+    overflow: hidden;
   `;
 
   let html = '';
-  customEvents.forEach((ev) => {
+  customEvents.forEach((ev, idx) => {
     html += `
-      <button class="calendar-menu-item" data-date="${dateStr}" data-index="${ev.customIndex}" style="
-        display: block;
-        width: 100%;
-        padding: 10px 12px;
-        background: transparent;
-        border: none;
-        text-align: left;
-        cursor: pointer;
-        font-size: 12px;
-        color: var(--ink);
-        transition: all 0.2s;
-      " onmouseover="this.style.background='var(--canvas)'" onmouseout="this.style.background='transparent'">
-        ✏️ Editar
-      </button>
-      <button class="calendar-menu-delete" data-date="${dateStr}" data-index="${ev.customIndex}" style="
-        display: block;
-        width: 100%;
-        padding: 10px 12px;
-        background: transparent;
-        border: none;
-        text-align: left;
-        cursor: pointer;
-        font-size: 12px;
-        color: #ff6b6b;
-        transition: all 0.2s;
-        border-top: 1px solid var(--line);
-      " onmouseover="this.style.background='rgba(255, 107, 107, 0.1)'" onmouseout="this.style.background='transparent'">
-        🗑️ Deletar
-      </button>
+      <div style="padding: 4px 0;">
+        <div style="padding: 8px 16px; background: var(--canvas); border-bottom: 1px solid var(--line);">
+          <div style="font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Evento ${idx + 1}</div>
+          <div style="font-size: 12px; color: var(--ink); word-break: break-word;">${ev.displayLabel.replace('📌 ', '')}</div>
+        </div>
+        <div style="display: flex; gap: 6px; padding: 8px 8px;">
+          <button class="calendar-menu-item" data-date="${dateStr}" data-index="${ev.customIndex}" style="
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 8px 12px;
+            background: transparent;
+            border: 1px solid var(--teal);
+            color: var(--teal);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.2s;
+          " onmouseover="this.style.background='rgba(0, 208, 132, 0.1)'" onmouseout="this.style.background='transparent'">
+            <i class="ti ti-edit"></i> Editar
+          </button>
+          <button class="calendar-menu-delete" data-date="${dateStr}" data-index="${ev.customIndex}" style="
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 8px 12px;
+            background: transparent;
+            border: 1px solid #ff6b6b;
+            color: #ff6b6b;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.2s;
+          " onmouseover="this.style.background='rgba(255, 107, 107, 0.1)'" onmouseout="this.style.background='transparent'">
+            <i class="ti ti-trash"></i> Deletar
+          </button>
+        </div>
+      </div>
     `;
   });
 
@@ -507,8 +548,19 @@ function showCustomEventMenu(dayEl, event, allEvents) {
   // Posicionar menu
   setTimeout(() => {
     const rect = dayEl.getBoundingClientRect();
-    menu.style.top = (rect.bottom + 5) + "px";
-    menu.style.left = Math.max(10, rect.left) + "px";
+    let top = rect.bottom + 8;
+    let left = rect.left;
+
+    // Ajustar se sair da tela
+    if (left + 200 > window.innerWidth - 10) {
+      left = window.innerWidth - 220;
+    }
+    if (top + menu.offsetHeight > window.innerHeight - 10) {
+      top = rect.top - menu.offsetHeight - 8;
+    }
+
+    menu.style.top = top + "px";
+    menu.style.left = Math.max(10, left) + "px";
   }, 0);
 
   // Eventos do menu
