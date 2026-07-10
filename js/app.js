@@ -171,55 +171,56 @@ document.addEventListener("DOMContentLoaded", async () => {
   render();
   showMarketplaceOAuthStatus(marketplaceStatus);
 
-  // Initialize calendar
-  try {
-    const now = new Date();
-    bindCalendarEvents();
-    const calendarContainer = byId("calendarWidget");
-    if (calendarContainer) {
-      calendarContainer.innerHTML = renderCalendarWithEvents(now.getFullYear(), now.getMonth());
+  // Initialize advanced features with error isolation
+  setTimeout(() => {
+    try {
+      const iaPricingStyle = document.createElement("style");
+      iaPricingStyle.textContent = iaPricingCSS;
+      document.head.appendChild(iaPricingStyle);
+    } catch (err) {
+      console.error("IA Pricing CSS init error:", err);
     }
-  } catch (err) {
-    console.error("Calendar init error:", err);
-  }
 
-  // Initialize advanced features
-  try {
-    const dashboardContainer = byId("advancedDashboard");
-    if (dashboardContainer) {
-      const style = document.createElement("style");
-      style.textContent = advancedDashboardCSS;
-      document.head.appendChild(style);
-      renderAdvancedDashboard();
+    try {
+      const pushStyle = document.createElement("style");
+      pushStyle.textContent = pushNotificationsCSS;
+      document.head.appendChild(pushStyle);
+      pushNotificationManager.init();
+    } catch (err) {
+      console.error("Push notifications init error:", err);
     }
-  } catch (err) {
-    console.error("Advanced dashboard init error:", err);
-  }
 
-  try {
-    const iaPricingStyle = document.createElement("style");
-    iaPricingStyle.textContent = iaPricingCSS;
-    document.head.appendChild(iaPricingStyle);
-  } catch (err) {
-    console.error("IA Pricing CSS init error:", err);
-  }
+    try {
+      const accountingStyle = document.createElement("style");
+      accountingStyle.textContent = accountingIntegrationCSS;
+      document.head.appendChild(accountingStyle);
+    } catch (err) {
+      console.error("Accounting integration CSS init error:", err);
+    }
 
-  try {
-    const pushStyle = document.createElement("style");
-    pushStyle.textContent = pushNotificationsCSS;
-    document.head.appendChild(pushStyle);
-    await pushNotificationManager.init();
-  } catch (err) {
-    console.error("Push notifications init error:", err);
-  }
+    try {
+      const dashboardContainer = byId("advancedDashboard");
+      if (dashboardContainer) {
+        const style = document.createElement("style");
+        style.textContent = advancedDashboardCSS;
+        document.head.appendChild(style);
+        renderAdvancedDashboard();
+      }
+    } catch (err) {
+      console.error("Advanced dashboard init error:", err);
+    }
 
-  try {
-    const accountingStyle = document.createElement("style");
-    accountingStyle.textContent = accountingIntegrationCSS;
-    document.head.appendChild(accountingStyle);
-  } catch (err) {
-    console.error("Accounting integration CSS init error:", err);
-  }
+    try {
+      const now = new Date();
+      bindCalendarEvents();
+      const calendarContainer = byId("calendarWidget");
+      if (calendarContainer) {
+        calendarContainer.innerHTML = renderCalendarWithEvents(now.getFullYear(), now.getMonth());
+      }
+    } catch (err) {
+      console.error("Calendar init error:", err);
+    }
+  }, 100);
 });
 
 window.addEventListener("popstate", () => setView(getInitialView(), true));
