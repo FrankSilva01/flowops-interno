@@ -106,9 +106,19 @@ function renderCalendarWithEvents(year, month) {
     <div class="calendar-modern">
       <!-- Navigation -->
       <div class="calendar-header">
-        <button class="calendar-nav-btn cal-prev-btn"><i class="ti ti-chevron-left"></i> Anterior</button>
-        <h2 class="calendar-title">${monthNames[month]} ${year}</h2>
-        <button class="calendar-nav-btn cal-next-btn">Próximo <i class="ti ti-chevron-right"></i></button>
+        <button class="calendar-nav-btn cal-prev-btn"><i class="ti ti-chevron-left"></i></button>
+
+        <div class="calendar-month-year-selector">
+          <select id="calendarMonth" class="calendar-selector" style="cursor: pointer;">
+            ${monthNames.map((m, i) => `<option value="${i}" ${i === month ? 'selected' : ''}>${m}</option>`).join('')}
+          </select>
+          <select id="calendarYear" class="calendar-selector" style="cursor: pointer;">
+            ${[2024, 2025, 2026, 2027, 2028, 2029, 2030].map(y => `<option value="${y}" ${y === year ? 'selected' : ''}>${y}</option>`).join('')}
+          </select>
+          <button id="calendarToday" class="calendar-nav-btn" title="Ir para hoje"><i class="ti ti-calendar-check"></i></button>
+        </div>
+
+        <button class="calendar-nav-btn cal-next-btn"><i class="ti ti-chevron-right"></i></button>
       </div>
 
       <!-- Calendar Grid -->
@@ -387,18 +397,26 @@ function getCalendarEventsForDay(date) {
 }
 
 function attachCalendarEventListeners() {
+  const container = byId("calendarWidget");
+
+  // Função auxiliar para atualizar calendário
+  const updateCalendar = (newDate) => {
+    if (container) {
+      window.calendarDate = newDate;
+      container.innerHTML = renderCalendarWithEvents(newDate.getFullYear(), newDate.getMonth());
+      attachCalendarEventListeners();
+      updateCalendarStats(newDate.getFullYear(), newDate.getMonth());
+    }
+  };
+
   // Próximo mês
   const nextBtn = document.querySelector(".cal-next-btn");
   if (nextBtn) {
     nextBtn.addEventListener("click", () => {
       if (!window.calendarDate) window.calendarDate = new Date();
-      window.calendarDate.setMonth(window.calendarDate.getMonth() + 1);
-      const container = byId("calendarWidget");
-      if (container) {
-        container.innerHTML = renderCalendarWithEvents(window.calendarDate.getFullYear(), window.calendarDate.getMonth());
-        attachCalendarEventListeners();
-        updateCalendarStats(window.calendarDate.getFullYear(), window.calendarDate.getMonth());
-      }
+      const newDate = new Date(window.calendarDate);
+      newDate.setMonth(newDate.getMonth() + 1);
+      updateCalendar(newDate);
     });
   }
 
@@ -407,13 +425,39 @@ function attachCalendarEventListeners() {
   if (prevBtn) {
     prevBtn.addEventListener("click", () => {
       if (!window.calendarDate) window.calendarDate = new Date();
-      window.calendarDate.setMonth(window.calendarDate.getMonth() - 1);
-      const container = byId("calendarWidget");
-      if (container) {
-        container.innerHTML = renderCalendarWithEvents(window.calendarDate.getFullYear(), window.calendarDate.getMonth());
-        attachCalendarEventListeners();
-        updateCalendarStats(window.calendarDate.getFullYear(), window.calendarDate.getMonth());
-      }
+      const newDate = new Date(window.calendarDate);
+      newDate.setMonth(newDate.getMonth() - 1);
+      updateCalendar(newDate);
+    });
+  }
+
+  // Seletor de mês
+  const monthSelect = document.getElementById("calendarMonth");
+  if (monthSelect) {
+    monthSelect.addEventListener("change", (e) => {
+      if (!window.calendarDate) window.calendarDate = new Date();
+      const newDate = new Date(window.calendarDate);
+      newDate.setMonth(parseInt(e.target.value));
+      updateCalendar(newDate);
+    });
+  }
+
+  // Seletor de ano
+  const yearSelect = document.getElementById("calendarYear");
+  if (yearSelect) {
+    yearSelect.addEventListener("change", (e) => {
+      if (!window.calendarDate) window.calendarDate = new Date();
+      const newDate = new Date(window.calendarDate);
+      newDate.setFullYear(parseInt(e.target.value));
+      updateCalendar(newDate);
+    });
+  }
+
+  // Botão "Hoje"
+  const todayBtn = document.getElementById("calendarToday");
+  if (todayBtn) {
+    todayBtn.addEventListener("click", () => {
+      updateCalendar(new Date());
     });
   }
 
