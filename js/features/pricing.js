@@ -1232,12 +1232,6 @@ export function renderProfitabilityDashboardWidget() {
 
 // --- Cadastro de custo em lote ---
 
-export function openBulkCostDialog() {
-  renderBulkCostRows();
-  byId("bulkCostMessage").textContent = "";
-  byId("bulkCostDialog").showModal();
-}
-
 function renderBulkCostRows() {
   const target = byId("bulkCostRows");
   if (!target) return;
