@@ -100,7 +100,7 @@ function renderCalendarWithEvents(year, month) {
     const tooltipText = buildTooltipText(dayEvents);
 
     html += `
-      <div class="calendar-day-cell${isToday ? ' today' : ''}" data-date="${dateStr}">
+      <div class="calendar-day-cell${isToday ? ' today' : ''}" data-date="${dateStr}" data-events='${JSON.stringify(dayEvents).replace(/'/g, "&apos;")}'>
         <div class="calendar-day-number">${day}</div>
         <div class="calendar-day-events">
           ${dayEvents.slice(0, 2).map(event => `
@@ -199,18 +199,23 @@ function getCalendarEventsForDay(date) {
       label: `🇧🇷 ${FERIADOS[dateStr]}`,
       tooltip: `Feriado: ${FERIADOS[dateStr]}`,
       count: 1,
+      action: null,
     });
   }
 
-  // Marketplace sales
+  // Marketplace sales - melhora na busca
   const sales = (state.marketplaceSales || []).filter(s => {
-    const saleDate = (s.date || s.created_at || "").split("T")[0];
-    return saleDate === dateStr;
+    const saleDate = (s.date || s.created_at || s.saleDate || "").split("T")[0];
+    return saleDate === dateStr && saleDate;
   });
 
   if (sales.length) {
-    const totalSalesValue = sales.reduce((sum, s) => sum + (s.price || s.value || 0), 0);
-    const itemsInfo = sales.map(s => `${s.title || s.product_name || 'Produto'} - R$ ${(s.price || s.value || 0).toFixed(2)}`).join("\n");
+    const itemsInfo = sales.map(s => {
+      const title = s.title || s.product_name || s.name || 'Produto';
+      const price = s.price || s.value || s.amount || 0;
+      const channel = s.marketplace || s.channel || 'Marketplace';
+      return `${title} - R$ ${parseFloat(price).toFixed(2)} (${channel})`;
+    }).join("\n");
 
     events.push({
       type: "sales",
@@ -218,6 +223,7 @@ function getCalendarEventsForDay(date) {
       tooltip: `Vendas (${sales.length}):\n${itemsInfo}`,
       count: sales.length,
       data: sales,
+      action: "marketplace",
     });
   }
 
@@ -240,6 +246,7 @@ function getCalendarEventsForDay(date) {
       tooltip: `Entregas (${orders.length}):\n${itemsInfo || 'Itens não especificados'}`,
       count: orders.length,
       data: orders,
+      action: "orders",
     });
   }
 
@@ -262,6 +269,7 @@ function getCalendarEventsForDay(date) {
       tooltip: `Logística (${logistics.length}):\n${logInfo || 'Eventos não especificados'}`,
       count: logistics.length,
       data: logistics,
+      action: "logistics",
     });
   }
 
@@ -276,7 +284,7 @@ function getCalendarEventsForDay(date) {
       const type = c.type === 'in' ? 'Entrada' : c.type === 'out' ? 'Saída' : 'Lançamento';
       const value = c.value || c.amount || 0;
       const description = c.description || c.note || 'Sem descrição';
-      return `${type}: R$ ${value.toFixed(2)} - ${description}`;
+      return `${type}: R$ ${parseFloat(value).toFixed(2)} - ${description}`;
     }).join("\n");
 
     events.push({
@@ -285,17 +293,21 @@ function getCalendarEventsForDay(date) {
       tooltip: `Financeiro (${cash.length}):\n${cashInfo || 'Lançamentos não especificados'}`,
       count: cash.length,
       data: cash,
+      action: "cash",
     });
   }
 
   // Custom events
   const customEvents = window.calendarEvents?.[dateStr] || [];
-  customEvents.forEach(event => {
+  customEvents.forEach((event, idx) => {
     events.push({
       type: "custom",
       label: `📌 ${event}`,
       tooltip: `Evento: ${event}`,
       count: 1,
+      isCustom: true,
+      customIndex: idx,
+      action: null,
     });
   });
 
@@ -339,6 +351,287 @@ function attachCalendarEventListeners() {
     markBtn.addEventListener("click", () => {
       openEventForm();
     });
+  }
+
+  // Click nos eventos para navegar
+  const dayElements = document.querySelectorAll(".calendar-day-cell");
+  dayElements.forEach(dayEl => {
+    dayEl.addEventListener("click", (e) => {
+      const eventsData = dayEl.getAttribute("data-events");
+      if (eventsData) {
+        try {
+          const events = JSON.parse(eventsData);
+          const clickedBadge = e.target.closest(".calendar-event-badge");
+
+          if (clickedBadge) {
+            const badgeIndex = Array.from(dayEl.querySelectorAll(".calendar-event-badge")).indexOf(clickedBadge);
+            const clickedEvent = events[badgeIndex];
+
+            if (clickedEvent && clickedEvent.action) {
+              navigateToEvent(clickedEvent.action);
+            }
+          }
+        } catch (err) {
+          console.error("Erro ao processar evento:", err);
+        }
+      }
+    });
+  });
+
+  // Contexto menu customizado para eventos customizados
+  setupCustomEventContextMenu();
+}
+
+function navigateToEvent(action) {
+  const tabs = {
+    marketplace: () => document.querySelector('[data-view="marketplace"]')?.click(),
+    orders: () => document.querySelector('[data-view="orders"]')?.click(),
+    logistics: () => document.querySelector('[data-view="logistics"]')?.click(),
+    cash: () => document.querySelector('[data-view="cash"]')?.click(),
+  };
+
+  if (tabs[action]) {
+    tabs[action]();
+  }
+}
+
+function setupCustomEventContextMenu() {
+  const dayElements = document.querySelectorAll(".calendar-day-cell");
+
+  dayElements.forEach(dayEl => {
+    dayEl.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+
+      const customBadges = dayEl.querySelectorAll(".calendar-event-badge.custom");
+      if (customBadges.length === 0) return;
+
+      const rect = dayEl.getBoundingClientRect();
+      showEventContextMenu(e.clientX, e.clientY, dayEl.getAttribute("data-date"));
+    });
+  });
+}
+
+function showEventContextMenu(x, y, dateStr) {
+  // Remover menu anterior se existir
+  const existingMenu = document.querySelector(".calendar-context-menu");
+  if (existingMenu) existingMenu.remove();
+
+  const menu = document.createElement("div");
+  menu.className = "calendar-context-menu";
+  menu.style.cssText = `
+    position: fixed;
+    top: ${y}px;
+    left: ${x}px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    z-index: 2000;
+    min-width: 160px;
+  `;
+
+  const date = new Date(dateStr);
+  const dayEvents = getCalendarEventsForDay(date);
+  const customEvents = dayEvents.filter(e => e.isCustom);
+
+  if (customEvents.length === 0) return;
+
+  let html = '';
+  customEvents.forEach((event, idx) => {
+    html += `
+      <button class="calendar-menu-item" data-date="${dateStr}" data-index="${event.customIndex}" style="
+        display: block;
+        width: 100%;
+        padding: 10px 12px;
+        background: transparent;
+        border: none;
+        text-align: left;
+        cursor: pointer;
+        font-size: 12px;
+        color: var(--ink);
+        transition: all 0.2s;
+      " onmouseover="this.style.background='var(--canvas)'" onmouseout="this.style.background='transparent'">
+        ✏️ Editar: ${event.label.replace('📌 ', '')}
+      </button>
+      <button class="calendar-menu-delete" data-date="${dateStr}" data-index="${event.customIndex}" style="
+        display: block;
+        width: 100%;
+        padding: 10px 12px;
+        background: transparent;
+        border: none;
+        text-align: left;
+        cursor: pointer;
+        font-size: 12px;
+        color: #ff6b6b;
+        transition: all 0.2s;
+        border-top: 1px solid var(--line);
+      " onmouseover="this.style.background='rgba(255, 107, 107, 0.1)'" onmouseout="this.style.background='transparent'">
+        🗑️ Deletar
+      </button>
+    `;
+  });
+
+  menu.innerHTML = html;
+  document.body.appendChild(menu);
+
+  // Eventos do menu
+  menu.querySelectorAll(".calendar-menu-item").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const date = btn.getAttribute("data-date");
+      const idx = parseInt(btn.getAttribute("data-index"));
+      editCustomEvent(date, idx);
+      menu.remove();
+    });
+  });
+
+  menu.querySelectorAll(".calendar-menu-delete").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const date = btn.getAttribute("data-date");
+      const idx = parseInt(btn.getAttribute("data-index"));
+      deleteCustomEvent(date, idx);
+      menu.remove();
+    });
+  });
+
+  // Fechar ao clicar fora
+  document.addEventListener("click", () => {
+    setTimeout(() => menu.remove(), 100);
+  }, { once: true });
+}
+
+function editCustomEvent(dateStr, index) {
+  if (!window.calendarEvents || !window.calendarEvents[dateStr]) return;
+
+  const currentEvent = window.calendarEvents[dateStr][index];
+
+  const dialog = document.createElement("div");
+  dialog.style.cssText = `
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--panel);
+    padding: 28px;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    z-index: 2000;
+    min-width: 350px;
+    max-width: 90vw;
+  `;
+
+  dialog.innerHTML = `
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+      <h2 style="margin: 0; font-size: 16px; font-weight: 600; color: var(--ink);">Editar evento</h2>
+      <button id="closeForm" style="background: none; border: none; font-size: 20px; cursor: pointer; color: var(--muted);">✕</button>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      <div>
+        <label style="display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 8px; text-transform: uppercase;">Data</label>
+        <input type="date" id="eventDate" value="${dateStr}" style="width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 13px; background: var(--canvas); color: var(--ink); box-sizing: border-box;">
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 8px; text-transform: uppercase;">Descrição</label>
+        <input type="text" id="eventText" value="${currentEvent}" style="width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 13px; background: var(--canvas); color: var(--ink); box-sizing: border-box;">
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-top: 8px;">
+        <button id="saveEvent" style="flex: 1; background: var(--teal); color: white; border: none; padding: 12px 16px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.2s ease;">
+          <i class="ti ti-check"></i> Salvar
+        </button>
+        <button id="cancelEvent" style="flex: 1; background: transparent; color: var(--ink); border: 1px solid var(--line); padding: 12px 16px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.2s ease;">
+          Cancelar
+        </button>
+      </div>
+    </div>
+  `;
+
+  const overlay = document.createElement("div");
+  overlay.style.cssText = `
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 1999;
+  `;
+
+  document.body.appendChild(overlay);
+  document.body.appendChild(dialog);
+
+  const closeBtn = dialog.querySelector("#closeForm");
+  const cancelBtn = dialog.querySelector("#cancelEvent");
+  const saveBtn = dialog.querySelector("#saveEvent");
+
+  const closeDialog = () => {
+    dialog.remove();
+    overlay.remove();
+  };
+
+  closeBtn.addEventListener("click", closeDialog);
+  cancelBtn.addEventListener("click", closeDialog);
+  overlay.addEventListener("click", closeDialog);
+
+  saveBtn.addEventListener("click", () => {
+    const newDate = document.getElementById("eventDate").value;
+    const newText = document.getElementById("eventText").value.trim();
+
+    if (!newDate || !newText) {
+      showAppMessage("Preencha data e descrição", "warning");
+      return;
+    }
+
+    // Remover do local antigo
+    if (newDate !== dateStr) {
+      window.calendarEvents[dateStr].splice(index, 1);
+      if (window.calendarEvents[dateStr].length === 0) {
+        delete window.calendarEvents[dateStr];
+      }
+    }
+
+    // Adicionar no novo local
+    if (!window.calendarEvents[newDate]) {
+      window.calendarEvents[newDate] = [];
+    }
+    if (newDate === dateStr) {
+      window.calendarEvents[dateStr][index] = newText;
+    } else {
+      window.calendarEvents[newDate].push(newText);
+    }
+
+    localStorage.setItem("calendarCustomEvents", JSON.stringify(window.calendarEvents));
+    showAppMessage("✅ Evento atualizado!", "success");
+    closeDialog();
+
+    // Refresh
+    const container = byId("calendarWidget");
+    if (container) {
+      if (!window.calendarDate) window.calendarDate = new Date();
+      container.innerHTML = renderCalendarWithEvents(window.calendarDate.getFullYear(), window.calendarDate.getMonth());
+      attachCalendarEventListeners();
+      updateCalendarStats(window.calendarDate.getFullYear(), window.calendarDate.getMonth());
+    }
+  });
+}
+
+function deleteCustomEvent(dateStr, index) {
+  if (confirm("Tem certeza que deseja deletar este evento?")) {
+    if (window.calendarEvents && window.calendarEvents[dateStr]) {
+      window.calendarEvents[dateStr].splice(index, 1);
+      if (window.calendarEvents[dateStr].length === 0) {
+        delete window.calendarEvents[dateStr];
+      }
+      localStorage.setItem("calendarCustomEvents", JSON.stringify(window.calendarEvents));
+      showAppMessage("✅ Evento deletado!", "success");
+
+      // Refresh
+      const container = byId("calendarWidget");
+      if (container) {
+        if (!window.calendarDate) window.calendarDate = new Date();
+        container.innerHTML = renderCalendarWithEvents(window.calendarDate.getFullYear(), window.calendarDate.getMonth());
+        attachCalendarEventListeners();
+        updateCalendarStats(window.calendarDate.getFullYear(), window.calendarDate.getMonth());
+      }
+    }
   }
 }
 
