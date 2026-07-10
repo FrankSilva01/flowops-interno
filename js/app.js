@@ -148,11 +148,12 @@ import {
   bindProductImageInputs, resolveChannelFeePct, computeMarginBreakdown, renderProductProfitPreview,
   bindProductProfitPreview,
 } from "./features/pricing.js";
-import { renderAdvancedDashboard, advancedDashboardCSS } from "./features/advanced-dashboard.js";
-import { openMLPricingDialog, applyPriceRecommendation, iaPricingCSS } from "./features/ia-pricing.js";
-import { pushNotificationManager, pushNotificationsCSS } from "./features/push-notifications.js";
-import { accountingIntegration, accountingIntegrationCSS } from "./features/accounting-integration.js";
-import { bindCalendarEvents, renderCalendarWithEvents } from "./features/calendar-navigation.js";
+// Temporarily disabled new features
+// import { renderAdvancedDashboard, advancedDashboardCSS } from "./features/advanced-dashboard.js";
+// import { openMLPricingDialog, applyPriceRecommendation, iaPricingCSS } from "./features/ia-pricing.js";
+// import { pushNotificationManager, pushNotificationsCSS } from "./features/push-notifications.js";
+// import { accountingIntegration, accountingIntegrationCSS } from "./features/accounting-integration.js";
+// import { bindCalendarEvents, renderCalendarWithEvents } from "./features/calendar-navigation.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
   const marketplaceStatus = getMarketplaceStatusFromHash();
@@ -171,7 +172,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   render();
   showMarketplaceOAuthStatus(marketplaceStatus);
 
-  // Initialize advanced features with error isolation
+  // Temporarily disabled new features initialization
+  /*
   setTimeout(() => {
     try {
       const iaPricingStyle = document.createElement("style");
@@ -221,13 +223,16 @@ document.addEventListener("DOMContentLoaded", async () => {
       console.error("Calendar init error:", err);
     }
   }, 100);
+  */
 });
 
 window.addEventListener("popstate", () => setView(getInitialView(), true));
 
-// Global functions for new features
+// Temporarily disabled global functions for new features
+/*
 window.openMLPricingDialog = openMLPricingDialog;
 window.applyPriceRecommendation = applyPriceRecommendation;
 window.openPushNotificationSettings = () => pushNotificationManager.openSettingsDialog();
 window.openAccountingSettings = () => accountingIntegration.openSettingsDialog();
 window.syncAllAccountingData = () => accountingIntegration.syncAllData();
+*/
