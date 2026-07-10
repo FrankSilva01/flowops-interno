@@ -171,7 +171,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   render();
   showMarketplaceOAuthStatus(marketplaceStatus);
 
-  // Initialize calendar
+  // Initialize calendar (in account section)
   try {
     const now = new Date();
     bindCalendarEvents();

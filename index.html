@@ -55,6 +55,7 @@
           <button id="marketplaceTab" class="tab" data-view="marketplace" title="Marketplace" hidden><span class="nav-icon"><i class="ti ti-building-store" aria-hidden="true"></i></span><span class="nav-label">Marketplace</span></button>
 
           <span class="sidebar-group-label">Conta</span>
+          <button class="tab" data-view="calendar" title="Calendário"><span class="nav-icon"><i class="ti ti-calendar" aria-hidden="true"></i></span><span class="nav-label">Calendário</span></button>
           <button class="tab" data-view="subscription" title="Minha Assinatura"><span class="nav-icon"><i class="ti ti-credit-card" aria-hidden="true"></i></span><span class="nav-label">Minha Assinatura</span></button>
           <button class="tab" data-view="logs" title="Histórico"><span class="nav-icon"><i class="ti ti-history" aria-hidden="true"></i></span><span class="nav-label">Histórico</span></button>
           <button id="approvalsTab" class="tab" data-view="approvals" title="Gestão de usuários" hidden><span class="nav-icon"><i class="ti ti-shield-check" aria-hidden="true"></i></span><span class="nav-label">Gestão de usuários</span></button>
@@ -145,7 +146,6 @@
               <strong id="dashboardGreetingSummary">Visão geral da operação</strong>
             </div>
             <div class="quick-actions" aria-label="Ações rápidas">
-              <button class="primary-btn" type="button" data-quick-action="order">+ Nova encomenda</button>
               <button class="secondary-btn" type="button" data-quick-action="client">+ Novo cliente</button>
               <button class="secondary-btn" type="button" data-quick-action="lead">+ Novo lead</button>
               <button class="secondary-btn" type="button" data-quick-action="material">+ Novo material</button>
@@ -769,6 +769,11 @@
             </div>
           </div>
           </div>
+        </section>
+
+        <section id="calendarView" class="view">
+          <p class="view-subtitle">Acompanhe seus eventos e prazos</p>
+          <div id="calendarWidget" style="max-width: 500px;"></div>
         </section>
 
         <section id="subscriptionView" class="view">
