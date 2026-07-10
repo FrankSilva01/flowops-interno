@@ -270,11 +270,12 @@ function getCalendarEventsForDay(date) {
 
       const channel = s.marketplace || s.channel || s.plataforma || 'Marketplace';
       const saleId = s.id || s.sale_id || s.sale_ID;
+      const quantity = s.quantity || s.qtd || s.quantidade || 1;
 
       events.push({
         type: "sales",
-        displayLabel: `🛒 Venda: ${title}`,
-        tooltip: `VENDA\n${title}\nR$ ${parseFloat(price).toFixed(2)}\n${channel}`,
+        displayLabel: `🛒 ${title}`,
+        tooltip: `VENDA\n${title}\n${quantity}x · R$ ${parseFloat(price).toFixed(2)}\nOrigem: ${channel}`,
         count: 1,
         data: s,
         action: "marketplace",
