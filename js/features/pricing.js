@@ -280,6 +280,11 @@ async function addProductImageFiles(files) {
 // embalagem -> custo -> lucro). Reaproveitado na previa de cadastro de produto
 // e na calculadora de preco.
 function renderPriceBreakdownCard(label, breakdown, note = "") {
+  // CRÍTICO: se frete for null (não calculado), mostrar aviso
+  const shippingDisplay = breakdown.shipping !== null
+    ? `-${money.format(breakdown.shipping)}`
+    : `<span title="Frete não foi calculado - o anúncio tem frete grátis" style="color: #ff6b6b; font-weight: 600;">⚠️ Não calculado</span>`;
+
   return `
     <article class="profit-preview-card">
       <div class="profit-preview-head"><strong>${html(label)}</strong><span class="badge ${breakdown.level.className}">${html(breakdown.level.label)}</span></div>
@@ -289,7 +294,7 @@ function renderPriceBreakdownCard(label, breakdown, note = "") {
         <div><dt>Taxa do marketplace (${breakdown.feePct.toFixed(1)}%)</dt><dd>-${money.format(breakdown.feeAmount)}</dd></div>
         ${breakdown.fixedFee > 0 ? `<div><dt>Taxa fixa (item de baixo valor)</dt><dd>-${money.format(breakdown.fixedFee)}</dd></div>` : ""}
         <div><dt>Imposto (${breakdown.taxPct}%)</dt><dd>-${money.format(breakdown.taxAmount)}</dd></div>
-        <div><dt>Frete</dt><dd>-${money.format(breakdown.shipping)}</dd></div>
+        <div><dt>Frete</dt><dd>${shippingDisplay}</dd></div>
         <div><dt>Embalagem</dt><dd>-${money.format(breakdown.packaging)}</dd></div>
         <div class="profit-preview-total"><dt>Sobra líquida estimada</dt><dd>${money.format(breakdown.netProfit)} (${breakdown.marginPct.toFixed(1)}%)</dd></div>
       </dl>
@@ -593,11 +598,20 @@ export function resolveListingFeeInfo(listing) {
   const product = getProductForListing(listing.marketplace, listing.external_id);
   const realSync = state.listingFeeSync?.[`${listing.marketplace}:${listing.external_id}`];
   if (realSync) {
+    // CRÍTICO: NULL != 0. NULL = não conseguiu calcular frete. 0 = cliente paga tudo.
+    // Se frete grátis mas não foi calculado, retorna null em vez de 0 para alertar UX
+    const shippingCost = realSync.shipping_cost;
+    const isFreeShipping = realSync.free_shipping === true;
+    const finalShipping = shippingCost !== null && shippingCost !== undefined
+      ? Number(shippingCost)
+      : isFreeShipping ? null : 0;
+
     return {
       pct: Number(realSync.real_fee_pct || 0),
       fixedFee: Number(realSync.real_fee_fixed || 0),
-      shipping: Number(realSync.shipping_cost || 0),
+      shipping: finalShipping,
       real: true,
+      notCalculated: isFreeShipping && shippingCost === null,
     };
   }
   const tier = channel === "mercado-livre" ? classifyMlListingType(listing.raw_payload || {}) : "classic";
@@ -615,18 +629,24 @@ export function computeMarginBreakdown({ cost, revenue, feePct = 0, taxPct = 0, 
   const normalizedCost = Number(cost || 0);
   const normalizedRevenue = Number(revenue || 0);
   const normalizedFixedFee = Number(fixedFee || 0);
+  // CRÍTICO: NULL = frete não calculado, 0 = cliente paga tudo, >0 = custo real
+  const normalizedShipping = shipping !== null && shipping !== undefined ? Number(shipping || 0) : null;
+  const normalizedPackaging = Number(packaging || 0);
+
   if (normalizedRevenue <= 0) {
     return {
-      revenue: 0, cost: normalizedCost, feePct, feeAmount: 0, fixedFee: normalizedFixedFee, taxPct, taxAmount: 0, shipping, packaging,
+      revenue: 0, cost: normalizedCost, feePct, feeAmount: 0, fixedFee: normalizedFixedFee, taxPct, taxAmount: 0, shipping: normalizedShipping, packaging: normalizedPackaging,
       netProfit: -normalizedCost - normalizedFixedFee, marginPct: 0, level: getProfitabilityLevel(0),
     };
   }
   const feeAmount = normalizedRevenue * (feePct / 100);
   const taxAmount = normalizedRevenue * (taxPct / 100);
-  const netProfit = normalizedRevenue - normalizedCost - feeAmount - normalizedFixedFee - taxAmount - shipping - packaging;
+  // Se frete for null (não calculado), não subtrai do lucro - usa como 0 para cálculo mas mantém null na resposta
+  const shippingForCalc = normalizedShipping !== null ? normalizedShipping : 0;
+  const netProfit = normalizedRevenue - normalizedCost - feeAmount - normalizedFixedFee - taxAmount - shippingForCalc - normalizedPackaging;
   const marginPct = (netProfit / normalizedRevenue) * 100;
   return {
-    revenue: normalizedRevenue, cost: normalizedCost, feePct, feeAmount, fixedFee: normalizedFixedFee, taxPct, taxAmount, shipping, packaging,
+    revenue: normalizedRevenue, cost: normalizedCost, feePct, feeAmount, fixedFee: normalizedFixedFee, taxPct, taxAmount, shipping: normalizedShipping, packaging: normalizedPackaging,
     netProfit, marginPct, level: getProfitabilityLevel(marginPct),
   };
 }
