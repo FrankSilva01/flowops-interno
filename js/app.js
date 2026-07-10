@@ -150,10 +150,9 @@ import {
 } from "./features/pricing.js";
 import { bindCalendarEvents, renderCalendarWithEvents } from "./features/calendar-navigation.js";
 import { renderAdvancedDashboard, advancedDashboardCSS } from "./features/advanced-dashboard.js";
-// Temporarily disabled new features
-// import { openMLPricingDialog, applyPriceRecommendation, iaPricingCSS } from "./features/ia-pricing.js";
-// import { pushNotificationManager, pushNotificationsCSS } from "./features/push-notifications.js";
-// import { accountingIntegration, accountingIntegrationCSS } from "./features/accounting-integration.js";
+import { openMLPricingDialog, applyPriceRecommendation, iaPricingCSS } from "./features/ia-pricing.js";
+import { pushNotificationManager, pushNotificationsCSS } from "./features/push-notifications.js";
+import { accountingIntegration, accountingIntegrationCSS } from "./features/accounting-integration.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
   const marketplaceStatus = getMarketplaceStatusFromHash();
@@ -197,47 +196,43 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error("Advanced dashboard init error:", err);
   }
 
-  // Temporarily disabled new features initialization
-  /*
+  // Initialize remaining features with heavy error isolation
   setTimeout(() => {
     try {
       const iaPricingStyle = document.createElement("style");
       iaPricingStyle.textContent = iaPricingCSS;
       document.head.appendChild(iaPricingStyle);
+      console.log("✅ IA Pricing CSS loaded");
     } catch (err) {
-      console.error("IA Pricing CSS init error:", err);
+      console.error("IA Pricing CSS error:", err);
+    }
+
+    try {
+      const pushStyle = document.createElement("style");
+      pushStyle.textContent = pushNotificationsCSS;
+      document.head.appendChild(pushStyle);
+      pushNotificationManager.init?.().catch(e => console.error("Push init error:", e));
+      console.log("✅ Push Notifications loaded");
+    } catch (err) {
+      console.error("Push Notifications error:", err);
     }
 
     try {
       const accountingStyle = document.createElement("style");
       accountingStyle.textContent = accountingIntegrationCSS;
       document.head.appendChild(accountingStyle);
+      console.log("✅ Accounting CSS loaded");
     } catch (err) {
-      console.error("Accounting integration CSS init error:", err);
+      console.error("Accounting CSS error:", err);
     }
-
-    try {
-      const dashboardContainer = byId("advancedDashboard");
-      if (dashboardContainer) {
-        const style = document.createElement("style");
-        style.textContent = advancedDashboardCSS;
-        document.head.appendChild(style);
-        renderAdvancedDashboard();
-      }
-    } catch (err) {
-      console.error("Advanced dashboard init error:", err);
-    }
-  }, 100);
-  */
+  }, 500);
 });
 
 window.addEventListener("popstate", () => setView(getInitialView(), true));
 
-// Temporarily disabled global functions for new features
-/*
+// Global functions for new features
 window.openMLPricingDialog = openMLPricingDialog;
 window.applyPriceRecommendation = applyPriceRecommendation;
-window.openPushNotificationSettings = () => pushNotificationManager.openSettingsDialog();
-window.openAccountingSettings = () => accountingIntegration.openSettingsDialog();
-window.syncAllAccountingData = () => accountingIntegration.syncAllData();
-*/
+window.openPushNotificationSettings = () => pushNotificationManager?.openSettingsDialog?.();
+window.openAccountingSettings = () => accountingIntegration?.openSettingsDialog?.();
+window.syncAllAccountingData = () => accountingIntegration?.syncAllData?.();
