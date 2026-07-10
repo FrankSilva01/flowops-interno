@@ -139,7 +139,7 @@ export function computePriceSuggestion(listing, analytics, profitability) {
 
 // ========== D. RAIO-X DO ANÚNCIO ==========
 
-export async function buildListingXRay(listing) {
+export function buildListingXRay(listing) {
   const channel = normalizeMarketplaceChannel(listing.marketplace);
   const analytics = getListingAnalytics(listing.marketplace, listing.external_id);
   const profitability = getListingProfitability(listing);
