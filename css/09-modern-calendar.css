@@ -286,25 +286,22 @@ html[data-theme="dark"] .calendar-event-more {
 }
 
 .calendar-tooltip {
-  position: absolute;
-  bottom: -8px;
-  left: 50%;
-  transform: translateX(-50%) translateY(100%);
+  position: fixed;
   background: var(--ink);
   color: white;
   padding: 14px 16px;
   border-radius: 10px;
-  font-size: 11px;
+  font-size: 12px;
   white-space: pre-wrap;
   word-wrap: break-word;
-  max-width: 280px;
+  max-width: 300px;
   opacity: 0;
   pointer-events: none;
   transition: all 0.2s ease;
-  z-index: 1001;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-  margin-top: 8px;
+  z-index: 10000;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
   line-height: 1.5;
+  display: none;
 }
 
 html[data-theme="dark"] .calendar-tooltip {
@@ -312,7 +309,7 @@ html[data-theme="dark"] .calendar-tooltip {
 }
 
 .calendar-day-cell:hover .calendar-tooltip {
-  opacity: 1;
+  display: block;
 }
 
 /* Drawer de detalhes - Hidden */

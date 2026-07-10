@@ -97,20 +97,18 @@ function renderCalendarWithEvents(year, month) {
     const dayEvents = getCalendarEventsForDay(date);
     const hasEvents = dayEvents.length > 0;
 
-    const tooltipText = buildTooltipText(dayEvents);
-
     html += `
       <div class="calendar-day-cell${isToday ? ' today' : ''}" data-date="${dateStr}" data-events='${JSON.stringify(dayEvents).replace(/'/g, "&apos;")}'>
         <div class="calendar-day-number">${day}</div>
         <div class="calendar-day-events">
           ${dayEvents.slice(0, 2).map(event => `
-            <div class="calendar-event-badge ${event.type}" title="${event.label}">
-              ${event.label.length > 14 ? event.label.slice(0, 12) + '...' : event.label}
+            <div class="calendar-event-badge ${event.type}" title="${event.displayLabel}">
+              ${event.displayLabel.length > 14 ? event.displayLabel.slice(0, 12) + '...' : event.displayLabel}
             </div>
           `).join('')}
           ${dayEvents.length > 2 ? `<div class="calendar-event-more">+${dayEvents.length - 2}</div>` : ''}
         </div>
-        ${hasEvents ? `<div class="calendar-tooltip">${tooltipText}</div>` : ''}
+        ${hasEvents ? `<div class="calendar-tooltip">${buildTooltipText(dayEvents)}</div>` : ''}
       </div>
     `;
   }
@@ -194,36 +192,36 @@ function getCalendarEventsForDay(date) {
 
   // Feriados
   if (FERIADOS[dateStr]) {
+    const holidayName = FERIADOS[dateStr];
     events.push({
       type: "feriado",
-      label: `🇧🇷 ${FERIADOS[dateStr]}`,
-      tooltip: `Feriado: ${FERIADOS[dateStr]}`,
+      displayLabel: `🇧🇷 ${holidayName}`,
+      tooltip: `Feriado: ${holidayName}`,
       count: 1,
       action: null,
     });
   }
 
-  // Marketplace sales - melhora na busca
+  // Marketplace sales
   const sales = (state.marketplaceSales || []).filter(s => {
     const saleDate = (s.date || s.created_at || s.saleDate || "").split("T")[0];
     return saleDate === dateStr && saleDate;
   });
 
   if (sales.length) {
-    const itemsInfo = sales.map(s => {
+    sales.forEach(s => {
       const title = s.title || s.product_name || s.name || 'Produto';
       const price = s.price || s.value || s.amount || 0;
       const channel = s.marketplace || s.channel || 'Marketplace';
-      return `${title} - R$ ${parseFloat(price).toFixed(2)} (${channel})`;
-    }).join("\n");
 
-    events.push({
-      type: "sales",
-      label: `🛒 ${sales.length} venda${sales.length > 1 ? "s" : ""}`,
-      tooltip: `Vendas (${sales.length}):\n${itemsInfo}`,
-      count: sales.length,
-      data: sales,
-      action: "marketplace",
+      events.push({
+        type: "sales",
+        displayLabel: `🛒 ${title}`,
+        tooltip: `${title}\nR$ ${parseFloat(price).toFixed(2)} (${channel})`,
+        count: 1,
+        data: s,
+        action: "marketplace",
+      });
     });
   }
 
@@ -234,19 +232,21 @@ function getCalendarEventsForDay(date) {
   });
 
   if (orders.length) {
-    const itemsInfo = orders.map(o => {
+    orders.forEach(o => {
       const items = o.items || [];
-      const itemStr = items.map(i => `${i.name || i.product_name || 'Item'} (${i.quantity || 1}x)`).join(", ");
-      return `Pedido ${o.id || o.order_id || '---'}: ${itemStr}`;
-    }).join("\n");
+      const firstItem = items[0];
+      const itemName = firstItem?.name || firstItem?.product_name || 'Pedido';
+      const itemQty = firstItem?.quantity || 1;
+      const totalItems = items.length;
 
-    events.push({
-      type: "delivery",
-      label: `📦 ${orders.length} entrega${orders.length > 1 ? "s" : ""}`,
-      tooltip: `Entregas (${orders.length}):\n${itemsInfo || 'Itens não especificados'}`,
-      count: orders.length,
-      data: orders,
-      action: "orders",
+      events.push({
+        type: "delivery",
+        displayLabel: `📦 ${itemName}`,
+        tooltip: `Pedido ${o.id || o.order_id || '---'}\n${itemName} (${itemQty}x)${totalItems > 1 ? `\n+${totalItems - 1} item(ns)` : ''}`,
+        count: 1,
+        data: o,
+        action: "orders",
+      });
     });
   }
 
@@ -257,19 +257,18 @@ function getCalendarEventsForDay(date) {
   });
 
   if (logistics.length) {
-    const logInfo = logistics.map(l => {
+    logistics.forEach(l => {
       const status = l.status || l.event_type || 'Evento';
       const description = l.description || l.message || '';
-      return `${status}${description ? ': ' + description : ''}`;
-    }).join("\n");
 
-    events.push({
-      type: "logistics",
-      label: `🚚 ${logistics.length} evento${logistics.length > 1 ? "s" : ""}`,
-      tooltip: `Logística (${logistics.length}):\n${logInfo || 'Eventos não especificados'}`,
-      count: logistics.length,
-      data: logistics,
-      action: "logistics",
+      events.push({
+        type: "logistics",
+        displayLabel: `🚚 ${status}`,
+        tooltip: `${status}${description ? '\n' + description : ''}`,
+        count: 1,
+        data: l,
+        action: "logistics",
+      });
     });
   }
 
@@ -280,20 +279,19 @@ function getCalendarEventsForDay(date) {
   });
 
   if (cash.length) {
-    const cashInfo = cash.map(c => {
+    cash.forEach(c => {
       const type = c.type === 'in' ? 'Entrada' : c.type === 'out' ? 'Saída' : 'Lançamento';
       const value = c.value || c.amount || 0;
       const description = c.description || c.note || 'Sem descrição';
-      return `${type}: R$ ${parseFloat(value).toFixed(2)} - ${description}`;
-    }).join("\n");
 
-    events.push({
-      type: "cash",
-      label: `💰 ${cash.length} lançamento${cash.length > 1 ? "s" : ""}`,
-      tooltip: `Financeiro (${cash.length}):\n${cashInfo || 'Lançamentos não especificados'}`,
-      count: cash.length,
-      data: cash,
-      action: "cash",
+      events.push({
+        type: "cash",
+        displayLabel: `💰 R$ ${parseFloat(value).toFixed(2)}`,
+        tooltip: `${type}: R$ ${parseFloat(value).toFixed(2)}\n${description}`,
+        count: 1,
+        data: c,
+        action: "cash",
+      });
     });
   }
 
@@ -302,7 +300,7 @@ function getCalendarEventsForDay(date) {
   customEvents.forEach((event, idx) => {
     events.push({
       type: "custom",
-      label: `📌 ${event}`,
+      displayLabel: `📌 ${event}`,
       tooltip: `Evento: ${event}`,
       count: 1,
       isCustom: true,
@@ -353,9 +351,17 @@ function attachCalendarEventListeners() {
     });
   }
 
-  // Click nos eventos para navegar
+  // Tooltip positioning
   const dayElements = document.querySelectorAll(".calendar-day-cell");
   dayElements.forEach(dayEl => {
+    const tooltip = dayEl.querySelector(".calendar-tooltip");
+    if (tooltip) {
+      dayEl.addEventListener("mouseenter", () => {
+        positionTooltip(dayEl, tooltip);
+      });
+    }
+
+    // Click nos eventos para navegar
     dayEl.addEventListener("click", (e) => {
       const eventsData = dayEl.getAttribute("data-events");
       if (eventsData) {
@@ -365,10 +371,13 @@ function attachCalendarEventListeners() {
 
           if (clickedBadge) {
             const badgeIndex = Array.from(dayEl.querySelectorAll(".calendar-event-badge")).indexOf(clickedBadge);
-            const clickedEvent = events[badgeIndex];
-
-            if (clickedEvent && clickedEvent.action) {
-              navigateToEvent(clickedEvent.action);
+            if (badgeIndex >= 0 && events[badgeIndex]) {
+              const clickedEvent = events[badgeIndex];
+              if (clickedEvent.action) {
+                navigateToEvent(clickedEvent.action);
+              } else if (clickedEvent.isCustom) {
+                showCustomEventMenu(dayEl, clickedEvent, events);
+              }
             }
           }
         } catch (err) {
@@ -376,10 +385,51 @@ function attachCalendarEventListeners() {
         }
       }
     });
-  });
 
-  // Contexto menu customizado para eventos customizados
-  setupCustomEventContextMenu();
+    // Context menu para eventos customizados
+    dayEl.addEventListener("contextmenu", (e) => {
+      const eventsData = dayEl.getAttribute("data-events");
+      if (eventsData) {
+        try {
+          const events = JSON.parse(eventsData);
+          const customEvents = events.filter(ev => ev.isCustom);
+
+          if (customEvents.length > 0) {
+            e.preventDefault();
+            showCustomEventMenu(dayEl, null, events);
+          }
+        } catch (err) {
+          console.error("Erro:", err);
+        }
+      }
+    });
+  });
+}
+
+function positionTooltip(dayEl, tooltip) {
+  setTimeout(() => {
+    const rect = dayEl.getBoundingClientRect();
+    const tooltipHeight = tooltip.offsetHeight;
+    const tooltipWidth = tooltip.offsetWidth;
+    const calendarContainer = dayEl.closest(".calendar-modern");
+
+    let top = rect.top - tooltipHeight - 12;
+    let left = rect.left + rect.width / 2 - tooltipWidth / 2;
+
+    // Ajustar se sair da tela
+    if (top < 10) {
+      top = rect.bottom + 12;
+    }
+    if (left < 10) {
+      left = 10;
+    }
+    if (left + tooltipWidth > window.innerWidth - 10) {
+      left = window.innerWidth - tooltipWidth - 10;
+    }
+
+    tooltip.style.top = top + "px";
+    tooltip.style.left = left + "px";
+  }, 0);
 }
 
 function navigateToEvent(action) {
@@ -395,51 +445,31 @@ function navigateToEvent(action) {
   }
 }
 
-function setupCustomEventContextMenu() {
-  const dayElements = document.querySelectorAll(".calendar-day-cell");
-
-  dayElements.forEach(dayEl => {
-    dayEl.addEventListener("contextmenu", (e) => {
-      e.preventDefault();
-
-      const customBadges = dayEl.querySelectorAll(".calendar-event-badge.custom");
-      if (customBadges.length === 0) return;
-
-      const rect = dayEl.getBoundingClientRect();
-      showEventContextMenu(e.clientX, e.clientY, dayEl.getAttribute("data-date"));
-    });
-  });
-}
-
-function showEventContextMenu(x, y, dateStr) {
-  // Remover menu anterior se existir
+function showCustomEventMenu(dayEl, event, allEvents) {
   const existingMenu = document.querySelector(".calendar-context-menu");
   if (existingMenu) existingMenu.remove();
+
+  const dateStr = dayEl.getAttribute("data-date");
+  const customEvents = allEvents.filter(e => e.isCustom);
+
+  if (customEvents.length === 0) return;
 
   const menu = document.createElement("div");
   menu.className = "calendar-context-menu";
   menu.style.cssText = `
     position: fixed;
-    top: ${y}px;
-    left: ${x}px;
     background: var(--panel);
     border: 1px solid var(--line);
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    z-index: 2000;
-    min-width: 160px;
+    z-index: 10001;
+    min-width: 180px;
   `;
 
-  const date = new Date(dateStr);
-  const dayEvents = getCalendarEventsForDay(date);
-  const customEvents = dayEvents.filter(e => e.isCustom);
-
-  if (customEvents.length === 0) return;
-
   let html = '';
-  customEvents.forEach((event, idx) => {
+  customEvents.forEach((ev) => {
     html += `
-      <button class="calendar-menu-item" data-date="${dateStr}" data-index="${event.customIndex}" style="
+      <button class="calendar-menu-item" data-date="${dateStr}" data-index="${ev.customIndex}" style="
         display: block;
         width: 100%;
         padding: 10px 12px;
@@ -451,9 +481,9 @@ function showEventContextMenu(x, y, dateStr) {
         color: var(--ink);
         transition: all 0.2s;
       " onmouseover="this.style.background='var(--canvas)'" onmouseout="this.style.background='transparent'">
-        ✏️ Editar: ${event.label.replace('📌 ', '')}
+        ✏️ Editar
       </button>
-      <button class="calendar-menu-delete" data-date="${dateStr}" data-index="${event.customIndex}" style="
+      <button class="calendar-menu-delete" data-date="${dateStr}" data-index="${ev.customIndex}" style="
         display: block;
         width: 100%;
         padding: 10px 12px;
@@ -473,6 +503,13 @@ function showEventContextMenu(x, y, dateStr) {
 
   menu.innerHTML = html;
   document.body.appendChild(menu);
+
+  // Posicionar menu
+  setTimeout(() => {
+    const rect = dayEl.getBoundingClientRect();
+    menu.style.top = (rect.bottom + 5) + "px";
+    menu.style.left = Math.max(10, rect.left) + "px";
+  }, 0);
 
   // Eventos do menu
   menu.querySelectorAll(".calendar-menu-item").forEach(btn => {
@@ -494,9 +531,11 @@ function showEventContextMenu(x, y, dateStr) {
   });
 
   // Fechar ao clicar fora
-  document.addEventListener("click", () => {
-    setTimeout(() => menu.remove(), 100);
-  }, { once: true });
+  setTimeout(() => {
+    document.addEventListener("click", () => {
+      menu.remove();
+    }, { once: true });
+  }, 100);
 }
 
 function editCustomEvent(dateStr, index) {
@@ -514,7 +553,7 @@ function editCustomEvent(dateStr, index) {
     padding: 28px;
     border-radius: 12px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-    z-index: 2000;
+    z-index: 10001;
     min-width: 350px;
     max-width: 90vw;
   `;
@@ -532,7 +571,7 @@ function editCustomEvent(dateStr, index) {
       </div>
 
       <div>
-        <label style="display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 8px; text-transform: uppercase;">Descrição</label>
+        <label style="display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 8px; text-transform: uppercase;">Descrição do evento</label>
         <input type="text" id="eventText" value="${currentEvent}" style="width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 13px; background: var(--canvas); color: var(--ink); box-sizing: border-box;">
       </div>
 
@@ -540,7 +579,7 @@ function editCustomEvent(dateStr, index) {
         <button id="saveEvent" style="flex: 1; background: var(--teal); color: white; border: none; padding: 12px 16px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.2s ease;">
           <i class="ti ti-check"></i> Salvar
         </button>
-        <button id="cancelEvent" style="flex: 1; background: transparent; color: var(--ink); border: 1px solid var(--line); padding: 12px 16px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.2s ease;">
+        <button id="cancelEvent" style="flex: 1; background: transparent; color: var(--ink); border: 1px solid var(--line); padding: 12px 16px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 13px;">
           Cancelar
         </button>
       </div>
@@ -552,7 +591,7 @@ function editCustomEvent(dateStr, index) {
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.4);
-    z-index: 1999;
+    z-index: 10000;
   `;
 
   document.body.appendChild(overlay);
@@ -646,7 +685,7 @@ function openEventForm() {
     padding: 28px;
     border-radius: 12px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-    z-index: 2000;
+    z-index: 10001;
     min-width: 350px;
     max-width: 90vw;
   `;
@@ -671,10 +710,10 @@ function openEventForm() {
       </div>
 
       <div style="display: flex; gap: 10px; margin-top: 8px;">
-        <button id="saveEvent" style="flex: 1; background: var(--teal); color: white; border: none; padding: 12px 16px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.2s ease;">
+        <button id="saveEvent" style="flex: 1; background: var(--teal); color: white; border: none; padding: 12px 16px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 13px;">
           <i class="ti ti-check"></i> Salvar
         </button>
-        <button id="cancelEvent" style="flex: 1; background: transparent; color: var(--ink); border: 1px solid var(--line); padding: 12px 16px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.2s ease;">
+        <button id="cancelEvent" style="flex: 1; background: transparent; color: var(--ink); border: 1px solid var(--line); padding: 12px 16px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 13px;">
           Cancelar
         </button>
       </div>
@@ -686,7 +725,7 @@ function openEventForm() {
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.4);
-    z-index: 1999;
+    z-index: 10000;
   `;
 
   document.body.appendChild(overlay);
