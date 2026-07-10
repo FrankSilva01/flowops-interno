@@ -1251,67 +1251,6 @@ function renderBulkCostRows() {
   }).join("") : `<div class="empty-chart">Nenhum anúncio sincronizado ainda.</div>`;
 }
 
-export async function saveBulkCosts(event) {
-  event.preventDefault();
-  if (!ensureCanEdit()) return;
-  const message = byId("bulkCostMessage");
-  const rows = Array.from(byId("bulkCostRows").querySelectorAll("[data-bulk-cost-row]"));
-  message.textContent = "Salvando custos...";
-  let savedCount = 0;
-  for (const row of rows) {
-    const input = row.querySelector("input[name='cost']");
-    const raw = input.value.trim();
-    if (!raw) continue;
-    const cost = number(raw);
-    const marketplace = row.dataset.marketplace;
-    const externalId = row.dataset.externalId;
-    const listing = state.marketplaceListings.find((item) => item.marketplace === marketplace && item.external_id === externalId);
-    if (!listing) continue;
-    const existingProduct = getProductForListing(marketplace, externalId);
-    if (existingProduct) {
-      if (Number(existingProduct.cost_price || 0) === cost) continue;
-      const payload = {
-        id: existingProduct.id,
-        organization_id: state.organizationId,
-        sku: existingProduct.sku,
-        name: existingProduct.name,
-        category: existingProduct.category,
-        cost_price: cost,
-        notes: existingProduct.notes,
-        updated_at: new Date().toISOString(),
-      };
-      const { data: saved, error } = await state.supabase.from("products").upsert(payload).select().single();
-      if (error) continue;
-      const index = state.products.findIndex((item) => item.id === saved.id);
-      if (index >= 0) state.products[index] = saved;
-      await recordAudit("update", "product", saved.id, saved.sku, existingProduct, saved, "manual");
-      savedCount++;
-    } else {
-      const name = listing.title || externalId;
-      const sku = nextProductSku(null, name);
-      const payload = {
-        organization_id: state.organizationId,
-        sku,
-        name,
-        category: null,
-        cost_price: cost,
-        updated_at: new Date().toISOString(),
-      };
-      const { data: saved, error } = await state.supabase.from("products").insert(payload).select().single();
-      if (error) continue;
-      state.products.push(saved);
-      await recordAudit("create", "product", saved.id, saved.sku, null, saved, "manual");
-      await syncProductListingLink(saved.id, `${marketplace}:${externalId}`);
-      savedCount++;
-    }
-  }
-  byId("bulkCostDialog").close();
-  flashActionMessage(savedCount ? `${savedCount} custo(s) salvo(s) com sucesso.` : "Nenhum custo novo informado.");
-  renderProductCatalogTable();
-  renderCommercialIntelligence();
-  renderMarketplaces();
-}
-
 // --- Aba "Inteligência" dentro de Marketplace ---
 
 function renderIntelligenceEmptyState(coverage) {
