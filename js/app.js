@@ -171,8 +171,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   render();
   showMarketplaceOAuthStatus(marketplaceStatus);
 
-  // Initialize calendar (temporarily disabled - needs redesign)
-  /*
+  // Initialize calendar
   try {
     const now = new Date();
     bindCalendarEvents();
@@ -183,7 +182,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   } catch (err) {
     console.error("Calendar init error:", err);
   }
-  */
 
   // Temporarily disabled - will simplify later
   // Initialize Advanced Dashboard
@@ -200,6 +198,28 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error("Advanced dashboard init error:", err);
   }
   */
+
+  // Initialize calendar
+  try {
+    const now = new Date();
+    bindCalendarEvents();
+    const calendarContainer = byId("calendarWidget");
+    if (calendarContainer) {
+      calendarContainer.innerHTML = renderCalendarWithEvents(now.getFullYear(), now.getMonth());
+    }
+  } catch (err) {
+    console.error("Calendar init error:", err);
+  }
+
+  // Initialize Advanced Dashboard
+  try {
+    const dashboardContainer = byId("advancedDashboard");
+    if (dashboardContainer) {
+      renderAdvancedDashboard();
+    }
+  } catch (err) {
+    console.error("Advanced dashboard init error:", err);
+  }
 
   // Initialize all remaining features
   setTimeout(() => {
