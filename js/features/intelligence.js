@@ -139,7 +139,7 @@ export function computePriceSuggestion(listing, analytics, profitability) {
 
 // ========== D. RAIO-X DO ANÚNCIO ==========
 
-export function buildListingXRay(listing) {
+export async function buildListingXRay(listing) {
   const channel = normalizeMarketplaceChannel(listing.marketplace);
   const analytics = getListingAnalytics(listing.marketplace, listing.external_id);
   const profitability = getListingProfitability(listing);
@@ -151,12 +151,16 @@ export function buildListingXRay(listing) {
   const intentScore = computeIntentScore(listing, analytics, sales);
   const priceSuggestion = computePriceSuggestion(listing, analytics, profitability);
 
+  // Histórico de preços (simulado por enquanto - será preenchido pela API)
+  const priceHistory = buildPriceHistoryData(listing);
+
   return {
     listing,
     analytics,
     profitability,
     intentScore,
     priceSuggestion,
+    priceHistory,
     salesCount: sales.length,
     salesLast7d: sales.filter(s => {
       const daysAgo = (Date.now() - new Date(s.date_created || Date.now()).getTime()) / (1000 * 60 * 60 * 24);
@@ -168,8 +172,72 @@ export function buildListingXRay(listing) {
       competitiveness: buildCompetitivenessBlock(analytics),
       health: buildHealthBlock(listing, analytics),
       shipping: buildShippingBlock(listing),
-      actions: buildActionsBlock(listing)
+      actions: buildActionsBlock(listing),
+      priceHistory: buildPriceHistoryBlock(priceHistory)
     }
+  };
+}
+
+// Dados de histórico de preços
+function buildPriceHistoryData(listing) {
+  // Dados simulados - será preenchido pela API real
+  // Format: { date, oldPrice, newPrice, changePercent, salesBefore, salesAfter, revenueImpact }
+  return {
+    changes: [
+      {
+        date: "2026-07-08",
+        oldPrice: 150.00,
+        newPrice: 139.90,
+        changePercent: -6.73,
+        salesWeekBefore: 8,
+        salesWeekAfter: 12,
+        conversionsWeekBefore: 2.5,
+        conversionsWeekAfter: 3.2
+      },
+      {
+        date: "2026-06-20",
+        oldPrice: 169.90,
+        newPrice: 150.00,
+        changePercent: -11.77,
+        salesWeekBefore: 5,
+        salesWeekAfter: 8,
+        conversionsWeekBefore: 1.8,
+        conversionsWeekAfter: 2.5
+      }
+    ],
+    recentChange: null // null = sem mudanças recentes, ou últimas mudanças
+  };
+}
+
+function buildPriceHistoryBlock(priceHistory) {
+  if (!priceHistory || !priceHistory.changes || priceHistory.changes.length === 0) {
+    return {
+      title: "Histórico de Preço",
+      status: "Nenhuma mudança registrada"
+    };
+  }
+
+  const lastChange = priceHistory.changes[0];
+  const impact = ((lastChange.salesWeekAfter - lastChange.salesWeekBefore) / Math.max(lastChange.salesWeekBefore, 1)) * 100;
+  const revenueChange = (lastChange.newPrice - lastChange.oldPrice) * lastChange.salesWeekAfter;
+
+  return {
+    title: "Histórico de Preço",
+    lastChange: {
+      date: lastChange.date,
+      from: lastChange.oldPrice,
+      to: lastChange.newPrice,
+      changePercent: lastChange.changePercent,
+      salesImpact: `${lastChange.salesWeekBefore} → ${lastChange.salesWeekAfter} vendas/sem`,
+      salesChangePercent: impact,
+      conversionChange: lastChange.conversionsWeekAfter - lastChange.conversionsWeekBefore,
+      insight: impact > 20
+        ? `✅ Redução aumentou vendas ${Math.abs(impact).toFixed(0)}%`
+        : impact < -10
+        ? `⚠️ Aumento reduziu vendas ${Math.abs(impact).toFixed(0)}%`
+        : `➡️ Mudança de ${Math.abs(lastChange.changePercent).toFixed(1)}% não afetou vendas significativamente`
+    },
+    history: priceHistory.changes
   };
 }
 
@@ -466,6 +534,61 @@ function renderListingXRayDrawer(xray) {
           `).join("")}
         </div>
       </div>
+
+      <!-- Bloco 7: Histórico de Preço -->
+      ${blocks.priceHistory ? `
+      <div class="xray-block price-history-block">
+        <div class="block-title">📊 Histórico de Preço</div>
+        ${blocks.priceHistory.lastChange ? `
+          <div class="block-grid" style="gap: 12px;">
+            <div class="stat full-width" style="background: var(--canvas); padding: 12px; border-radius: 8px;">
+              <div style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">Mudança recente (${blocks.priceHistory.lastChange.date})</div>
+              <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 8px;">
+                <div>
+                  <span style="font-size: 12px; color: var(--muted);">De</span>
+                  <div style="font-size: 16px; font-weight: 700; color: var(--ink);">R\$ ${blocks.priceHistory.lastChange.from.toFixed(2)}</div>
+                </div>
+                <div style="text-align: center; color: ${blocks.priceHistory.lastChange.changePercent < 0 ? 'var(--green)' : 'var(--red)';}; font-weight: 700;">
+                  ${blocks.priceHistory.lastChange.changePercent < 0 ? '↓' : '↑'} ${Math.abs(blocks.priceHistory.lastChange.changePercent).toFixed(1)}%
+                </div>
+                <div>
+                  <span style="font-size: 12px; color: var(--muted);">Para</span>
+                  <div style="font-size: 16px; font-weight: 700; color: var(--ink);">R\$ ${blocks.priceHistory.lastChange.to.toFixed(2)}</div>
+                </div>
+              </div>
+              <div style="font-size: 12px; color: var(--muted); padding: 8px; background: rgba(0,0,0,0.05); border-radius: 6px; margin-bottom: 8px;">
+                Vendas: ${blocks.priceHistory.lastChange.salesImpact} ${blocks.priceHistory.lastChange.salesChangePercent > 0 ? '(+' : '('}${blocks.priceHistory.lastChange.salesChangePercent.toFixed(0)}%)
+              </div>
+              <div style="font-size: 12px; font-weight: 600; color: ${blocks.priceHistory.lastChange.insight.includes('Redução') ? 'var(--green)' : blocks.priceHistory.lastChange.insight.includes('reduziu') ? 'var(--red)' : 'var(--amber)'};">
+                ${blocks.priceHistory.lastChange.insight}
+              </div>
+            </div>
+          </div>
+          ${blocks.priceHistory.history.length > 1 ? `
+            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line);">
+              <div style="font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 8px;">Histórico completo</div>
+              <div style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto;">
+                ${blocks.priceHistory.history.slice(1).map(change => `
+                  <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: var(--canvas); border-radius: 6px; font-size: 11px;">
+                    <div>
+                      <strong>${change.date}</strong>
+                      <br>R\$ ${change.oldPrice.toFixed(2)} → R\$ ${change.newPrice.toFixed(2)} (${change.changePercent > 0 ? '+' : ''}${change.changePercent.toFixed(1)}%)
+                    </div>
+                    <div style="text-align: right;">
+                      <div style="color: var(--muted);">Vendas: ${change.salesWeekBefore} → ${change.salesWeekAfter}</div>
+                    </div>
+                  </div>
+                `).join("")}
+              </div>
+            </div>
+          ` : ""}
+        ` : `
+          <div style="padding: 12px; text-align: center; color: var(--muted); font-size: 12px;">
+            Nenhuma mudança de preço registrada
+          </div>
+        `}
+      </div>
+      ` : ""}
     </div>
   `;
 
