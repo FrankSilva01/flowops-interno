@@ -32,7 +32,7 @@ export function bindCalendarEvents() {
   }
 }
 
-export function renderCalendarWithEvents(year, month) {
+function renderCalendarWithEvents(year, month) {
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
   const daysInMonth = lastDay.getDate();
@@ -213,7 +213,7 @@ function getCalendarEventsForDay(date) {
   return events;
 }
 
-export function attachCalendarEventListeners() {
+function attachCalendarEventListeners() {
   // Próximo mês
   const nextBtn = document.querySelector(".cal-next-btn");
   if (nextBtn) {
@@ -381,3 +381,5 @@ function openEventForm() {
     }
   });
 }
+
+export { bindCalendarEvents, renderCalendarWithEvents, attachCalendarEventListeners };

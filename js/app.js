@@ -148,7 +148,7 @@ import {
   bindProductImageInputs, resolveChannelFeePct, computeMarginBreakdown, renderProductProfitPreview,
   bindProductProfitPreview,
 } from "./features/pricing.js";
-import { bindCalendarEvents, renderCalendarWithEvents } from "./features/calendar-navigation.js";
+import { bindCalendarEvents, renderCalendarWithEvents, attachCalendarEventListeners } from "./features/calendar-navigation.js";
 import { renderAdvancedDashboard, advancedDashboardCSS } from "./features/advanced-dashboard.js";
 import { openMLPricingDialog, applyPriceRecommendation, iaPricingCSS } from "./features/ia-pricing.js";
 import { pushNotificationManager, pushNotificationsCSS } from "./features/push-notifications.js";
