@@ -303,20 +303,22 @@ html[data-theme="dark"] .calendar-event-badge.cash {
 }
 
 .calendar-event-badge.feriado {
-  background: linear-gradient(135deg, rgba(255, 107, 107, 0.15), rgba(255, 107, 107, 0.25));
+  background: linear-gradient(135deg, rgba(255, 107, 107, 0.2), rgba(255, 107, 107, 0.3));
   color: #ff6b6b;
-  border: 1px solid rgba(255, 107, 107, 0.3);
+  border: 1.5px solid rgba(255, 107, 107, 0.4);
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(255, 107, 107, 0.12);
 }
 
 html[data-theme="dark"] .calendar-event-badge.feriado {
-  background: linear-gradient(135deg, rgba(255, 107, 107, 0.2), rgba(255, 107, 107, 0.3));
+  background: linear-gradient(135deg, rgba(255, 107, 107, 0.25), rgba(255, 107, 107, 0.35));
   color: #ff9999;
-  border: 1px solid rgba(255, 107, 107, 0.4);
+  border: 1.5px solid rgba(255, 107, 107, 0.5);
 }
 
 .calendar-event-badge.feriado:hover {
-  background: linear-gradient(135deg, rgba(255, 107, 107, 0.25), rgba(255, 107, 107, 0.35));
-  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.15);
+  background: linear-gradient(135deg, rgba(255, 107, 107, 0.3), rgba(255, 107, 107, 0.4));
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.2);
 }
 
 .calendar-event-badge.custom {
