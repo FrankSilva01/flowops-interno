@@ -25,7 +25,7 @@ const EVENT_COLORS = {
   custom: "#3b82f6",
 };
 
-export function bindCalendarEvents() {
+function bindCalendarEvents() {
   window.calendarEvents = JSON.parse(localStorage.getItem("calendarCustomEvents") || "{}");
   if (!window.calendarDate) {
     window.calendarDate = new Date();
