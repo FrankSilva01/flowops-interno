@@ -228,10 +228,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   }, 200);
 
   // Global functions for new features
-  window.openMLPricingDialog = openMLPricingDialog;
+  window.openMLPricingDialog = () => {
+    console.log("Opening IA Pricing...");
+    openMLPricingDialog();
+  };
   window.applyPriceRecommendation = applyPriceRecommendation;
-  window.openPushNotificationSettings = () => pushNotificationManager?.openSettingsDialog?.();
-  window.openAccountingSettings = () => accountingIntegration?.openSettingsDialog?.();
+  window.openAccountingSettings = () => {
+    console.log("Opening Accounting Settings...");
+    accountingIntegration?.openSettingsDialog?.();
+  };
   window.syncAllAccountingData = () => accountingIntegration?.syncAllData?.();
 
 });
