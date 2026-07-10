@@ -623,10 +623,33 @@ export function openReportPrintView(headers, body) {
 
 export function reportMarketplaceRows(orderRows, salesRows) {
   const map = new Map();
-  const add = (label, value) => map.set(label, (map.get(label) || 0) + Number(value || 0));
-  orderRows.forEach((item) => add(item.marketplace || item.source || "Venda direta", item.received || item.charged || 0));
-  salesRows.forEach((item) => add(item.marketplace || "Marketplace", item.total || item.amount || 0));
-  return [...map.entries()].map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value).slice(0, 6);
+  const add = (label, value) => {
+    const amount = Number(value || 0);
+    if (amount > 0) {
+      map.set(label, (map.get(label) || 0) + amount);
+    }
+  };
+
+  // Add from orders (internal sales)
+  orderRows.forEach((item) => {
+    const channel = item.source || item.marketplace || "Venda direta";
+    add(channel, item.charged || item.received || 0);
+  });
+
+  // Add from marketplace sales (Mercado Livre, etc)
+  if (salesRows && salesRows.length > 0) {
+    salesRows.forEach((item) => {
+      const channel = item.marketplace || item.channel || "Mercado Livre";
+      const amount = item.price || item.total || item.amount || 0;
+      add(channel, amount);
+    });
+  }
+
+  return [...map.entries()]
+    .map(([label, value]) => ({ label, value }))
+    .filter(item => item.value > 0)
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 6);
 }
 
 // Coluna "Itens" na tela: mostra o texto truncado (4 itens + "+N") mas com
