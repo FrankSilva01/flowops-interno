@@ -1,44 +1,56 @@
 import { state } from "../core/state.js";
 import { byId, showAppMessage } from "../core/dom.js";
 
-// Feriados brasileiros - Ano inteiro
+// Feriados e datas importantes - Ano inteiro
 const FERIADOS = {
   // 2025
-  "2025-01-01": "Ano Novo",
-  "2025-02-01": "Sexta-feira Santa",
-  "2025-02-04": "Terça de Carnaval",
-  "2025-04-21": "Tiradentes",
-  "2025-05-01": "Dia do Trabalho",
-  "2025-09-07": "Independência",
-  "2025-10-12": "Nossa Senhora Aparecida",
-  "2025-11-02": "Finados",
-  "2025-11-15": "Proclamação da República",
-  "2025-11-20": "Consciência Negra",
-  "2025-12-25": "Natal",
+  "2025-01-01": "🎉 Ano Novo",
+  "2025-02-01": "✝️ Sexta-feira Santa",
+  "2025-02-04": "🎭 Carnaval",
+  "2025-04-21": "👨 Tiradentes",
+  "2025-05-01": "🏢 Dia do Trabalho",
+  "2025-05-11": "💐 Dia das Mães",
+  "2025-05-31": "📋 DASN-SIMEI (Declaração MEI)",
+  "2025-06-12": "🎪 Festa Junina",
+  "2025-10-12": "👑 N. Sra. Aparecida",
+  "2025-10-12": "🎈 Dia das Crianças",
+  "2025-09-07": "🌳 Independência",
+  "2025-11-02": "💀 Finados",
+  "2025-11-15": "🏛️ Proclamação da República",
+  "2025-11-20": "🖤 Consciência Negra",
+  "2025-12-25": "🎄 Natal",
   // 2026
-  "2026-01-01": "Ano Novo",
-  "2026-02-13": "Sexta-feira Santa",
-  "2026-02-17": "Terça de Carnaval",
-  "2026-04-21": "Tiradentes",
-  "2026-05-01": "Dia do Trabalho",
-  "2026-09-07": "Independência",
-  "2026-10-12": "Nossa Senhora Aparecida",
-  "2026-11-02": "Finados",
-  "2026-11-15": "Proclamação da República",
-  "2026-11-20": "Consciência Negra",
-  "2026-12-25": "Natal",
+  "2026-01-01": "🎉 Ano Novo",
+  "2026-02-13": "✝️ Sexta-feira Santa",
+  "2026-02-17": "🎭 Carnaval",
+  "2026-04-21": "👨 Tiradentes",
+  "2026-05-01": "🏢 Dia do Trabalho",
+  "2026-05-10": "💐 Dia das Mães",
+  "2026-05-31": "📋 DASN-SIMEI (Declaração MEI)",
+  "2026-06-13": "🎪 Festa Junina",
+  "2026-10-12": "👑 N. Sra. Aparecida",
+  "2026-10-12": "🎈 Dia das Crianças",
+  "2026-09-07": "🌳 Independência",
+  "2026-11-02": "💀 Finados",
+  "2026-11-15": "🏛️ Proclamação da República",
+  "2026-11-20": "🖤 Consciência Negra",
+  "2026-12-25": "🎄 Natal",
   // 2027
-  "2027-01-01": "Ano Novo",
-  "2027-03-30": "Sexta-feira Santa",
-  "2027-03-02": "Terça de Carnaval",
-  "2027-04-21": "Tiradentes",
-  "2027-05-01": "Dia do Trabalho",
-  "2027-09-07": "Independência",
-  "2027-10-12": "Nossa Senhora Aparecida",
-  "2027-11-02": "Finados",
-  "2027-11-15": "Proclamação da República",
-  "2027-11-20": "Consciência Negra",
-  "2027-12-25": "Natal",
+  "2027-01-01": "🎉 Ano Novo",
+  "2027-03-30": "✝️ Sexta-feira Santa",
+  "2027-03-02": "🎭 Carnaval",
+  "2027-04-21": "👨 Tiradentes",
+  "2027-05-01": "🏢 Dia do Trabalho",
+  "2027-05-09": "💐 Dia das Mães",
+  "2027-05-31": "📋 DASN-SIMEI (Declaração MEI)",
+  "2027-06-12": "🎪 Festa Junina",
+  "2027-10-12": "👑 N. Sra. Aparecida",
+  "2027-10-12": "🎈 Dia das Crianças",
+  "2027-09-07": "🌳 Independência",
+  "2027-11-02": "💀 Finados",
+  "2027-11-15": "🏛️ Proclamação da República",
+  "2027-11-20": "🖤 Consciência Negra",
+  "2027-12-25": "🎄 Natal",
 };
 
 const EVENT_COLORS = {
@@ -416,15 +428,8 @@ function attachCalendarEventListeners() {
             const badgeIndex = Array.from(dayEl.querySelectorAll(".calendar-event-badge")).indexOf(clickedBadge);
             if (badgeIndex >= 0 && events[badgeIndex]) {
               const clickedEvent = events[badgeIndex];
-              if (clickedEvent.isCustom) {
-                showCustomEventModal(dayEl.getAttribute("data-date"), clickedEvent);
-              } else if (clickedEvent.action) {
-                navigateToEvent(clickedEvent.action, {
-                  itemId: clickedEvent.itemId,
-                  itemName: clickedEvent.itemName,
-                  itemType: clickedEvent.itemType,
-                });
-              }
+              // Mostrar modal para qualquer evento
+              showEventDetailsModal(dayEl.getAttribute("data-date"), clickedEvent);
             }
           }
         } catch (err) {
@@ -483,6 +488,205 @@ function navigateToEvent(action, itemData) {
 
   if (tabs[action]) {
     tabs[action]();
+  }
+}
+
+function showEventDetailsModal(dateStr, event) {
+  const existingModal = document.querySelector(".calendar-event-modal");
+  if (existingModal) existingModal.remove();
+  const existingOverlay = document.querySelector(".calendar-modal-overlay");
+  if (existingOverlay) existingOverlay.remove();
+
+  const modal = document.createElement("div");
+  modal.className = "calendar-event-modal";
+
+  // Cores diferentes por tipo de evento
+  const colorMap = {
+    sales: "#00D084",
+    delivery: "#4CAF50",
+    logistics: "#ffc107",
+    cash: "#845ef7",
+    feriado: "#ff6b6b",
+    custom: "#3b82f6",
+  };
+
+  const color = colorMap[event.type] || "#00D084";
+  const typeLabel = EVENT_LABELS[event.type] || "Evento";
+
+  modal.style.cssText = `
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--panel);
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    z-index: 10002;
+    min-width: 340px;
+    max-width: 90vw;
+    overflow: hidden;
+  `;
+
+  const detailsHtml = event.tooltip.split('\n').map((line, idx) => {
+    if (idx === 0) return `<div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.9;">${line}</div>`;
+    return `<div style="font-size: 13px; margin: 4px 0; color: rgba(255,255,255,0.9)">${line}</div>`;
+  }).join('');
+
+  modal.innerHTML = `
+    <div style="background: linear-gradient(135deg, ${color}, ${color}dd); padding: 24px; color: white;">
+      ${event.displayLabel ? `<div style="font-size: 18px; font-weight: 700; word-break: break-word; margin-top: 8px;">${event.displayLabel}</div>` : ''}
+    </div>
+
+    <div style="padding: 24px;">
+      ${detailsHtml}
+    </div>
+
+    <div style="padding: 0 24px 24px; display: flex; flex-direction: column; gap: 12px;">
+      ${event.isCustom ? `
+        <div style="display: flex; gap: 10px;">
+          <button id="editBtn" style="
+            flex: 1;
+            background: rgba(0, 208, 132, 0.1);
+            color: #00D084;
+            border: 1.5px solid #00D084;
+            padding: 12px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 13px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+          ">
+            <i class="ti ti-edit"></i> Editar
+          </button>
+          <button id="deleteBtn" style="
+            flex: 1;
+            background: rgba(255, 107, 107, 0.1);
+            color: #ff6b6b;
+            border: 1.5px solid #ff6b6b;
+            padding: 12px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 13px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+          ">
+            <i class="ti ti-trash"></i> Excluir
+          </button>
+        </div>
+      ` : ''}
+      ${event.action ? `
+        <button id="navigateBtn" style="
+          width: 100%;
+          background: linear-gradient(135deg, ${color}, ${color}dd);
+          color: white;
+          border: none;
+          padding: 12px 16px;
+          border-radius: 10px;
+          cursor: pointer;
+          font-weight: 700;
+          font-size: 13px;
+          transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+        ">
+          <i class="ti ti-arrow-right"></i> Ver Detalhes
+        </button>
+      ` : ''}
+      <button id="closeBtn" style="
+        width: 100%;
+        background: transparent;
+        color: var(--muted);
+        border: 1px solid var(--line);
+        padding: 10px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 12px;
+        transition: all 0.2s ease;
+      ">Fechar</button>
+    </div>
+  `;
+
+  const overlay = document.createElement("div");
+  overlay.className = "calendar-modal-overlay";
+  overlay.style.cssText = `
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 10001;
+    backdrop-filter: blur(2px);
+  `;
+
+  document.body.appendChild(overlay);
+  document.body.appendChild(modal);
+
+  const closeModal = () => {
+    modal.remove();
+    overlay.remove();
+  };
+
+  const closeBtn = modal.querySelector("#closeBtn");
+  if (closeBtn) closeBtn.addEventListener("click", closeModal);
+  overlay.addEventListener("click", closeModal);
+
+  if (event.isCustom) {
+    const editBtn = modal.querySelector("#editBtn");
+    const deleteBtn = modal.querySelector("#deleteBtn");
+
+    editBtn.addEventListener("click", () => {
+      closeModal();
+      editCustomEvent(dateStr, event.customIndex);
+    });
+
+    deleteBtn.addEventListener("click", () => {
+      if (confirm("Tem certeza que deseja excluir este evento?")) {
+        closeModal();
+        deleteCustomEvent(dateStr, event.customIndex);
+      }
+    });
+
+    editBtn.addEventListener("mouseover", () => {
+      editBtn.style.background = "rgba(0, 208, 132, 0.2)";
+    });
+    editBtn.addEventListener("mouseout", () => {
+      editBtn.style.background = "rgba(0, 208, 132, 0.1)";
+    });
+
+    deleteBtn.addEventListener("mouseover", () => {
+      deleteBtn.style.background = "rgba(255, 107, 107, 0.2)";
+    });
+    deleteBtn.addEventListener("mouseout", () => {
+      deleteBtn.style.background = "rgba(255, 107, 107, 0.1)";
+    });
+  }
+
+  if (event.action) {
+    const navigateBtn = modal.querySelector("#navigateBtn");
+    navigateBtn.addEventListener("click", () => {
+      closeModal();
+      navigateToEvent(event.action, {
+        itemId: event.itemId,
+        itemName: event.itemName,
+        itemType: event.itemType,
+      });
+    });
+
+    navigateBtn.addEventListener("mouseover", () => {
+      navigateBtn.style.opacity = "0.9";
+    });
+    navigateBtn.addEventListener("mouseout", () => {
+      navigateBtn.style.opacity = "1";
+    });
   }
 }
 
