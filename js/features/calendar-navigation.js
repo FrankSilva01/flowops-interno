@@ -100,15 +100,15 @@ function renderCalendarWithEvents(year, month) {
     const tooltipText = buildTooltipText(dayEvents);
 
     html += `
-      <div class="calendar-day-cell${isToday ? ' today' : ''}" data-date="${dateStr}" style="cursor: ${hasEvents ? 'pointer' : 'default'};">
+      <div class="calendar-day-cell${isToday ? ' today' : ''}" data-date="${dateStr}">
         <div class="calendar-day-number">${day}</div>
         <div class="calendar-day-events">
-          ${dayEvents.slice(0, 3).map(event => `
-            <div class="calendar-event-badge ${event.type}">
-              ${event.label.length > 16 ? event.label.slice(0, 14) + '...' : event.label}
+          ${dayEvents.slice(0, 2).map(event => `
+            <div class="calendar-event-badge ${event.type}" title="${event.label}">
+              ${event.label.length > 14 ? event.label.slice(0, 12) + '...' : event.label}
             </div>
           `).join('')}
-          ${dayEvents.length > 3 ? `<div class="calendar-event-more">+${dayEvents.length - 3} mais</div>` : ''}
+          ${dayEvents.length > 2 ? `<div class="calendar-event-more">+${dayEvents.length - 2}</div>` : ''}
         </div>
         ${hasEvents ? `<div class="calendar-tooltip">${tooltipText}</div>` : ''}
       </div>
@@ -135,10 +135,6 @@ function renderCalendarWithEvents(year, month) {
         <div class="calendar-stat-item">
           <span class="calendar-stat-value" id="monthCash">0</span>
           <span class="calendar-stat-label">Financeiro</span>
-        </div>
-        <div class="calendar-stat-item">
-          <span class="calendar-stat-value" id="monthTotal">0</span>
-          <span class="calendar-stat-label">Total</span>
         </div>
       </div>
 
@@ -188,8 +184,7 @@ function buildTooltipText(events) {
 
   return events.map(event => {
     const icon = EVENT_ICONS[event.type] || "•";
-    const label = EVENT_LABELS[event.type] || event.type;
-    return `${icon} ${label}: ${event.detail || event.label}`;
+    return `${icon} ${event.tooltip}`;
   }).join("\n");
 }
 
@@ -202,7 +197,7 @@ function getCalendarEventsForDay(date) {
     events.push({
       type: "feriado",
       label: `🇧🇷 ${FERIADOS[dateStr]}`,
-      detail: FERIADOS[dateStr],
+      tooltip: `Feriado: ${FERIADOS[dateStr]}`,
       count: 1,
     });
   }
@@ -214,26 +209,35 @@ function getCalendarEventsForDay(date) {
   });
 
   if (sales.length) {
+    const totalSalesValue = sales.reduce((sum, s) => sum + (s.price || s.value || 0), 0);
+    const itemsInfo = sales.map(s => `${s.title || s.product_name || 'Produto'} - R$ ${(s.price || s.value || 0).toFixed(2)}`).join("\n");
+
     events.push({
       type: "sales",
       label: `🛒 ${sales.length} venda${sales.length > 1 ? "s" : ""}`,
-      detail: `${sales.length} venda${sales.length > 1 ? "s" : ""} no marketplace`,
+      tooltip: `Vendas (${sales.length}):\n${itemsInfo}`,
       count: sales.length,
       data: sales,
     });
   }
 
-  // Orders
+  // Orders/Deliveries
   const orders = (state.data?.orders || []).filter(o => {
     const orderDate = (o.deliveryDate || "").split("T")[0];
     return orderDate === dateStr;
   });
 
   if (orders.length) {
+    const itemsInfo = orders.map(o => {
+      const items = o.items || [];
+      const itemStr = items.map(i => `${i.name || i.product_name || 'Item'} (${i.quantity || 1}x)`).join(", ");
+      return `Pedido ${o.id || o.order_id || '---'}: ${itemStr}`;
+    }).join("\n");
+
     events.push({
       type: "delivery",
       label: `📦 ${orders.length} entrega${orders.length > 1 ? "s" : ""}`,
-      detail: `${orders.length} entrega${orders.length > 1 ? "s" : ""} agendada${orders.length > 1 ? "s" : ""}`,
+      tooltip: `Entregas (${orders.length}):\n${itemsInfo || 'Itens não especificados'}`,
       count: orders.length,
       data: orders,
     });
@@ -246,26 +250,39 @@ function getCalendarEventsForDay(date) {
   });
 
   if (logistics.length) {
+    const logInfo = logistics.map(l => {
+      const status = l.status || l.event_type || 'Evento';
+      const description = l.description || l.message || '';
+      return `${status}${description ? ': ' + description : ''}`;
+    }).join("\n");
+
     events.push({
       type: "logistics",
       label: `🚚 ${logistics.length} evento${logistics.length > 1 ? "s" : ""}`,
-      detail: `${logistics.length} evento${logistics.length > 1 ? "s" : ""} logístico${logistics.length > 1 ? "s" : ""}`,
+      tooltip: `Logística (${logistics.length}):\n${logInfo || 'Eventos não especificados'}`,
       count: logistics.length,
       data: logistics,
     });
   }
 
-  // Cash
+  // Cash/Financial
   const cash = (state.data?.cash || []).filter(c => {
     const cashDate = (c.date || "").split("T")[0];
     return cashDate === dateStr;
   });
 
   if (cash.length) {
+    const cashInfo = cash.map(c => {
+      const type = c.type === 'in' ? 'Entrada' : c.type === 'out' ? 'Saída' : 'Lançamento';
+      const value = c.value || c.amount || 0;
+      const description = c.description || c.note || 'Sem descrição';
+      return `${type}: R$ ${value.toFixed(2)} - ${description}`;
+    }).join("\n");
+
     events.push({
       type: "cash",
       label: `💰 ${cash.length} lançamento${cash.length > 1 ? "s" : ""}`,
-      detail: `${cash.length} lançamento${cash.length > 1 ? "s" : ""} financeiro${cash.length > 1 ? "s" : ""}`,
+      tooltip: `Financeiro (${cash.length}):\n${cashInfo || 'Lançamentos não especificados'}`,
       count: cash.length,
       data: cash,
     });
@@ -277,7 +294,7 @@ function getCalendarEventsForDay(date) {
     events.push({
       type: "custom",
       label: `📌 ${event}`,
-      detail: event,
+      tooltip: `Evento: ${event}`,
       count: 1,
     });
   });
@@ -323,163 +340,77 @@ function attachCalendarEventListeners() {
       openEventForm();
     });
   }
-
-  // Dias com eventos - Click para mostrar detalhes
-  const dayElements = document.querySelectorAll(".calendar-day-cell");
-  dayElements.forEach(dayEl => {
-    const dateStr = dayEl.getAttribute("data-date");
-    if (dateStr) {
-      const date = new Date(dateStr);
-      const dayEvents = getCalendarEventsForDay(date);
-      if (dayEvents.length > 0) {
-        dayEl.addEventListener("click", () => {
-          showDayEventsDrawer(dateStr, dayEvents);
-        });
-      }
-    }
-  });
-}
-
-function showDayEventsDrawer(dateStr, dayEvents) {
-  const date = new Date(dateStr);
-  const dateFormatted = date.toLocaleDateString("pt-BR", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric"
-  });
-
-  // Fechar drawer anterior se existir
-  const existingDrawer = document.querySelector(".calendar-drawer");
-  if (existingDrawer) {
-    existingDrawer.remove();
-  }
-  const existingOverlay = document.querySelector(".calendar-overlay");
-  if (existingOverlay) {
-    existingOverlay.remove();
-  }
-
-  // Overlay
-  const overlay = document.createElement("div");
-  overlay.className = "calendar-overlay";
-  overlay.addEventListener("click", () => {
-    drawer.remove();
-    overlay.remove();
-  });
-
-  // Drawer
-  const drawer = document.createElement("div");
-  drawer.className = "calendar-drawer";
-
-  drawer.innerHTML = `
-    <div class="calendar-drawer-header">
-      <div>
-        <h2 class="calendar-drawer-title">${dateFormatted}</h2>
-        <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--muted);">${dayEvents.length} evento${dayEvents.length > 1 ? "s" : ""}</p>
-      </div>
-      <button class="calendar-drawer-close" aria-label="Fechar">✕</button>
-    </div>
-
-    <div class="calendar-events-list">
-      ${dayEvents.map(event => `
-        <div class="calendar-event-item ${event.type}">
-          <div class="calendar-event-icon">${EVENT_ICONS[event.type]}</div>
-          <div class="calendar-event-content">
-            <div class="calendar-event-label">${EVENT_LABELS[event.type]}</div>
-            <div class="calendar-event-detail">${event.detail || event.label}</div>
-            ${event.count > 1 ? `<div class="calendar-event-detail" style="margin-top: 6px; font-weight: 600; color: var(--teal);">${event.count} ocorrências</div>` : ''}
-          </div>
-        </div>
-      `).join('')}
-    </div>
-  `;
-
-  document.body.appendChild(overlay);
-  document.body.appendChild(drawer);
-
-  drawer.querySelector(".calendar-drawer-close").addEventListener("click", () => {
-    drawer.remove();
-    overlay.remove();
-  });
 }
 
 function openEventForm() {
-  // Fechar drawer anterior se existir
-  const existingDrawer = document.querySelector(".calendar-drawer");
-  if (existingDrawer) {
-    existingDrawer.remove();
-  }
-  const existingOverlay = document.querySelector(".calendar-overlay");
-  if (existingOverlay) {
-    existingOverlay.remove();
-  }
-
-  // Overlay
-  const overlay = document.createElement("div");
-  overlay.className = "calendar-overlay";
-  overlay.addEventListener("click", () => {
-    drawer.remove();
-    overlay.remove();
-  });
-
-  const drawer = document.createElement("div");
-  drawer.className = "calendar-drawer";
+  const dialog = document.createElement("div");
+  dialog.style.cssText = `
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--panel);
+    padding: 28px;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    z-index: 2000;
+    min-width: 350px;
+    max-width: 90vw;
+  `;
 
   const today = new Date().toISOString().split("T")[0];
 
-  drawer.innerHTML = `
-    <div class="calendar-drawer-header">
-      <h2 class="calendar-drawer-title">Marcar evento</h2>
-      <button class="calendar-drawer-close" aria-label="Fechar">✕</button>
+  dialog.innerHTML = `
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+      <h2 style="margin: 0; font-size: 16px; font-weight: 600; color: var(--ink);">Marcar evento</h2>
+      <button id="closeForm" style="background: none; border: none; font-size: 20px; cursor: pointer; color: var(--muted);">✕</button>
     </div>
 
-    <div class="calendar-event-form">
-      <div class="calendar-form-group">
-        <label class="calendar-form-label">Data</label>
-        <input type="date" id="eventDate" value="${today}" class="calendar-form-input">
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      <div>
+        <label style="display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 8px; text-transform: uppercase;">Data</label>
+        <input type="date" id="eventDate" value="${today}" style="width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 13px; background: var(--canvas); color: var(--ink); box-sizing: border-box;">
       </div>
 
-      <div class="calendar-form-group">
-        <label class="calendar-form-label">Descrição do evento</label>
-        <input type="text" id="eventText" placeholder="Ex: Feriado, Prazo importante..." class="calendar-form-input">
+      <div>
+        <label style="display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 8px; text-transform: uppercase;">Descrição</label>
+        <input type="text" id="eventText" placeholder="Ex: Feriado, Prazo importante..." style="width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 13px; background: var(--canvas); color: var(--ink); box-sizing: border-box;">
       </div>
 
-      <div style="display: flex; gap: 10px; margin-top: 20px;">
-        <button id="saveEvent" class="calendar-add-event-btn" style="flex: 1;">
-          <i class="ti ti-check"></i>
-          Salvar
+      <div style="display: flex; gap: 10px; margin-top: 8px;">
+        <button id="saveEvent" style="flex: 1; background: var(--teal); color: white; border: none; padding: 12px 16px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.2s ease;">
+          <i class="ti ti-check"></i> Salvar
         </button>
-        <button id="closeForm" class="calendar-nav-btn" style="flex: 1;">
-          <i class="ti ti-x"></i>
+        <button id="cancelEvent" style="flex: 1; background: transparent; color: var(--ink); border: 1px solid var(--line); padding: 12px 16px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.2s ease;">
           Cancelar
         </button>
       </div>
     </div>
   `;
 
+  const overlay = document.createElement("div");
+  overlay.style.cssText = `
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 1999;
+  `;
+
   document.body.appendChild(overlay);
-  document.body.appendChild(drawer);
+  document.body.appendChild(dialog);
 
-  const closeBtn = drawer.querySelector(".calendar-drawer-close");
-  const closeFormBtn = drawer.querySelector("#closeForm");
-  const saveBtn = drawer.querySelector("#saveEvent");
+  const closeBtn = dialog.querySelector("#closeForm");
+  const cancelBtn = dialog.querySelector("#cancelEvent");
+  const saveBtn = dialog.querySelector("#saveEvent");
 
-  closeBtn.addEventListener("click", () => {
-    drawer.remove();
+  const closeDialog = () => {
+    dialog.remove();
     overlay.remove();
-  });
+  };
 
-  closeFormBtn.addEventListener("click", () => {
-    drawer.remove();
-    overlay.remove();
-  });
-
-  overlay.addEventListener("click", (e) => {
-    if (e.target === overlay) {
-      drawer.remove();
-      overlay.remove();
-    }
-  });
+  closeBtn.addEventListener("click", closeDialog);
+  cancelBtn.addEventListener("click", closeDialog);
+  overlay.addEventListener("click", closeDialog);
 
   saveBtn.addEventListener("click", () => {
     const dateInput = document.getElementById("eventDate");
@@ -500,8 +431,7 @@ function openEventForm() {
     localStorage.setItem("calendarCustomEvents", JSON.stringify(window.calendarEvents));
 
     showAppMessage("✅ Evento marcado com sucesso!", "success");
-    drawer.remove();
-    overlay.remove();
+    closeDialog();
 
     // Refresh calendar
     const container = byId("calendarWidget");
@@ -529,19 +459,15 @@ function updateCalendarStats(year, month) {
     });
   }
 
-  const total = salesCount + deliveriesCount + logisticsCount + cashCount;
-
   const salesEl = document.getElementById("monthSales");
   const deliveriesEl = document.getElementById("monthDeliveries");
   const logisticsEl = document.getElementById("monthLogistics");
   const cashEl = document.getElementById("monthCash");
-  const totalEl = document.getElementById("monthTotal");
 
   if (salesEl) salesEl.textContent = salesCount;
   if (deliveriesEl) deliveriesEl.textContent = deliveriesCount;
   if (logisticsEl) logisticsEl.textContent = logisticsCount;
   if (cashEl) cashEl.textContent = cashCount;
-  if (totalEl) totalEl.textContent = total;
 }
 
 export { bindCalendarEvents, renderCalendarWithEvents, attachCalendarEventListeners, updateCalendarStats };
