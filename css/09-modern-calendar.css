@@ -57,9 +57,9 @@ html[data-theme="dark"] .calendar-modern {
 
 .calendar-selector {
   padding: 8px 10px;
-  border: 1.5px solid var(--line);
+  border: 1.5px solid #00D084;
   border-radius: 8px;
-  background: var(--canvas);
+  background: rgba(0, 208, 132, 0.1);
   color: var(--ink);
   font-size: 12px;
   font-weight: 600;
@@ -68,25 +68,38 @@ html[data-theme="dark"] .calendar-modern {
 }
 
 html[data-theme="dark"] .calendar-selector {
-  background: rgba(0, 208, 132, 0.05);
-  border-color: rgba(0, 208, 132, 0.2);
+  background: rgba(0, 208, 132, 0.15);
+  border-color: #00D084;
   color: #fff;
 }
 
 .calendar-selector:hover {
   border-color: #00D084;
-  background: rgba(0, 208, 132, 0.08);
+  background: rgba(0, 208, 132, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 208, 132, 0.2);
 }
 
 html[data-theme="dark"] .calendar-selector:hover {
   border-color: #00D084;
-  background: rgba(0, 208, 132, 0.12);
+  background: rgba(0, 208, 132, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 208, 132, 0.3);
 }
 
 .calendar-selector:focus {
   outline: none;
   border-color: #00D084;
-  box-shadow: 0 0 0 2px rgba(0, 208, 132, 0.1);
+  background: rgba(0, 208, 132, 0.2);
+  box-shadow: 0 0 0 3px rgba(0, 208, 132, 0.15);
+}
+
+.calendar-selector option {
+  background: var(--canvas);
+  color: var(--ink);
+}
+
+html[data-theme="dark"] .calendar-selector option {
+  background: #0f1419;
+  color: #fff;
 }
 
 html[data-theme="dark"] .calendar-header {

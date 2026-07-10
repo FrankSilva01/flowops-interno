@@ -1246,7 +1246,7 @@ function openEventForm() {
 }
 
 function updateCalendarStats(year, month) {
-  let salesCount = 0, deliveriesCount = 0, logisticsCount = 0, cashCount = 0;
+  let salesCount = 0, deliveriesCount = 0, logisticsCount = 0, cashCount = 0, totalCount = 0;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
   for (let day = 1; day <= daysInMonth; day++) {
@@ -1257,6 +1257,7 @@ function updateCalendarStats(year, month) {
       if (e.type === "delivery") deliveriesCount += e.count || 1;
       if (e.type === "logistics") logisticsCount += e.count || 1;
       if (e.type === "cash") cashCount += e.count || 1;
+      if (e.type !== "feriado") totalCount += e.count || 1;
     });
   }
 
@@ -1269,6 +1270,61 @@ function updateCalendarStats(year, month) {
   if (deliveriesEl) deliveriesEl.textContent = deliveriesCount;
   if (logisticsEl) logisticsEl.textContent = logisticsCount;
   if (cashEl) cashEl.textContent = cashCount;
+
+  // Atualizar próximos eventos
+  updateUpcomingEvents(year, month);
 }
+
+function updateUpcomingEvents(year, month) {
+  const upcomingEl = document.getElementById("upcomingEvents");
+  if (!upcomingEl) return;
+
+  const events = [];
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  // Coletar eventos dos próximos 7 dias
+  const today = new Date();
+  const endDate = new Date(today);
+  endDate.setDate(endDate.getDate() + 7);
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(year, month, day);
+
+    // Só contar eventos que estão nos próximos 7 dias
+    if (date >= today && date <= endDate) {
+      const dayEvents = getCalendarEventsForDay(date);
+      dayEvents.forEach(e => {
+        if (e.type !== "feriado") {
+          events.push({
+            date: date.toLocaleDateString("pt-BR"),
+            type: e.type,
+            label: e.displayLabel,
+            tooltip: e.tooltip,
+          });
+        }
+      });
+    }
+  }
+
+  // Renderizar eventos
+  if (events.length === 0) {
+    upcomingEl.innerHTML = '<p style="color: var(--muted); margin: 0;">Nenhum evento nos próximos 7 dias</p>';
+  } else {
+    upcomingEl.innerHTML = events.map(e => `
+      <div style="padding: 10px; background: var(--canvas); border-left: 3px solid ${colorMap[e.type] || '#00D084'}; border-radius: 6px;">
+        <div style="font-weight: 600; color: var(--ink); font-size: 11px;">${e.label}</div>
+        <div style="font-size: 10px; color: var(--muted); margin-top: 4px;">${e.date}</div>
+      </div>
+    `).join('');
+  }
+}
+
+const colorMap = {
+  sales: "#00D084",
+  delivery: "#4CAF50",
+  logistics: "#ffc107",
+  cash: "#845ef7",
+  custom: "#3b82f6",
+};
 
 export { bindCalendarEvents, renderCalendarWithEvents, attachCalendarEventListeners, updateCalendarStats };
