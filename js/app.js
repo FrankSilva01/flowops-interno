@@ -185,34 +185,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error("Calendar init error:", err);
   }
 
-  // Temporarily disabled - will simplify later
-  // Initialize Advanced Dashboard
-  /*
-  try {
-    const dashboardContainer = byId("advancedDashboard");
-    if (dashboardContainer) {
-      const style = document.createElement("style");
-      style.textContent = advancedDashboardCSS;
-      document.head.appendChild(style);
-      renderAdvancedDashboard();
-    }
-  } catch (err) {
-    console.error("Advanced dashboard init error:", err);
-  }
-  */
-
-  // Initialize calendar
-  try {
-    const now = new Date();
-    bindCalendarEvents();
-    const calendarContainer = byId("calendarWidget");
-    if (calendarContainer) {
-      calendarContainer.innerHTML = renderCalendarWithEvents(now.getFullYear(), now.getMonth());
-    }
-  } catch (err) {
-    console.error("Calendar init error:", err);
-  }
-
   // Initialize Advanced Dashboard
   try {
     const dashboardContainer = byId("advancedDashboard");
