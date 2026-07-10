@@ -148,12 +148,12 @@ import {
   bindProductImageInputs, resolveChannelFeePct, computeMarginBreakdown, renderProductProfitPreview,
   bindProductProfitPreview,
 } from "./features/pricing.js";
+import { bindCalendarEvents, renderCalendarWithEvents } from "./features/calendar-navigation.js";
 // Temporarily disabled new features
 // import { renderAdvancedDashboard, advancedDashboardCSS } from "./features/advanced-dashboard.js";
 // import { openMLPricingDialog, applyPriceRecommendation, iaPricingCSS } from "./features/ia-pricing.js";
 // import { pushNotificationManager, pushNotificationsCSS } from "./features/push-notifications.js";
 // import { accountingIntegration, accountingIntegrationCSS } from "./features/accounting-integration.js";
-// import { bindCalendarEvents, renderCalendarWithEvents } from "./features/calendar-navigation.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
   const marketplaceStatus = getMarketplaceStatusFromHash();
@@ -171,6 +171,18 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
   render();
   showMarketplaceOAuthStatus(marketplaceStatus);
+
+  // Initialize calendar
+  try {
+    const now = new Date();
+    bindCalendarEvents();
+    const calendarContainer = byId("calendarWidget");
+    if (calendarContainer) {
+      calendarContainer.innerHTML = renderCalendarWithEvents(now.getFullYear(), now.getMonth());
+    }
+  } catch (err) {
+    console.error("Calendar init error:", err);
+  }
 
   // Temporarily disabled new features initialization
   /*
@@ -210,17 +222,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     } catch (err) {
       console.error("Advanced dashboard init error:", err);
-    }
-
-    try {
-      const now = new Date();
-      bindCalendarEvents();
-      const calendarContainer = byId("calendarWidget");
-      if (calendarContainer) {
-        calendarContainer.innerHTML = renderCalendarWithEvents(now.getFullYear(), now.getMonth());
-      }
-    } catch (err) {
-      console.error("Calendar init error:", err);
     }
   }, 100);
   */
