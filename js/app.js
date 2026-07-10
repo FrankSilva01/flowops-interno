@@ -183,8 +183,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error("Calendar init error:", err);
   }
 
-  // Temporarily disabled Advanced Dashboard
-  /*
+  // Initialize Advanced Dashboard
   try {
     const dashboardContainer = byId("advancedDashboard");
     if (dashboardContainer) {
@@ -196,7 +195,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   } catch (err) {
     console.error("Advanced dashboard init error:", err);
   }
-  */
 
   // Initialize all remaining features
   setTimeout(() => {

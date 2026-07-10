@@ -1,5 +1,6 @@
 import { state, money } from "../core/state.js";
-import { byId, setView } from "../core/dom.js";
+import { byId } from "../core/dom.js";
+import { setView } from "../core/router.js";
 
 export function renderAdvancedDashboard() {
   const container = byId("advancedDashboard");
