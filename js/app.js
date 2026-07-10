@@ -149,10 +149,10 @@ import {
   bindProductProfitPreview,
 } from "./features/pricing.js";
 import { bindCalendarEvents, renderCalendarWithEvents } from "./features/calendar-navigation.js";
-import { pushNotificationManager, pushNotificationsCSS } from "./features/push-notifications.js";
+import { openMLPricingDialog, applyPriceRecommendation, iaPricingCSS } from "./features/ia-pricing.js";
 // Temporarily disabled new features
 // import { renderAdvancedDashboard, advancedDashboardCSS } from "./features/advanced-dashboard.js";
-// import { openMLPricingDialog, applyPriceRecommendation, iaPricingCSS } from "./features/ia-pricing.js";
+// import { pushNotificationManager, pushNotificationsCSS } from "./features/push-notifications.js";
 // import { accountingIntegration, accountingIntegrationCSS } from "./features/accounting-integration.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -184,14 +184,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error("Calendar init error:", err);
   }
 
-  // Initialize Push Notifications
+  // Initialize IA Pricing
   try {
-    const pushStyle = document.createElement("style");
-    pushStyle.textContent = pushNotificationsCSS;
-    document.head.appendChild(pushStyle);
-    pushNotificationManager.init().catch(err => console.error("Push init error:", err));
+    const iaPricingStyle = document.createElement("style");
+    iaPricingStyle.textContent = iaPricingCSS;
+    document.head.appendChild(iaPricingStyle);
   } catch (err) {
-    console.error("Push notifications init error:", err);
+    console.error("IA Pricing CSS init error:", err);
   }
 
   // Temporarily disabled new features initialization
