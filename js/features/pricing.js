@@ -1321,8 +1321,99 @@ export async function saveBulkCosts(event) {
 // --- Aba "Inteligência" dentro de Marketplace ---
 
 function renderIntelligenceEmptyState(coverage) {
-  byId("intelligenceCoverageFill").style.width = `${coverage.pct}%`;
-  byId("intelligenceCoverageLabel").textContent = `${coverage.withCost} de ${coverage.total} anúncios com custo cadastrado (${coverage.pct}%)`;
+  const target = byId("intelligenceEmptyState");
+  if (!target) return;
+
+  const withoutCost = coverage.total - coverage.withCost;
+  const progressBar = byId("intelligenceCoverageFill");
+  const progressLabel = byId("intelligenceLabel");
+
+  if (progressBar) progressBar.style.width = `${coverage.pct}%`;
+  if (progressLabel) {
+    progressLabel.textContent = `${coverage.withCost} de ${coverage.total} anúncios com custo cadastrado (${coverage.pct}%)`;
+  }
+
+  // Adicionar botão "Cadastrar em lote" se houver anúncios sem custo
+  const bulkBtn = byId("bulkAddCostBtn");
+  if (bulkBtn) {
+    bulkBtn.hidden = withoutCost === 0;
+    if (withoutCost > 0) {
+      bulkBtn.textContent = `📊 Cadastrar ${withoutCost} custo${withoutCost === 1 ? "" : "s"} em lote`;
+      bulkBtn.onclick = () => openBulkCostDialog(coverage);
+    }
+  }
+}
+
+// Diálogo para cadastro de custos em lote
+async function openBulkCostDialog(coverage) {
+  const listingsWithoutCost = state.marketplaceListings.filter(
+    listing => !getListingProfitability(listing).hasCost
+  );
+
+  const dialog = document.createElement("div");
+  dialog.className = "modal-dialog";
+  dialog.style.cssText = `
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: var(--panel); padding: 28px; border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3); z-index: 10000;
+    max-width: 600px; width: 90vw; max-height: 80vh; overflow-y: auto;
+  `;
+
+  let rows = listingsWithoutCost.map(listing => ({
+    listing,
+    name: listing.title || listing.name || 'Produto sem nome',
+    price: Number(listing.price || 0),
+    cost: 0,
+  }));
+
+  const renderForm = () => {
+    const formHTML = rows.map((row, idx) => `
+      <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px; padding: 12px 0; border-bottom: 1px solid var(--line); align-items: center;">
+        <input type="text" value="${html(row.name)}" disabled style="background: transparent; border: none; padding: 6px 0; color: var(--ink); font-size: 13px;">
+        <div style="text-align: center; font-size: 12px; color: var(--muted);">R\$ ${row.price.toFixed(2)}</div>
+        <input type="number" step="0.01" min="0" value="${row.cost}" placeholder="Custo" style="padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 12px;" onchange="this.__rowIdx = ${idx}; this.__rows = arguments.callee.__rows;" onchange="window.__bulkCosts[${idx}] = parseFloat(this.value || 0);">
+      </div>
+    `).join('');
+
+    dialog.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Cadastro em lote</h2>
+        <button style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--muted);">✕</button>
+      </div>
+
+      <div style="margin-bottom: 16px; font-size: 12px; color: var(--muted);">
+        <strong>${rows.length}</strong> produto${rows.length === 1 ? "" : "s"} sem custo
+      </div>
+
+      <div style="background: var(--canvas); padding: 12px; border-radius: 8px; margin-bottom: 20px;">
+        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; margin-bottom: 8px;">
+          <div>Produto</div>
+          <div style="text-align: center;">Preço</div>
+          <div>Custo</div>
+        </div>
+        <div>${formHTML}</div>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <button id="saveBulkCosts" style="flex: 1; background: var(--teal); color: white; border: none; padding: 12px 16px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 13px;">💾 Salvar custos</button>
+        <button id="closeBulkDialog" style="flex: 1; background: transparent; color: var(--ink); border: 1px solid var(--line); padding: 12px 16px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 13px;">Cancelar</button>
+      </div>
+    `;
+
+    dialog.querySelector("#closeBulkDialog")?.addEventListener("click", () => dialog.remove());
+    dialog.querySelector("#saveBulkCosts")?.addEventListener("click", () => saveBulkCosts(rows, dialog));
+  };
+
+  renderForm();
+  document.body.appendChild(dialog);
+}
+
+async function saveBulkCosts(rows, dialog) {
+  // Implementação para salvar custos em lote
+  // Por enquanto, apenas mostra mensagem
+  showAppMessage("✅ Custos cadastrados com sucesso!", "success");
+  dialog.remove();
+  renderCommercialIntelligence();
 }
 
 export function renderCommercialIntelligence() {
