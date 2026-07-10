@@ -149,11 +149,11 @@ import {
   bindProductProfitPreview,
 } from "./features/pricing.js";
 import { bindCalendarEvents, renderCalendarWithEvents } from "./features/calendar-navigation.js";
-import { openMLPricingDialog, applyPriceRecommendation, iaPricingCSS } from "./features/ia-pricing.js";
+import { accountingIntegration, accountingIntegrationCSS } from "./features/accounting-integration.js";
 // Temporarily disabled new features
 // import { renderAdvancedDashboard, advancedDashboardCSS } from "./features/advanced-dashboard.js";
+// import { openMLPricingDialog, applyPriceRecommendation, iaPricingCSS } from "./features/ia-pricing.js";
 // import { pushNotificationManager, pushNotificationsCSS } from "./features/push-notifications.js";
-// import { accountingIntegration, accountingIntegrationCSS } from "./features/accounting-integration.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
   const marketplaceStatus = getMarketplaceStatusFromHash();
@@ -184,13 +184,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error("Calendar init error:", err);
   }
 
-  // Initialize IA Pricing
+  // Initialize Accounting Integration
   try {
-    const iaPricingStyle = document.createElement("style");
-    iaPricingStyle.textContent = iaPricingCSS;
-    document.head.appendChild(iaPricingStyle);
+    const accountingStyle = document.createElement("style");
+    accountingStyle.textContent = accountingIntegrationCSS;
+    document.head.appendChild(accountingStyle);
   } catch (err) {
-    console.error("IA Pricing CSS init error:", err);
+    console.error("Accounting integration CSS init error:", err);
   }
 
   // Temporarily disabled new features initialization
