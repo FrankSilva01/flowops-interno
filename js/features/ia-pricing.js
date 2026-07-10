@@ -1,6 +1,6 @@
 import { state, money, saveData } from "../core/state.js";
-import { recordAudit } from "./logs.js";
 import { showAppMessage, byId } from "../core/dom.js";
+import { recordAudit } from "./logs.js";
 
 const ML_CONFIG = {
   elasticity: 1.2,
@@ -9,65 +9,81 @@ const ML_CONFIG = {
 };
 
 export function analyzeMLPricing() {
-  const listings = state.data?.listings || [];
-  const recommendations = [];
+  const sales = state.marketplaceSales || [];
+  if (!sales.length) return [];
 
-  listings.forEach(listing => {
-    const rec = generatePricingRecommendation(listing);
+  const recommendations = [];
+  const productAnalysis = {};
+
+  sales.forEach(sale => {
+    const key = sale.title || sale.name || "Produto";
+    if (!productAnalysis[key]) {
+      productAnalysis[key] = {
+        title: key,
+        prices: [],
+        visits: 0,
+        sold: 0,
+        totalRevenue: 0,
+      };
+    }
+    productAnalysis[key].prices.push(Number(sale.price || 0));
+    productAnalysis[key].sold++;
+    productAnalysis[key].totalRevenue += Number(sale.price || 0);
+  });
+
+  Object.values(productAnalysis).forEach(product => {
+    const rec = generatePricingRecommendation(product);
     if (rec) recommendations.push(rec);
   });
 
   return recommendations.sort((a, b) => b.potential_impact - a.potential_impact).slice(0, 10);
 }
 
-function generatePricingRecommendation(listing) {
-  const current_price = Number(listing.price || 0);
-  const cost = Number(listing.cost || 0);
-  const visits = Number(listing.visits || 0) || 1;
-  const conversions = Number(listing.sold_quantity || 0) || 0;
-  const stock = Number(listing.stock || 0) || 0;
+function generatePricingRecommendation(product) {
+  const current_price = Math.max(...product.prices);
+  const avg_price = product.prices.reduce((a, b) => a + b, 0) / product.prices.length;
+  const sold = product.sold;
+  const visits = sold * 2; // Estimativa de visitas
+  const cost = avg_price * 0.4; // Estimativa de custo = 40% do preço
 
-  const conversion_rate = (conversions / visits) * 100;
+  const conversion_rate = (sold / visits) * 100;
   const current_margin = ((current_price - cost) / current_price) * 100;
-  const stock_velocity = conversions > 0 ? (conversions * 30) / stock : 0;
+  const price_variance = Math.max(...product.prices) - Math.min(...product.prices);
 
   const signals = {
-    low_conversion: conversion_rate < 0.5,
-    high_velocity: stock_velocity > 20,
-    low_stock: stock < 5 && conversions > 0,
+    low_conversion: conversion_rate < 2,
+    high_variance: price_variance > current_price * 0.2,
     low_margin: current_margin < ML_CONFIG.minMargin * 100,
     high_margin: current_margin > ML_CONFIG.maxMargin * 100,
-    high_visits_low_sales: visits > 50 && conversions < 5,
+    high_velocity: sold > 5,
   };
 
   let recommended_price = current_price;
   let reasoning = [];
   let confidence = 0.5;
 
-  if (signals.low_margin) {
-    recommended_price *= 1 + (ML_CONFIG.minMargin - current_margin / 100) * 0.5;
-    reasoning.push("Margem abaixo do mínimo ideal");
-    confidence = Math.max(confidence, 0.85);
-  }
-
-  if (signals.high_visits_low_sales) {
-    const discount = 0.05 * (1 - conversion_rate / 1);
-    recommended_price *= 1 - discount;
-    reasoning.push("Alta visitação mas baixa conversão");
-    confidence = Math.max(confidence, 0.80);
-  }
-
-  if (signals.high_velocity && !signals.low_stock) {
-    const premium = 0.08 * (stock_velocity / 30);
-    recommended_price *= 1 + premium;
-    reasoning.push("Estoque com alta velocidade");
+  if (signals.high_variance) {
+    recommended_price = avg_price * 1.05;
+    reasoning.push("Variação de preço detectada");
     confidence = Math.max(confidence, 0.75);
   }
 
-  if (signals.low_stock) {
-    recommended_price *= 1.12;
-    reasoning.push("Estoque crítico");
-    confidence = Math.max(confidence, 0.90);
+  if (signals.low_margin && current_margin < 20) {
+    recommended_price = current_price * 1.08;
+    reasoning.push("Margem baixa");
+    confidence = Math.max(confidence, 0.85);
+  }
+
+  if (signals.high_velocity) {
+    recommended_price = current_price * 1.05;
+    reasoning.push("Produto com alta demanda");
+    confidence = Math.max(confidence, 0.80);
+  }
+
+  if (signals.high_margin && current_margin > 40) {
+    recommended_price = current_price * 0.95;
+    reasoning.push("Margem muito alta");
+    confidence = Math.max(confidence, 0.70);
   }
 
   const price_change = recommended_price - current_price;
@@ -76,21 +92,21 @@ function generatePricingRecommendation(listing) {
   if (Math.abs(price_change_pct) < 2) return null;
 
   return {
-    id: listing.id,
-    name: listing.name || listing.title,
+    id: product.title,
+    name: product.title,
     current_price,
     recommended_price: Math.round(recommended_price * 100) / 100,
     price_change,
     price_change_pct: Math.round(price_change_pct * 10) / 10,
-    reasoning: reasoning.join(" + "),
+    reasoning: reasoning.join(" + ") || "Ajuste recomendado",
     confidence: Math.round(confidence * 100),
     impact_metrics: {
       visits,
       conversion_rate: Math.round(conversion_rate * 100) / 100,
       current_margin: Math.round(current_margin),
-      stock_velocity: Math.round(stock_velocity * 10) / 10,
+      sold,
     },
-    potential_impact: Math.round((recommended_price * (conversions * 1.05)) - (current_price * conversions)),
+    potential_impact: Math.round((recommended_price * sold * 1.05) - (current_price * sold)),
   };
 }
 
@@ -108,11 +124,11 @@ export function openMLPricingDialog() {
 
       <div class="modal-body">
         <div class="pricing-info">
-          <p>Análise de ${recommendations.length} produtos</p>
+          <p>${recommendations.length ? `Análise de ${recommendations.length} produtos com oportunidades de otimização` : "Nenhuma recomendação de preço disponível. Adicione vendas de marketplace para análise."}</p>
         </div>
 
         <div class="recommendations-list">
-          ${recommendations.map((rec, i) => `
+          ${recommendations.length ? recommendations.map((rec, i) => `
             <div class="recommendation-card" data-rec-id="${rec.id}">
               <div class="rec-header">
                 <div>
@@ -139,11 +155,17 @@ export function openMLPricingDialog() {
                 </div>
               </div>
 
-              <button class="primary-btn small-btn" onclick="applyPriceRecommendation('${rec.id}', ${rec.recommended_price})">
+              <div class="rec-metrics">
+                <div><strong>${rec.impact_metrics.sold}</strong> vendas</div>
+                <div><strong>${Math.round(rec.impact_metrics.conversion_rate)}%</strong> conversão</div>
+                <div><strong>${rec.impact_metrics.current_margin}%</strong> margem</div>
+              </div>
+
+              <button class="primary-btn small-btn" onclick="applyPriceRecommendation('${rec.id.replace(/'/g, "\\'")}', ${rec.recommended_price})">
                 Aplicar
               </button>
             </div>
-          `).join("")}
+          `).join("") : "<p style='text-align: center; padding: 20px;'>Adicione vendas de marketplace para receber recomendações de preço</p>"}
         </div>
       </div>
 
@@ -157,14 +179,17 @@ export function openMLPricingDialog() {
   modal.showModal();
 }
 
-export function applyPriceRecommendation(listingId, newPrice) {
-  const listing = state.data?.listings?.find(l => l.id === listingId);
-  if (!listing) return;
+export function applyPriceRecommendation(productName, newPrice) {
+  const sale = state.marketplaceSales?.find(s => (s.title || s.name) === productName);
+  if (!sale) {
+    showAppMessage("Produto não encontrado", "error");
+    return;
+  }
 
-  const oldPrice = Number(listing.price || 0);
-  listing.price = newPrice;
+  const oldPrice = Number(sale.price || 0);
+  sale.price = newPrice;
 
-  recordAudit("listing", listingId, "price_ml_recommendation", oldPrice, newPrice, "IA Pricing");
+  recordAudit("marketplace", productName, "price_ml_recommendation", oldPrice, newPrice, "IA Pricing");
   saveData();
   showAppMessage(`✅ Preço atualizado: ${money.format(oldPrice)} → ${money.format(newPrice)}`, "success");
 }
@@ -175,10 +200,17 @@ export const iaPricingCSS = `
 }
 
 .pricing-info {
-  background: #f0f0f0;
+  background: #1a2332;
   padding: 15px;
   border-radius: 6px;
   margin-bottom: 20px;
+  border-left: 3px solid #00D084;
+}
+
+.pricing-info p {
+  margin: 0;
+  color: #ddd;
+  font-size: 13px;
 }
 
 .recommendations-list {
@@ -190,10 +222,10 @@ export const iaPricingCSS = `
 }
 
 .recommendation-card {
-  border: 1px solid #ddd;
+  border: 1px solid #222;
   border-radius: 6px;
   padding: 15px;
-  background: #fafafa;
+  background: #0f1419;
 }
 
 .rec-header {
@@ -205,13 +237,15 @@ export const iaPricingCSS = `
 
 .rec-header strong {
   display: block;
-  color: #333;
+  color: #fff;
   margin-bottom: 3px;
+  font-size: 13px;
 }
 
 .rec-header small {
-  color: #666;
+  color: #999;
   font-style: italic;
+  font-size: 12px;
 }
 
 .confidence-badge {
@@ -227,7 +261,7 @@ export const iaPricingCSS = `
   align-items: center;
   gap: 15px;
   margin-bottom: 12px;
-  background: white;
+  background: #1a2332;
   padding: 12px;
   border-radius: 4px;
 }
@@ -245,7 +279,7 @@ export const iaPricingCSS = `
 }
 
 .price-item strong {
-  font-size: 18px;
+  font-size: 16px;
   color: #00D084;
 }
 
@@ -255,8 +289,23 @@ export const iaPricingCSS = `
 }
 
 .price-arrow {
-  color: #ccc;
-  font-size: 20px;
+  color: #666;
+  font-size: 18px;
+}
+
+.rec-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  text-align: center;
+  color: #999;
+}
+
+.rec-metrics strong {
+  color: #00D084;
+  display: block;
 }
 
 .small-btn {
