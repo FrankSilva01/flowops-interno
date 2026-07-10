@@ -25,6 +25,24 @@ const EVENT_COLORS = {
   custom: "#3b82f6",
 };
 
+const EVENT_ICONS = {
+  sales: "🛒",
+  delivery: "📦",
+  logistics: "🚚",
+  cash: "💰",
+  feriado: "🇧🇷",
+  custom: "📌",
+};
+
+const EVENT_LABELS = {
+  sales: "Vendas",
+  delivery: "Entrega",
+  logistics: "Logística",
+  cash: "Financeiro",
+  feriado: "Feriado",
+  custom: "Evento",
+};
+
 function bindCalendarEvents() {
   window.calendarEvents = JSON.parse(localStorage.getItem("calendarCustomEvents") || "{}");
   if (!window.calendarDate) {
@@ -48,26 +66,26 @@ function renderCalendarWithEvents(year, month) {
   const thisYear = now.getFullYear();
 
   let html = `
-    <div style="padding: 20px; background: #0f1419; border-radius: 8px; max-width: 600px;">
+    <div class="calendar-modern">
       <!-- Navigation -->
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <button class="cal-prev-btn" style="background: #222; color: #00D084; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: 600;">← Anterior</button>
-        <h2 style="margin: 0; color: #fff; font-size: 16px;">${monthNames[month]} ${year}</h2>
-        <button class="cal-next-btn" style="background: #222; color: #00D084; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: 600;">Próximo →</button>
+      <div class="calendar-header">
+        <button class="calendar-nav-btn cal-prev-btn"><i class="ti ti-chevron-left"></i> Anterior</button>
+        <h2 class="calendar-title">${monthNames[month]} ${year}</h2>
+        <button class="calendar-nav-btn cal-next-btn">Próximo <i class="ti ti-chevron-right"></i></button>
       </div>
 
       <!-- Calendar Grid -->
-      <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 20px;">
+      <div class="calendar-grid">
   `;
 
   // Day headers
   dayNames.forEach(day => {
-    html += `<div style="text-align: center; color: #999; font-size: 12px; font-weight: 600; padding: 8px 0; text-transform: uppercase;">${day}</div>`;
+    html += `<div class="calendar-weekday">${day}</div>`;
   });
 
   // Empty cells
   for (let i = 0; i < startingDayOfWeek; i++) {
-    html += `<div></div>`;
+    html += `<div class="calendar-day-cell empty"></div>`;
   }
 
   // Days
@@ -79,28 +97,20 @@ function renderCalendarWithEvents(year, month) {
     const dayEvents = getCalendarEventsForDay(date);
     const hasEvents = dayEvents.length > 0;
 
+    const tooltipText = buildTooltipText(dayEvents);
+
     html += `
-      <div class="calendar-day" data-date="${dateStr}" style="
-        min-height: 80px;
-        border-radius: 6px;
-        background: ${isToday ? '#00D08422' : '#1a2332'};
-        border: ${isToday ? '2px solid #00D084' : '1px solid #222'};
-        padding: 8px;
-        cursor: ${hasEvents ? 'pointer' : 'default'};
-        transition: all 0.2s;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-      ">
-        <div style="color: ${isToday ? '#00D084' : '#ddd'}; font-weight: ${isToday ? '700' : '500'}; font-size: 13px;">${day}</div>
-        <div style="display: flex; flex-direction: column; gap: 4px; font-size: 9px;">
-          ${dayEvents.slice(0, 2).map(event => `
-            <div style="background: ${EVENT_COLORS[event.type]}; color: #000; padding: 2px 6px; border-radius: 2px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${event.label}">
-              ${event.label.slice(0, 12)}${event.label.length > 12 ? '...' : ''}
+      <div class="calendar-day-cell${isToday ? ' today' : ''}" data-date="${dateStr}" style="cursor: ${hasEvents ? 'pointer' : 'default'};">
+        <div class="calendar-day-number">${day}</div>
+        <div class="calendar-day-events">
+          ${dayEvents.slice(0, 3).map(event => `
+            <div class="calendar-event-badge ${event.type}">
+              ${event.label.length > 16 ? event.label.slice(0, 14) + '...' : event.label}
             </div>
           `).join('')}
-          ${dayEvents.length > 2 ? `<small style="color: #999;">+${dayEvents.length - 2} mais</small>` : ''}
+          ${dayEvents.length > 3 ? `<div class="calendar-event-more">+${dayEvents.length - 3} mais</div>` : ''}
         </div>
+        ${hasEvents ? `<div class="calendar-tooltip">${tooltipText}</div>` : ''}
       </div>
     `;
   }
@@ -108,33 +118,79 @@ function renderCalendarWithEvents(year, month) {
   html += `
       </div>
 
-      <!-- Action Button -->
-      <button class="cal-mark-event-btn" style="
-        width: 100%;
-        background: #00D084;
-        color: #000;
-        border: none;
-        padding: 10px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-weight: 600;
-        font-size: 12px;
-        margin-bottom: 10px;
-      ">+ Marcar evento</button>
+      <!-- Stats -->
+      <div class="calendar-stats">
+        <div class="calendar-stat-item">
+          <span class="calendar-stat-value" id="monthSales">0</span>
+          <span class="calendar-stat-label">Vendas</span>
+        </div>
+        <div class="calendar-stat-item">
+          <span class="calendar-stat-value" id="monthDeliveries">0</span>
+          <span class="calendar-stat-label">Entregas</span>
+        </div>
+        <div class="calendar-stat-item">
+          <span class="calendar-stat-value" id="monthLogistics">0</span>
+          <span class="calendar-stat-label">Logística</span>
+        </div>
+        <div class="calendar-stat-item">
+          <span class="calendar-stat-value" id="monthCash">0</span>
+          <span class="calendar-stat-label">Financeiro</span>
+        </div>
+        <div class="calendar-stat-item">
+          <span class="calendar-stat-value" id="monthTotal">0</span>
+          <span class="calendar-stat-label">Total</span>
+        </div>
+      </div>
 
       <!-- Legend -->
-      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; font-size: 11px;">
-        <div style="display: flex; align-items: center; gap: 6px;"><div style="width: 8px; height: 8px; border-radius: 2px; background: ${EVENT_COLORS.sales};"></div><span>Vendas</span></div>
-        <div style="display: flex; align-items: center; gap: 6px;"><div style="width: 8px; height: 8px; border-radius: 2px; background: ${EVENT_COLORS.delivery};"></div><span>Entrega</span></div>
-        <div style="display: flex; align-items: center; gap: 6px;"><div style="width: 8px; height: 8px; border-radius: 2px; background: ${EVENT_COLORS.logistics};"></div><span>Logística</span></div>
-        <div style="display: flex; align-items: center; gap: 6px;"><div style="width: 8px; height: 8px; border-radius: 2px; background: ${EVENT_COLORS.cash};"></div><span>Financeiro</span></div>
-        <div style="display: flex; align-items: center; gap: 6px;"><div style="width: 8px; height: 8px; border-radius: 2px; background: ${EVENT_COLORS.feriado};"></div><span>Feriado</span></div>
-        <div style="display: flex; align-items: center; gap: 6px;"><div style="width: 8px; height: 8px; border-radius: 2px; background: ${EVENT_COLORS.custom};"></div><span>Evento</span></div>
+      <div class="calendar-legend">
+        <div class="calendar-legend-item">
+          <div class="calendar-legend-dot sales"></div>
+          <span>Vendas</span>
+        </div>
+        <div class="calendar-legend-item">
+          <div class="calendar-legend-dot delivery"></div>
+          <span>Entrega</span>
+        </div>
+        <div class="calendar-legend-item">
+          <div class="calendar-legend-dot logistics"></div>
+          <span>Logística</span>
+        </div>
+        <div class="calendar-legend-item">
+          <div class="calendar-legend-dot cash"></div>
+          <span>Financeiro</span>
+        </div>
+        <div class="calendar-legend-item">
+          <div class="calendar-legend-dot feriado"></div>
+          <span>Feriado</span>
+        </div>
+        <div class="calendar-legend-item">
+          <div class="calendar-legend-dot custom"></div>
+          <span>Evento</span>
+        </div>
+      </div>
+
+      <!-- Action Button -->
+      <div class="calendar-action-bar">
+        <button class="calendar-add-event-btn cal-mark-event-btn">
+          <i class="ti ti-plus"></i>
+          Marcar evento
+        </button>
       </div>
     </div>
   `;
 
   return html;
+}
+
+function buildTooltipText(events) {
+  if (events.length === 0) return "Sem eventos";
+
+  return events.map(event => {
+    const icon = EVENT_ICONS[event.type] || "•";
+    const label = EVENT_LABELS[event.type] || event.type;
+    return `${icon} ${label}: ${event.detail || event.label}`;
+  }).join("\n");
 }
 
 function getCalendarEventsForDay(date) {
@@ -146,6 +202,8 @@ function getCalendarEventsForDay(date) {
     events.push({
       type: "feriado",
       label: `🇧🇷 ${FERIADOS[dateStr]}`,
+      detail: FERIADOS[dateStr],
+      count: 1,
     });
   }
 
@@ -159,6 +217,9 @@ function getCalendarEventsForDay(date) {
     events.push({
       type: "sales",
       label: `🛒 ${sales.length} venda${sales.length > 1 ? "s" : ""}`,
+      detail: `${sales.length} venda${sales.length > 1 ? "s" : ""} no marketplace`,
+      count: sales.length,
+      data: sales,
     });
   }
 
@@ -172,6 +233,9 @@ function getCalendarEventsForDay(date) {
     events.push({
       type: "delivery",
       label: `📦 ${orders.length} entrega${orders.length > 1 ? "s" : ""}`,
+      detail: `${orders.length} entrega${orders.length > 1 ? "s" : ""} agendada${orders.length > 1 ? "s" : ""}`,
+      count: orders.length,
+      data: orders,
     });
   }
 
@@ -185,6 +249,9 @@ function getCalendarEventsForDay(date) {
     events.push({
       type: "logistics",
       label: `🚚 ${logistics.length} evento${logistics.length > 1 ? "s" : ""}`,
+      detail: `${logistics.length} evento${logistics.length > 1 ? "s" : ""} logístico${logistics.length > 1 ? "s" : ""}`,
+      count: logistics.length,
+      data: logistics,
     });
   }
 
@@ -198,6 +265,9 @@ function getCalendarEventsForDay(date) {
     events.push({
       type: "cash",
       label: `💰 ${cash.length} lançamento${cash.length > 1 ? "s" : ""}`,
+      detail: `${cash.length} lançamento${cash.length > 1 ? "s" : ""} financeiro${cash.length > 1 ? "s" : ""}`,
+      count: cash.length,
+      data: cash,
     });
   }
 
@@ -207,6 +277,8 @@ function getCalendarEventsForDay(date) {
     events.push({
       type: "custom",
       label: `📌 ${event}`,
+      detail: event,
+      count: 1,
     });
   });
 
@@ -224,6 +296,7 @@ function attachCalendarEventListeners() {
       if (container) {
         container.innerHTML = renderCalendarWithEvents(window.calendarDate.getFullYear(), window.calendarDate.getMonth());
         attachCalendarEventListeners();
+        updateCalendarStats(window.calendarDate.getFullYear(), window.calendarDate.getMonth());
       }
     });
   }
@@ -238,6 +311,7 @@ function attachCalendarEventListeners() {
       if (container) {
         container.innerHTML = renderCalendarWithEvents(window.calendarDate.getFullYear(), window.calendarDate.getMonth());
         attachCalendarEventListeners();
+        updateCalendarStats(window.calendarDate.getFullYear(), window.calendarDate.getMonth());
       }
     });
   }
@@ -250,113 +324,169 @@ function attachCalendarEventListeners() {
     });
   }
 
-  // Dias com eventos
-  const dayElements = document.querySelectorAll(".calendar-day");
+  // Dias com eventos - Click para mostrar detalhes
+  const dayElements = document.querySelectorAll(".calendar-day-cell");
   dayElements.forEach(dayEl => {
     const dateStr = dayEl.getAttribute("data-date");
-    const date = new Date(dateStr);
-    const dayEvents = getCalendarEventsForDay(date);
-    if (dayEvents.length > 0) {
-      dayEl.addEventListener("click", () => {
-        showDayEvents(dateStr);
-      });
+    if (dateStr) {
+      const date = new Date(dateStr);
+      const dayEvents = getCalendarEventsForDay(date);
+      if (dayEvents.length > 0) {
+        dayEl.addEventListener("click", () => {
+          showDayEventsDrawer(dateStr, dayEvents);
+        });
+      }
     }
   });
 }
 
-function showDayEvents(dateStr) {
+function showDayEventsDrawer(dateStr, dayEvents) {
   const date = new Date(dateStr);
-  const events = getCalendarEventsForDay(date);
+  const dateFormatted = date.toLocaleDateString("pt-BR", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric"
+  });
 
+  // Fechar drawer anterior se existir
+  const existingDrawer = document.querySelector(".calendar-drawer");
+  if (existingDrawer) {
+    existingDrawer.remove();
+  }
+  const existingOverlay = document.querySelector(".calendar-overlay");
+  if (existingOverlay) {
+    existingOverlay.remove();
+  }
+
+  // Overlay
+  const overlay = document.createElement("div");
+  overlay.className = "calendar-overlay";
+  overlay.addEventListener("click", () => {
+    drawer.remove();
+    overlay.remove();
+  });
+
+  // Drawer
   const drawer = document.createElement("div");
-  drawer.style.cssText = `
-    position: fixed;
-    right: 0;
-    top: 0;
-    width: 350px;
-    height: 100vh;
-    background: #0f1419;
-    border-left: 1px solid #222;
-    padding: 20px;
-    overflow-y: auto;
-    z-index: 1000;
-    box-shadow: -2px 0 10px rgba(0,0,0,0.5);
-  `;
+  drawer.className = "calendar-drawer";
 
   drawer.innerHTML = `
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-      <h2 style="margin: 0; font-size: 14px; color: #fff;">${date.toLocaleDateString("pt-BR")}</h2>
-      <button id="closeDrawer" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #999;">✕</button>
+    <div class="calendar-drawer-header">
+      <div>
+        <h2 class="calendar-drawer-title">${dateFormatted}</h2>
+        <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--muted);">${dayEvents.length} evento${dayEvents.length > 1 ? "s" : ""}</p>
+      </div>
+      <button class="calendar-drawer-close" aria-label="Fechar">✕</button>
     </div>
 
-    <div style="display: flex; flex-direction: column; gap: 8px;">
-      ${events.map(event => `
-        <div style="
-          background: #1a2332;
-          padding: 12px;
-          border-radius: 6px;
-          border-left: 3px solid ${EVENT_COLORS[event.type]};
-        ">
-          <strong style="display: block; color: #ddd; font-size: 12px;">${event.label}</strong>
+    <div class="calendar-events-list">
+      ${dayEvents.map(event => `
+        <div class="calendar-event-item ${event.type}">
+          <div class="calendar-event-icon">${EVENT_ICONS[event.type]}</div>
+          <div class="calendar-event-content">
+            <div class="calendar-event-label">${EVENT_LABELS[event.type]}</div>
+            <div class="calendar-event-detail">${event.detail || event.label}</div>
+            ${event.count > 1 ? `<div class="calendar-event-detail" style="margin-top: 6px; font-weight: 600; color: var(--teal);">${event.count} ocorrências</div>` : ''}
+          </div>
         </div>
       `).join('')}
     </div>
   `;
 
+  document.body.appendChild(overlay);
   document.body.appendChild(drawer);
-  document.getElementById("closeDrawer").addEventListener("click", () => drawer.remove());
+
+  drawer.querySelector(".calendar-drawer-close").addEventListener("click", () => {
+    drawer.remove();
+    overlay.remove();
+  });
 }
 
 function openEventForm() {
+  // Fechar drawer anterior se existir
+  const existingDrawer = document.querySelector(".calendar-drawer");
+  if (existingDrawer) {
+    existingDrawer.remove();
+  }
+  const existingOverlay = document.querySelector(".calendar-overlay");
+  if (existingOverlay) {
+    existingOverlay.remove();
+  }
+
+  // Overlay
+  const overlay = document.createElement("div");
+  overlay.className = "calendar-overlay";
+  overlay.addEventListener("click", () => {
+    drawer.remove();
+    overlay.remove();
+  });
+
   const drawer = document.createElement("div");
-  drawer.style.cssText = `
-    position: fixed;
-    right: 0;
-    top: 0;
-    width: 350px;
-    height: 100vh;
-    background: #0f1419;
-    border-left: 1px solid #222;
-    padding: 20px;
-    overflow-y: auto;
-    z-index: 1000;
-    box-shadow: -2px 0 10px rgba(0,0,0,0.5);
-  `;
+  drawer.className = "calendar-drawer";
 
   const today = new Date().toISOString().split("T")[0];
 
   drawer.innerHTML = `
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-      <h2 style="margin: 0; font-size: 14px; color: #fff;">Marcar evento</h2>
-      <button id="closeForm" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #999;">✕</button>
+    <div class="calendar-drawer-header">
+      <h2 class="calendar-drawer-title">Marcar evento</h2>
+      <button class="calendar-drawer-close" aria-label="Fechar">✕</button>
     </div>
 
-    <div style="margin-bottom: 15px;">
-      <label style="display: block; color: #999; font-size: 12px; margin-bottom: 6px;">Data</label>
-      <input type="date" id="eventDate" value="${today}" style="width: 100%; padding: 8px; background: #1a2332; border: 1px solid #222; color: #fff; border-radius: 4px; box-sizing: border-box; font-size: 12px;">
-    </div>
+    <div class="calendar-event-form">
+      <div class="calendar-form-group">
+        <label class="calendar-form-label">Data</label>
+        <input type="date" id="eventDate" value="${today}" class="calendar-form-input">
+      </div>
 
-    <div style="margin-bottom: 15px;">
-      <label style="display: block; color: #999; font-size: 12px; margin-bottom: 6px;">Evento</label>
-      <input type="text" id="eventText" placeholder="Ex: Feriado, Prazo importante..." style="width: 100%; padding: 8px; background: #1a2332; border: 1px solid #222; color: #fff; border-radius: 4px; box-sizing: border-box; font-size: 12px;">
-    </div>
+      <div class="calendar-form-group">
+        <label class="calendar-form-label">Descrição do evento</label>
+        <input type="text" id="eventText" placeholder="Ex: Feriado, Prazo importante..." class="calendar-form-input">
+      </div>
 
-    <div style="display: flex; gap: 10px;">
-      <button id="saveEvent" style="flex: 1; background: #00D084; color: #000; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px;">Salvar</button>
-      <button id="closeForm2" style="flex: 1; background: #222; color: #fff; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">Fechar</button>
+      <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button id="saveEvent" class="calendar-add-event-btn" style="flex: 1;">
+          <i class="ti ti-check"></i>
+          Salvar
+        </button>
+        <button id="closeForm" class="calendar-nav-btn" style="flex: 1;">
+          <i class="ti ti-x"></i>
+          Cancelar
+        </button>
+      </div>
     </div>
   `;
 
+  document.body.appendChild(overlay);
   document.body.appendChild(drawer);
 
-  document.getElementById("closeForm").addEventListener("click", () => drawer.remove());
-  document.getElementById("closeForm2").addEventListener("click", () => drawer.remove());
-  document.getElementById("saveEvent").addEventListener("click", () => {
+  const closeBtn = drawer.querySelector(".calendar-drawer-close");
+  const closeFormBtn = drawer.querySelector("#closeForm");
+  const saveBtn = drawer.querySelector("#saveEvent");
+
+  closeBtn.addEventListener("click", () => {
+    drawer.remove();
+    overlay.remove();
+  });
+
+  closeFormBtn.addEventListener("click", () => {
+    drawer.remove();
+    overlay.remove();
+  });
+
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) {
+      drawer.remove();
+      overlay.remove();
+    }
+  });
+
+  saveBtn.addEventListener("click", () => {
     const dateInput = document.getElementById("eventDate");
     const textInput = document.getElementById("eventText");
 
     if (!dateInput.value || !textInput.value.trim()) {
-      showAppMessage("Preencha data e evento", "warning");
+      showAppMessage("Preencha data e descrição do evento", "warning");
       return;
     }
 
@@ -369,8 +499,9 @@ function openEventForm() {
     window.calendarEvents[dateStr].push(textInput.value.trim());
     localStorage.setItem("calendarCustomEvents", JSON.stringify(window.calendarEvents));
 
-    showAppMessage("✅ Evento marcado!", "success");
+    showAppMessage("✅ Evento marcado com sucesso!", "success");
     drawer.remove();
+    overlay.remove();
 
     // Refresh calendar
     const container = byId("calendarWidget");
@@ -378,37 +509,38 @@ function openEventForm() {
       if (!window.calendarDate) window.calendarDate = new Date();
       container.innerHTML = renderCalendarWithEvents(window.calendarDate.getFullYear(), window.calendarDate.getMonth());
       attachCalendarEventListeners();
+      updateCalendarStats(window.calendarDate.getFullYear(), window.calendarDate.getMonth());
     }
   });
 }
 
 function updateCalendarStats(year, month) {
-  let sales = 0, deliveries = 0, logistics = 0, cash = 0;
+  let salesCount = 0, deliveriesCount = 0, logisticsCount = 0, cashCount = 0;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(year, month, day);
     const events = getCalendarEventsForDay(date);
     events.forEach(e => {
-      if (e.type === "sales") sales++;
-      if (e.type === "delivery") deliveries++;
-      if (e.type === "logistics") logistics++;
-      if (e.type === "cash") cash++;
+      if (e.type === "sales") salesCount += e.count || 1;
+      if (e.type === "delivery") deliveriesCount += e.count || 1;
+      if (e.type === "logistics") logisticsCount += e.count || 1;
+      if (e.type === "cash") cashCount += e.count || 1;
     });
   }
 
-  const total = sales + deliveries + logistics + cash;
+  const total = salesCount + deliveriesCount + logisticsCount + cashCount;
 
-  const salesesEl = document.getElementById("monthSales");
+  const salesEl = document.getElementById("monthSales");
   const deliveriesEl = document.getElementById("monthDeliveries");
   const logisticsEl = document.getElementById("monthLogistics");
   const cashEl = document.getElementById("monthCash");
   const totalEl = document.getElementById("monthTotal");
 
-  if (salesesEl) salesesEl.textContent = sales;
-  if (deliveriesEl) deliveriesEl.textContent = deliveries;
-  if (logisticsEl) logisticsEl.textContent = logistics;
-  if (cashEl) cashEl.textContent = cash;
+  if (salesEl) salesEl.textContent = salesCount;
+  if (deliveriesEl) deliveriesEl.textContent = deliveriesCount;
+  if (logisticsEl) logisticsEl.textContent = logisticsCount;
+  if (cashEl) cashEl.textContent = cashCount;
   if (totalEl) totalEl.textContent = total;
 }
 
