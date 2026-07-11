@@ -488,6 +488,33 @@ export async function saveProduct(event) {
     try {
       const listingType = String(data.get("listingType") || "classic");
 
+      // Se tiver imagens, tentar converter para URLs
+      let pictureUrls = [];
+      if (productUploadedImages && productUploadedImages.length > 0) {
+        console.log("📸 Processing images...");
+        for (let i = 0; i < productUploadedImages.length && i < 6; i++) {
+          const base64 = productUploadedImages[i];
+          const base64Data = base64.replace(/^data:image\/\w+;base64,/, "");
+          const binaryString = atob(base64Data);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let j = 0; j < binaryString.length; j++) {
+            bytes[j] = binaryString.charCodeAt(j);
+          }
+          const blob = new Blob([bytes], { type: "image/jpeg" });
+          const fileName = `product-${saved.id}-${Date.now()}-${i}.jpg`;
+          const { error: uploadError } = await state.supabase.storage
+            .from("lead-files")
+            .upload(fileName, blob);
+          if (!uploadError) {
+            const { data: { publicUrl } } = state.supabase.storage
+              .from("lead-files")
+              .getPublicUrl(fileName);
+            pictureUrls.push(publicUrl);
+            console.log(`✅ Image ${i + 1} URL:`, publicUrl);
+          }
+        }
+      }
+
       const mlPayload = {
         title: name,
         price: Number(price),
@@ -497,8 +524,7 @@ export async function saveProduct(event) {
         condition: "new",
         sku,
         description: String(data.get("description") || "").trim() || name,
-        // Imagens: opcional, podem ser adicionadas depois no Mercado Livre
-        ...(productUploadedImages && productUploadedImages.length > 0 && { pictures: productUploadedImages }),
+        ...(pictureUrls.length > 0 && { pictures: pictureUrls }),
       };
       console.log("📤 Sending to ML API:", mlPayload);
       const created = await marketplaceRequest("https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-sync?marketplace=ml&action=create-listing", {
