@@ -41,6 +41,7 @@ import {
   closePaymentMethodDialog,
 } from "../features/subscription.js";
 import { submitSupportTicket, renderSupportPortal, renderWhatsNew } from "../features/support.js";
+import { renderFiscalTab, fiscalCSS, getFiscalAlerts } from "../features/fiscal.js";
 import {
   renderMarketplaces, loadAndRenderMarketplaces, connectMercadoLivre, disconnectMercadoLivre,
   configureShopee, connectAmazon, syncAmazon, syncMercadoLivre, saveMarketplaceListing,
@@ -568,6 +569,9 @@ export function render() {
       break;
     case "whatsnew":
       renderWhatsNew();
+      break;
+    case "fiscal":
+      renderFiscalTab();
       break;
     default:
       renderDashboard();

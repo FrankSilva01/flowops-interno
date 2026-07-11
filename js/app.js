@@ -153,6 +153,7 @@ import { renderAdvancedDashboard, advancedDashboardCSS } from "./features/advanc
 import { openMLPricingDialog, applyPriceRecommendation, iaPricingCSS } from "./features/ia-pricing.js";
 import { pushNotificationManager, pushNotificationsCSS } from "./features/push-notifications.js";
 import { accountingIntegration, accountingIntegrationCSS } from "./features/accounting-integration.js";
+import { fiscalCSS } from "./features/fiscal.js";
 import { initGlobalSearch } from "./features/global-search.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -222,6 +223,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       document.head.appendChild(accountingStyle);
     } catch (err) {
       console.error("Accounting CSS error:", err);
+    }
+
+    try {
+      const fiscalStyle = document.createElement("style");
+      fiscalStyle.textContent = fiscalCSS;
+      document.head.appendChild(fiscalStyle);
+    } catch (err) {
+      console.error("Fiscal CSS error:", err);
     }
   }, 200);
 
