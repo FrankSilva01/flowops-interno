@@ -966,6 +966,8 @@
             <button class="view-tab" type="button" data-marketplace-view="sales">Vendas</button>
             <button class="view-tab" type="button" data-marketplace-view="integrations">Integrações</button>
             <button class="view-tab" type="button" data-marketplace-view="intelligence">Inteligência</button>
+            <button class="view-tab" type="button" data-marketplace-view="ml-questions">Perguntas ML</button>
+            <button class="view-tab" type="button" data-marketplace-view="whatsapp">WhatsApp</button>
             <button class="view-tab" type="button" data-marketplace-view="api-logs">Logs API</button>
             <button class="view-tab" type="button" data-marketplace-view="backup">Backup</button>
           </div>
@@ -1461,6 +1463,26 @@
             </div>
             <div id="marketplaceApiLogsList" class="api-log-list"></div>
             <button id="loadMoreMarketplaceLogsBtn" class="secondary-btn load-more-btn" type="button">Carregar mais</button>
+          </div>
+
+          <div id="marketplaceMLQuestionsView" class="marketplace-subview">
+            <div class="panel-head">
+              <h3>Perguntas do Mercado Livre</h3>
+              <div class="inline-actions">
+                <button id="openExportDialogBtn" class="primary-btn" type="button" onclick="window.openExportDialog()">📥 Exportar anúncios</button>
+              </div>
+            </div>
+            <div id="mlQuestionsContainer"></div>
+          </div>
+
+          <div id="marketplaceWhatsappView" class="marketplace-subview">
+            <div class="panel-head">
+              <h3>Templates WhatsApp</h3>
+              <div class="inline-actions">
+                <button id="renderWhatsappBtn" class="primary-btn" type="button" onclick="window.renderWhatsappTemplatesTab()">💬 Gerenciar templates</button>
+              </div>
+            </div>
+            <div id="whatsappTemplatesContainer"></div>
           </div>
 
           <div id="marketplaceBackupView" class="marketplace-subview">

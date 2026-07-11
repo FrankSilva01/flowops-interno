@@ -11,6 +11,8 @@ import { recordAudit, isWithinDateRange } from "./logs.js";
 import { getTokenAlert } from "./dashboard.js";
 import { renderProfitabilityBadge, renderCommercialIntelligence, getListingProfitability } from "./pricing.js";
 import { renderMarketplaceAnalyticsPanel, getListingAnalytics, computeIntentScore } from "./marketplace-analytics.js";
+import { renderMLQuestionsTab } from "./marketplace-export.js";
+import { renderWhatsappTemplatesTab } from "./weekly-summary.js";
 
 const MARKETPLACE_CHANNELS = [
   { id: "mercado-livre", label: "Mercado Livre" },
@@ -861,7 +863,7 @@ export function marketplaceSaleStatusClass(status) {
 }
 
 export function setMarketplaceView(view) {
-  state.marketplaceView = ["listings", "storefront", "sales", "integrations", "intelligence", "api-logs", "backup"].includes(view) ? view : "listings";
+  state.marketplaceView = ["listings", "storefront", "sales", "integrations", "intelligence", "ml-questions", "whatsapp", "api-logs", "backup"].includes(view) ? view : "listings";
   document.querySelectorAll("[data-marketplace-view]").forEach((button) => {
     button.classList.toggle("active", button.dataset.marketplaceView === state.marketplaceView);
   });
@@ -870,8 +872,16 @@ export function setMarketplaceView(view) {
   byId("marketplaceSalesView").classList.toggle("active", state.marketplaceView === "sales");
   byId("marketplaceIntegrationsView").classList.toggle("active", state.marketplaceView === "integrations");
   byId("marketplaceIntelligenceView").classList.toggle("active", state.marketplaceView === "intelligence");
+  byId("marketplaceMLQuestionsView").classList.toggle("active", state.marketplaceView === "ml-questions");
+  byId("marketplaceWhatsappView").classList.toggle("active", state.marketplaceView === "whatsapp");
   byId("marketplaceApiLogsView").classList.toggle("active", state.marketplaceView === "api-logs");
   byId("marketplaceBackupView").classList.toggle("active", state.marketplaceView === "backup");
+  // Render content for new views
+  if (state.marketplaceView === "ml-questions") {
+    renderMLQuestionsTab();
+  } else if (state.marketplaceView === "whatsapp") {
+    renderWhatsappTemplatesTab();
+  }
 }
 
 export function applyMarketplaceLogRange() {
@@ -962,6 +972,9 @@ export async function downloadMarketplaceDocument(externalOrderId, marketplace, 
     const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
     if (!response.ok) {
       const payload = await response.json().catch(() => ({}));
+      if (response.status === 404 || payload.error?.includes("delivered")) {
+        throw new Error("O pedido precisa estar em um status válido (postado ou em trânsito) para gerar este documento. Pedidos já entregues não podem ter documentos regenerados.");
+      }
       throw new Error(payload.error || "Erro ao gerar documento.");
     }
     const blob = await response.blob();

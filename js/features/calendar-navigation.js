@@ -251,7 +251,8 @@ function getCalendarEventsForDay(date) {
 
   // Marketplace sales
   const sales = (state.marketplaceSales || []).filter(s => {
-    const saleDate = (s.date || s.created_at || s.saleDate || s.sale_date || "").split("T")[0];
+    const dateField = s.date || s.created_at || s.saleDate || s.sale_date || "";
+    const saleDate = dateField ? dateField.split("T")[0] : "";
     return saleDate === dateStr && saleDate;
   });
 
@@ -288,9 +289,11 @@ function getCalendarEventsForDay(date) {
 
   // Orders/Deliveries
   const orders = (state.data?.orders || []).filter(o => {
-    const delivDate = (o.deliveryDate || o.delivery_date || "").split("T")[0];
-    const createDate = (o.createdAt || o.created_at || "").split("T")[0];
-    return delivDate === dateStr || createDate === dateStr;
+    const delivField = o.deliveryDate || o.delivery_date || "";
+    const createField = o.createdAt || o.created_at || "";
+    const delivDate = delivField ? delivField.split("T")[0] : "";
+    const createDate = createField ? createField.split("T")[0] : "";
+    return (delivDate === dateStr && delivDate) || (createDate === dateStr && createDate);
   });
 
   if (orders.length) {
@@ -319,8 +322,9 @@ function getCalendarEventsForDay(date) {
 
   // Logistics
   const logistics = (state.orderLogistics || []).filter(l => {
-    const logDate = (l.created_at || l.data_criacao || l.dataCriacao || "").split("T")[0];
-    return logDate === dateStr;
+    const logField = l.created_at || l.data_criacao || l.dataCriacao || "";
+    const logDate = logField ? logField.split("T")[0] : "";
+    return logDate === dateStr && logDate;
   });
 
   if (logistics.length) {
@@ -346,8 +350,9 @@ function getCalendarEventsForDay(date) {
 
   // Cash/Financial
   const cash = (state.data?.cash || []).filter(c => {
-    const cashDate = (c.date || c.data || c.dataCaixa || c.data_lancamento || "").split("T")[0];
-    return cashDate === dateStr;
+    const cashField = c.date || c.data || c.dataCaixa || c.data_lancamento || "";
+    const cashDate = cashField ? cashField.split("T")[0] : "";
+    return cashDate === dateStr && cashDate;
   });
 
   if (cash.length) {

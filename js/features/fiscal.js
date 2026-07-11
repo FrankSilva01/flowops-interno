@@ -377,83 +377,88 @@ export function renderFiscalTab() {
   const container = byId("fiscalContainer");
   if (!container) return;
 
-  container.innerHTML = `
-    <div class="fiscal-wrapper">
-      <div class="fiscal-tabs">
-        <button class="fiscal-tab-btn active" data-tab="overview">📊 Visão Geral</button>
-        <button class="fiscal-tab-btn" data-tab="sales">🧾 Notas Venda</button>
-        <button class="fiscal-tab-btn" data-tab="purchases">📥 Notas Compra</button>
-        <button class="fiscal-tab-btn" data-tab="das">💰 DAS MEI</button>
-        <button class="fiscal-tab-btn" data-tab="annual">📋 Declaração</button>
-        <button class="fiscal-tab-btn" data-tab="archive">🗂️ Arquivo</button>
-        <button class="fiscal-tab-btn" data-tab="reports">📈 Relatórios</button>
-        <button class="fiscal-tab-btn" data-tab="settings">⚙️ Configurações</button>
-      </div>
+  try {
+    const alerts = getFiscalAlerts();
+    container.innerHTML = `
+      <div class="fiscal-wrapper">
+        <div class="fiscal-tabs">
+          <button class="fiscal-tab-btn active" data-tab="overview">📊 Visão Geral</button>
+          <button class="fiscal-tab-btn" data-tab="sales">🧾 Notas Venda</button>
+          <button class="fiscal-tab-btn" data-tab="purchases">📥 Notas Compra</button>
+          <button class="fiscal-tab-btn" data-tab="das">💰 DAS MEI</button>
+          <button class="fiscal-tab-btn" data-tab="annual">📋 Declaração</button>
+          <button class="fiscal-tab-btn" data-tab="archive">🗂️ Arquivo</button>
+          <button class="fiscal-tab-btn" data-tab="reports">📈 Relatórios</button>
+          <button class="fiscal-tab-btn" data-tab="settings">⚙️ Configurações</button>
+        </div>
 
-      <div class="fiscal-content">
-        <div id="fiscal-overview" class="fiscal-tab-content active">
-          <div class="fiscal-kpis">
-            <div class="kpi-card">
-              <div class="kpi-label">Notas de Venda</div>
-              <div class="kpi-value">—</div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-label">DAS Pendentes</div>
-              <div class="kpi-value">—</div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-label">Declaração Anual</div>
-              <div class="kpi-value">—</div>
-            </div>
-          </div>
-          <div class="fiscal-alerts">
-            ${getFiscalAlerts().map(alert => `
-              <div class="fiscal-alert ${alert.severity}">
-                <span>${alert.icon} ${alert.title}</span>
+        <div class="fiscal-content">
+          <div id="fiscal-overview" class="fiscal-tab-content active">
+            <div class="fiscal-kpis">
+              <div class="kpi-card">
+                <div class="kpi-label">Notas de Venda</div>
+                <div class="kpi-value">—</div>
               </div>
-            `).join("")}
+              <div class="kpi-card">
+                <div class="kpi-label">DAS Pendentes</div>
+                <div class="kpi-value">—</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Declaração Anual</div>
+                <div class="kpi-value">—</div>
+              </div>
+            </div>
+            <div class="fiscal-alerts">
+              ${alerts.map(alert => `
+                <div class="fiscal-alert ${alert.severity}">
+                  <span>${alert.icon} ${alert.title}</span>
+                </div>
+              `).join("")}
+            </div>
+          </div>
+
+          <div id="fiscal-sales" class="fiscal-tab-content">
+            <h3>Notas de Venda</h3>
+            <p>Gerenciar notas fiscais de vendas...</p>
+          </div>
+
+          <div id="fiscal-purchases" class="fiscal-tab-content">
+            <h3>Notas de Compra</h3>
+            <p>Registrar notas fiscais de compra...</p>
+          </div>
+
+          <div id="fiscal-das" class="fiscal-tab-content">
+            <h3>DAS MEI</h3>
+            <p>Gerenciar DAS mensal...</p>
+          </div>
+
+          <div id="fiscal-annual" class="fiscal-tab-content">
+            <h3>Declaração Anual</h3>
+            <p>Declaração de faturamento anual...</p>
+          </div>
+
+          <div id="fiscal-archive" class="fiscal-tab-content">
+            <h3>Arquivo Fiscal</h3>
+            <p>Central de documentos...</p>
+          </div>
+
+          <div id="fiscal-reports" class="fiscal-tab-content">
+            <h3>Relatórios</h3>
+            <p>Relatórios fiscais...</p>
+          </div>
+
+          <div id="fiscal-settings" class="fiscal-tab-content">
+            <h3>Configurações Fiscais</h3>
+            <p>Dados da empresa...</p>
           </div>
         </div>
-
-        <div id="fiscal-sales" class="fiscal-tab-content">
-          <h3>Notas de Venda</h3>
-          <p>Gerenciar notas fiscais de vendas...</p>
-        </div>
-
-        <div id="fiscal-purchases" class="fiscal-tab-content">
-          <h3>Notas de Compra</h3>
-          <p>Registrar notas fiscais de compra...</p>
-        </div>
-
-        <div id="fiscal-das" class="fiscal-tab-content">
-          <h3>DAS MEI</h3>
-          <p>Gerenciar DAS mensal...</p>
-        </div>
-
-        <div id="fiscal-annual" class="fiscal-tab-content">
-          <h3>Declaração Anual</h3>
-          <p>Declaração de faturamento anual...</p>
-        </div>
-
-        <div id="fiscal-archive" class="fiscal-tab-content">
-          <h3>Arquivo Fiscal</h3>
-          <p>Central de documentos...</p>
-        </div>
-
-        <div id="fiscal-reports" class="fiscal-tab-content">
-          <h3>Relatórios</h3>
-          <p>Relatórios fiscais...</p>
-        </div>
-
-        <div id="fiscal-settings" class="fiscal-tab-content">
-          <h3>Configurações Fiscais</h3>
-          <p>Dados da empresa...</p>
-        </div>
       </div>
-    </div>
-  `;
-
-  bindFiscalTabEvents();
+    `;
+    bindFiscalTabEvents();
+  } catch (error) {
+    console.error("Error rendering fiscal tab:", error);
+    container.innerHTML = `<div style="padding: 20px; color: var(--muted);">Erro ao carregar módulo fiscal. Por favor, recarregue a página.</div>`;
+  }
 }
 
 function bindFiscalTabEvents() {

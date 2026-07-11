@@ -85,6 +85,39 @@ export function openLogisticsDialog(orderId) {
   byId("logisticsDialogTitle").textContent = `Rastreio - ${getOrderCode(order)}`;
   renderLogisticsTimeline(orderId);
   byId("logisticsDialog").showModal();
+  // Auto-sync if order has marketplace code and is not delivered
+  if (order.marketplaceCode && order.status !== "Entregue") {
+    syncLogisticsFromMarketplaceQuiet(orderId).catch(e => console.log("Auto-sync skipped:", e.message));
+  }
+}
+
+async function applyLogisticsSync(orderId) {
+  const result = await syncMlShipment(orderId);
+  const previous = getOrderLogistics(orderId);
+  const payload = {
+    order_id: orderId,
+    organization_id: state.organizationId,
+    carrier: result.carrier || previous?.carrier || null,
+    tracking_code: result.tracking_code || previous?.tracking_code || null,
+    status: result.status,
+    estimated_delivery_date: previous?.estimated_delivery_date || null,
+    shipped_at: previous?.shipped_at || null,
+    delivered_at: result.status === "Entregue" ? (previous?.delivered_at || new Date().toISOString()) : (previous?.delivered_at || null),
+    updated_at: new Date().toISOString(),
+  };
+  const index = state.orderLogistics.findIndex((item) => item.order_id === orderId);
+  if (index >= 0) state.orderLogistics[index] = payload;
+  else state.orderLogistics.push(payload);
+
+  const form = byId("logisticsForm");
+  if (form && form.elements.orderId.value === orderId) {
+    form.elements.carrier.value = payload.carrier || "";
+    form.elements.trackingCode.value = payload.tracking_code || "";
+    form.elements.status.value = payload.status || LOGISTICS_STATUSES[0];
+  }
+  renderLogisticsTimeline(orderId);
+  renderLogistics();
+  return payload;
 }
 
 export async function syncLogisticsFromMarketplace(orderId) {
@@ -95,31 +128,7 @@ export async function syncLogisticsFromMarketplace(orderId) {
     button.textContent = "Buscando...";
   }
   try {
-    const result = await syncMlShipment(orderId);
-    const previous = getOrderLogistics(orderId);
-    const payload = {
-      order_id: orderId,
-      organization_id: state.organizationId,
-      carrier: result.carrier || previous?.carrier || null,
-      tracking_code: result.tracking_code || previous?.tracking_code || null,
-      status: result.status,
-      estimated_delivery_date: previous?.estimated_delivery_date || null,
-      shipped_at: previous?.shipped_at || null,
-      delivered_at: result.status === "Entregue" ? (previous?.delivered_at || new Date().toISOString()) : (previous?.delivered_at || null),
-      updated_at: new Date().toISOString(),
-    };
-    const index = state.orderLogistics.findIndex((item) => item.order_id === orderId);
-    if (index >= 0) state.orderLogistics[index] = payload;
-    else state.orderLogistics.push(payload);
-
-    const form = byId("logisticsForm");
-    if (form && form.elements.orderId.value === orderId) {
-      form.elements.carrier.value = payload.carrier || "";
-      form.elements.trackingCode.value = payload.tracking_code || "";
-      form.elements.status.value = payload.status || LOGISTICS_STATUSES[0];
-    }
-    renderLogisticsTimeline(orderId);
-    renderLogistics();
+    await applyLogisticsSync(orderId);
     flashActionMessage("Rastreio atualizado com o Mercado Livre.");
   } catch (error) {
     alert(`Não foi possível sincronizar com o Mercado Livre: ${error.message}`);
@@ -128,6 +137,14 @@ export async function syncLogisticsFromMarketplace(orderId) {
       button.disabled = false;
       button.textContent = "Buscar status no Mercado Livre";
     }
+  }
+}
+
+async function syncLogisticsFromMarketplaceQuiet(orderId) {
+  try {
+    await applyLogisticsSync(orderId);
+  } catch (e) {
+    // Silencio - apenas falha silenciosamente, não mostra alerta
   }
 }
 
