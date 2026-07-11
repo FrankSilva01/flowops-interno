@@ -11,7 +11,6 @@ import { recordAudit, isWithinDateRange } from "./logs.js";
 import { getTokenAlert } from "./dashboard.js";
 import { renderProfitabilityBadge, renderCommercialIntelligence, getListingProfitability } from "./pricing.js";
 import { renderMarketplaceAnalyticsPanel, getListingAnalytics, computeIntentScore } from "./marketplace-analytics.js";
-import { initMarketplaceExport } from "./marketplace-export.js";
 
 const MARKETPLACE_CHANNELS = [
   { id: "mercado-livre", label: "Mercado Livre" },
@@ -270,7 +269,6 @@ export function renderMarketplaces() {
     button.classList.toggle("active", button.dataset.channel === state.marketplaceChannelFilter);
   });
   bindActions();
-  initMarketplaceExport();
 }
 
 export function renderIntegrationSummary() {
