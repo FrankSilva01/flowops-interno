@@ -489,16 +489,14 @@ export async function saveProduct(event) {
       const listingType = String(data.get("listingType") || "classic");
       const mlPayload = {
         title: name,
-        price,
-        available_quantity: stock,
+        price: Number(price),
+        available_quantity: Number(stock),
         category_id: mlCategoryId,
         listing_type_id: listingType === "premium" ? "gold_pro" : "gold_special",
         condition: "new",
-        warranty: "Sem garantia",
         sku,
-        pictures: productUploadedImages,
         description: String(data.get("description") || "").trim() || name,
-        attributes: [],
+        // Não enviar pictures aqui - serão uploadadas depois via API do ML
       };
       console.log("📤 Sending to ML API:", mlPayload);
       const created = await marketplaceRequest("https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-sync?marketplace=ml&action=create-listing", {
