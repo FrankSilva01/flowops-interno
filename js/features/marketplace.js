@@ -275,11 +275,15 @@ export function renderMarketplaces() {
   });
 
   const exportBtn = byId("exportListingsBtn");
+  console.log("exportBtn element:", exportBtn);
   if (exportBtn) {
+    console.log("Setting onclick handler for export button");
     exportBtn.onclick = () => {
       console.log("Export button clicked directly");
       exportMarketplaceListings();
     };
+  } else {
+    console.warn("exportListingsBtn not found in DOM");
   }
 
   bindActions();
