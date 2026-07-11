@@ -50,8 +50,9 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          const cache = caches.open(CACHE_NAME);
-          cache.then((c) => c.put(request, response.clone()));
+          if (response.ok) {
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone()));
+          }
           return response;
         })
         .catch(() => caches.match(request))
@@ -62,9 +63,11 @@ self.addEventListener("fetch", (event) => {
   // Static assets: cache-first
   event.respondWith(
     caches.match(request).then((response) => {
-      return response || fetch(request).then((res) => {
-        const cache = caches.open(CACHE_NAME);
-        cache.then((c) => c.put(request, res.clone()));
+      if (response) return response;
+      return fetch(request).then((res) => {
+        if (res.ok) {
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, res.clone()));
+        }
         return res;
       });
     })

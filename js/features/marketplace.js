@@ -48,6 +48,11 @@ export function marketplaceChannelsForCurrentFilter() {
     : MARKETPLACE_CHANNELS.filter((item) => item.id === state.marketplaceChannelFilter);
 }
 
+function ensureHttpsUrl(url) {
+  if (!url) return "";
+  return String(url).replace(/^http:/, "https:");
+}
+
 export function renderMarketplaceChannelCards() {
   return marketplaceChannelsForCurrentFilter().map((channel) => {
     const account = state.marketplaceAccounts.find((item) => normalizeMarketplaceChannel(item.marketplace) === channel.id);
@@ -191,7 +196,7 @@ export function renderMarketplaces() {
           const intent = computeIntentScore(analytics);
           return `
           <tr>
-            <td><div class="listing-product-cell">${item.thumbnail_url ? `<img src="${html(item.thumbnail_url)}" alt="" loading="lazy" />` : `<span class="listing-placeholder"></span>`}<span><strong>${html(item.title)}</strong><small>${html(item.external_id)}</small></span></div></td>
+            <td><div class="listing-product-cell">${item.thumbnail_url ? `<img src="${html(ensureHttpsUrl(item.thumbnail_url))}" alt="" loading="lazy" />` : `<span class="listing-placeholder"></span>`}<span><strong>${html(item.title)}</strong><small>${html(item.external_id)}</small></span></div></td>
             <td>${html(marketplaceDisplayName(item.marketplace))}</td>
             <td>${money.format(Number(item.price || 0))} ${renderProfitabilityBadge(item)}</td>
             <td>${Number(item.stock || item.available_quantity || 0).toLocaleString("pt-BR")}</td>
@@ -206,7 +211,7 @@ export function renderMarketplaces() {
       </table>
     </div>
     <aside class="marketplace-listing-detail">
-      ${featuredListing.thumbnail_url ? `<img src="${html(featuredListing.thumbnail_url)}" alt="${html(featuredListing.title)}" />` : ""}
+      ${featuredListing.thumbnail_url ? `<img src="${html(ensureHttpsUrl(featuredListing.thumbnail_url))}" alt="${html(featuredListing.title)}" />` : ""}
       <span class="badge ${featuredListing.status === "active" ? "done" : "neutral"}">${html(featuredListing.status || "-")}</span>
       <h3>${html(featuredListing.title)}</h3>
       <small>${html(featuredListing.external_id)}</small>
@@ -457,7 +462,7 @@ export function renderStorefrontAdmin() {
     const images = storefrontListingImages(item);
     return `
       <article class="storefront-product-row">
-        <img src="${html(images[0] || item.thumbnail_url || "")}" alt="${html(item.title)}" />
+        <img src="${html(images[0] || ensureHttpsUrl(item.thumbnail_url) || "")}" alt="${html(item.title)}" />
         <div>
           <strong>${html(item.title)}</strong>
           <span>${html(marketplaceDisplayName(item.marketplace))} • ${money.format(Number(item.price || 0))}</span>
@@ -492,8 +497,8 @@ export function updateStorefrontTargetFields() {
 export function storefrontListingImages(item) {
   const pictures = Array.isArray(item.raw_payload?.pictures) ? item.raw_payload.pictures : [];
   return [
-    ...pictures.map((picture) => picture.secure_url || picture.url).filter(Boolean),
-    item.thumbnail_url,
+    ...pictures.map((picture) => ensureHttpsUrl(picture.secure_url || picture.url)).filter(Boolean),
+    ensureHttpsUrl(item.thumbnail_url),
   ].filter(Boolean);
 }
 
