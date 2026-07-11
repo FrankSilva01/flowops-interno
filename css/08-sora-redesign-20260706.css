@@ -769,24 +769,25 @@ button,
 
 .steps-progress {
   display: flex;
-  gap: 12px;
-  margin: 20px 0;
-  padding: 0 20px;
+  gap: 6px;
+  margin: 16px 0;
+  padding: 0 12px;
   overflow-x: auto;
 }
 
 .step-indicator {
   flex: 1;
-  min-width: 85px;
-  padding: 6px 8px;
+  min-width: 70px;
+  padding: 5px 6px;
   text-align: center;
-  font-size: 0.75em;
-  border-radius: 6px;
+  font-size: 0.7em;
+  border-radius: 4px;
   background: var(--surface-secondary);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
+  line-height: 1.2;
 }
 
 .step-indicator.active {
