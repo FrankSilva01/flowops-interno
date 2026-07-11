@@ -122,6 +122,7 @@ export function filterListingsForDisplay(listings) {
 }
 
 export function renderMarketplaces() {
+  console.log("renderMarketplaces called");
   const accountsTable = byId("marketplaceAccountsTable");
   const listingsGrid = byId("marketplaceListingsGrid");
   const salesGrid = byId("marketplaceSalesGrid");
