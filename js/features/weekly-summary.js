@@ -203,35 +203,35 @@ export async function renderWhatsappTemplatesTab() {
             <div style="display: flex; gap: 8px;">
               ${t.id.startsWith('default-') ? `
                 <button onclick="copyWhatsappTemplate('${t.name}', \`${t.content.replace(/`/g, '\\`')}\`)" class="secondary-btn" style="
-                  flex: 1;
-                  padding: 8px;
+                  padding: 6px 12px;
                   font-size: 12px;
-                  border: 1px solid var(--teal);
-                  color: var(--teal);
-                  background: transparent;
+                  border: 1px solid #00D084;
+                  color: #fff;
+                  background: #00D084;
                   border-radius: 6px;
                   cursor: pointer;
+                  font-weight: 600;
                 ">Usar</button>
               ` : `
                 <button onclick="editWhatsappTemplate('${t.id}')" class="secondary-btn" style="
-                  flex: 1;
-                  padding: 8px;
+                  padding: 6px 12px;
                   font-size: 12px;
-                  border: 1px solid var(--teal);
-                  color: var(--teal);
+                  border: 1px solid var(--muted);
+                  color: var(--ink);
                   background: transparent;
                   border-radius: 6px;
                   cursor: pointer;
+                  font-weight: 600;
                 ">Editar</button>
                 <button onclick="deleteWhatsappTemplate('${t.id}')" class="secondary-btn" style="
-                  flex: 1;
-                  padding: 8px;
+                  padding: 6px 12px;
                   font-size: 12px;
                   border: 1px solid #ff6b6b;
                   color: #ff6b6b;
                   background: transparent;
                   border-radius: 6px;
                   cursor: pointer;
+                  font-weight: 600;
                 ">Deletar</button>
               `}
             </div>
