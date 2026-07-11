@@ -716,5 +716,30 @@ function updateDASSummary() {
 }
 
 export async function renderFiscalTab() {
-  await renderFiscalDocs();
+  const activeTab = state.fiscalTab || "documentos";
+
+  // Bind tab buttons
+  document.querySelectorAll("[data-fiscal-tab]").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.fiscalTab === activeTab);
+    btn.addEventListener("click", () => {
+      state.fiscalTab = btn.dataset.fiscalTab;
+      renderFiscalTab();
+    });
+  });
+
+  // Render active tab content
+  switch(activeTab) {
+    case "das":
+      await renderDAS();
+      break;
+    case "compra":
+      await renderPurchaseInvoices();
+      break;
+    case "venda":
+      await renderSalesInvoices();
+      break;
+    case "documentos":
+    default:
+      await renderFiscalDocs();
+  }
 }

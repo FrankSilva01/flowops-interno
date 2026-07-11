@@ -75,12 +75,12 @@ function showSearchSuggestions() {
   if (!dropdown) return;
 
   const suggestions = [
-    { title: "📋 Encomendas", desc: "Buscar pedidos", view: "orders" },
-    { title: "💰 Fluxo de Caixa", desc: "Transações financeiras", view: "cash" },
-    { title: "🔨 Materiais", desc: "Insumos e estoque", view: "materials" },
-    { title: "👥 Clientes", desc: "Leads e contatos", view: "leads" },
-    { title: "📊 Relatórios", desc: "Análises do negócio", view: "reports" },
-    { title: "🛍️ Marketplace", desc: "Anúncios e vendas", view: "marketplace" },
+    { title: "Encomendas", desc: "Buscar pedidos", view: "orders" },
+    { title: "Fluxo de Caixa", desc: "Transações financeiras", view: "cash" },
+    { title: "Materiais", desc: "Insumos e estoque", view: "materials" },
+    { title: "Clientes", desc: "Leads e contatos", view: "leads" },
+    { title: "Relatórios", desc: "Análises do negócio", view: "reports" },
+    { title: "Marketplace", desc: "Anúncios e vendas", view: "marketplace" },
   ];
 
   dropdown.innerHTML = `
@@ -119,7 +119,7 @@ function showSearchResults(query) {
         <span class="search-label">Resultados</span>
       </div>
       <div class="search-empty">
-        <span>🔍 Nenhum resultado encontrado para "${html(query)}"</span>
+        <span>Nenhum resultado encontrado para "${html(query)}"</span>
         <small>Tente outro termo de busca</small>
       </div>
     `;
