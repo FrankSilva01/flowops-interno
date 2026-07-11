@@ -487,6 +487,12 @@ export async function saveProduct(event) {
     }
     try {
       const listingType = String(data.get("listingType") || "classic");
+      // Validar imagens
+      if (!productUploadedImages || productUploadedImages.length === 0) {
+        results.push("Mercado Livre: adicione pelo menos uma imagem para publicar.");
+        continue;
+      }
+
       const mlPayload = {
         title: name,
         price: Number(price),
@@ -496,7 +502,7 @@ export async function saveProduct(event) {
         condition: "new",
         sku,
         description: String(data.get("description") || "").trim() || name,
-        // Não enviar pictures aqui - serão uploadadas depois via API do ML
+        pictures: productUploadedImages, // Enviar imagens em base64
       };
       console.log("📤 Sending to ML API:", mlPayload);
       const created = await marketplaceRequest("https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-sync?marketplace=ml&action=create-listing", {
