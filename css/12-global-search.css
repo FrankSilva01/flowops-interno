@@ -236,3 +236,22 @@ html[data-theme="dark"] #searchDropdown::-webkit-scrollbar-thumb:hover {
     padding: 10px 16px;
   }
 }
+
+/* Force ML Fields to always be visible */
+#storefrontMlFields {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  position: static !important;
+  z-index: auto !important;
+}
+
+#mlCategorySelect {
+  display: block !important;
+  visibility: visible !important;
+  width: 100% !important;
+  min-height: 40px;
+}
