@@ -798,16 +798,26 @@ const ML_CATEGORIES = [
 
 export function bindMlCategorySelect() {
   const input = byId("mlCategorySearch");
-  const datalist = byId("mlCategoryList");
+  const dropdown = byId("mlCategoryDropdown");
+  const optionsContainer = byId("mlCategoryOptions");
 
-  if (!input || !datalist) {
+  if (!input || !dropdown || !optionsContainer) {
     console.warn("ML category elements not found");
     return;
   }
 
-  const updateDatalist = () => {
+  const showDropdown = () => {
+    dropdown.style.display = "block";
+    updateOptions();
+  };
+
+  const hideDropdown = () => {
+    dropdown.style.display = "none";
+  };
+
+  const updateOptions = () => {
     const value = input.value.toLowerCase().trim();
-    datalist.innerHTML = "";
+    optionsContainer.innerHTML = "";
 
     const filtered = value.length > 0
       ? ML_CATEGORIES.filter(cat =>
@@ -815,29 +825,46 @@ export function bindMlCategorySelect() {
         )
       : ML_CATEGORIES;
 
-    const toShow = filtered.slice(0, 15);
-    toShow.forEach(cat => {
-      const option = document.createElement("option");
-      option.value = cat.id;
-      option.textContent = `${cat.name} (${cat.id})`;
-      datalist.appendChild(option);
+    if (filtered.length === 0) {
+      optionsContainer.innerHTML = '<div style="padding: 10px; color: #999;">Nenhuma categoria encontrada</div>';
+      return;
+    }
+
+    filtered.slice(0, 20).forEach(cat => {
+      const div = document.createElement("div");
+      div.style.cssText = "padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #333; hover-background: #2a2a2a;";
+      div.textContent = `${cat.name} (${cat.id})`;
+      div.addEventListener("click", () => {
+        input.value = cat.id;
+        hideDropdown();
+        input.focus();
+      });
+      div.addEventListener("mouseenter", () => {
+        div.style.backgroundColor = "#2a2a2a";
+      });
+      div.addEventListener("mouseleave", () => {
+        div.style.backgroundColor = "transparent";
+      });
+      optionsContainer.appendChild(div);
     });
 
-    console.log(`ML Categories: showing ${toShow.length} of ${filtered.length}`);
+    console.log(`ML Categories: showing ${filtered.length} options`);
   };
 
-  input.addEventListener("input", updateDatalist);
-  input.addEventListener("focus", updateDatalist);
+  input.addEventListener("focus", showDropdown);
+  input.addEventListener("input", updateOptions);
 
-  input.addEventListener("change", () => {
-    const selected = ML_CATEGORIES.find(cat => cat.id === input.value);
-    if (selected) {
-      input.value = selected.id;
-      console.log("Selected category:", selected);
+  document.addEventListener("click", (e) => {
+    if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+      hideDropdown();
     }
   });
 
-  updateDatalist();
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") hideDropdown();
+  });
+
+  updateOptions();
 }
 
 export async function loadMlCategoryFields() {
