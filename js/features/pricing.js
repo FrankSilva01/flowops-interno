@@ -403,15 +403,22 @@ export function bindProductFormAutoSku() {
 }
 
 export async function saveProduct(event) {
+  console.log("🚀 saveProduct called");
   event.preventDefault();
-  if (!ensureCanEdit()) return;
+  if (!ensureCanEdit()) {
+    console.log("❌ Cannot edit");
+    return;
+  }
   const form = event.currentTarget;
   const message = byId("productFormMessage");
   const data = new FormData(form);
   const id = String(data.get("id") || "");
   const previous = state.products.find((item) => item.id === id) || null;
   const name = String(data.get("name") || "").trim();
-  if (!name) return;
+  if (!name) {
+    console.log("❌ No name");
+    return;
+  }
   const category = String(data.get("category") || "").trim() || null;
   const sku = String(data.get("sku") || "").trim() || nextProductSku(category, name);
   const price = number(data.get("price"));
@@ -436,11 +443,15 @@ export async function saveProduct(event) {
   };
   if (id) payload.id = id;
   message.textContent = "Salvando produto...";
+  console.log("💾 Upserting product payload:", payload);
   const { data: saved, error } = await state.supabase.from("products").upsert(payload).select().single();
+  console.log("📦 Supabase response:", { saved, error });
   if (error) {
+    console.log("❌ Supabase error:", error);
     message.textContent = `Não foi possível salvar o produto: ${error.message}`;
     return;
   }
+  console.log("✅ Product saved successfully:", saved);
   const index = state.products.findIndex((item) => item.id === saved.id);
   if (index >= 0) state.products[index] = saved;
   else state.products.push(saved);
