@@ -1,6 +1,13 @@
 import { state, money } from "../core/state.js";
 import { byId, showAppMessage, flashActionMessage } from "../core/dom.js";
-import { marketplaceDisplayName } from "./marketplace.js";
+
+function getMarketplaceDisplayName(value) {
+  const marketplace = String(value || "").toLowerCase();
+  if (marketplace.includes("shopee")) return "Shopee";
+  if (marketplace.includes("amazon")) return "Amazon";
+  if (marketplace.includes("tiktok")) return "TikTok Shop";
+  return "Mercado Livre";
+}
 
 export function initMarketplaceExport() {
   const exportBtn = byId("exportListingsBtn");
@@ -166,7 +173,7 @@ function exportListingsAsJSON(listings) {
   const data = listings.map(item => ({
     titulo: item.title,
     descricao: item.description || "",
-    marketplace: marketplaceDisplayName(item.marketplace),
+    marketplace: getMarketplaceDisplayName(item.marketplace),
     preco: parseFloat(item.price || 0),
     estoque: parseInt(item.stock || item.available_quantity || 0),
     sku: item.sku || "",
@@ -206,7 +213,7 @@ function exportListingsAsCSV(listings) {
   const rows = listings.map(item => [
     `"${(item.title || "").replace(/"/g, '""')}"`,
     `"${(item.description || "").replace(/"/g, '""')}"`,
-    marketplaceDisplayName(item.marketplace),
+    getMarketplaceDisplayName(item.marketplace),
     item.price || 0,
     item.stock || item.available_quantity || 0,
     item.sku || "",
@@ -230,7 +237,7 @@ function exportListingsAsXML(listings) {
   <anuncio>
     <titulo>${escapeXML(item.title || "")}</titulo>
     <descricao>${escapeXML(item.description || "")}</descricao>
-    <marketplace>${escapeXML(marketplaceDisplayName(item.marketplace))}</marketplace>
+    <marketplace>${escapeXML(getMarketplaceDisplayName(item.marketplace))}</marketplace>
     <preco>${item.price || 0}</preco>
     <estoque>${item.stock || item.available_quantity || 0}</estoque>
     <sku>${escapeXML(item.sku || "")}</sku>
@@ -443,7 +450,7 @@ function exportListingsAsHTML(listings) {
           </div>
           ${item.description ? `<div class="listing-description">${escapeHTML(item.description)}</div>` : ''}
           <div class="listing-footer">
-            <span class="listing-badge marketplace">${escapeHTML(marketplaceDisplayName(item.marketplace))}</span>
+            <span class="listing-badge marketplace">${escapeHTML(getMarketplaceDisplayName(item.marketplace))}</span>
             <span class="listing-badge status ${item.status !== 'active' ? 'inactive' : ''}">${escapeHTML(item.status || 'ativo')}</span>
           </div>
         </div>
