@@ -460,13 +460,21 @@ async function fetchMlDescription(itemId: string, account: Record<string, any>) 
 }
 
 async function createMlListing(body: Record<string, any>, account: Record<string, any>, actorEmail: string) {
-  const pictures = Array.isArray(body.pictures)
-    ? body.pictures.map((source: string) => ({ source })).filter((item) => item.source)
-    : [];
   if (!body.title) throw new Error("Titulo obrigatorio para publicar no Mercado Livre.");
   if (!body.category_id) throw new Error("Categoria ML obrigatoria.");
   if (!Number(body.price)) throw new Error("Preco obrigatorio.");
-  if (!pictures.length) throw new Error("Informe pelo menos uma imagem para publicar no Mercado Livre.");
+  if (!Array.isArray(body.pictures) || !body.pictures.length) throw new Error("Informe pelo menos uma imagem para publicar no Mercado Livre.");
+
+  // Processar imagens: converter base64 para source se necessário
+  const pictures = body.pictures
+    .slice(0, 6)
+    .map((pic: string) => {
+      // Se é base64, retornar como-é (Mercado Livre aceita base64 como source)
+      if (pic.startsWith("data:image")) return { source: pic };
+      // Se é URL, retornar como-é
+      return { source: pic };
+    })
+    .filter((item) => item.source);
   const payload: Record<string, any> = {
     title: String(body.title).trim(),
     category_id: String(body.category_id).trim(),
