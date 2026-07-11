@@ -487,21 +487,23 @@ export async function saveProduct(event) {
     }
     try {
       const listingType = String(data.get("listingType") || "classic");
+      const mlPayload = {
+        title: name,
+        price,
+        available_quantity: stock,
+        category_id: mlCategoryId,
+        listing_type_id: listingType === "premium" ? "gold_pro" : "gold_special",
+        condition: "new",
+        warranty: "Sem garantia",
+        sku,
+        pictures: productUploadedImages,
+        description: String(data.get("description") || "").trim() || name,
+        attributes: [],
+      };
+      console.log("📤 Sending to ML API:", mlPayload);
       const created = await marketplaceRequest("https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-sync?marketplace=ml&action=create-listing", {
         method: "POST",
-        body: JSON.stringify({
-          title: name,
-          price,
-          available_quantity: stock,
-          category_id: mlCategoryId,
-          listing_type_id: listingType === "premium" ? "gold_pro" : "gold_special",
-          condition: "new",
-          warranty: "Sem garantia",
-          sku,
-          pictures: productUploadedImages,
-          description: String(data.get("description") || "").trim() || name,
-          attributes: [],
-        }),
+        body: JSON.stringify(mlPayload),
       });
       const { data: link, error: linkError } = await state.supabase.from("product_listings").insert({
         organization_id: state.organizationId,
