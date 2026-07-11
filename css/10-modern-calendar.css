@@ -30,8 +30,8 @@ html[data-theme="dark"] {
   border: 1px solid rgba(0, 208, 132, 0.08);
   display: flex;
   flex-direction: column;
+  height: 100%;
   max-height: 100%;
-  min-height: 600px;
 }
 
 html[data-theme="dark"] .calendar-modern {
