@@ -823,11 +823,6 @@ export function bindActions() {
         await downloadMarketplaceDocument(id, button.dataset.marketplace, "label", true);
         return;
       }
-      if (action === "export-listings") {
-        console.log("export-listings action triggered");
-        exportMarketplaceListings();
-        return;
-      }
       if (action === "open-marketplace-errors") {
         state.marketplaceLogFilter = "error";
         setView("marketplace");
