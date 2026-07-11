@@ -23,6 +23,7 @@
     <link rel="stylesheet" href="./css/07-operational-polish-20260627.css?v=200" />
     <link rel="stylesheet" href="./css/08-sora-redesign-20260706.css?v=200" />
     <link rel="stylesheet" href="./css/10-modern-calendar.css?v=200" />
+    <link rel="stylesheet" href="./css/11-fiscal-forms.css?v=200" />
     <script src="./supabase-config.js?v=200" defer></script>
     <script type="module" src="./js/app.js?v=200"></script>
   </head>
@@ -1538,6 +1539,129 @@
           </div>
           <div id="fiscalContainer"></div>
         </section>
+
+        <!-- Modal Documento Fiscal -->
+        <dialog id="fiscalDocumentDialog" class="fiscal-dialog">
+          <div class="fiscal-dialog-header">
+            <h2>Novo Documento Fiscal</h2>
+            <button type="button" class="dialog-close" data-action="close-fiscal-dialog">✕</button>
+          </div>
+
+          <form id="fiscalDocumentForm" class="fiscal-form">
+            <div class="form-section">
+              <h3>Informações do Documento</h3>
+
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Data do Documento</label>
+                  <input type="date" name="date" required />
+                </div>
+
+                <div class="form-group">
+                  <label>Tipo de Documento</label>
+                  <select name="type" required>
+                    <option value="">Selecione um tipo</option>
+                    <option>Recibo</option>
+                    <option>RPA</option>
+                    <option>Boleto</option>
+                    <option>Nota Fiscal</option>
+                    <option>Cupom</option>
+                    <option>Comprovante</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label>Número do Documento</label>
+                  <input type="text" name="number" placeholder="Ex: 001234" required />
+                </div>
+
+                <div class="form-group">
+                  <label>Status</label>
+                  <select name="status" required>
+                    <option value="">Selecione um status</option>
+                    <option>Pendente</option>
+                    <option>Pago</option>
+                    <option>Vencido</option>
+                    <option>Cancelado</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h3>Detalhes Financeiros</h3>
+
+              <div class="form-grid">
+                <div class="form-group full-width">
+                  <label>Descrição / Observação</label>
+                  <textarea name="description" placeholder="Descreva o documento..." rows="3"></textarea>
+                </div>
+
+                <div class="form-group">
+                  <label>Valor (R$)</label>
+                  <input type="number" name="value" step="0.01" min="0" placeholder="0,00" required />
+                </div>
+
+                <div class="form-group">
+                  <label>Data de Vencimento</label>
+                  <input type="date" name="due_date" />
+                </div>
+
+                <div class="form-group">
+                  <label>Referência / Série</label>
+                  <input type="text" name="reference" placeholder="Ex: A1, NFS-e, etc" />
+                </div>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h3>Informações Adicionais</h3>
+
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Fornecedor / Emitente</label>
+                  <input type="text" name="issuer" placeholder="Nome ou CNPJ" />
+                </div>
+
+                <div class="form-group">
+                  <label>CNPJ / CPF</label>
+                  <input type="text" name="document_number" placeholder="00.000.000/0000-00" />
+                </div>
+
+                <div class="form-group">
+                  <label>Categoria</label>
+                  <select name="category">
+                    <option value="">Selecione uma categoria</option>
+                    <option>Vendas</option>
+                    <option>Compras</option>
+                    <option>Impostos</option>
+                    <option>Despesas</option>
+                    <option>Receitas</option>
+                    <option>Outras</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label>Método de Pagamento</label>
+                  <select name="payment_method">
+                    <option value="">Selecione um método</option>
+                    <option>Dinheiro</option>
+                    <option>Débito</option>
+                    <option>Crédito</option>
+                    <option>Transferência</option>
+                    <option>PIX</option>
+                    <option>Cheque</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" class="secondary-btn" data-action="close-fiscal-dialog">Cancelar</button>
+              <button type="submit" class="primary-btn">Salvar Documento</button>
+            </div>
+          </form>
+        </dialog>
 
         <section id="logsView" class="view">
           <div class="filter-bar">

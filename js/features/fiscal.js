@@ -35,7 +35,8 @@ export async function renderFiscalDocs() {
           <label>Até<input type="date" id="fiscalDateToFilter" /></label>
         </div>
         <div class="fiscal-actions">
-          <button class="primary-btn" type="button" data-fiscal-action="generate-report">Gerar Relatório</button>
+          <button class="primary-btn" type="button" data-fiscal-action="new-document">+ Novo Documento</button>
+          <button class="secondary-btn" type="button" data-fiscal-action="generate-report">Gerar Relatório</button>
           <button class="secondary-btn" type="button" data-fiscal-action="export-docs">Exportar</button>
         </div>
       </div>
@@ -397,8 +398,15 @@ export async function renderSalesInvoices() {
 }
 
 function bindFiscalActions() {
+  const newDocBtn = document.querySelector('[data-fiscal-action="new-document"]');
   const generateBtn = document.querySelector('[data-fiscal-action="generate-report"]');
   const exportBtn = document.querySelector('[data-fiscal-action="export-docs"]');
+
+  if (newDocBtn) {
+    newDocBtn.addEventListener("click", () => {
+      openFiscalDocumentDialog();
+    });
+  }
 
   if (generateBtn) {
     generateBtn.addEventListener("click", () => {
@@ -411,6 +419,51 @@ function bindFiscalActions() {
       showAppMessage("Exportar", "Documentos exportados com sucesso!", "success");
     });
   }
+}
+
+function openFiscalDocumentDialog() {
+  const dialog = byId("fiscalDocumentDialog");
+  if (dialog) {
+    dialog.showModal();
+
+    const form = byId("fiscalDocumentForm");
+    const closeBtn = dialog.querySelector("[data-action='close-fiscal-dialog']");
+    const cancelBtn = dialog.querySelector("[data-action='close-fiscal-dialog']");
+
+    closeBtn?.addEventListener("click", () => dialog.close());
+    cancelBtn?.addEventListener("click", () => dialog.close());
+
+    form?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      await saveFiscalDocumentFromForm(form);
+      dialog.close();
+    });
+  }
+}
+
+async function saveFiscalDocumentFromForm(form) {
+  const formData = new FormData(form);
+  const doc = {
+    id: `doc-${Date.now()}`,
+    date: formData.get("date"),
+    type: formData.get("type"),
+    number: formData.get("number"),
+    description: formData.get("description"),
+    value: parseFloat(formData.get("value")) || 0,
+    status: formData.get("status"),
+    due_date: formData.get("due_date"),
+    reference: formData.get("reference"),
+    issuer: formData.get("issuer"),
+    document_number: formData.get("document_number"),
+    category: formData.get("category"),
+    payment_method: formData.get("payment_method"),
+    created_at: new Date().toISOString(),
+  };
+
+  await saveFiscalDocument(doc);
+  showAppMessage("✅ Documento Salvo", "Documento fiscal registrado com sucesso!", "success");
+  form.reset();
+  await renderFiscalDocs();
 }
 
 function generateFiscalReport() {
