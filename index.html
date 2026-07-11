@@ -1087,15 +1087,33 @@
 
                 <div id="storefrontMlFields" class="marketplace-extra-fields">
                   <div class="form-section-title">Campos Mercado Livre</div>
-                  <div style="position: relative;">
-                    <label>Categoria *
-                      <input type="text" id="mlCategorySearch" name="ml_category_id" placeholder="Clique para abrir lista de categorias" autocomplete="off" required />
-                    </label>
-                    <div id="mlCategoryDropdown" style="position: absolute; top: 100%; left: 0; right: 0; background: #1a1a1a; border: 1px solid #333; max-height: 300px; overflow-y: auto; z-index: 1000; display: none; margin-top: 0; border-radius: 0 0 4px 4px; box-shadow: 0 4px 8px rgba(0,0,0,0.5);">
-                      <div id="mlCategoryOptions" style="padding: 0;"></div>
-                    </div>
-                    <small style="display: block; margin-top: 4px; color: #999;">Clique para abrir a lista ou digite para filtrar</small>
-                  </div>
+                  <label>Categoria *
+                    <select name="ml_category_id" id="mlCategorySelect" required>
+                      <option value="">-- Selecione uma categoria --</option>
+                      <option value="MLB5672">Ação Figures e Bonecos</option>
+                      <option value="MLB1366">Acessórios para Crianças</option>
+                      <option value="MLB1384">Artesanato</option>
+                      <option value="MLB1953">Brinquedos</option>
+                      <option value="MLB374">Coleções</option>
+                      <option value="MLB1000">Decoração</option>
+                      <option value="MLB1051">Eletrônicos e Tecnologia</option>
+                      <option value="MLB1132">Esportes e Fitness</option>
+                      <option value="MLB1168">Fantasias e Roupas</option>
+                      <option value="MLB1201">Hobbies</option>
+                      <option value="MLB1246">Iluminação</option>
+                      <option value="MLB1276">Jogos</option>
+                      <option value="MLB1319">Livros</option>
+                      <option value="MLB1403">Miniaturismo</option>
+                      <option value="MLB1430">Modelos em Escala</option>
+                      <option value="MLB1500">Música</option>
+                      <option value="MLB1549">Moda</option>
+                      <option value="MLB1574">Pelúcias</option>
+                      <option value="MLB1635">Vinil e CDs</option>
+                      <option value="MLB1726">Videogames</option>
+                      <option value="MLB263">Antigos</option>
+                      <option value="MLB264">Outros</option>
+                    </select>
+                  </label>
                   <button id="loadMlCategoryFieldsBtn" class="secondary-btn" type="button">Carregar campos da categoria</button>
                   <label>Tipo de anúncio
                     <select name="ml_listing_type_id">

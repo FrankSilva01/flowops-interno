@@ -576,16 +576,8 @@ export async function saveStorefrontProduct(event) {
   form.elements.description_html.value = descriptionHtml;
 
   let mlCategoryId = data.get("ml_category_id");
-  if (!mlCategoryId || mlCategoryId.trim().length < 3) {
+  if (!mlCategoryId) {
     message.textContent = "Selecione uma categoria do Mercado Livre";
-    return;
-  }
-
-  mlCategoryId = mlCategoryId.trim();
-
-  const isValidCategory = ML_CATEGORIES.some(cat => cat.id === mlCategoryId);
-  if (!isValidCategory) {
-    message.textContent = `Categoria '${mlCategoryId}' não encontrada. Selecione uma da lista de sugestões.`;
     return;
   }
 
@@ -797,81 +789,7 @@ const ML_CATEGORIES = [
 ];
 
 export function bindMlCategorySelect() {
-  console.log("bindMlCategorySelect called");
-  const input = byId("mlCategorySearch");
-  const dropdown = byId("mlCategoryDropdown");
-  const optionsContainer = byId("mlCategoryOptions");
-
-  console.log("Input:", input);
-  console.log("Dropdown:", dropdown);
-  console.log("Options:", optionsContainer);
-
-  if (!input || !dropdown || !optionsContainer) {
-    console.error("ML category elements not found!", { input, dropdown, optionsContainer });
-    return;
-  }
-
-  console.log("ML Categories loaded:", ML_CATEGORIES.length);
-
-  const showDropdown = () => {
-    dropdown.style.display = "block";
-    updateOptions();
-  };
-
-  const hideDropdown = () => {
-    dropdown.style.display = "none";
-  };
-
-  const updateOptions = () => {
-    const value = input.value.toLowerCase().trim();
-    optionsContainer.innerHTML = "";
-
-    const filtered = value.length > 0
-      ? ML_CATEGORIES.filter(cat =>
-          cat.name.toLowerCase().includes(value) || cat.id.toLowerCase().includes(value)
-        )
-      : ML_CATEGORIES;
-
-    if (filtered.length === 0) {
-      optionsContainer.innerHTML = '<div style="padding: 10px; color: #999;">Nenhuma categoria encontrada</div>';
-      return;
-    }
-
-    filtered.slice(0, 20).forEach(cat => {
-      const div = document.createElement("div");
-      div.style.cssText = "padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #333; hover-background: #2a2a2a;";
-      div.textContent = `${cat.name} (${cat.id})`;
-      div.addEventListener("click", () => {
-        input.value = cat.id;
-        hideDropdown();
-        input.focus();
-      });
-      div.addEventListener("mouseenter", () => {
-        div.style.backgroundColor = "#2a2a2a";
-      });
-      div.addEventListener("mouseleave", () => {
-        div.style.backgroundColor = "transparent";
-      });
-      optionsContainer.appendChild(div);
-    });
-
-    console.log(`ML Categories: showing ${filtered.length} options`);
-  };
-
-  input.addEventListener("focus", showDropdown);
-  input.addEventListener("input", updateOptions);
-
-  document.addEventListener("click", (e) => {
-    if (!input.contains(e.target) && !dropdown.contains(e.target)) {
-      hideDropdown();
-    }
-  });
-
-  input.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") hideDropdown();
-  });
-
-  updateOptions();
+  // Select element handles everything natively - no custom binding needed
 }
 
 export async function loadMlCategoryFields() {
