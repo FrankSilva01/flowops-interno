@@ -156,6 +156,7 @@ import { accountingIntegration, accountingIntegrationCSS } from "./features/acco
 import { renderWhatsappTemplatesTab } from "./features/weekly-summary.js";
 import { initGlobalSearch } from "./core/search.js";
 import { initOnboarding } from "./features/pwa-onboarding.js";
+import { openExportDialog } from "./features/marketplace-integration.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
   const marketplaceStatus = getMarketplaceStatusFromHash();
@@ -267,6 +268,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Expose Prompt 8 & 9 functions globally
   window.renderWhatsappTemplatesTab = renderWhatsappTemplatesTab;
+  window.openExportDialog = openExportDialog;
 
   // Register Service Worker for PWA
   if ('serviceWorker' in navigator) {
