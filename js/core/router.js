@@ -824,6 +824,7 @@ export function bindActions() {
         return;
       }
       if (action === "export-listings") {
+        console.log("export-listings action triggered");
         exportMarketplaceListings();
         return;
       }
@@ -991,6 +992,7 @@ export function updateSidebarToggle(collapsed) {
 }
 
 export function exportMarketplaceListings() {
+  console.log("exportMarketplaceListings called, listings:", state.marketplaceListings?.length);
   if (!state.marketplaceListings?.length) {
     flashActionMessage("Nenhum anúncio para exportar");
     return;
@@ -1012,6 +1014,7 @@ export function exportMarketplaceListings() {
     ...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
   ].join("\n");
 
+  console.log("CSV generated, size:", csv.length, "rows:", rows.length);
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
