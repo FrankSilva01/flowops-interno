@@ -511,7 +511,7 @@ export async function saveProduct(event) {
         }
         const blob = new Blob([bytes], { type: "image/jpeg" });
         // Upload para Supabase storage
-        const fileName = `products/${saved.id}/${Date.now()}-${i}.jpg`;
+        const fileName = `${saved.id}/${Date.now()}-${i}.jpg`;
         const { error: uploadError } = await state.supabase.storage
           .from("order-images")
           .upload(fileName, blob);
