@@ -513,7 +513,7 @@ export async function saveProduct(event) {
         // Upload para Supabase storage
         const fileName = `products/${saved.id}/${Date.now()}-${i}.jpg`;
         const { error: uploadError } = await state.supabase.storage
-          .from("product-images")
+          .from("order-images")
           .upload(fileName, blob);
         if (uploadError) {
           console.error("❌ Image upload error:", uploadError);
@@ -522,7 +522,7 @@ export async function saveProduct(event) {
         }
         // Gerar URL pública
         const { data: { publicUrl } } = state.supabase.storage
-          .from("product-images")
+          .from("order-images")
           .getPublicUrl(fileName);
         pictureUrls.push(publicUrl);
       }
