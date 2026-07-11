@@ -1087,13 +1087,15 @@
 
                 <div id="storefrontMlFields" class="marketplace-extra-fields">
                   <div class="form-section-title">Campos Mercado Livre</div>
-                  <label>Categoria *
-                    <input type="text" id="mlCategorySearch" name="ml_category_id" placeholder="Clique para abrir lista de categorias" autocomplete="off" required style="position: relative; z-index: 10;" />
-                    <div id="mlCategoryDropdown" style="position: absolute; background: #1a1a1a; border: 1px solid #333; border-top: none; max-height: 300px; overflow-y: auto; width: 100%; z-index: 100; display: none; margin-top: -5px; border-radius: 0 0 4px 4px;">
+                  <div style="position: relative;">
+                    <label>Categoria *
+                      <input type="text" id="mlCategorySearch" name="ml_category_id" placeholder="Clique para abrir lista de categorias" autocomplete="off" required />
+                    </label>
+                    <div id="mlCategoryDropdown" style="position: absolute; top: 100%; left: 0; right: 0; background: #1a1a1a; border: 1px solid #333; max-height: 300px; overflow-y: auto; z-index: 1000; display: none; margin-top: 0; border-radius: 0 0 4px 4px; box-shadow: 0 4px 8px rgba(0,0,0,0.5);">
                       <div id="mlCategoryOptions" style="padding: 0;"></div>
                     </div>
                     <small style="display: block; margin-top: 4px; color: #999;">Clique para abrir a lista ou digite para filtrar</small>
-                  </label>
+                  </div>
                   <button id="loadMlCategoryFieldsBtn" class="secondary-btn" type="button">Carregar campos da categoria</button>
                   <label>Tipo de anúncio
                     <select name="ml_listing_type_id">

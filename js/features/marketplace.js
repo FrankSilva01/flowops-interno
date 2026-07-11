@@ -797,14 +797,21 @@ const ML_CATEGORIES = [
 ];
 
 export function bindMlCategorySelect() {
+  console.log("bindMlCategorySelect called");
   const input = byId("mlCategorySearch");
   const dropdown = byId("mlCategoryDropdown");
   const optionsContainer = byId("mlCategoryOptions");
 
+  console.log("Input:", input);
+  console.log("Dropdown:", dropdown);
+  console.log("Options:", optionsContainer);
+
   if (!input || !dropdown || !optionsContainer) {
-    console.warn("ML category elements not found");
+    console.error("ML category elements not found!", { input, dropdown, optionsContainer });
     return;
   }
+
+  console.log("ML Categories loaded:", ML_CATEGORIES.length);
 
   const showDropdown = () => {
     dropdown.style.display = "block";
