@@ -10,7 +10,7 @@ import {
 } from "./fiscal-persistence.js";
 
 export async function renderFiscalDocs() {
-  const content = byId("reportsContent");
+  const content = byId("fiscalContainer");
   if (!content) return;
 
   // Inicializar e carregar dados
@@ -90,7 +90,7 @@ export async function renderFiscalDocs() {
 }
 
 export async function renderDAS() {
-  const content = byId("reportsContent");
+  const content = byId("fiscalContainer");
   if (!content) return;
 
   initFiscalData();
@@ -175,7 +175,7 @@ export async function renderDAS() {
 }
 
 export async function renderPurchaseInvoices() {
-  const content = byId("reportsContent");
+  const content = byId("fiscalContainer");
   if (!content) return;
 
   initFiscalData();
@@ -277,7 +277,7 @@ export async function renderPurchaseInvoices() {
 }
 
 export async function renderSalesInvoices() {
-  const content = byId("reportsContent");
+  const content = byId("fiscalContainer");
   if (!content) return;
 
   initFiscalData();
