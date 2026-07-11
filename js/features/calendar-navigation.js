@@ -494,20 +494,33 @@ function attachCalendarEventListeners() {
       });
     }
 
-    // Click nos eventos para navegar ou editar
+    // Selecionar data e atualizar resumo
     dayEl.addEventListener("click", (e) => {
+      if (dayEl.classList.contains("empty")) return;
+
+      const dateStr = dayEl.getAttribute("data-date");
       const eventsData = dayEl.getAttribute("data-events");
+
+      // Remover seleção anterior
+      document.querySelectorAll(".calendar-day-cell.selected").forEach(el => {
+        el.classList.remove("selected");
+      });
+
+      // Selecionar este dia
+      dayEl.classList.add("selected");
+
+      // Atualizar resumo com eventos do dia
       if (eventsData) {
         try {
           const events = JSON.parse(eventsData);
-          const clickedBadge = e.target.closest(".calendar-event-badge");
+          updateResumoForDate(dateStr, events);
 
+          // Ao clicar em badge específico, mostrar detalhes
+          const clickedBadge = e.target.closest(".calendar-event-badge");
           if (clickedBadge) {
             const badgeIndex = Array.from(dayEl.querySelectorAll(".calendar-event-badge")).indexOf(clickedBadge);
             if (badgeIndex >= 0 && events[badgeIndex]) {
-              const clickedEvent = events[badgeIndex];
-              // Mostrar modal para qualquer evento
-              showEventDetailsModal(dayEl.getAttribute("data-date"), clickedEvent);
+              showEventDetailsModal(dateStr, events[badgeIndex]);
             }
           }
         } catch (err) {
@@ -1360,4 +1373,30 @@ const colorMap = {
   custom: "#3b82f6",
 };
 
-export { bindCalendarEvents, renderCalendarWithEvents, attachCalendarEventListeners, updateCalendarStats };
+function updateResumoForDate(dateStr, events = null) {
+  const upcomingEl = document.getElementById("upcomingEvents");
+  if (!upcomingEl) return;
+
+  const date = new Date(dateStr + "T00:00:00");
+  const dayName = date.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
+
+  const dayEvents = events || getCalendarEventsForDay(date);
+
+  if (dayEvents.length === 0) {
+    upcomingEl.innerHTML = `<p style="color: var(--muted); margin: 0;"><strong>${dayName}</strong><br>Nenhum evento</p>`;
+  } else {
+    upcomingEl.innerHTML = `
+      <div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--line);">
+        <strong style="color: var(--ink); font-size: 12px;">${dayName}</strong>
+      </div>
+      ${dayEvents.map(e => `
+        <div style="padding: 10px; background: var(--canvas); border-left: 3px solid ${colorMap[e.type] || '#00D084'}; border-radius: 6px; margin-bottom: 8px;">
+          <div style="font-weight: 600; color: var(--ink); font-size: 12px;">${e.displayLabel}</div>
+          <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">${e.tooltip}</div>
+        </div>
+      `).join('')}
+    `;
+  }
+}
+
+export { bindCalendarEvents, renderCalendarWithEvents, attachCalendarEventListeners, updateCalendarStats, updateResumoForDate };

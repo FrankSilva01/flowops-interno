@@ -232,6 +232,12 @@ html[data-theme="dark"] .calendar-day-cell:hover {
   font-weight: 600;
 }
 
+.calendar-day-cell.selected {
+  background: rgba(0, 208, 132, 0.15);
+  border: 2px solid #00D084;
+  box-shadow: 0 0 0 1px rgba(0, 208, 132, 0.3);
+}
+
 html[data-theme="dark"] .calendar-day-cell.today {
   background: rgba(0, 208, 132, 0.1);
   border-color: #00D084;
