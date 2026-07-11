@@ -48,7 +48,7 @@ import {
   renderMarketplaces, loadAndRenderMarketplaces, connectMercadoLivre, disconnectMercadoLivre,
   configureShopee, connectAmazon, syncAmazon, syncMercadoLivre, saveMarketplaceListing,
   saveStorefrontProduct, updateStorefrontTargetFields, importSelectedListingToStorefrontForm,
-  loadMlCategoryFields, bindStorefrontImageInputs, bindStorefrontDescriptionEditor, setMarketplaceView,
+  loadMlCategoryFields, bindStorefrontImageInputs, bindStorefrontDescriptionEditor, bindMlCategorySelect, setMarketplaceView,
   applyMarketplaceLogRange, showMarketplaceStats, openMarketplaceEdit, fillStorefrontFormFromListing,
   viewMarketplaceOrder, createMarketplaceOrder, downloadMarketplaceDocument,
 } from "../features/marketplace.js";
@@ -402,6 +402,7 @@ export function bindEvents() {
   byId("openStorefrontBtn").addEventListener("click", () => window.open("https://fancy-pastelito-51931f.netlify.app/", "_blank", "noopener"));
   bindStorefrontImageInputs();
   bindStorefrontDescriptionEditor();
+  bindMlCategorySelect();
   document.querySelectorAll("[data-marketplace-view]").forEach((button) => {
     button.addEventListener("click", () => setMarketplaceView(button.dataset.marketplaceView));
   });

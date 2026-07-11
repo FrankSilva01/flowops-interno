@@ -574,6 +574,16 @@ export async function saveStorefrontProduct(event) {
   const imageUrls = String(data.get("image_url") || "").split(/\r?\n/).map((item) => item.trim()).filter(Boolean);
   const descriptionHtml = sanitizeRichHtml(byId("storefrontDescriptionEditor").innerHTML.trim());
   form.elements.description_html.value = descriptionHtml;
+
+  let mlCategoryId = data.get("ml_category_id");
+  if (mlCategoryId === "MLB1522") {
+    mlCategoryId = data.get("ml_category_id_manual");
+  }
+  if (!mlCategoryId) {
+    message.textContent = "Selecione uma categoria do Mercado Livre";
+    return;
+  }
+
   const publishTargets = {
     vitrine: data.get("publish_vitrine") === "on",
     mercado_livre: data.get("publish_ml") === "on",
@@ -607,7 +617,7 @@ export async function saveStorefrontProduct(event) {
         painting: data.get("tech_painting"),
         assembly: data.get("tech_assembly"),
       },
-      category_id: data.get("ml_category_id"),
+      category_id: mlCategoryId,
       listing_type_id: data.get("ml_listing_type_id"),
       condition: data.get("ml_condition"),
       warranty: data.get("ml_warranty"),
@@ -632,7 +642,7 @@ export async function saveStorefrontProduct(event) {
           title: payload.title,
           price: payload.price,
           available_quantity: Number(data.get("available_quantity") || 1),
-          category_id: data.get("ml_category_id"),
+          category_id: mlCategoryId,
           listing_type_id: data.get("ml_listing_type_id"),
           condition: data.get("ml_condition"),
           warranty: data.get("ml_warranty"),
@@ -756,12 +766,38 @@ export async function storefrontRequest(payload) {
   return dataJson;
 }
 
+export function bindMlCategorySelect() {
+  const form = byId("storefrontProductForm");
+  const select = byId("mlCategorySelect");
+  const manualLabel = byId("mlCategoryManualLabel");
+  const manualInput = form.elements.ml_category_id_manual;
+
+  if (!select) return;
+
+  select.addEventListener("change", () => {
+    if (select.value === "MLB1522") {
+      manualLabel.hidden = false;
+      manualInput?.focus();
+    } else {
+      manualLabel.hidden = true;
+      form.elements.ml_category_id.value = select.value;
+    }
+  });
+}
+
 export async function loadMlCategoryFields() {
   const form = byId("storefrontProductForm");
-  const categoryId = form.elements.ml_category_id.value.trim();
+  const select = byId("mlCategorySelect");
+  const manualInput = form.elements.ml_category_id_manual;
+
+  let categoryId = select?.value || "";
+  if (categoryId === "MLB1522") {
+    categoryId = manualInput?.value.trim() || "";
+  }
+
   const preview = byId("mlCategoryFieldsPreview");
   if (!categoryId) {
-    preview.innerHTML = `<p class="form-error">Informe o ID da categoria ML.</p>`;
+    preview.innerHTML = `<p class="form-error">Informe a categoria ou ID da categoria ML.</p>`;
     return;
   }
   preview.innerHTML = "Carregando campos obrigatórios...";
