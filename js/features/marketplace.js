@@ -4,7 +4,7 @@ import {
   renderOperationalSummary,
 } from "../core/dom.js";
 import { ensureCanAdmin } from "../core/permissions.js";
-import { setView, bindActions, render, renderTables } from "../core/router.js";
+import { setView, bindActions, render, renderTables, exportMarketplaceListings } from "../core/router.js";
 import { loadRemoteData } from "../data/remote.js";
 import { getOrderCode, syncOrderFilterControls } from "./orders.js";
 import { recordAudit, isWithinDateRange } from "./logs.js";
@@ -273,6 +273,15 @@ export function renderMarketplaces() {
   document.querySelectorAll('[data-action="marketplace-channel-filter"]').forEach((button) => {
     button.classList.toggle("active", button.dataset.channel === state.marketplaceChannelFilter);
   });
+
+  const exportBtn = byId("exportListingsBtn");
+  if (exportBtn) {
+    exportBtn.onclick = () => {
+      console.log("Export button clicked directly");
+      exportMarketplaceListings();
+    };
+  }
+
   bindActions();
 }
 
