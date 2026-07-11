@@ -1038,7 +1038,9 @@ function showCustomEventMenu(dayEl, event, allEvents) {
 function editCustomEvent(dateStr, index) {
   if (!window.calendarEvents || !window.calendarEvents[dateStr]) return;
 
-  const currentEvent = window.calendarEvents[dateStr][index];
+  let currentEvent = window.calendarEvents[dateStr][index];
+  const isRecurring = currentEvent?.includes(" |RECURRING_MONTHLY");
+  const displayEvent = currentEvent?.replace(" |RECURRING_MONTHLY", "") || "";
 
   const dialog = document.createElement("div");
   dialog.style.cssText = `
@@ -1069,7 +1071,12 @@ function editCustomEvent(dateStr, index) {
 
       <div>
         <label style="display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 8px; text-transform: uppercase;">Descrição do evento</label>
-        <input type="text" id="eventText" value="${currentEvent}" style="width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 13px; background: var(--canvas); color: var(--ink); box-sizing: border-box;">
+        <input type="text" id="eventText" value="${displayEvent}" style="width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 13px; background: var(--canvas); color: var(--ink); box-sizing: border-box;">
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 8px; padding: 12px; background: var(--surface-secondary); border-radius: 8px;">
+        <input type="checkbox" id="eventRecurringMonthly" ${isRecurring ? 'checked' : ''} style="cursor: pointer;">
+        <label for="eventRecurringMonthly" style="cursor: pointer; font-size: 13px; color: var(--ink); margin: 0;">Repetir este evento no mesmo dia de cada mês</label>
       </div>
 
       <div style="display: flex; gap: 10px; margin-top: 8px;">
@@ -1110,11 +1117,14 @@ function editCustomEvent(dateStr, index) {
   saveBtn.addEventListener("click", () => {
     const newDate = document.getElementById("eventDate").value;
     const newText = document.getElementById("eventText").value.trim();
+    const isRecurring = document.getElementById("eventRecurringMonthly").checked;
 
     if (!newDate || !newText) {
       showAppMessage("Preencha data e descrição", "warning");
       return;
     }
+
+    const eventValue = isRecurring ? `${newText} |RECURRING_MONTHLY` : newText;
 
     // Remover do local antigo
     if (newDate !== dateStr) {
@@ -1129,13 +1139,27 @@ function editCustomEvent(dateStr, index) {
       window.calendarEvents[newDate] = [];
     }
     if (newDate === dateStr) {
-      window.calendarEvents[dateStr][index] = newText;
+      window.calendarEvents[dateStr][index] = eventValue;
     } else {
-      window.calendarEvents[newDate].push(newText);
+      window.calendarEvents[newDate].push(eventValue);
+    }
+
+    // Se recorrente, adicionar nos próximos 11 meses
+    if (isRecurring) {
+      const date = new Date(newDate);
+      for (let i = 1; i < 12; i++) {
+        const futureDate = new Date(date);
+        futureDate.setMonth(futureDate.getMonth() + i);
+        const futureDateStr = futureDate.toISOString().split("T")[0];
+        if (!window.calendarEvents[futureDateStr]) {
+          window.calendarEvents[futureDateStr] = [];
+        }
+        window.calendarEvents[futureDateStr].push(eventValue);
+      }
     }
 
     localStorage.setItem("calendarCustomEvents", JSON.stringify(window.calendarEvents));
-    showAppMessage("✅ Evento atualizado!", "success");
+    showAppMessage("✅ Evento " + (isRecurring ? "recorrente " : "") + "atualizado!", "success");
     closeDialog();
 
     // Refresh
@@ -1206,6 +1230,11 @@ function openEventForm() {
         <input type="text" id="eventText" placeholder="Ex: Feriado, Prazo importante..." style="width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 13px; background: var(--canvas); color: var(--ink); box-sizing: border-box;">
       </div>
 
+      <div style="display: flex; align-items: center; gap: 8px; padding: 12px; background: var(--surface-secondary); border-radius: 8px;">
+        <input type="checkbox" id="eventRecurringMonthly" style="cursor: pointer;">
+        <label for="eventRecurringMonthly" style="cursor: pointer; font-size: 13px; color: var(--ink); margin: 0;">Repetir este evento no mesmo dia de cada mês</label>
+      </div>
+
       <div style="display: flex; gap: 10px; margin-top: 8px;">
         <button id="saveEvent" style="flex: 1; background: var(--teal); color: white; border: none; padding: 12px 16px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 13px;">
           <i class="ti ti-check"></i> Salvar
@@ -1244,6 +1273,7 @@ function openEventForm() {
   saveBtn.addEventListener("click", () => {
     const dateInput = document.getElementById("eventDate");
     const textInput = document.getElementById("eventText");
+    const isRecurring = document.getElementById("eventRecurringMonthly").checked;
 
     if (!dateInput.value || !textInput.value.trim()) {
       showAppMessage("Preencha data e descrição do evento", "warning");
@@ -1256,10 +1286,26 @@ function openEventForm() {
       window.calendarEvents[dateStr] = [];
     }
 
-    window.calendarEvents[dateStr].push(textInput.value.trim());
+    const eventValue = isRecurring ? `${textInput.value.trim()} |RECURRING_MONTHLY` : textInput.value.trim();
+    window.calendarEvents[dateStr].push(eventValue);
+
+    // Se recorrente, adicionar nos próximos 11 meses
+    if (isRecurring) {
+      const date = new Date(dateStr);
+      for (let i = 1; i < 12; i++) {
+        const futureDate = new Date(date);
+        futureDate.setMonth(futureDate.getMonth() + i);
+        const futureDateStr = futureDate.toISOString().split("T")[0];
+        if (!window.calendarEvents[futureDateStr]) {
+          window.calendarEvents[futureDateStr] = [];
+        }
+        window.calendarEvents[futureDateStr].push(eventValue);
+      }
+    }
+
     localStorage.setItem("calendarCustomEvents", JSON.stringify(window.calendarEvents));
 
-    showAppMessage("✅ Evento marcado com sucesso!", "success");
+    showAppMessage("✅ Evento " + (isRecurring ? "recorrente " : "") + "marcado com sucesso!", "success");
     closeDialog();
 
     // Refresh calendar
