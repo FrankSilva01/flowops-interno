@@ -824,7 +824,7 @@ export function bindActions() {
         return;
       }
       if (action === "export-listings") {
-        window.openExportDialog?.();
+        exportMarketplaceListings();
         return;
       }
       if (action === "open-marketplace-errors") {
@@ -988,6 +988,41 @@ export function updateSidebarToggle(collapsed) {
   button.setAttribute("aria-expanded", String(!collapsed));
   button.setAttribute("aria-label", collapsed ? "Expandir menu" : "Recolher menu");
   button.title = collapsed ? "Expandir menu" : "Recolher menu";
+}
+
+export function exportMarketplaceListings() {
+  if (!state.marketplaceListings?.length) {
+    flashActionMessage("Nenhum anúncio para exportar");
+    return;
+  }
+
+  const headers = ["Título", "SKU", "Preço", "Estoque", "Marketplace", "ID Externo", "Status"];
+  const rows = state.marketplaceListings.map((item) => [
+    item.title || "",
+    item.sku || "",
+    item.price || "",
+    item.available_quantity || item.stock || "",
+    item.marketplace || "Mercado Livre",
+    item.external_id || "",
+    item.status || "active"
+  ]);
+
+  const csv = [
+    headers.map((h) => `"${h}"`).join(","),
+    ...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+  ].join("\n");
+
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `anuncios_${new Date().getTime()}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+
+  flashActionMessage(`${rows.length} anúncio${rows.length > 1 ? "s" : ""} exportado${rows.length > 1 ? "s" : ""}`);
 }
 
 export function setTheme(theme) {

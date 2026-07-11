@@ -51,7 +51,11 @@ self.addEventListener("fetch", (event) => {
       fetch(request)
         .then((response) => {
           if (response.ok) {
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone()));
+            try {
+              caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone()));
+            } catch (e) {
+              console.warn("Cache put failed:", e);
+            }
           }
           return response;
         })
@@ -65,11 +69,15 @@ self.addEventListener("fetch", (event) => {
     caches.match(request).then((response) => {
       if (response) return response;
       return fetch(request).then((res) => {
-        if (res.ok) {
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, res.clone()));
+        try {
+          if (res.ok) {
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, res.clone()));
+          }
+        } catch (e) {
+          console.warn("Static asset cache failed:", e);
         }
         return res;
       });
-    })
+    }).catch(() => new Response("Offline", { status: 503 }))
   );
 });
