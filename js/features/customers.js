@@ -259,3 +259,57 @@ export function openOrderFromLead(id) {
   const item = state.data.orders.find((orderItem) => orderItem.id === id);
   if (item) startOrderEdit(item.id);
 }
+
+export function renderLeadsTab() {
+  const activeTab = state.leadsTab || "contatos";
+
+  document.querySelectorAll("[data-leads-tab]").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.leadsTab === activeTab);
+    btn.addEventListener("click", () => {
+      state.leadsTab = btn.dataset.leadsTab;
+      renderLeadsTab();
+    });
+  });
+
+  const contatosPanel = byId("contatosPanel");
+  const whatsappPanel = byId("whatsappPanel");
+
+  if (activeTab === "whatsapp") {
+    contatosPanel.style.display = "none";
+    whatsappPanel.style.display = "block";
+    renderWhatsappInLeads();
+  } else {
+    contatosPanel.style.display = "block";
+    whatsappPanel.style.display = "none";
+    renderLeads();
+  }
+}
+
+function renderWhatsappInLeads() {
+  const panel = byId("whatsappPanel");
+  if (!panel) return;
+
+  panel.innerHTML = `
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <h3>WhatsApp Business</h3>
+          <small>Gerencie templates de mensagens e automações.</small>
+        </div>
+        <button id="connectWhatsappBtn" class="primary-btn" type="button">Conectar conta</button>
+      </div>
+      <div id="whatsappConnectionStatus" class="integration-summary-grid"></div>
+      <div class="whatsapp-templates-section">
+        <div class="panel-head">
+          <h3>Templates disponíveis</h3>
+          <button id="createTemplateBtn" class="secondary-btn" type="button">+ Criar template</button>
+        </div>
+        <div class="whatsapp-templates-grid" id="whatsappTemplatesGrid">
+          <div class="empty-state">
+            <span>Conecte sua conta WhatsApp para usar templates</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}

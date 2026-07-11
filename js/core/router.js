@@ -23,7 +23,7 @@ import {
   saveInventoryItem, renderMaterials, renderInventory, resetInventoryForm, materialCashId,
   startInventoryEdit, startMaterialEdit,
 } from "../features/materials.js";
-import { renderLeads, openLeadDialog, saveLead, openOrderFromLead, openLeadFile, deleteLeadFile, selectLead } from "../features/customers.js";
+import { renderLeads, renderLeadsTab, openLeadDialog, saveLead, openOrderFromLead, openLeadFile, deleteLeadFile, selectLead } from "../features/customers.js";
 import { renderReports } from "../features/reports.js";
 import { renderLogs, recordAudit, applyHistoryRange } from "../features/logs.js";
 import {
@@ -559,7 +559,7 @@ export function render() {
       renderLogs();
       break;
     case "leads":
-      renderLeads();
+      renderLeadsTab();
       renderFollowUps();
       break;
     case "notifications":

@@ -614,33 +614,40 @@
         </section>
 
         <section id="leadsView" class="view">
-          <div class="panel-head">
-            <div>
-              <h3>Clientes e Leads</h3>
-              <small>Contatos da vitrine, marketplaces e atendimento manual.</small>
+          <div class="report-tabs">
+            <button class="tab active" data-leads-tab="contatos">Contatos</button>
+            <button class="tab" data-leads-tab="whatsapp">WhatsApp</button>
+          </div>
+          <div id="contatosPanel" class="leads-panel">
+            <div class="panel-head">
+              <div>
+                <h3>Clientes e Leads</h3>
+                <small>Contatos da vitrine, marketplaces e atendimento manual.</small>
+              </div>
+              <button id="newLeadBtn" class="primary-btn" type="button">Novo lead</button>
             </div>
-            <button id="newLeadBtn" class="primary-btn" type="button">Novo lead</button>
+            <div class="lead-toolbar">
+              <input id="leadSearch" type="search" placeholder="Buscar nome, e-mail, WhatsApp ou PED" />
+              <select id="leadStatusFilter">
+                <option value="all">Todos os status</option>
+                <option>Novo</option>
+                <option>Em negociação</option>
+                <option>Convertido</option>
+                <option>Perdido</option>
+                <option>Cliente recorrente</option>
+              </select>
+              <select id="leadOriginFilter">
+                <option value="all">Todas as origens</option>
+                <option>Vitrine</option>
+                <option>Mercado Livre</option>
+                <option>Shopee</option>
+                <option>Amazon</option>
+                <option>Manual</option>
+              </select>
+            </div>
+            <div id="leadsList" class="leads-grid"></div>
           </div>
-          <div class="lead-toolbar">
-            <input id="leadSearch" type="search" placeholder="Buscar nome, e-mail, WhatsApp ou PED" />
-            <select id="leadStatusFilter">
-              <option value="all">Todos os status</option>
-              <option>Novo</option>
-              <option>Em negociação</option>
-              <option>Convertido</option>
-              <option>Perdido</option>
-              <option>Cliente recorrente</option>
-            </select>
-            <select id="leadOriginFilter">
-              <option value="all">Todas as origens</option>
-              <option>Vitrine</option>
-              <option>Mercado Livre</option>
-              <option>Shopee</option>
-              <option>Amazon</option>
-              <option>Manual</option>
-            </select>
-          </div>
-          <div id="leadsList" class="leads-grid"></div>
+          <div id="whatsappPanel" class="whatsapp-panel" style="display:none;"></div>
         </section>
 
         <section id="cashView" class="view">
