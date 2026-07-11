@@ -987,65 +987,41 @@ export function updateSidebarToggle(collapsed) {
 }
 
 export function exportMarketplaceListings() {
-  try {
-    console.log("START: exportMarketplaceListings");
-    console.log("listings count:", state.marketplaceListings?.length);
+  console.log("EXPORT: Starting");
+  const count = state.marketplaceListings?.length || 0;
+  console.log("EXPORT: Count =", count);
 
-    if (!state.marketplaceListings?.length) {
-      console.log("No listings, showing message");
-      flashActionMessage("Nenhum anúncio para exportar");
-      return;
-    }
-
-    console.log("Building headers");
-    const headers = ["Título", "SKU", "Preço", "Estoque", "Marketplace", "ID Externo", "Status"];
-
-    console.log("Mapping rows");
-    const rows = state.marketplaceListings.map((item) => [
-      item.title || "",
-      item.sku || "",
-      item.price || "",
-      item.available_quantity || item.stock || "",
-      item.marketplace || "Mercado Livre",
-      item.external_id || "",
-      item.status || "active"
-    ]);
-    console.log("Rows created:", rows.length);
-
-    console.log("Building CSV string");
-    const csv = [
-      headers.map((h) => `"${h}"`).join(","),
-      ...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
-    ].join("\n");
-    console.log("CSV generated, size:", csv.length);
-
-    console.log("Creating blob");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-
-    console.log("Creating download link");
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `anuncios_${new Date().getTime()}.csv`;
-
-    console.log("Appending link to body");
-    document.body.appendChild(link);
-
-    console.log("Clicking link");
-    link.click();
-
-    console.log("Removing link");
-    document.body.removeChild(link);
-
-    console.log("Revoking object URL");
-    URL.revokeObjectURL(url);
-
-    console.log("Showing success message");
-    flashActionMessage(`${rows.length} anúncio${rows.length > 1 ? "s" : ""} exportado${rows.length > 1 ? "s" : ""}`);
-    console.log("END: exportMarketplaceListings - SUCCESS");
-  } catch (err) {
-    console.error("ERROR in exportMarketplaceListings:", err);
+  if (!count) {
+    alert("Nenhum anúncio para exportar");
+    return;
   }
+
+  const headers = ["Título", "SKU", "Preço", "Estoque", "Marketplace", "ID Externo", "Status"];
+  const rows = state.marketplaceListings.map((item) => [
+    item.title || "",
+    item.sku || "",
+    item.price || "",
+    item.available_quantity || item.stock || "",
+    item.marketplace || "Mercado Livre",
+    item.external_id || "",
+    item.status || "active"
+  ]);
+
+  const csv = [
+    headers.map((h) => `"${h}"`).join(","),
+    ...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+  ].join("\n");
+
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `anuncios_${new Date().getTime()}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
+
+  console.log("EXPORT: Done, downloaded", rows.length, "rows");
+  alert(`${rows.length} anúncio${rows.length > 1 ? "s" : ""} exportado${rows.length > 1 ? "s" : ""}`);
 }
 
 export function setTheme(theme) {
