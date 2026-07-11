@@ -133,25 +133,61 @@ export async function getWhatsappTemplates() {
   return data || [];
 }
 
+const DEFAULT_WHATSAPP_TEMPLATES = [
+  {
+    name: "Confirmação de Pedido",
+    content: "Olá {cliente}! Seu pedido #{codigo} foi confirmado. Valor: R$ {valor}. Você receberá um email com mais detalhes. Obrigado!"
+  },
+  {
+    name: "Aviso de Saída para Entrega",
+    content: "Oi {cliente}! Seu pedido #{codigo} saiu para entrega hoje. Você pode acompanhar aqui: {link_rastreio}. Obrigado!"
+  },
+  {
+    name: "Entrega Realizada",
+    content: "Tudo certo, {cliente}! Seu pedido #{codigo} foi entregue. Esperamos que aproveite! Qualquer dúvida, é só chamar."
+  },
+  {
+    name: "Oferta Flash",
+    content: "Flash sale! Desconto de 30% em {produto}! Aproveita, oferta válida até hoje. {link_loja}"
+  },
+  {
+    name: "Follow-up Abandono de Carrinho",
+    content: "Oi {cliente}! Vimos que você deixou {produto} no carrinho. Quer um cupom de 15% para finalizar a compra? {link_loja}"
+  },
+  {
+    name: "Feedback Pós-Entrega",
+    content: "Opa {cliente}! Tudo bem com você? Ficou satisfeito com seu pedido #{codigo}? Sua opinião é super importante para melhorarmos!"
+  },
+  {
+    name: "Informação sobre Stock",
+    content: "Oi {cliente}! Sobre o produto {produto} que você perguntou: temos {quantidade} unidades em estoque. Posso ajudar com mais algo?"
+  },
+  {
+    name: "Reativação de Cliente",
+    content: "Oi {cliente}! Estamos com uma promoção especial só para você! Aproveita e volta a comprar connosco. {link_loja}"
+  }
+];
+
 export async function renderWhatsappTemplatesTab() {
   const container = byId("whatsappTemplatesContainer");
   if (!container) return;
 
   const templates = await getWhatsappTemplates();
+  const displayTemplates = templates.length > 0 ? templates : DEFAULT_WHATSAPP_TEMPLATES.map((t, i) => ({ ...t, id: `default-${i}` }));
 
   container.innerHTML = `
     <div class="templates-toolbar">
-      <button class="primary-btn" id="newTemplateBtn">+ Novo Template</button>
+      <button class="primary-btn" id="newTemplateBtn">Novo Template</button>
     </div>
 
     <div class="templates-grid">
-      ${templates.length === 0 ? `
+      ${displayTemplates.length === 0 ? `
         <div class="empty-state">
           <strong>Nenhum template</strong>
           <span>Crie templates para enviar mensagens rápidas via WhatsApp</span>
         </div>
       ` : `
-        ${templates.map(t => `
+        ${displayTemplates.map(t => `
           <div class="template-card" style="
             padding: 16px;
             background: var(--canvas);
@@ -165,26 +201,39 @@ export async function renderWhatsappTemplatesTab() {
               ${t.content.substring(0, 60)}...
             </p>
             <div style="display: flex; gap: 8px;">
-              <button onclick="editWhatsappTemplate('${t.id}')" class="secondary-btn" style="
-                flex: 1;
-                padding: 8px;
-                font-size: 12px;
-                border: 1px solid var(--teal);
-                color: var(--teal);
-                background: transparent;
-                border-radius: 6px;
-                cursor: pointer;
-              ">Editar</button>
-              <button onclick="deleteWhatsappTemplate('${t.id}')" class="secondary-btn" style="
-                flex: 1;
-                padding: 8px;
-                font-size: 12px;
-                border: 1px solid #ff6b6b;
-                color: #ff6b6b;
-                background: transparent;
-                border-radius: 6px;
-                cursor: pointer;
-              ">Deletar</button>
+              ${t.id.startsWith('default-') ? `
+                <button onclick="copyWhatsappTemplate('${t.name}', \`${t.content.replace(/`/g, '\\`')}\`)" class="secondary-btn" style="
+                  flex: 1;
+                  padding: 8px;
+                  font-size: 12px;
+                  border: 1px solid var(--teal);
+                  color: var(--teal);
+                  background: transparent;
+                  border-radius: 6px;
+                  cursor: pointer;
+                ">Usar</button>
+              ` : `
+                <button onclick="editWhatsappTemplate('${t.id}')" class="secondary-btn" style="
+                  flex: 1;
+                  padding: 8px;
+                  font-size: 12px;
+                  border: 1px solid var(--teal);
+                  color: var(--teal);
+                  background: transparent;
+                  border-radius: 6px;
+                  cursor: pointer;
+                ">Editar</button>
+                <button onclick="deleteWhatsappTemplate('${t.id}')" class="secondary-btn" style="
+                  flex: 1;
+                  padding: 8px;
+                  font-size: 12px;
+                  border: 1px solid #ff6b6b;
+                  color: #ff6b6b;
+                  background: transparent;
+                  border-radius: 6px;
+                  cursor: pointer;
+                ">Deletar</button>
+              `}
             </div>
           </div>
         `).join("")}
@@ -313,6 +362,17 @@ function openTemplateEditor(templateId = null) {
   });
 }
 
+function copyWhatsappTemplate(name, content) {
+  openTemplateEditor(null);
+  setTimeout(() => {
+    const form = document.getElementById("templateForm");
+    if (form) {
+      form.elements.name.value = name;
+      form.elements.content.value = content;
+    }
+  }, 100);
+}
+
 async function saveWhatsappTemplate(templateId, data) {
   if (!state.supabase) return;
 
@@ -370,3 +430,4 @@ export async function deleteWhatsappTemplate(templateId) {
 // Expor globalmente para onclick
 window.editWhatsappTemplate = async (id) => openTemplateEditor(id);
 window.deleteWhatsappTemplate = deleteWhatsappTemplate;
+window.copyWhatsappTemplate = copyWhatsappTemplate;

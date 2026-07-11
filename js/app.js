@@ -190,7 +190,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       attachCalendarEventListeners();
       updateCalendarStats(now.getFullYear(), now.getMonth());
       // Re-update after data loads (they may still be loading async)
-      setTimeout(() => updateCalendarStats(now.getFullYear(), now.getMonth()), 1500);
+      setTimeout(() => updateCalendarStats(now.getFullYear(), now.getMonth()), 2000);
+      setTimeout(() => updateCalendarStats(now.getFullYear(), now.getMonth()), 4000);
     }
   } catch (err) {
     console.error("Calendar init error:", err);

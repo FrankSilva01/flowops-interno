@@ -418,38 +418,123 @@ export function renderFiscalTab() {
           </div>
 
           <div id="fiscal-sales" class="fiscal-tab-content">
-            <h3>Notas de Venda</h3>
-            <p>Gerenciar notas fiscais de vendas...</p>
+            <h3>Notas Fiscais de Venda</h3>
+            <div style="background: var(--canvas); padding: 16px; border-radius: 8px; margin: 16px 0;">
+              <p style="margin: 0 0 12px 0; color: var(--muted); font-size: 13px;">As notas de venda dos seus pedidos são sincronizadas automaticamente quando conectados ao Mercado Livre ou integração fiscal.</p>
+              <p style="margin: 0; color: var(--muted); font-size: 13px;">Status: <strong style="color: var(--ink);">Aguardando conexão com marketplace</strong></p>
+            </div>
+            <div style="margin-top: 20px; padding: 16px; border: 1px dashed var(--line); border-radius: 8px; text-align: center;">
+              <p style="margin: 0 0 12px 0; font-size: 13px; color: var(--muted);">Para sincronizar notas fiscais:</p>
+              <p style="margin: 0; font-size: 12px; color: var(--muted); line-height: 1.6;">1. Conecte sua conta do Mercado Livre em Marketplace > Integrações<br/>2. Notas serão importadas automaticamente<br/>3. Acompanhe aqui o histórico</p>
+            </div>
           </div>
 
           <div id="fiscal-purchases" class="fiscal-tab-content">
-            <h3>Notas de Compra</h3>
-            <p>Registrar notas fiscais de compra...</p>
+            <h3>Notas Fiscais de Compra</h3>
+            <div style="background: var(--canvas); padding: 16px; border-radius: 8px; margin: 16px 0;">
+              <p style="margin: 0 0 12px 0; color: var(--muted); font-size: 13px;">Registre as notas fiscais de compra de fornecedores para controle de entrada.</p>
+              <button style="background: var(--teal); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">Registrar nova nota</button>
+            </div>
+            <div id="purchasesTableContainer" style="margin-top: 16px;">
+              <p style="color: var(--muted); text-align: center; padding: 20px;">Nenhuma nota de compra registrada ainda</p>
+            </div>
           </div>
 
           <div id="fiscal-das" class="fiscal-tab-content">
-            <h3>DAS MEI</h3>
-            <p>Gerenciar DAS mensal...</p>
+            <h3>DAS - Documento de Arrecadação do Simples</h3>
+            <div style="background: var(--canvas); padding: 16px; border-radius: 8px; margin: 16px 0;">
+              <p style="margin: 0; color: var(--muted); font-size: 13px;"><strong>Próximo vencimento:</strong> Não configurado</p>
+            </div>
+            <div style="margin-top: 16px;">
+              <h4 style="margin: 0 0 12px 0; color: var(--ink);">DAS de 2026</h4>
+              <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                  <tr style="border-bottom: 1px solid var(--line);">
+                    <th style="text-align: left; padding: 8px; font-size: 12px; font-weight: 600; color: var(--muted);">Mês</th>
+                    <th style="text-align: left; padding: 8px; font-size: 12px; font-weight: 600; color: var(--muted);">Vencimento</th>
+                    <th style="text-align: left; padding: 8px; font-size: 12px; font-weight: 600; color: var(--muted);">Status</th>
+                    <th style="text-align: center; padding: 8px; font-size: 12px; font-weight: 600; color: var(--muted);">Ação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style="border-bottom: 1px solid var(--line);">
+                    <td style="padding: 8px; font-size: 13px;">Janeiro</td>
+                    <td style="padding: 8px; font-size: 13px;">25/01/2026</td>
+                    <td style="padding: 8px;"><span style="background: #ff6b6b; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">Aberto</span></td>
+                    <td style="padding: 8px; text-align: center;"><button style="background: transparent; color: var(--teal); border: 1px solid var(--teal); padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">Pagar</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
 
           <div id="fiscal-annual" class="fiscal-tab-content">
-            <h3>Declaração Anual</h3>
-            <p>Declaração de faturamento anual...</p>
+            <h3>Declaração Anual de Faturamento</h3>
+            <div style="background: var(--canvas); padding: 16px; border-radius: 8px; margin: 16px 0;">
+              <p style="margin: 0 0 12px 0; color: var(--muted); font-size: 13px;"><strong>Ano-base:</strong> 2025</p>
+              <p style="margin: 0 0 12px 0; color: var(--muted); font-size: 13px;"><strong>Faturamento total:</strong> R$ 0,00</p>
+              <p style="margin: 0; color: var(--muted); font-size: 13px;"><strong>Status:</strong> Não iniciada</p>
+            </div>
+            <div style="margin-top: 16px; padding: 16px; background: var(--canvas); border-radius: 8px; border-left: 4px solid var(--amber);">
+              <p style="margin: 0 0 8px 0; color: var(--muted); font-size: 12px; font-weight: 600;">Próximas datas importantes:</p>
+              <p style="margin: 0 0 4px 0; color: var(--muted); font-size: 12px;">- Declaração DASN-SIMEI: até 31 de maio</p>
+              <p style="margin: 0; color: var(--muted); font-size: 12px;">- Declaração anual IR: até 31 de março</p>
+            </div>
           </div>
 
           <div id="fiscal-archive" class="fiscal-tab-content">
             <h3>Arquivo Fiscal</h3>
-            <p>Central de documentos...</p>
+            <div style="background: var(--canvas); padding: 16px; border-radius: 8px; margin: 16px 0;">
+              <p style="margin: 0 0 12px 0; color: var(--muted); font-size: 13px;">Faça upload de documentos fiscais para manter tudo centralizado e organizado.</p>
+              <button style="background: var(--teal); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">Fazer upload</button>
+            </div>
+            <div style="margin-top: 16px; padding: 20px; text-align: center; background: var(--canvas); border-radius: 8px; border-dashed 1px var(--line);">
+              <p style="color: var(--muted); margin: 0;">Nenhum documento carregado ainda</p>
+            </div>
           </div>
 
           <div id="fiscal-reports" class="fiscal-tab-content">
-            <h3>Relatórios</h3>
-            <p>Relatórios fiscais...</p>
+            <h3>Relatórios Fiscais</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin: 16px 0;">
+              <div style="background: var(--canvas); padding: 16px; border-radius: 8px; border-left: 4px solid #845ef7;">
+                <h4 style="margin: 0 0 8px 0; color: var(--ink); font-size: 13px; font-weight: 600;">Resumo de Vendas</h4>
+                <p style="margin: 0 0 12px 0; color: var(--muted); font-size: 12px;">Faturamento e quantidade de notas por período</p>
+                <button style="background: var(--teal); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">Gerar</button>
+              </div>
+              <div style="background: var(--canvas); padding: 16px; border-radius: 8px; border-left: 4px solid #00D084;">
+                <h4 style="margin: 0 0 8px 0; color: var(--ink); font-size: 13px; font-weight: 600;">Resumo de Compras</h4>
+                <p style="margin: 0 0 12px 0; color: var(--muted); font-size: 12px;">Despesas e notas de entrada por fornecedor</p>
+                <button style="background: var(--teal); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">Gerar</button>
+              </div>
+              <div style="background: var(--canvas); padding: 16px; border-radius: 8px; border-left: 4px solid #ffc107;">
+                <h4 style="margin: 0 0 8px 0; color: var(--ink); font-size: 13px; font-weight: 600;">Apuração de Impostos</h4>
+                <p style="margin: 0 0 12px 0; color: var(--muted); font-size: 12px;">Cálculo de impostos retidos e a recolher</p>
+                <button style="background: var(--teal); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">Gerar</button>
+              </div>
+            </div>
           </div>
 
           <div id="fiscal-settings" class="fiscal-tab-content">
             <h3>Configurações Fiscais</h3>
-            <p>Dados da empresa...</p>
+            <form style="background: var(--canvas); padding: 16px; border-radius: 8px; display: flex; flex-direction: column; gap: 12px;">
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 4px;">CNPJ/CPF</label>
+                <input type="text" placeholder="00.000.000/0000-00" style="width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; box-sizing: border-box;" />
+              </div>
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 4px;">Razão Social</label>
+                <input type="text" placeholder="Nome da empresa" style="width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; box-sizing: border-box;" />
+              </div>
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 4px;">Regime de Tributação</label>
+                <select style="width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; box-sizing: border-box;">
+                  <option>Simples Nacional</option>
+                  <option>Lucro Presumido</option>
+                  <option>Lucro Real</option>
+                </select>
+              </div>
+              <button type="button" style="background: var(--teal); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; align-self: flex-start;">Salvar</button>
+            </form>
           </div>
         </div>
       </div>
