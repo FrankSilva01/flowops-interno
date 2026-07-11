@@ -1018,7 +1018,10 @@ export async function marketplaceRequest(url, options = {}) {
     }
   });
   const payload = await response.json();
-  if (!response.ok || !payload.ok) throw new Error(payload.error || "Falha na integracao.");
+  if (!response.ok || !payload.ok) {
+    console.error("❌ API Error:", { status: response.status, payload });
+    throw new Error(payload.error || `Falha na integracao (${response.status}).`);
+  }
   return payload;
 }
 
