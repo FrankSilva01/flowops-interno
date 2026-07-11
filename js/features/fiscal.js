@@ -423,20 +423,45 @@ function bindFiscalActions() {
 
 function openFiscalDocumentDialog() {
   const dialog = byId("fiscalDocumentDialog");
-  if (dialog) {
-    dialog.showModal();
+  if (!dialog) return;
 
-    const form = byId("fiscalDocumentForm");
-    const closeBtn = dialog.querySelector("[data-action='close-fiscal-dialog']");
-    const cancelBtn = dialog.querySelector("[data-action='close-fiscal-dialog']");
+  // Limpar eventos antigos
+  dialog.replaceWith(dialog.cloneNode(true));
+  const newDialog = byId("fiscalDocumentDialog");
 
-    closeBtn?.addEventListener("click", () => dialog.close());
-    cancelBtn?.addEventListener("click", () => dialog.close());
+  if (newDialog) {
+    newDialog.showModal();
 
+    const form = newDialog.querySelector("#fiscalDocumentForm");
+    const closeBtns = newDialog.querySelectorAll("[data-action='close-fiscal-dialog']");
+
+    // Fechar ao clicar em X ou Cancelar
+    closeBtns.forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        newDialog.close();
+      });
+    });
+
+    // Fechar ao clicar no overlay (fora do modal)
+    newDialog.addEventListener("click", (e) => {
+      if (e.target === newDialog) {
+        newDialog.close();
+      }
+    });
+
+    // Fechar ao pressionar Escape
+    newDialog.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        newDialog.close();
+      }
+    });
+
+    // Salvar documento
     form?.addEventListener("submit", async (e) => {
       e.preventDefault();
       await saveFiscalDocumentFromForm(form);
-      dialog.close();
+      newDialog.close();
     });
   }
 }
