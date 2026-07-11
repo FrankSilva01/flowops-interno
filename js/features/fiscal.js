@@ -714,3 +714,7 @@ function updateDASSummary() {
   document.getElementById("dasPaidCount").textContent = "5";
   document.getElementById("dasSavings").textContent = "R$ 340,00";
 }
+
+export async function renderFiscalTab() {
+  await renderFiscalDocs();
+}
