@@ -1341,7 +1341,7 @@ export async function openBulkCostDialog(coverage) {
   document.body.appendChild(dialog);
 }
 
-async function saveBulkCosts(rows, dialog) {
+export async function saveBulkCosts(rows, dialog) {
   // Implementação para salvar custos em lote
   // Por enquanto, apenas mostra mensagem
   showAppMessage("✅ Custos cadastrados com sucesso!", "success");
