@@ -496,42 +496,6 @@ export async function saveProduct(event) {
       }
       console.log("✅ Images found, proceeding...");
 
-      // Converter imagens base64 para URLs públicas
-      console.log("📤 Converting images to URLs...");
-      const pictureUrls = [];
-      for (let i = 0; i < productUploadedImages.length; i++) {
-        const base64 = productUploadedImages[i];
-        // Remover prefixo "data:image/jpeg;base64,"
-        const base64Data = base64.replace(/^data:image\/\w+;base64,/, "");
-        // Converter para Blob
-        const binaryString = atob(base64Data);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let j = 0; j < binaryString.length; j++) {
-          bytes[j] = binaryString.charCodeAt(j);
-        }
-        const blob = new Blob([bytes], { type: "image/jpeg" });
-        // Upload para Supabase storage
-        const fileName = `${saved.id}/${Date.now()}-${i}.jpg`;
-        const { error: uploadError } = await state.supabase.storage
-          .from("order-images")
-          .upload(fileName, blob);
-        if (uploadError) {
-          console.error("❌ Image upload error:", uploadError);
-          results.push(`Mercado Livre: erro ao enviar imagem ${i + 1}.`);
-          continue;
-        }
-        // Gerar URL pública
-        const { data: { publicUrl } } = state.supabase.storage
-          .from("order-images")
-          .getPublicUrl(fileName);
-        pictureUrls.push(publicUrl);
-      }
-
-      if (pictureUrls.length === 0) {
-        results.push("Mercado Livre: erro ao processar imagens.");
-        continue;
-      }
-
       const mlPayload = {
         title: name,
         price: Number(price),
@@ -541,7 +505,7 @@ export async function saveProduct(event) {
         condition: "new",
         sku,
         description: String(data.get("description") || "").trim() || name,
-        pictures: pictureUrls, // Enviar URLs públicas, não base64
+        pictures: productUploadedImages, // Enviar base64 direto para API do ML
       };
       console.log("📤 Sending to ML API:", mlPayload);
       const created = await marketplaceRequest("https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-sync?marketplace=ml&action=create-listing", {
