@@ -455,13 +455,14 @@ export async function saveProduct(event) {
     return;
   }
 
-  // Simplificado: não publicar automaticamente
-  // Usuário publica manualmente no Mercado Livre e depois sincroniza
-  byId("productDialog").close();
-  flashActionMessage("Produto salvo! Publique manualmente no Mercado Livre e sincronize depois.");
-  renderProductCatalogTable();
-  renderMarketplaces();
-  return;
+  // Se nenhum marketplace selecionado, apenas salva localmente
+  if (!selectedChannels.length) {
+    byId("productDialog").close();
+    flashActionMessage("Produto salvo no catálogo.");
+    renderProductCatalogTable();
+    renderMarketplaces();
+    return;
+  }
 
   const results = [];
   for (const channel of selectedChannels) {
