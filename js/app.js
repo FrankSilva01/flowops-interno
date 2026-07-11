@@ -233,13 +233,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       console.error("Accounting CSS error:", err);
     }
 
-    try {
-      const fiscalStyle = document.createElement("style");
-      fiscalStyle.textContent = fiscalCSS;
-      document.head.appendChild(fiscalStyle);
-    } catch (err) {
-      console.error("Fiscal CSS error:", err);
-    }
   }, 200);
 
   // Global functions for new features
