@@ -1876,8 +1876,34 @@
         <!-- STEP 1: Dados básicos -->
         <div class="form-step" data-step="1" style="display:block">
           <label>Nome do produto*<input name="name" placeholder="Ex: Action Figure Deadpool" required /></label>
-          <label>Categoria<input name="category" placeholder="Ex: Action figures" list="productCategoryList" /></label>
-          <datalist id="productCategoryList"></datalist>
+          <label>Categoria do Mercado Livre*
+            <select name="mlCategoryId" required>
+              <option value="">Selecione uma categoria...</option>
+              <option value="MLB5672">Ação Figures e Bonecos</option>
+              <option value="MLB1366">Acessórios para Crianças</option>
+              <option value="MLB1384">Artesanato</option>
+              <option value="MLB1953">Brinquedos</option>
+              <option value="MLB374">Coleções</option>
+              <option value="MLB1000">Decoração</option>
+              <option value="MLB1051">Eletrônicos e Tecnologia</option>
+              <option value="MLB1132">Esportes e Fitness</option>
+              <option value="MLB1168">Fantasias e Roupas</option>
+              <option value="MLB1201">Hobbies</option>
+              <option value="MLB1246">Iluminação</option>
+              <option value="MLB1276">Jogos</option>
+              <option value="MLB1319">Livros</option>
+              <option value="MLB1403">Miniaturismo</option>
+              <option value="MLB1430">Modelos em Escala</option>
+              <option value="MLB1500">Música</option>
+              <option value="MLB1549">Moda</option>
+              <option value="MLB1574">Pelúcias</option>
+              <option value="MLB1635">Vinil e CDs</option>
+              <option value="MLB1726">Videogames</option>
+              <option value="MLB263">Antigos</option>
+              <option value="MLB264">Outros</option>
+            </select>
+          </label>
+          <label>Categoria local (descrição)<input name="category" placeholder="Ex: Action figures" /></label>
           <label>SKU<input name="sku" placeholder="Gerado automaticamente" /></label>
 
           <label id="productImageDropzone" class="storefront-image-dropzone wide">
@@ -1911,14 +1937,13 @@
 
           <div id="mlConfigSection" style="display:none; margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd">
             <div class="form-section-title">Configuração Mercado Livre</div>
-            <label>ID da categoria no Mercado Livre<input name="mlCategoryId" placeholder="Ex: MLB1839 (opcional - pode editar depois)" /></label>
-            <p class="form-hint">Dica: Se deixar em branco, o anúncio será criado sem categoria específica. Você pode editá-lo depois no Mercado Livre.</p>
             <label>Tipo de anúncio
               <select name="listingType">
                 <option value="classic">Clássico (11,5% comissão)</option>
                 <option value="premium">Premium (16,5% comissão)</option>
               </select>
             </label>
+            <p class="form-hint">A categoria foi selecionada no primeiro passo. Você pode editar a categoria no Mercado Livre depois de publicar.</p>
           </div>
         </div>
 
