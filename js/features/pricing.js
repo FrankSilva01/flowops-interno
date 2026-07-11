@@ -488,10 +488,13 @@ export async function saveProduct(event) {
     try {
       const listingType = String(data.get("listingType") || "classic");
       // Validar imagens
+      console.log("🖼️ Images check - productUploadedImages:", productUploadedImages.length, "images");
       if (!productUploadedImages || productUploadedImages.length === 0) {
+        console.log("❌ No images found");
         results.push("Mercado Livre: adicione pelo menos uma imagem para publicar.");
         continue;
       }
+      console.log("✅ Images found, proceeding...");
 
       const mlPayload = {
         title: name,
