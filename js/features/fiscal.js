@@ -345,6 +345,7 @@ export async function renderSalesInvoices() {
         </div>
         <div class="sales-actions">
           <button class="primary-btn" type="button" data-sales-action="new-invoice">+ Novo</button>
+          <button class="secondary-btn" type="button" data-sales-action="import-orders">📥 Importar de Pedidos</button>
           <button class="secondary-btn" type="button" data-sales-action="sync">Sincronizar</button>
         </div>
       </div>
@@ -770,6 +771,7 @@ function bindSalesActions() {
   const guideBtn = document.querySelector('[data-sales-action="guide"]');
   const closeGuideBtn = document.querySelector('[data-sales-action="close-guide"]');
   const testBtn = document.querySelector('[data-sales-action="test-connection"]');
+  const importBtn = document.querySelector('[data-sales-action="import-orders"]');
   const salesForm = document.getElementById("salesConnectionForm");
 
   if (connectBtn) {
@@ -797,6 +799,12 @@ function bindSalesActions() {
     });
   }
 
+  if (importBtn) {
+    importBtn.addEventListener("click", async () => {
+      await importOrdersAsSalesInvoices();
+    });
+  }
+
   if (salesForm) {
     salesForm.addEventListener("submit", (e) => {
       e.preventDefault();
@@ -809,6 +817,41 @@ function bindSalesActions() {
       }, 1500);
     });
   }
+}
+
+async function importOrdersAsSalesInvoices() {
+  if (!state.data.orders || state.data.orders.length === 0) {
+    showAppMessage("Nenhum Pedido", "Você não tem pedidos para importar", "warning");
+    return;
+  }
+
+  const existingSalesIds = (await loadSalesInvoices()).map(s => s.order_id);
+  const ordersToImport = state.data.orders.filter(o => !existingSalesIds.includes(o.id));
+
+  if (ordersToImport.length === 0) {
+    showAppMessage("Nenhum Novo Pedido", "Todos os pedidos já foram importados", "info");
+    return;
+  }
+
+  let imported = 0;
+  for (const order of ordersToImport) {
+    const invoice = {
+      id: `inv-${order.id}-${Date.now()}`,
+      date: new Date().toISOString().split("T")[0],
+      client: order.client || "Cliente Não Informado",
+      invoice_number: `NF-${order.id.substr(-6).toUpperCase()}`,
+      description: order.description || "Importado de pedido",
+      amount: parseFloat(order.charged || 0),
+      status: order.status === "Entregue" ? "Emitida" : "Rascunho",
+      order_id: order.id,
+      created_at: new Date().toISOString(),
+    };
+    await saveSalesInvoice(invoice);
+    imported++;
+  }
+
+  showAppMessage("✅ Importação Concluída", `${imported} pedido(s) importado(s) como notas de venda`, "success");
+  await renderSalesInvoices();
 }
 
 function updateDASSummary() {
