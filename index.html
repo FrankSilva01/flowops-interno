@@ -1087,11 +1087,10 @@
 
                 <div id="storefrontMlFields" class="marketplace-extra-fields">
                   <div class="form-section-title">Campos Mercado Livre</div>
-                  <label>Categoria
-                    <input type="text" id="mlCategorySearch" name="ml_category_id" placeholder="Digite para buscar (ex: Brinquedos, Eletrônicos)" autocomplete="off" list="mlCategoryList" />
+                  <label>Categoria *
+                    <input type="text" id="mlCategorySearch" name="ml_category_id" placeholder="Clique aqui e escolha uma categoria" autocomplete="off" list="mlCategoryList" required />
                     <datalist id="mlCategoryList"></datalist>
-                    <small id="mlCategoryLoading" hidden>Carregando categorias...</small>
-                    <small id="mlCategoryHint" style="display: block; margin-top: 4px; color: #666;">Digite para buscar categorias existentes no Mercado Livre</small>
+                    <small style="display: block; margin-top: 4px; color: #999;">Clique no campo para ver todas as categorias disponíveis, ou digite para filtrar (ex: Brinquedos, Eletrônicos, Ação)</small>
                   </label>
                   <button id="loadMlCategoryFieldsBtn" class="secondary-btn" type="button">Carregar campos da categoria</button>
                   <label>Tipo de anúncio
