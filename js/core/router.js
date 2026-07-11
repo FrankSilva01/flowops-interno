@@ -402,7 +402,12 @@ export function bindEvents() {
   byId("openStorefrontBtn").addEventListener("click", () => window.open("https://fancy-pastelito-51931f.netlify.app/", "_blank", "noopener"));
   bindStorefrontImageInputs();
   bindStorefrontDescriptionEditor();
-  bindMlCategorySelect();
+  console.log("About to call bindMlCategorySelect");
+  try {
+    bindMlCategorySelect();
+  } catch (e) {
+    console.error("Error calling bindMlCategorySelect:", e);
+  }
   document.querySelectorAll("[data-marketplace-view]").forEach((button) => {
     button.addEventListener("click", () => setMarketplaceView(button.dataset.marketplaceView));
   });
