@@ -1,5 +1,5 @@
-import { state } from "../core/state.js";
-import { byId, showAppMessage, flashActionMessage, money } from "../core/dom.js";
+import { state, money } from "../core/state.js";
+import { byId, showAppMessage, flashActionMessage } from "../core/dom.js";
 import { recordAudit } from "./logs.js";
 
 // ========================================================================
