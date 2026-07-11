@@ -479,9 +479,9 @@ export async function saveProduct(event) {
       results.push("Mercado Livre: conta não conectada. Conecte em Integrações antes de publicar.");
       continue;
     }
-    const mlCategoryId = String(data.get("mlCategoryId") || "").trim();
+    const mlCategoryId = String(data.get("mlCategoryId") || "").trim() || null;
     if (!mlCategoryId) {
-      results.push("Mercado Livre: informe o ID da categoria do Mercado Livre para publicar.");
+      results.push("Mercado Livre: categoria não especificada. O anúncio será criado sem categoria definida — você pode editá-lo depois no Mercado Livre.");
       continue;
     }
     try {
