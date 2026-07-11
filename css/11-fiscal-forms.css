@@ -23,6 +23,13 @@
   overflow: hidden;
 }
 
+/* Modal Compacto */
+.fiscal-dialog.fiscal-compact[open] {
+  max-width: 500px;
+  height: auto;
+  max-height: 90vh;
+}
+
 html[data-theme="dark"] .fiscal-dialog[open] {
   background: #0f1419;
   border: 1px solid #1a2332;
@@ -295,6 +302,156 @@ html[data-theme="dark"] .status-badge.status-pago {
   background: rgba(0, 208, 132, 0.2);
   color: #00ff99;
   border-color: rgba(0, 208, 132, 0.4);
+}
+
+/* Formulário Compacto com Steps */
+.fiscal-form-compact {
+  padding: 0;
+}
+
+.form-step {
+  display: none;
+  padding: 20px;
+  animation: fadeIn 0.2s ease;
+}
+
+.form-step.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.form-grid-compact {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.form-group-compact {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group-compact.full {
+  grid-column: 1 / -1;
+}
+
+.form-group-compact label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+html[data-theme="dark"] .form-group-compact label {
+  color: #999;
+}
+
+.form-group-compact input,
+.form-group-compact select {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--canvas);
+  color: var(--ink);
+  font-size: 13px;
+  font-family: inherit;
+}
+
+html[data-theme="dark"] .form-group-compact input,
+html[data-theme="dark"] .form-group-compact select {
+  background: #0f1419;
+  border-color: #1a2332;
+  color: #fff;
+}
+
+.form-group-compact input:focus,
+.form-group-compact select:focus {
+  outline: none;
+  border-color: #00D084;
+  box-shadow: 0 0 0 2px rgba(0, 208, 132, 0.1);
+}
+
+/* Step Indicators */
+.step-indicators {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex: 1;
+}
+
+.step-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+html[data-theme="dark"] .step-dot {
+  border-color: #1a2332;
+}
+
+.step-dot.active {
+  background: #00D084;
+  border-color: #00D084;
+}
+
+.step-dot:hover {
+  border-color: #00D084;
+}
+
+/* Compact Actions */
+.form-actions-compact {
+  display: flex;
+  gap: 10px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--line);
+  background: var(--canvas);
+  align-items: center;
+}
+
+html[data-theme="dark"] .form-actions-compact {
+  background: #0f1419;
+  border-top-color: #1a2332;
+}
+
+.form-actions-compact button {
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.form-actions-compact .secondary-btn {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink);
+}
+
+html[data-theme="dark"] .form-actions-compact .secondary-btn {
+  border-color: #1a2332;
+  color: #ccc;
+}
+
+.form-actions-compact .primary-btn {
+  background: #00D084;
+  color: white;
+  flex: 1;
+}
+
+.form-actions-compact .primary-btn:hover {
+  background: #00c078;
 }
 
 /* Responsivo */

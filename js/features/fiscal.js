@@ -434,6 +434,35 @@ function openFiscalDocumentDialog() {
 
     const form = newDialog.querySelector("#fiscalDocumentForm");
     const closeBtns = newDialog.querySelectorAll("[data-action='close-fiscal-dialog']");
+    const nextBtn = newDialog.querySelector("#nextStepBtn");
+    const submitBtn = newDialog.querySelector("#submitBtn");
+    const stepDots = newDialog.querySelectorAll(".step-dot");
+
+    let currentStep = 1;
+
+    const showStep = (step) => {
+      currentStep = step;
+      form.querySelectorAll(".form-step").forEach(s => s.classList.remove("active"));
+      form.querySelector(`[data-step="${step}"]`)?.classList.add("active");
+
+      stepDots.forEach(dot => dot.classList.toggle("active", parseInt(dot.dataset.goTo) === step));
+
+      if (step === 3) {
+        nextBtn.style.display = "none";
+        submitBtn.style.display = "block";
+      } else {
+        nextBtn.style.display = "block";
+        submitBtn.style.display = "none";
+      }
+    };
+
+    nextBtn?.addEventListener("click", () => {
+      if (currentStep < 3) showStep(currentStep + 1);
+    });
+
+    stepDots.forEach(dot => {
+      dot.addEventListener("click", () => showStep(parseInt(dot.dataset.goTo)));
+    });
 
     // Fechar ao clicar em X ou Cancelar
     closeBtns.forEach(btn => {
@@ -443,18 +472,14 @@ function openFiscalDocumentDialog() {
       });
     });
 
-    // Fechar ao clicar no overlay (fora do modal)
+    // Fechar ao clicar no overlay
     newDialog.addEventListener("click", (e) => {
-      if (e.target === newDialog) {
-        newDialog.close();
-      }
+      if (e.target === newDialog) newDialog.close();
     });
 
     // Fechar ao pressionar Escape
     newDialog.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") {
-        newDialog.close();
-      }
+      if (e.key === "Escape") newDialog.close();
     });
 
     // Salvar documento
