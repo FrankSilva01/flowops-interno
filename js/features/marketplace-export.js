@@ -1,29 +1,25 @@
-import { state } from "../core/state.js";
-import { byId, showAppMessage, flashActionMessage, html } from "../core/dom.js";
-import { recordAudit } from "./logs.js";
+import { state, money } from "../core/state.js";
+import { byId, showAppMessage, flashActionMessage } from "../core/dom.js";
+import { marketplaceDisplayName } from "./marketplace.js";
 
-// ========================================================================
-// PROMPT 8A: EXPORT ANÚNCIOS + CENTRAL DE PERGUNTAS ML
-// ========================================================================
-
-// ========== A. EXPORTAR ANÚNCIOS ==========
-
-const EXPORT_TEMPLATES = {
-  shopee: {
-    name: "Shopee",
-    fields: ["name", "price", "stock", "sku", "description", "category", "images"]
-  },
-  amazon: {
-    name: "Amazon",
-    fields: ["sku", "product-name", "price", "quantity", "image-url", "description"]
-  },
-  generic: {
-    name: "Genérico",
-    fields: ["sku", "name", "price", "stock", "cost_price", "description", "category", "marketplace"]
+export function initMarketplaceExport() {
+  const exportBtn = byId("exportListingsBtn");
+  if (exportBtn) {
+    exportBtn.addEventListener("click", openExportDialog);
   }
-};
+}
 
-export async function openExportDialog() {
+function openExportDialog() {
+  const listings = state.marketplaceListings.filter(item =>
+    state.marketplaceChannelFilter === "all" ||
+    item.marketplace === state.marketplaceChannelFilter
+  );
+
+  if (listings.length === 0) {
+    showAppMessage("Nenhum anúncio para exportar", "warning");
+    return;
+  }
+
   const dialog = document.createElement("div");
   dialog.style.cssText = `
     position: fixed;
@@ -35,67 +31,84 @@ export async function openExportDialog() {
     border-radius: 12px;
     box-shadow: 0 20px 60px rgba(0,0,0,0.3);
     z-index: 10000;
-    min-width: 450px;
-    max-width: 90vw;
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
   `;
 
   dialog.innerHTML = `
-    <h2 style="margin: 0 0 12px 0; font-size: 18px; font-weight: 700; color: var(--ink);">
-      Exportar Anúncios
+    <h2 style="margin: 0 0 24px 0; font-size: 18px; font-weight: 700; color: var(--ink);">
+      📤 Exportar Anúncios
     </h2>
-    <p style="margin: 0 0 24px 0; font-size: 13px; color: var(--muted); line-height: 1.6;">
-      Escolha o formato e os anúncios que deseja exportar.
+
+    <p style="color: var(--muted); margin-bottom: 20px; font-size: 13px;">
+      Escolha o formato desejado para exportar ${listings.length} anúncio${listings.length !== 1 ? 's' : ''}
     </p>
 
-    <div style="display: flex; flex-direction: column; gap: 16px;">
-      <div>
-        <label style="display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 8px; text-transform: uppercase;">
-          Template
-        </label>
-        <select id="exportTemplate" style="
-          width: 100%;
-          padding: 8px 12px;
-          border: 1px solid var(--line);
-          border-radius: 6px;
-          font-size: 13px;
-          background: var(--canvas);
-          color: var(--ink);
-        ">
-          ${Object.entries(EXPORT_TEMPLATES).map(([key, tmpl]) =>
-            `<option value="${key}">${tmpl.name}</option>`
-          ).join("")}
-        </select>
-      </div>
+    <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px;">
+      <button id="exportJSON" style="
+        padding: 12px 16px;
+        background: var(--canvas);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        color: var(--ink);
+        cursor: pointer;
+        font-weight: 600;
+        text-align: left;
+        transition: all 0.2s;
+      " onmouseover="this.style.borderColor='#00D084'; this.style.background='rgba(0, 208, 132, 0.1)'" onmouseout="this.style.borderColor='var(--line)'; this.style.background='var(--canvas)'">
+        <strong>📋 JSON</strong>
+        <small style="display: block; color: var(--muted); font-weight: 400; margin-top: 4px;">Formato estruturado, ideal para importação em sistemas</small>
+      </button>
 
-      <div>
-        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
-          <input type="radio" name="exportScope" value="all" checked style="cursor: pointer;" />
-          <span>Exportar todos os anúncios (${state.marketplaceListings?.length || 0})</span>
-        </label>
-        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; margin-top: 8px;">
-          <input type="radio" name="exportScope" value="selected" style="cursor: pointer;" />
-          <span>Exportar selecionados</span>
-        </label>
-      </div>
+      <button id="exportCSV" style="
+        padding: 12px 16px;
+        background: var(--canvas);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        color: var(--ink);
+        cursor: pointer;
+        font-weight: 600;
+        text-align: left;
+        transition: all 0.2s;
+      " onmouseover="this.style.borderColor='#00D084'; this.style.background='rgba(0, 208, 132, 0.1)'" onmouseout="this.style.borderColor='var(--line)'; this.style.background='var(--canvas)'">
+        <strong>📊 CSV (Excel/Sheets)</strong>
+        <small style="display: block; color: var(--muted); font-weight: 400; margin-top: 4px;">Compatível com Excel e Google Sheets para edição rápida</small>
+      </button>
 
-      <div>
-        <label style="display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 8px; text-transform: uppercase;">
-          Formato
-        </label>
-        <div style="display: flex; gap: 8px;">
-          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; flex: 1;">
-            <input type="radio" name="exportFormat" value="csv" checked style="cursor: pointer;" />
-            <span>CSV</span>
-          </label>
-          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; flex: 1;">
-            <input type="radio" name="exportFormat" value="xlsx" style="cursor: pointer;" />
-            <span>XLSX (Excel)</span>
-          </label>
-        </div>
-      </div>
+      <button id="exportXML" style="
+        padding: 12px 16px;
+        background: var(--canvas);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        color: var(--ink);
+        cursor: pointer;
+        font-weight: 600;
+        text-align: left;
+        transition: all 0.2s;
+      " onmouseover="this.style.borderColor='#00D084'; this.style.background='rgba(0, 208, 132, 0.1)'" onmouseout="this.style.borderColor='var(--line)'; this.style.background='var(--canvas)'">
+        <strong>📑 XML</strong>
+        <small style="display: block; color: var(--muted); font-weight: 400; margin-top: 4px;">Padrão para muitos sistemas e integrações</small>
+      </button>
+
+      <button id="exportHTML" style="
+        padding: 12px 16px;
+        background: var(--canvas);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        color: var(--ink);
+        cursor: pointer;
+        font-weight: 600;
+        text-align: left;
+        transition: all 0.2s;
+      " onmouseover="this.style.borderColor='#00D084'; this.style.background='rgba(0, 208, 132, 0.1)'" onmouseout="this.style.borderColor='var(--line)'; this.style.background='var(--canvas)'">
+        <strong>🌐 HTML (com imagens)</strong>
+        <small style="display: block; color: var(--muted); font-weight: 400; margin-top: 4px;">Catálogo completo com fotos e descrições</small>
+      </button>
     </div>
 
-    <div style="display: flex; gap: 12px; margin-top: 24px; justify-content: flex-end;">
+    <div style="display: flex; gap: 12px; justify-content: flex-end;">
       <button id="cancelExport" style="
         background: transparent;
         border: 1px solid var(--line);
@@ -105,15 +118,6 @@ export async function openExportDialog() {
         cursor: pointer;
         font-weight: 600;
       ">Cancelar</button>
-      <button id="startExport" style="
-        background: var(--teal);
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        border-radius: 8px;
-        cursor: pointer;
-        font-weight: 600;
-      ">📥 Exportar</button>
     </div>
   `;
 
@@ -128,267 +132,388 @@ export async function openExportDialog() {
   document.body.appendChild(overlay);
   document.body.appendChild(dialog);
 
+  byId("exportJSON").addEventListener("click", () => {
+    exportListingsAsJSON(listings);
+    overlay.remove();
+    dialog.remove();
+  });
+
+  byId("exportCSV").addEventListener("click", () => {
+    exportListingsAsCSV(listings);
+    overlay.remove();
+    dialog.remove();
+  });
+
+  byId("exportXML").addEventListener("click", () => {
+    exportListingsAsXML(listings);
+    overlay.remove();
+    dialog.remove();
+  });
+
+  byId("exportHTML").addEventListener("click", () => {
+    exportListingsAsHTML(listings);
+    overlay.remove();
+    dialog.remove();
+  });
+
   byId("cancelExport").addEventListener("click", () => {
     overlay.remove();
     dialog.remove();
   });
-
-  byId("startExport").addEventListener("click", () => {
-    const template = document.querySelector('input[name="exportTemplate"]')?.value || "generic";
-    const scope = document.querySelector('input[name="exportScope"]:checked')?.value || "all";
-    const format = document.querySelector('input[name="exportFormat"]:checked')?.value || "csv";
-
-    exportListings(template, scope, format);
-    overlay.remove();
-    dialog.remove();
-  });
 }
 
-function exportListings(templateKey, scope, format) {
-  const template = EXPORT_TEMPLATES[templateKey];
-  let listings = state.marketplaceListings || [];
+function exportListingsAsJSON(listings) {
+  const data = listings.map(item => ({
+    titulo: item.title,
+    descricao: item.description || "",
+    marketplace: marketplaceDisplayName(item.marketplace),
+    preco: parseFloat(item.price || 0),
+    estoque: parseInt(item.stock || item.available_quantity || 0),
+    sku: item.sku || "",
+    id_externo: item.external_id,
+    status: item.status,
+    foto_url: item.thumbnail_url || "",
+    link_marketplace: `https://${getMarketplaceHost(item.marketplace)}/p/${item.external_id}`,
+    visualizacoes: parseInt(item.views || item.views_today || 0),
+    conversao: parseFloat(item.conversion || 0),
+    criado_em: item.created_at || "",
+    atualizado_em: item.updated_at || "",
+  }));
 
-  if (scope === "selected") {
-    // TODO: Filtrar por selecionados com checkbox
-    flashActionMessage("Selecione anúncios com checkbox primeiro");
-    return;
-  }
-
-  const data = listings.map(listing => {
-    const row = {};
-    template.fields.forEach(field => {
-      switch (field) {
-        case "sku":
-          row[field] = listing.sku || "";
-          break;
-        case "name":
-        case "product-name":
-          row[field] = listing.title || "";
-          break;
-        case "price":
-          row[field] = listing.price || 0;
-          break;
-        case "quantity":
-        case "stock":
-          row[field] = listing.available_quantity || 0;
-          break;
-        case "image-url":
-          row[field] = listing.thumbnail || "";
-          break;
-        case "description":
-          row[field] = listing.description || "";
-          break;
-        case "category":
-          row[field] = listing.category_id || "";
-          break;
-        case "cost_price":
-          row[field] = listing.cost_price || "";
-          break;
-        case "marketplace":
-          row[field] = listing.marketplace || "";
-          break;
-        case "images":
-          row[field] = listing.pictures?.map(p => p.url).join("; ") || "";
-          break;
-      }
-    });
-    return row;
-  });
-
-  if (format === "csv") {
-    exportAsCSV(data, `anuncios_${templateKey}_${new Date().toISOString().split("T")[0]}.csv`);
-  } else if (format === "xlsx") {
-    exportAsXLSX(data, `anuncios_${templateKey}_${new Date().toISOString().split("T")[0]}.xlsx`);
-  }
-
-  flashActionMessage(`✅ Exportados ${data.length} anúncios!`);
+  const json = JSON.stringify(data, null, 2);
+  downloadFile(json, "anuncios-exportados.json", "application/json");
+  flashActionMessage(`✅ ${listings.length} anúncio${listings.length !== 1 ? 's' : ''} exportado${listings.length !== 1 ? 's' : ''} em JSON!`);
 }
 
-function exportAsCSV(data, filename) {
-  if (data.length === 0) return;
+function exportListingsAsCSV(listings) {
+  const headers = [
+    "Título",
+    "Descrição",
+    "Marketplace",
+    "Preço",
+    "Estoque",
+    "SKU",
+    "ID Externo",
+    "Status",
+    "Foto URL",
+    "Link Marketplace",
+    "Visualizações",
+    "Conversão %",
+    "Criado em",
+    "Atualizado em",
+  ];
 
-  const headers = Object.keys(data[0]);
-  const csv = [
-    headers.map(h => `"${h}"`).join(","),
-    ...data.map(row =>
-      headers.map(h => `"${String(row[h] || "").replace(/"/g, '""')}"`).join(",")
-    )
-  ].join("\n");
+  const rows = listings.map(item => [
+    `"${(item.title || "").replace(/"/g, '""')}"`,
+    `"${(item.description || "").replace(/"/g, '""')}"`,
+    marketplaceDisplayName(item.marketplace),
+    item.price || 0,
+    item.stock || item.available_quantity || 0,
+    item.sku || "",
+    item.external_id || "",
+    item.status || "",
+    item.thumbnail_url || "",
+    `https://${getMarketplaceHost(item.marketplace)}/p/${item.external_id}`,
+    item.views || item.views_today || 0,
+    item.conversion || 0,
+    item.created_at || "",
+    item.updated_at || "",
+  ]);
 
-  downloadFile(csv, filename, "text/csv");
+  const csv = [headers, ...rows].map(row => row.join(",")).join("\n");
+  downloadFile(csv, "anuncios-exportados.csv", "text/csv;charset=utf-8;");
+  flashActionMessage(`✅ ${listings.length} anúncio${listings.length !== 1 ? 's' : ''} exportado${listings.length !== 1 ? 's' : ''} em CSV!`);
 }
 
-function exportAsXLSX(data, filename) {
-  // Simples implementação XLSX usando CSV com estrutura
-  // Para XLSX real, seria necessário uma biblioteca como xlsx
-  const csv = exportAsCSV(data, filename);
-  // Por enquanto, exportar como CSV
-  downloadFile(csv, filename.replace(".xlsx", ".csv"), "text/csv");
+function exportListingsAsXML(listings) {
+  const items = listings.map(item => `
+  <anuncio>
+    <titulo>${escapeXML(item.title || "")}</titulo>
+    <descricao>${escapeXML(item.description || "")}</descricao>
+    <marketplace>${escapeXML(marketplaceDisplayName(item.marketplace))}</marketplace>
+    <preco>${item.price || 0}</preco>
+    <estoque>${item.stock || item.available_quantity || 0}</estoque>
+    <sku>${escapeXML(item.sku || "")}</sku>
+    <id_externo>${escapeXML(item.external_id || "")}</id_externo>
+    <status>${escapeXML(item.status || "")}</status>
+    <foto_url>${escapeXML(item.thumbnail_url || "")}</foto_url>
+    <link_marketplace>https://${getMarketplaceHost(item.marketplace)}/p/${item.external_id}</link_marketplace>
+    <visualizacoes>${item.views || item.views_today || 0}</visualizacoes>
+    <conversao>${item.conversion || 0}</conversao>
+    <criado_em>${escapeXML(item.created_at || "")}</criado_em>
+    <atualizado_em>${escapeXML(item.updated_at || "")}</atualizado_em>
+  </anuncio>`).join("");
+
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<anuncios>
+${items}
+</anuncios>`;
+
+  downloadFile(xml, "anuncios-exportados.xml", "application/xml");
+  flashActionMessage(`✅ ${listings.length} anúncio${listings.length !== 1 ? 's' : ''} exportado${listings.length !== 1 ? 's' : ''} em XML!`);
 }
 
-function downloadFile(content, filename, mimeType) {
-  const blob = new Blob([content], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
+function exportListingsAsHTML(listings) {
+  const timestamp = new Date().toLocaleString("pt-BR");
+  const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catálogo de Anúncios</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      background: #f5f5f5;
+      color: #333;
+      padding: 20px;
+    }
+    .header {
+      background: linear-gradient(135deg, #00D084 0%, #00a366 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    .header h1 { font-size: 28px; margin-bottom: 8px; }
+    .header p { opacity: 0.9; }
+    .catalog {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .listing-card {
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .listing-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+    }
+    .listing-image {
+      width: 100%;
+      height: 200px;
+      background: #e0e0e0;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .listing-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .listing-image.empty {
+      color: #999;
+      font-size: 12px;
+    }
+    .listing-body {
+      padding: 16px;
+    }
+    .listing-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      line-height: 1.4;
+      min-height: 28px;
+      color: #000;
+    }
+    .listing-meta {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 12px;
+    }
+    .listing-price {
+      font-size: 18px;
+      font-weight: 700;
+      color: #00D084;
+      margin-bottom: 8px;
+    }
+    .listing-stats {
+      display: flex;
+      gap: 12px;
+      font-size: 11px;
+      color: #999;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #eee;
+    }
+    .listing-stat {
+      flex: 1;
+      text-align: center;
+    }
+    .listing-stat strong {
+      display: block;
+      font-size: 13px;
+      color: #333;
+      font-weight: 600;
+    }
+    .listing-description {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 12px;
+      line-height: 1.4;
+      max-height: 60px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+    }
+    .listing-footer {
+      display: flex;
+      gap: 8px;
+      font-size: 11px;
+    }
+    .listing-badge {
+      flex: 1;
+      padding: 6px;
+      background: #f0f0f0;
+      border-radius: 4px;
+      text-align: center;
+      font-weight: 500;
+    }
+    .listing-badge.marketplace {
+      background: rgba(0, 208, 132, 0.1);
+      color: #00D084;
+    }
+    .listing-badge.status {
+      background: rgba(0, 208, 132, 0.1);
+      color: #00D084;
+    }
+    .listing-badge.status.inactive {
+      background: #ffebee;
+      color: #c62828;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 40px;
+      padding: 20px;
+      color: #999;
+      font-size: 12px;
+    }
+    .footer a {
+      color: #00D084;
+      text-decoration: none;
+    }
+    @media print {
+      body { background: white; }
+      .listing-card { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>📦 Catálogo de Anúncios</h1>
+    <p>Exportado em ${timestamp}</p>
+    <p>${listings.length} produto${listings.length !== 1 ? 's' : ''}</p>
+  </div>
 
-// ========== B. CENTRAL DE PERGUNTAS ML ==========
-
-export async function renderMLQuestionsTab() {
-  const container = byId("mlQuestionsContainer");
-  if (!container) return;
-
-  const questions = await getMLQuestions();
-
-  container.innerHTML = `
-    <div class="filter-bar">
-      <button class="secondary-btn" id="refreshMLQuestions">🔄 Sincronizar</button>
-      <label>
-        Status
-        <select id="questionStatusFilter">
-          <option value="all">Todos</option>
-          <option value="unanswered">Não respondidas</option>
-          <option value="answered">Respondidas</option>
-        </select>
-      </label>
-    </div>
-
-    <div class="questions-list">
-      ${questions.length === 0 ? `
-        <div class="empty-state">
-          <strong>Nenhuma pergunta</strong>
-          <span>Suas perguntas do Mercado Livre aparecerão aqui</span>
+  <div class="catalog">
+    ${listings.map(item => `
+      <div class="listing-card">
+        <div class="listing-image ${item.thumbnail_url ? '' : 'empty'}">
+          ${item.thumbnail_url ? `<img src="${item.thumbnail_url}" alt="${escapeHTML(item.title)}" loading="lazy">` : '<span>Sem imagem</span>'}
         </div>
-      ` : `
-        ${questions.map(q => `
-          <div class="question-card" style="
-            padding: 16px;
-            background: var(--canvas);
-            border-radius: 8px;
-            margin-bottom: 12px;
-            border-left: 4px solid ${q.answered ? 'var(--green)' : 'var(--amber)'};
-          ">
-            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
-              <div>
-                <div style="font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 4px;">
-                  ${q.buyer_name} • ${new Date(q.created_at).toLocaleDateString('pt-BR')}
-                </div>
-                <h4 style="margin: 0; font-size: 14px; font-weight: 600; color: var(--ink);">
-                  ${html(q.question_text)}
-                </h4>
-              </div>
-              ${!q.answered ? `
-                <span class="badge" style="background: var(--amber); color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">
-                  Por responder
-                </span>
-              ` : ""}
+        <div class="listing-body">
+          <div class="listing-title">${escapeHTML(item.title || "")}</div>
+          <div class="listing-meta">${escapeHTML(item.external_id || "")}</div>
+          <div class="listing-price">R$ ${formatPrice(item.price || 0)}</div>
+          <div class="listing-stats">
+            <div class="listing-stat">
+              <strong>${item.stock || item.available_quantity || 0}</strong>
+              em estoque
             </div>
-
-            ${q.answer_text ? `
-              <div style="background: var(--panel); padding: 12px; border-radius: 6px; margin-bottom: 12px; font-size: 13px; color: var(--ink);">
-                <strong style="display: block; margin-bottom: 4px;">Sua resposta:</strong>
-                ${html(q.answer_text)}
-              </div>
-            ` : `
-              <div style="display: flex; gap: 8px;">
-                <textarea id="answer_${q.id}" placeholder="Escrever resposta..." style="
-                  flex: 1;
-                  padding: 8px;
-                  border: 1px solid var(--line);
-                  border-radius: 6px;
-                  font-size: 12px;
-                  background: var(--panel);
-                  color: var(--ink);
-                  font-family: inherit;
-                  resize: vertical;
-                  min-height: 60px;
-                "></textarea>
-                <button onclick="respondMLQuestion('${q.id}')" class="primary-btn" style="
-                  padding: 8px 16px;
-                  background: var(--teal);
-                  color: white;
-                  border: none;
-                  border-radius: 6px;
-                  cursor: pointer;
-                  font-weight: 600;
-                  font-size: 12px;
-                  height: fit-content;
-                ">Enviar</button>
-              </div>
-            `}
+            <div class="listing-stat">
+              <strong>${item.views || item.views_today || 0}</strong>
+              visualizações
+            </div>
+            <div class="listing-stat">
+              <strong>${item.conversion || 0}%</strong>
+              conversão
+            </div>
           </div>
-        `).join("")}
-      `}
-    </div>
-  `;
+          ${item.description ? `<div class="listing-description">${escapeHTML(item.description)}</div>` : ''}
+          <div class="listing-footer">
+            <span class="listing-badge marketplace">${escapeHTML(marketplaceDisplayName(item.marketplace))}</span>
+            <span class="listing-badge status ${item.status !== 'active' ? 'inactive' : ''}">${escapeHTML(item.status || 'ativo')}</span>
+          </div>
+        </div>
+      </div>
+    `).join('')}
+  </div>
 
-  byId("refreshMLQuestions")?.addEventListener("click", syncMLQuestions);
+  <div class="footer">
+    <p>Este catálogo foi gerado automaticamente pelo FlowOps</p>
+    <p>Para atualizar, exporte novamente a partir da aba Marketplace</p>
+  </div>
+
+  <script>
+    document.querySelectorAll('.listing-card').forEach(card => {
+      card.addEventListener('click', (e) => {
+        const img = card.querySelector('.listing-image img');
+        if (img && e.target !== img) {
+          img.requestFullscreen?.();
+        }
+      });
+    });
+  </script>
+</body>
+</html>`;
+
+  downloadFile(html, "catalogo-anuncios.html", "text/html;charset=utf-8");
+  flashActionMessage(`✅ Catálogo em HTML gerado com ${listings.length} anúncio${listings.length !== 1 ? 's' : ''}!`);
 }
 
-async function getMLQuestions() {
-  if (!state.supabase) return [];
-
-  const { data, error } = await state.supabase
-    .from("ml_questions")
-    .select("*")
-    .eq("organization_id", state.organizationId)
-    .order("created_at", { ascending: false });
-
-  return data || [];
+function escapeXML(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
 }
 
-async function syncMLQuestions() {
-  if (!state.supabase) return;
-
-  flashActionMessage("🔄 Sincronizando perguntas do ML...");
-
-  // TODO: Chamar Edge Function para GET /questions/search
-  // Por enquanto, apenas mostrar mensagem
-
-  flashActionMessage("✅ Sincronização completa!");
+function escapeHTML(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
 }
 
-export async function respondMLQuestion(questionId) {
-  const textarea = document.getElementById(`answer_${questionId}`);
-  if (!textarea || !textarea.value.trim()) {
-    showAppMessage("Digite uma resposta", "warning");
-    return;
-  }
-
-  if (!state.supabase) return;
-
-  const response_text = textarea.value.trim();
-
-  const { data, error } = await state.supabase
-    .from("ml_questions")
-    .update({
-      answer_text: response_text,
-      answered: true,
-      answered_at: new Date().toISOString()
-    })
-    .eq("id", questionId)
-    .select()
-    .single();
-
-  if (error) {
-    showAppMessage("Erro ao enviar resposta", "error");
-    return;
-  }
-
-  // TODO: POST /answers via Edge Function
-
-  await recordAudit("create", "ml_answer", questionId, response_text, null, data, "manual");
-  flashActionMessage("✅ Resposta enviada!");
-
-  // Recarregar lista
-  await renderMLQuestionsTab();
+function formatPrice(price) {
+  return parseFloat(price || 0).toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 }
 
-// Expor globalmente para onclick
-window.respondMLQuestion = respondMLQuestion;
+function getMarketplaceHost(marketplace) {
+  const normalized = String(marketplace || "").toLowerCase();
+  if (normalized.includes("shopee")) return "shopee.com.br";
+  if (normalized.includes("amazon")) return "amazon.com.br";
+  if (normalized.includes("tiktok")) return "tiktok.com";
+  return "mercadolivre.com.br";
+}
+
+function downloadFile(content, filename, type) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.click();
+  setTimeout(() => {
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, 100);
+}

@@ -11,8 +11,7 @@ import { recordAudit, isWithinDateRange } from "./logs.js";
 import { getTokenAlert } from "./dashboard.js";
 import { renderProfitabilityBadge, renderCommercialIntelligence, getListingProfitability } from "./pricing.js";
 import { renderMarketplaceAnalyticsPanel, getListingAnalytics, computeIntentScore } from "./marketplace-analytics.js";
-import { renderMLQuestionsTab } from "./marketplace-export.js";
-import { renderWhatsappTemplatesTab } from "./weekly-summary.js";
+import { initMarketplaceExport } from "./marketplace-export.js";
 
 const MARKETPLACE_CHANNELS = [
   { id: "mercado-livre", label: "Mercado Livre" },
@@ -246,9 +245,9 @@ export function renderMarketplaces() {
           <span class="automation-badge" title="Novas vendas recebidas pelo webhook criam encomendas automaticamente">Integração automática</span>
         </div>
         <div class="sale-document-actions">
-          <button class="secondary-btn" type="button" data-action="marketplace-document" data-document="label" data-id="${html(sale.external_order_id)}" data-marketplace="${html(sale.marketplace || "Mercado Livre")}" title="Baixar etiqueta de postagem do Mercado Livre">🏷️ Etiqueta</button>
-          <button class="secondary-btn" type="button" data-action="marketplace-document" data-document="declaration" data-id="${html(sale.external_order_id)}" data-marketplace="${html(sale.marketplace || "Mercado Livre")}" title="Baixar declaração de envio (documentação fiscal)" style="opacity: 0.6; cursor: not-allowed;">📋 Declaração</button>
-          <button class="secondary-btn" type="button" data-action="marketplace-print" data-id="${html(sale.external_order_id)}" data-marketplace="${html(sale.marketplace || "Mercado Livre")}" title="Imprimir etiqueta">🖨️ Imprimir</button>
+          <button class="secondary-btn" type="button" data-action="marketplace-document" data-document="label" data-id="${html(sale.external_order_id)}" data-marketplace="${html(sale.marketplace || "Mercado Livre")}">Baixar etiqueta</button>
+          <button class="secondary-btn" type="button" data-action="marketplace-document" data-document="declaration" data-id="${html(sale.external_order_id)}" data-marketplace="${html(sale.marketplace || "Mercado Livre")}">Baixar declaração</button>
+          <button class="secondary-btn" type="button" data-action="marketplace-print" data-id="${html(sale.external_order_id)}" data-marketplace="${html(sale.marketplace || "Mercado Livre")}">Imprimir</button>
         </div>
       </article>
     `;
@@ -271,6 +270,7 @@ export function renderMarketplaces() {
     button.classList.toggle("active", button.dataset.channel === state.marketplaceChannelFilter);
   });
   bindActions();
+  initMarketplaceExport();
 }
 
 export function renderIntegrationSummary() {
@@ -863,7 +863,7 @@ export function marketplaceSaleStatusClass(status) {
 }
 
 export function setMarketplaceView(view) {
-  state.marketplaceView = ["listings", "storefront", "sales", "integrations", "intelligence", "ml-questions", "whatsapp", "api-logs", "backup"].includes(view) ? view : "listings";
+  state.marketplaceView = ["listings", "storefront", "sales", "integrations", "intelligence", "api-logs", "backup", "whatsapp"].includes(view) ? view : "listings";
   document.querySelectorAll("[data-marketplace-view]").forEach((button) => {
     button.classList.toggle("active", button.dataset.marketplaceView === state.marketplaceView);
   });
@@ -872,15 +872,15 @@ export function setMarketplaceView(view) {
   byId("marketplaceSalesView").classList.toggle("active", state.marketplaceView === "sales");
   byId("marketplaceIntegrationsView").classList.toggle("active", state.marketplaceView === "integrations");
   byId("marketplaceIntelligenceView").classList.toggle("active", state.marketplaceView === "intelligence");
-  byId("marketplaceMLQuestionsView").classList.toggle("active", state.marketplaceView === "ml-questions");
-  byId("marketplaceWhatsappView").classList.toggle("active", state.marketplaceView === "whatsapp");
   byId("marketplaceApiLogsView").classList.toggle("active", state.marketplaceView === "api-logs");
   byId("marketplaceBackupView").classList.toggle("active", state.marketplaceView === "backup");
-  // Render content for new views
-  if (state.marketplaceView === "ml-questions") {
-    renderMLQuestionsTab();
-  } else if (state.marketplaceView === "whatsapp") {
-    renderWhatsappTemplatesTab();
+  byId("marketplaceWhatsappView").classList.toggle("active", state.marketplaceView === "whatsapp");
+
+  // Renderizar whatsapp se necessário
+  if (state.marketplaceView === "whatsapp") {
+    import("./marketplace-whatsapp.js").then(({ renderMarketplaceWhatsapp }) => {
+      renderMarketplaceWhatsapp();
+    });
   }
 }
 
@@ -970,12 +970,20 @@ export async function downloadMarketplaceDocument(externalOrderId, marketplace, 
     url.searchParams.set("order_id", externalOrderId);
     url.searchParams.set("document_type", documentType);
     const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+
+    // Handle document not available error
+    if (response.status === 404) {
+      throw new Error("Documento ainda não disponível. O pedido precisa estar em um status válido (postado ou em trânsito) para gerar a etiqueta ou declaração.");
+    }
+
     if (!response.ok) {
       const payload = await response.json().catch(() => ({}));
-      if (response.status === 404 || payload.error?.includes("delivered")) {
-        throw new Error("O pedido precisa estar em um status válido (postado ou em trânsito) para gerar este documento. Pedidos já entregues não podem ter documentos regenerados.");
+      // Provide more helpful error message
+      const errorMsg = payload.error || "Erro ao gerar documento.";
+      if (errorMsg.includes("delivered")) {
+        throw new Error("Documento não pode ser regenerado para pedidos já entregues. Verifique o status do pedido no Mercado Livre.");
       }
-      throw new Error(payload.error || "Erro ao gerar documento.");
+      throw new Error(errorMsg);
     }
     const blob = await response.blob();
     const blobUrl = URL.createObjectURL(blob);
