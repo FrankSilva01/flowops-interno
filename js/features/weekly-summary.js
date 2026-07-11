@@ -122,15 +122,23 @@ export async function sendWeeklySummary() {
 // ========== B. TEMPLATES WHATSAPP ==========
 
 export async function getWhatsappTemplates() {
-  if (!state.supabase) return [];
+  if (state.supabase) {
+    const { data, error } = await state.supabase
+      .from("whatsapp_templates")
+      .select("*")
+      .eq("organization_id", state.organizationId)
+      .order("created_at", { ascending: false });
 
-  const { data, error } = await state.supabase
-    .from("whatsapp_templates")
-    .select("*")
-    .eq("organization_id", state.organizationId)
-    .order("created_at", { ascending: false });
+    return data || [];
+  }
 
-  return data || [];
+  // Fallback para localStorage
+  try {
+    const stored = localStorage.getItem("whatsapp_templates");
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
 }
 
 const DEFAULT_WHATSAPP_TEMPLATES = [
@@ -374,34 +382,46 @@ function copyWhatsappTemplate(name, content) {
 }
 
 async function saveWhatsappTemplate(templateId, data) {
-  if (!state.supabase) return;
-
   const payload = {
-    organization_id: state.organizationId,
+    id: templateId || `template-${Date.now()}`,
     name: data.name,
     content: data.content,
     updated_at: new Date().toISOString()
   };
 
-  if (templateId) {
-    const { error } = await state.supabase
-      .from("whatsapp_templates")
-      .update(payload)
-      .eq("id", templateId);
+  if (state.supabase) {
+    if (templateId) {
+      const { error } = await state.supabase
+        .from("whatsapp_templates")
+        .update(payload)
+        .eq("id", templateId);
 
-    if (error) {
-      showAppMessage("Erro ao atualizar template", "error");
-      return;
+      if (error) {
+        showAppMessage("Erro ao atualizar template", "error");
+        return;
+      }
+    } else {
+      const { error } = await state.supabase
+        .from("whatsapp_templates")
+        .insert([{ ...payload, created_at: new Date().toISOString() }]);
+
+      if (error) {
+        showAppMessage("Erro ao criar template", "error");
+        return;
+      }
     }
   } else {
-    const { error } = await state.supabase
-      .from("whatsapp_templates")
-      .insert([{ ...payload, created_at: new Date().toISOString() }]);
+    // Fallback para localStorage
+    let templates = JSON.parse(localStorage.getItem("whatsapp_templates") || "[]");
+    const index = templates.findIndex(t => t.id === templateId);
 
-    if (error) {
-      showAppMessage("Erro ao criar template", "error");
-      return;
+    if (index >= 0) {
+      templates[index] = payload;
+    } else {
+      templates.push(payload);
     }
+
+    localStorage.setItem("whatsapp_templates", JSON.stringify(templates));
   }
 
   flashActionMessage("✅ Template salvo!");
@@ -411,16 +431,21 @@ async function saveWhatsappTemplate(templateId, data) {
 export async function deleteWhatsappTemplate(templateId) {
   if (!confirm("Tem certeza que deseja deletar este template?")) return;
 
-  if (!state.supabase) return;
+  if (state.supabase) {
+    const { error } = await state.supabase
+      .from("whatsapp_templates")
+      .delete()
+      .eq("id", templateId);
 
-  const { error } = await state.supabase
-    .from("whatsapp_templates")
-    .delete()
-    .eq("id", templateId);
-
-  if (error) {
-    showAppMessage("Erro ao deletar template", "error");
-    return;
+    if (error) {
+      showAppMessage("Erro ao deletar template", "error");
+      return;
+    }
+  } else {
+    // Fallback para localStorage
+    let templates = JSON.parse(localStorage.getItem("whatsapp_templates") || "[]");
+    templates = templates.filter(t => t.id !== templateId);
+    localStorage.setItem("whatsapp_templates", JSON.stringify(templates));
   }
 
   flashActionMessage("✅ Template deletado!");
