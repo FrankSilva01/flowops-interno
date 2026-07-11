@@ -1278,7 +1278,7 @@ function renderIntelligenceEmptyState(coverage) {
 }
 
 // Diálogo para cadastro de custos em lote
-async function openBulkCostDialog(coverage) {
+export async function openBulkCostDialog(coverage) {
   const listingsWithoutCost = state.marketplaceListings.filter(
     listing => !getListingProfitability(listing).hasCost
   );
