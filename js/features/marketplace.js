@@ -278,16 +278,21 @@ export function renderMarketplaces() {
   const exportBtn = byId("exportListingsBtn");
   console.log("exportBtn element:", exportBtn);
   if (exportBtn) {
-    console.log("Setting onclick handler for export button");
-    exportBtn.onclick = () => {
-      console.log("Export button clicked directly");
-      exportMarketplaceListings();
-    };
+    console.log("Setting addEventListener for export button");
+    exportBtn.removeEventListener("click", handleExportClick);
+    exportBtn.addEventListener("click", handleExportClick, false);
   } else {
     console.warn("exportListingsBtn not found in DOM");
   }
 
   bindActions();
+}
+
+function handleExportClick(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  console.log("Export button clicked via addEventListener");
+  exportMarketplaceListings();
 }
 
 export function renderIntegrationSummary() {
