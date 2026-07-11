@@ -576,14 +576,16 @@ export async function saveStorefrontProduct(event) {
   form.elements.description_html.value = descriptionHtml;
 
   let mlCategoryId = data.get("ml_category_id");
-  if (!mlCategoryId || mlCategoryId.length < 3) {
-    message.textContent = "Selecione uma categoria válida do Mercado Livre";
+  if (!mlCategoryId || mlCategoryId.trim().length < 3) {
+    message.textContent = "Selecione uma categoria do Mercado Livre";
     return;
   }
 
-  const isValidCategory = ML_CATEGORIES.some(cat => cat.id === mlCategoryId) || mlCategoryId.startsWith("MLB");
+  mlCategoryId = mlCategoryId.trim();
+
+  const isValidCategory = ML_CATEGORIES.some(cat => cat.id === mlCategoryId);
   if (!isValidCategory) {
-    message.textContent = "Categoria inválida. Selecione da lista ou use um ID válido (ex: MLB1839)";
+    message.textContent = `Categoria '${mlCategoryId}' não encontrada. Selecione uma da lista de sugestões.`;
     return;
   }
 
@@ -795,47 +797,47 @@ const ML_CATEGORIES = [
 ];
 
 export function bindMlCategorySelect() {
-  const form = byId("storefrontProductForm");
   const input = byId("mlCategorySearch");
   const datalist = byId("mlCategoryList");
-  const hint = byId("mlCategoryHint");
 
-  if (!input || !datalist) return;
+  if (!input || !datalist) {
+    console.warn("ML category elements not found");
+    return;
+  }
 
-  input.addEventListener("input", (e) => {
-    const value = e.target.value.toLowerCase();
+  const updateDatalist = () => {
+    const value = input.value.toLowerCase().trim();
     datalist.innerHTML = "";
 
-    if (value.length < 1) {
-      hint.hidden = false;
-      return;
-    }
+    const filtered = value.length > 0
+      ? ML_CATEGORIES.filter(cat =>
+          cat.name.toLowerCase().includes(value) || cat.id.toLowerCase().includes(value)
+        )
+      : ML_CATEGORIES;
 
-    hint.hidden = true;
-    const filtered = ML_CATEGORIES.filter(cat =>
-      cat.name.toLowerCase().includes(value) || cat.id.toLowerCase().includes(value)
-    );
-
-    filtered.slice(0, 10).forEach(cat => {
+    const toShow = filtered.slice(0, 15);
+    toShow.forEach(cat => {
       const option = document.createElement("option");
       option.value = cat.id;
       option.textContent = `${cat.name} (${cat.id})`;
       datalist.appendChild(option);
     });
-  });
+
+    console.log(`ML Categories: showing ${toShow.length} of ${filtered.length}`);
+  };
+
+  input.addEventListener("input", updateDatalist);
+  input.addEventListener("focus", updateDatalist);
 
   input.addEventListener("change", () => {
-    const selected = ML_CATEGORIES.find(cat => cat.id === input.value || cat.name === input.value);
+    const selected = ML_CATEGORIES.find(cat => cat.id === input.value);
     if (selected) {
       input.value = selected.id;
+      console.log("Selected category:", selected);
     }
   });
 
-  setTimeout(() => {
-    datalist.innerHTML = ML_CATEGORIES.slice(0, 10).map(cat =>
-      `<option value="${cat.id}">${cat.name} (${cat.id})</option>`
-    ).join("");
-  }, 0);
+  updateDatalist();
 }
 
 export async function loadMlCategoryFields() {
