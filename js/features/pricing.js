@@ -487,14 +487,6 @@ export async function saveProduct(event) {
     }
     try {
       const listingType = String(data.get("listingType") || "classic");
-      // Validar imagens
-      console.log("🖼️ Images check - productUploadedImages:", productUploadedImages.length, "images");
-      if (!productUploadedImages || productUploadedImages.length === 0) {
-        console.log("❌ No images found");
-        results.push("Mercado Livre: adicione pelo menos uma imagem para publicar.");
-        continue;
-      }
-      console.log("✅ Images found, proceeding...");
 
       const mlPayload = {
         title: name,
@@ -505,7 +497,8 @@ export async function saveProduct(event) {
         condition: "new",
         sku,
         description: String(data.get("description") || "").trim() || name,
-        pictures: productUploadedImages, // Enviar base64 direto para API do ML
+        // Imagens: opcional, podem ser adicionadas depois no Mercado Livre
+        ...(productUploadedImages && productUploadedImages.length > 0 && { pictures: productUploadedImages }),
       };
       console.log("📤 Sending to ML API:", mlPayload);
       const created = await marketplaceRequest("https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-sync?marketplace=ml&action=create-listing", {
@@ -1734,14 +1727,10 @@ function validateProductStep(step) {
 
   switch (step) {
     case 1:
-      // Passo 1: Validar Nome e Imagens (obrigatórios)
+      // Passo 1: Validar Nome (obrigatório)
       if (!form.elements.name.value.trim()) {
         showAppMessage("Por favor, preencha o nome do produto", "error");
         form.elements.name.focus();
-        return false;
-      }
-      if (!productUploadedImages || productUploadedImages.length === 0) {
-        showAppMessage("Por favor, adicione pelo menos uma imagem do produto", "error");
         return false;
       }
       return true;
