@@ -276,8 +276,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       e.preventDefault();
       e.stopPropagation();
       console.log("Export clicked from app.js");
-      exportMarketplaceListings();
+      setTimeout(() => {
+        exportMarketplaceListings();
+      }, 0);
     });
+  } else {
+    console.warn("Export button NOT found");
   }
 
   // Register Service Worker for PWA
