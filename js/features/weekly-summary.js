@@ -13,7 +13,7 @@ Olá, {{company_name}}!
 
 Aqui está seu resumo semanal de {{start_date}} a {{end_date}}:
 
-📊 VENDAS
+VENDAS
 - Novos pedidos: {{new_orders}}
 - Valor total: {{total_value}}
 - Ticket médio: {{avg_ticket}}
@@ -23,7 +23,7 @@ Aqui está seu resumo semanal de {{start_date}} a {{end_date}}:
 - Pendências: {{pending_orders}}
 - Taxa de atraso: {{late_percentage}}%
 
-💰 FINANCEIRO
+FINANCEIRO
 - Entradas: {{income}}
 - Saídas: {{expenses}}
 - Saldo: {{balance}}
@@ -76,7 +76,7 @@ export async function saveWeeklySettings(settings) {
   }
 
   await recordAudit("update", "weekly_summary_settings", state.organizationId, "Configurações", null, data, "manual");
-  flashActionMessage("✅ Configurações salvas!");
+  flashActionMessage("Configurações salvas!");
   return true;
 }
 
@@ -116,7 +116,7 @@ export async function sendWeeklySummary() {
 
   // TODO: Enviar via Brevo/Edge Function
   console.log("Weekly summary to send:", summary);
-  flashActionMessage("✅ Resumo enviado!");
+  flashActionMessage("Resumo enviado!");
 }
 
 // ========== B. TEMPLATES WHATSAPP ==========
@@ -341,7 +341,7 @@ function openTemplateEditor(templateId = null) {
         border-radius: 8px;
         cursor: pointer;
         font-weight: 600;
-      ">💾 Salvar</button>
+      ">Salvar</button>
     </div>
   `;
 
@@ -424,7 +424,7 @@ async function saveWhatsappTemplate(templateId, data) {
     localStorage.setItem("whatsapp_templates", JSON.stringify(templates));
   }
 
-  flashActionMessage("✅ Template salvo!");
+  flashActionMessage("Template salvo!");
   await renderWhatsappTemplatesTab();
 }
 
@@ -448,7 +448,7 @@ export async function deleteWhatsappTemplate(templateId) {
     localStorage.setItem("whatsapp_templates", JSON.stringify(templates));
   }
 
-  flashActionMessage("✅ Template deletado!");
+  flashActionMessage("Template deletado!");
   await renderWhatsappTemplatesTab();
 }
 

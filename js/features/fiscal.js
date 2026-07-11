@@ -345,7 +345,7 @@ export async function renderSalesInvoices() {
         </div>
         <div class="sales-actions">
           <button class="primary-btn" type="button" data-sales-action="new-invoice">+ Novo</button>
-          <button class="secondary-btn" type="button" data-sales-action="import-orders">📥 Importar de Pedidos</button>
+          <button class="secondary-btn" type="button" data-sales-action="import-orders">Importar de Pedidos</button>
           <button class="secondary-btn" type="button" data-sales-action="sync">Sincronizar</button>
         </div>
       </div>
@@ -512,7 +512,7 @@ async function saveFiscalDocumentFromForm(form) {
   };
 
   await saveFiscalDocument(doc);
-  showAppMessage("✅ Documento Salvo", "Documento fiscal registrado com sucesso!", "success");
+  showAppMessage("Documento Salvo", "Documento fiscal registrado com sucesso!", "success");
   form.reset();
   await renderFiscalDocs();
 }
@@ -850,7 +850,7 @@ async function importOrdersAsSalesInvoices() {
     imported++;
   }
 
-  showAppMessage("✅ Importação Concluída", `${imported} pedido(s) importado(s) como notas de venda`, "success");
+  showAppMessage("Importação Concluída", `${imported} pedido(s) importado(s) como notas de venda`, "success");
   await renderSalesInvoices();
 }
 

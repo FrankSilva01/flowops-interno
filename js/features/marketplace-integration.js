@@ -107,7 +107,7 @@ export function openExportDialog() {
 
       <div class="dialog-actions">
         <button class="secondary-btn" data-action="cancel">Cancelar</button>
-        <button class="primary-btn" data-action="export">📥 Exportar</button>
+        <button class="primary-btn" data-action="export">Exportar</button>
       </div>
     </div>
   `;
@@ -202,7 +202,7 @@ export function renderQuestionsTab() {
             <strong>${answered.length}</strong>
             <span>Respondidas</span>
           </div>
-          <button class="primary-btn" data-action="sync-questions">🔄 Sincronizar</button>
+          <button class="primary-btn" data-action="sync-questions">Sincronizar</button>
         </div>
       </div>
 
@@ -217,7 +217,7 @@ export function renderQuestionsTab() {
 
       ${answered.length ? `
         <div class="questions-section answered">
-          <h3>✅ Respondidas (${answered.length})</h3>
+          <h3>Respondidas (${answered.length})</h3>
           <div class="questions-list">
             ${answered.slice(0, 5).map(q => renderQuestionItem(q)).join("")}
           </div>
@@ -289,7 +289,7 @@ export async function sendQuestionAnswer(questionId, answerText) {
   question.answer_text = answerText;
   question.answered_at = new Date().toISOString();
 
-  flashActionMessage("Resposta enviada! 📤");
+  flashActionMessage("Resposta enviada!");
 
   // TODO: recordAudit("answer-question", "ml-question", questionId);
 }
