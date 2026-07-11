@@ -155,6 +155,7 @@ import { pushNotificationManager, pushNotificationsCSS } from "./features/push-n
 import { accountingIntegration, accountingIntegrationCSS } from "./features/accounting-integration.js";
 import { fiscalCSS } from "./features/fiscal.js";
 import { initGlobalSearch } from "./features/global-search.js";
+import { initOnboarding } from "./features/pwa-onboarding.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
   const marketplaceStatus = getMarketplaceStatusFromHash();
@@ -173,6 +174,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
   render();
   showMarketplaceOAuthStatus(marketplaceStatus);
+
+  // Initialize onboarding if first visit
+  await initOnboarding();
 
   // Initialize calendar
   try {
@@ -264,6 +268,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
   */
   window.syncAllAccountingData = () => accountingIntegration?.syncAllData?.();
+
+  // Register Service Worker for PWA
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').then(() => {
+      console.log('Service Worker registered for PWA');
+    }).catch((err) => {
+      console.error('Service Worker registration failed:', err);
+    });
+  }
 
 });
 
