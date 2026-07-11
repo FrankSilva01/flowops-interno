@@ -470,6 +470,7 @@ export async function saveProduct(event) {
     byId("productDialog").close();
     flashActionMessage("Produto salvo no catálogo.");
     renderProductCatalogTable();
+    renderMarketplaces();
     return;
   }
 
