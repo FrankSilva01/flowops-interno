@@ -19,7 +19,7 @@ import {
 } from "./core/session.js";
 import {
   setView, render, bindEvents, bindActions, applySidebarPreference, toggleSidebar,
-  updateSidebarToggle, setTheme, cycleTheme, applyTheme,
+  updateSidebarToggle, setTheme, cycleTheme, applyTheme, exportMarketplaceListings,
 } from "./core/router.js";
 import {
   persist, removeRemote, loadRemoteData, subscribeRemote, refreshRemote, tableName, toRemote,
@@ -267,6 +267,18 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Expose Prompt 8 & 9 functions globally
   window.renderWhatsappTemplatesTab = renderWhatsappTemplatesTab;
+
+  // Setup export listings button
+  const exportBtn = byId("exportListingsBtn");
+  if (exportBtn) {
+    console.log("Export button found, adding listener in app.js");
+    exportBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log("Export clicked from app.js");
+      exportMarketplaceListings();
+    });
+  }
 
   // Register Service Worker for PWA
   if ('serviceWorker' in navigator) {
