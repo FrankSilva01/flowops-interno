@@ -41,7 +41,9 @@ import {
   closePaymentMethodDialog,
 } from "../features/subscription.js";
 import { submitSupportTicket, renderSupportPortal, renderWhatsNew } from "../features/support.js";
-import { renderFiscalTab, fiscalCSS, getFiscalAlerts } from "../features/fiscal.js";
+import { renderFiscalDocs, renderDAS, renderPurchaseInvoices, renderSalesInvoices } from "../features/fiscal.js";
+import { initGlobalSearch } from "./search.js";
+import { bindCalendarEvents, attachCalendarEventListeners, updateCalendarStats } from "../features/calendar-navigation.js";
 import {
   renderMarketplaces, loadAndRenderMarketplaces, connectMercadoLivre, disconnectMercadoLivre,
   configureShopee, connectAmazon, syncAmazon, syncMercadoLivre, saveMarketplaceListing,
