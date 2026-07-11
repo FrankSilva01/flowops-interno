@@ -576,11 +576,14 @@ export async function saveStorefrontProduct(event) {
   form.elements.description_html.value = descriptionHtml;
 
   let mlCategoryId = data.get("ml_category_id");
-  if (mlCategoryId === "MLB1522") {
-    mlCategoryId = data.get("ml_category_id_manual");
+  if (!mlCategoryId || mlCategoryId.length < 3) {
+    message.textContent = "Selecione uma categoria válida do Mercado Livre";
+    return;
   }
-  if (!mlCategoryId) {
-    message.textContent = "Selecione uma categoria do Mercado Livre";
+
+  const isValidCategory = ML_CATEGORIES.some(cat => cat.id === mlCategoryId) || mlCategoryId.startsWith("MLB");
+  if (!isValidCategory) {
+    message.textContent = "Categoria inválida. Selecione da lista ou use um ID válido (ex: MLB1839)";
     return;
   }
 
@@ -766,23 +769,73 @@ export async function storefrontRequest(payload) {
   return dataJson;
 }
 
+const ML_CATEGORIES = [
+  { id: "MLB5672", name: "Ação Figures e Bonecos" },
+  { id: "MLB1366", name: "Acessórios para Crianças" },
+  { id: "MLB1384", name: "Artesanato" },
+  { id: "MLB1953", name: "Brinquedos" },
+  { id: "MLB374", name: "Coleções" },
+  { id: "MLB1000", name: "Decoração" },
+  { id: "MLB1051", name: "Eletrônicos e Tecnologia" },
+  { id: "MLB1132", name: "Esportes e Fitness" },
+  { id: "MLB1168", name: "Fantasias e Roupas" },
+  { id: "MLB1201", name: "Hobbies" },
+  { id: "MLB1246", name: "Iluminação" },
+  { id: "MLB1276", name: "Jogos" },
+  { id: "MLB1319", name: "Livros" },
+  { id: "MLB1403", name: "Miniaturismo" },
+  { id: "MLB1430", name: "Modelos em Escala" },
+  { id: "MLB1500", name: "Música" },
+  { id: "MLB1549", name: "Moda" },
+  { id: "MLB1574", name: "Pelúcias" },
+  { id: "MLB1635", name: "Vinil e CDs" },
+  { id: "MLB1726", name: "Videogames" },
+  { id: "MLB263", name: "Antigos" },
+  { id: "MLB264", name: "Outros" },
+];
+
 export function bindMlCategorySelect() {
   const form = byId("storefrontProductForm");
-  const select = byId("mlCategorySelect");
-  const manualLabel = byId("mlCategoryManualLabel");
-  const manualInput = form.elements.ml_category_id_manual;
+  const input = byId("mlCategorySearch");
+  const datalist = byId("mlCategoryList");
+  const hint = byId("mlCategoryHint");
 
-  if (!select) return;
+  if (!input || !datalist) return;
 
-  select.addEventListener("change", () => {
-    if (select.value === "MLB1522") {
-      manualLabel.hidden = false;
-      manualInput?.focus();
-    } else {
-      manualLabel.hidden = true;
-      form.elements.ml_category_id.value = select.value;
+  input.addEventListener("input", (e) => {
+    const value = e.target.value.toLowerCase();
+    datalist.innerHTML = "";
+
+    if (value.length < 1) {
+      hint.hidden = false;
+      return;
+    }
+
+    hint.hidden = true;
+    const filtered = ML_CATEGORIES.filter(cat =>
+      cat.name.toLowerCase().includes(value) || cat.id.toLowerCase().includes(value)
+    );
+
+    filtered.slice(0, 10).forEach(cat => {
+      const option = document.createElement("option");
+      option.value = cat.id;
+      option.textContent = `${cat.name} (${cat.id})`;
+      datalist.appendChild(option);
+    });
+  });
+
+  input.addEventListener("change", () => {
+    const selected = ML_CATEGORIES.find(cat => cat.id === input.value || cat.name === input.value);
+    if (selected) {
+      input.value = selected.id;
     }
   });
+
+  setTimeout(() => {
+    datalist.innerHTML = ML_CATEGORIES.slice(0, 10).map(cat =>
+      `<option value="${cat.id}">${cat.name} (${cat.id})</option>`
+    ).join("");
+  }, 0);
 }
 
 export async function loadMlCategoryFields() {
