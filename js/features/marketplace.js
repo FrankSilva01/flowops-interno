@@ -4,7 +4,7 @@ import {
   renderOperationalSummary,
 } from "../core/dom.js";
 import { ensureCanAdmin } from "../core/permissions.js";
-import { setView, bindActions, render, renderTables, exportMarketplaceListings } from "../core/router.js";
+import { setView, bindActions, render, renderTables } from "../core/router.js";
 import { loadRemoteData } from "../data/remote.js";
 import { getOrderCode, syncOrderFilterControls } from "./orders.js";
 import { recordAudit, isWithinDateRange } from "./logs.js";
@@ -275,24 +275,7 @@ export function renderMarketplaces() {
     button.classList.toggle("active", button.dataset.channel === state.marketplaceChannelFilter);
   });
 
-  const exportBtn = byId("exportListingsBtn");
-  console.log("exportBtn element:", exportBtn);
-  if (exportBtn) {
-    console.log("Setting addEventListener for export button");
-    exportBtn.removeEventListener("click", handleExportClick);
-    exportBtn.addEventListener("click", handleExportClick, false);
-  } else {
-    console.warn("exportListingsBtn not found in DOM");
-  }
-
   bindActions();
-}
-
-function handleExportClick(e) {
-  e.preventDefault();
-  e.stopPropagation();
-  console.log("Export button clicked via addEventListener");
-  exportMarketplaceListings();
 }
 
 export function renderIntegrationSummary() {
