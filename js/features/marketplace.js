@@ -482,16 +482,23 @@ export function updateStorefrontTargetFields() {
   const marketplace = form.elements.marketplace.value;
   const mlFields = byId("storefrontMlFields");
   const shopeeFields = byId("storefrontShopeeFields");
+  const tiktokFields = byId("storefrontTiktokFields");
   const amazonFields = byId("storefrontAmazonFields");
+
   const showMl = form.elements.publish_ml.checked || marketplace === "Mercado Livre";
   const showShopee = form.elements.publish_shopee.checked || marketplace === "Shopee";
+  const showTiktok = form.elements.publish_tiktok?.checked || marketplace === "tiktok_shop";
   const showAmazon = form.elements.publish_amazon.checked || marketplace === "Amazon";
+
   if (mlFields) mlFields.hidden = !showMl;
   if (shopeeFields) shopeeFields.hidden = !showShopee;
+  if (tiktokFields) tiktokFields.hidden = !showTiktok;
   if (amazonFields) amazonFields.hidden = !showAmazon;
+
   if (form.elements.publish_ml.checked) form.elements.marketplace.value = "Mercado Livre";
   if (form.elements.publish_shopee.checked && !form.elements.publish_ml.checked) form.elements.marketplace.value = "Shopee";
-  if (form.elements.publish_amazon.checked && !form.elements.publish_ml.checked && !form.elements.publish_shopee.checked) {
+  if (form.elements.publish_tiktok?.checked && !form.elements.publish_ml.checked && !form.elements.publish_shopee.checked) form.elements.marketplace.value = "tiktok_shop";
+  if (form.elements.publish_amazon.checked && !form.elements.publish_ml.checked && !form.elements.publish_shopee.checked && !form.elements.publish_tiktok?.checked) {
     form.elements.marketplace.value = "Amazon";
   }
 }
@@ -627,6 +634,20 @@ export async function saveStorefrontProduct(event) {
         asin: data.get("amazon_asin"),
         product_type: data.get("amazon_product_type"),
         attributes: parseJsonSafe(data.get("amazon_attributes_json"), {}),
+      },
+      shopee: {
+        category_id: data.get("shopee_category_id"),
+        weight: Number(data.get("shopee_weight") || 0),
+        days_to_ship: Number(data.get("shopee_days_to_ship") || 20),
+        sku: data.get("shopee_sku"),
+        attributes: parseJsonSafe(data.get("shopee_attributes_json"), []),
+      },
+      tiktok_shop: {
+        product_id: data.get("tiktok_product_id"),
+        weight: Number(data.get("tiktok_weight") || 0),
+        delivery_days: Number(data.get("tiktok_delivery_days") || 20),
+        sku: data.get("tiktok_sku"),
+        attributes: parseJsonSafe(data.get("tiktok_attributes_json"), []),
       },
     },
   };

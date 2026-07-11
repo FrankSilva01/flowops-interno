@@ -1137,18 +1137,31 @@
 
                 <div id="storefrontShopeeFields" class="marketplace-extra-fields" hidden>
                   <div class="form-section-title">Campos Shopee</div>
-                  <p class="hint-box">A Shopee ainda está em revisão. O formulário já guarda dados da vitrine, mas a publicação direta depende das credenciais aprovadas no Shopee Open Platform.</p>
-                  <label>Categoria Shopee<input name="shopee_category_id" /></label>
-                  <label>Peso<input name="shopee_weight" /></label>
-                  <label>Prazo de envio<input name="shopee_days_to_ship" placeholder="20" /></label>
+                  <p class="hint-box">Shopee Open Platform - API pronta para integração quando credenciais forem aprovadas.</p>
+                  <label>Categoria Shopee<input name="shopee_category_id" placeholder="ID da categoria no Shopee" /></label>
+                  <label>Peso (g)<input name="shopee_weight" type="number" min="0" step="0.1" placeholder="500" /></label>
+                  <label>Prazo de envio (dias)<input name="shopee_days_to_ship" type="number" min="1" step="1" placeholder="20" /></label>
+                  <label>SKU Shopee<input name="shopee_sku" placeholder="SKU único da Shopee" /></label>
+                  <label class="wide">Atributos Shopee em JSON<textarea name="shopee_attributes_json" rows="3" placeholder='[{"attribute_id":1,"attribute_value_id":1}]'></textarea></label>
                 </div>
+
+                <div id="storefrontTiktokFields" class="marketplace-extra-fields" hidden>
+                  <div class="form-section-title">Campos TikTok Shop</div>
+                  <p class="hint-box">TikTok Shop API - Estrutura pronta para integração quando credenciais forem autorizadas.</p>
+                  <label>ID do Produto TikTok<input name="tiktok_product_id" placeholder="Product ID do TikTok Shop" /></label>
+                  <label>Peso (g)<input name="tiktok_weight" type="number" min="0" step="0.1" placeholder="500" /></label>
+                  <label>Prazo de entrega (dias)<input name="tiktok_delivery_days" type="number" min="1" step="1" placeholder="20" /></label>
+                  <label>SKU TikTok<input name="tiktok_sku" placeholder="SKU único do TikTok Shop" /></label>
+                  <label class="wide">Atributos TikTok em JSON<textarea name="tiktok_attributes_json" rows="3" placeholder='[{"id":"color","value":"red"}]'></textarea></label>
+                </div>
+
                 <div id="storefrontAmazonFields" class="marketplace-extra-fields" hidden>
                   <div class="form-section-title">Campos Amazon</div>
                   <p class="hint-box">Estrutura SP-API preparada. A publicacao e sincronizacao serao ativadas ao conectar a conta Amazon Seller.</p>
-                  <label>SKU Amazon<input name="amazon_sku" /></label>
-                  <label>ASIN<input name="amazon_asin" /></label>
-                  <label>Product Type<input name="amazon_product_type" /></label>
-                  <label class="wide">Atributos Amazon em JSON<textarea name="amazon_attributes_json" rows="4"></textarea></label>
+                  <label>SKU Amazon<input name="amazon_sku" placeholder="SKU único da Amazon" /></label>
+                  <label>ASIN<input name="amazon_asin" placeholder="Amazon Standard Identification Number" /></label>
+                  <label>Product Type<input name="amazon_product_type" placeholder="ex: TOY_OR_GAME" /></label>
+                  <label class="wide">Atributos Amazon em JSON<textarea name="amazon_attributes_json" rows="4" placeholder='[{"attribute_name":"material","attribute_value":"plastic"}]'></textarea></label>
                 </div>
 
                 <label class="checkbox-row"><input name="featured" type="checkbox" checked /> Exibir na vitrine</label>

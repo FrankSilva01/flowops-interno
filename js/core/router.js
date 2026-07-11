@@ -394,6 +394,7 @@ export function bindEvents() {
   byId("storefrontProductForm").addEventListener("submit", saveStorefrontProduct);
   byId("storefrontProductForm").elements.publish_ml.addEventListener("change", updateStorefrontTargetFields);
   byId("storefrontProductForm").elements.publish_shopee.addEventListener("change", updateStorefrontTargetFields);
+  byId("storefrontProductForm").elements.publish_tiktok?.addEventListener("change", updateStorefrontTargetFields);
   byId("storefrontProductForm").elements.publish_amazon.addEventListener("change", updateStorefrontTargetFields);
   byId("storefrontProductForm").elements.marketplace.addEventListener("change", updateStorefrontTargetFields);
   byId("importListingToStorefrontBtn").addEventListener("click", importSelectedListingToStorefrontForm);
