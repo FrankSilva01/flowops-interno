@@ -1748,9 +1748,15 @@ function validateProductStep(step) {
       return true;
 
     case 3:
-      // Passo 3: Se marcou ML, validar categoria
+      // Passo 3: Validar marketplace (obrigatório) e categoria se ML selecionado
+      const hasMarketplace = form.elements.publish_ml.checked || form.elements.publish_shopee.checked ||
+                            form.elements.publish_amazon.checked || form.elements.publish_tiktok.checked;
+      if (!hasMarketplace) {
+        showAppMessage("Por favor, selecione pelo menos um marketplace para publicar", "error");
+        return false;
+      }
       if (form.elements.publish_ml.checked && !form.elements.mlCategoryId.value.trim()) {
-        showAppMessage("Por favor, preencha o ID da categoria no Mercado Livre", "error");
+        showAppMessage("Por favor, selecione a categoria do Mercado Livre", "error");
         form.elements.mlCategoryId.focus();
         return false;
       }
