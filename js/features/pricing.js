@@ -1731,10 +1731,14 @@ function validateProductStep(step) {
 
   switch (step) {
     case 1:
-      // Passo 1: Validar Nome (obrigatório)
+      // Passo 1: Validar Nome e Imagens (obrigatórios)
       if (!form.elements.name.value.trim()) {
         showAppMessage("Por favor, preencha o nome do produto", "error");
         form.elements.name.focus();
+        return false;
+      }
+      if (!productUploadedImages || productUploadedImages.length === 0) {
+        showAppMessage("Por favor, adicione pelo menos uma imagem do produto", "error");
         return false;
       }
       return true;
