@@ -585,6 +585,10 @@ export function bindActions() {
   document.querySelectorAll("[data-action]").forEach((button) => {
     const handler = async () => {
       const { action, id } = button.dataset;
+      if (action === "marketplace-export-csv") {
+        exportMarketplaceListings();
+        return;
+      }
       if (action === "edit-order") {
         if (!ensureCanEdit()) return;
         startOrderEdit(id);
