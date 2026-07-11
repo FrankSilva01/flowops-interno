@@ -1,9 +1,0 @@
-/*
-  Cache-Control: no-cache, no-store, must-revalidate
-  Pragma: no-cache
-  Expires: 0
-  X-Content-Type-Options: nosniff
-  X-Frame-Options: DENY
-  Referrer-Policy: strict-origin-when-cross-origin
-  Permissions-Policy: camera=(), microphone=(), geolocation=()
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://unpkg.com https://cdn.jsdelivr.net https://sdk.mercadopago.com https://http2.mlstatic.com https://secure.mlstatic.com https://www.mercadopago.com.br; style-src 'self' 'unsafe-inline' https://http2.mlstatic.com https://secure.mlstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co https://*.functions.supabase.co https://api.mercadopago.com https://*.mercadopago.com https://api.mercadolibre.com https://*.mlstatic.com; frame-src https://*.mercadopago.com https://www.mercadopago.com.br https://*.mercadopago.com.br; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'
