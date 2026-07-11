@@ -498,10 +498,7 @@ export async function saveProduct(event) {
         condition: "new",
         sku,
         description: String(data.get("description") || "").trim() || name,
-        // Enviar imagens em base64 (a API do ML processa)
-        ...(productUploadedImages && productUploadedImages.length > 0 && {
-          pictures: productUploadedImages.slice(0, 6),
-        }),
+        // Omitir imagens por enquanto - podem ser adicionadas depois no ML
       };
       console.log("📤 Sending to ML API:", mlPayload);
       const created = await marketplaceRequest("https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-sync?marketplace=ml&action=create-listing", {
