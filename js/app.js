@@ -154,6 +154,8 @@ import { openMLPricingDialog, applyPriceRecommendation, iaPricingCSS } from "./f
 import { pushNotificationManager, pushNotificationsCSS } from "./features/push-notifications.js";
 import { accountingIntegration, accountingIntegrationCSS } from "./features/accounting-integration.js";
 import { fiscalCSS } from "./features/fiscal.js";
+import { openExportDialog, renderMLQuestionsTab } from "./features/marketplace-export.js";
+import { renderWhatsappTemplatesTab } from "./features/weekly-summary.js";
 import { initGlobalSearch } from "./features/global-search.js";
 import { initOnboarding } from "./features/pwa-onboarding.js";
 
@@ -268,6 +270,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
   */
   window.syncAllAccountingData = () => accountingIntegration?.syncAllData?.();
+
+  // Expose Prompt 8 & 9 functions globally
+  window.openExportDialog = openExportDialog;
+  window.renderMLQuestionsTab = renderMLQuestionsTab;
+  window.renderWhatsappTemplatesTab = renderWhatsappTemplatesTab;
 
   // Register Service Worker for PWA
   if ('serviceWorker' in navigator) {
