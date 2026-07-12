@@ -483,7 +483,7 @@ async function createMlListing(body: Record<string, any>, account: Record<string
             "Authorization": `Bearer ${account.access_token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ source: pic }),
+          body: JSON.stringify({ source: base64Data }),
         });
 
         if (uploadResp.ok) {
