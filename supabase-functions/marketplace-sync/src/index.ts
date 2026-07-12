@@ -463,11 +463,44 @@ async function createMlListing(body: Record<string, any>, account: Record<string
   if (!body.title) throw new Error("Titulo obrigatorio para publicar no Mercado Livre.");
   if (!body.category_id) throw new Error("Categoria ML obrigatoria.");
   if (!Number(body.price)) throw new Error("Preco obrigatorio.");
+  if (!Array.isArray(body.pictures) || !body.pictures.length) throw new Error("Informe pelo menos uma imagem para publicar no Mercado Livre.");
 
-  // Se tiver imagens como URLs (não base64), usar; senão, criar sem imagens
-  const pictures = (Array.isArray(body.pictures) && body.pictures.filter((pic: string) => !pic.startsWith("data:")))
-    .slice(0, 6)
-    .map((source: string) => ({ source })) || [];
+  // Upload de imagens: converter base64 e fazer upload para Mercado Livre
+  const pictures: any[] = [];
+  const picturesToProcess = Array.isArray(body.pictures) ? body.pictures.slice(0, 6) : [];
+  for (const pic of picturesToProcess) {
+    try {
+      let uploadUrl = pic;
+
+      // Se é base64, fazer upload para Mercado Livre
+      if (pic.startsWith("data:image")) {
+        const base64Data = pic.split(",")[1];
+
+        // Tentar upload via POST /pictures com base64
+        const uploadResp = await fetch("https://api.mercadolibre.com/pictures", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${account.access_token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ source: pic }),
+        });
+
+        if (uploadResp.ok) {
+          const uploadData = await uploadResp.json();
+          if (uploadData.secure_url) {
+            uploadUrl = uploadData.secure_url;
+          }
+        }
+      }
+
+      pictures.push({ source: uploadUrl });
+    } catch (e) {
+      // Continuar com próxima imagem se falhar
+    }
+  }
+
+  if (!pictures.length) throw new Error("Falha ao processar imagens.");
   const payload: Record<string, any> = {
     title: String(body.title).trim(),
     category_id: String(body.category_id).trim(),
