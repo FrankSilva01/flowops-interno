@@ -465,16 +465,41 @@ async function createMlListing(body: Record<string, any>, account: Record<string
   if (!Number(body.price)) throw new Error("Preco obrigatorio.");
   if (!Array.isArray(body.pictures) || !body.pictures.length) throw new Error("Informe pelo menos uma imagem para publicar no Mercado Livre.");
 
-  // Processar imagens: converter base64 para source se necessário
-  const pictures = body.pictures
-    .slice(0, 6)
-    .map((pic: string) => {
-      // Se é base64, retornar como-é (Mercado Livre aceita base64 como source)
-      if (pic.startsWith("data:image")) return { source: pic };
-      // Se é URL, retornar como-é
-      return { source: pic };
-    })
-    .filter((item) => item.source);
+  // Upload de imagens para o Mercado Livre
+  const pictures: any[] = [];
+  for (const pic of body.pictures.slice(0, 6)) {
+    if (pic.startsWith("data:image")) {
+      // É base64 - fazer upload para ML
+      const base64Data = pic.replace(/^data:image\/\w+;base64,/, "");
+      const binaryString = atob(base64Data);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+
+      const formData = new FormData();
+      formData.append("file", new Blob([bytes], { type: "image/jpeg" }));
+
+      try {
+        const uploadResp = await fetch("https://api.mercadolibre.com/pictures", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${account.access_token}` },
+          body: formData as any,
+        });
+        const uploadData = await uploadResp.json();
+        if (uploadResp.ok && uploadData.secure_url) {
+          pictures.push({ source: uploadData.secure_url });
+        }
+      } catch (e) {
+        // Se falhar o upload, pular essa imagem
+      }
+    } else {
+      // É URL - usar como-é
+      pictures.push({ source: pic });
+    }
+  }
+
+  if (!pictures.length) throw new Error("Falha ao processar imagens. Tente novamente.");
   const payload: Record<string, any> = {
     title: String(body.title).trim(),
     category_id: String(body.category_id).trim(),
