@@ -22,20 +22,20 @@ export async function renderFiscalDocs() {
       <div class="section-heading">
         <div>
           <p class="eyebrow">Fiscal</p>
-          <h2>Documentos Fiscais</h2>
+          <h2>Cofre de documentos fiscais</h2>
         </div>
-        <span>Gerencie e acompanhe todos os seus documentos fiscais.</span>
+        <span>Guarde links de XML/PDF, recibos, boletos e observacoes vinculadas a pedidos, produtos ou fornecedores.</span>
       </div>
       <div class="fiscal-toolbar">
         <div class="fiscal-filters">
-          <label>Buscar<input type="search" id="fiscalSearchInput" placeholder="Documento, número ou descrição" /></label>
+          <label>Buscar<input type="search" id="fiscalSearchInput" placeholder="NF, XML, PDF, pedido, produto ou fornecedor" /></label>
           <label>Tipo<select id="fiscalTypeFilter"><option value="">Todos</option><option>Recibo</option><option>RPA</option><option>Boleto</option></select></label>
           <label>Status<select id="fiscalStatusFilter"><option value="">Todos</option><option>Pendente</option><option>Pago</option><option>Vencido</option></select></label>
           <label>De<input type="date" id="fiscalDateFromFilter" /></label>
           <label>Até<input type="date" id="fiscalDateToFilter" /></label>
         </div>
         <div class="fiscal-actions">
-          <button class="primary-btn" type="button" data-fiscal-action="new-document">+ Novo Documento</button>
+          <button class="primary-btn" type="button" data-fiscal-action="new-document">+ Guardar documento</button>
           <button class="secondary-btn" type="button" data-fiscal-action="generate-report">Gerar Relatório</button>
           <button class="secondary-btn" type="button" data-fiscal-action="export-docs">Exportar</button>
         </div>

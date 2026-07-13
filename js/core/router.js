@@ -61,7 +61,7 @@ import {
   renderLogistics, openLogisticsDialog, saveLogisticsInfo, addLogisticsEvent, syncLogisticsFromMarketplace, syncAllMarketplaceLogistics,
 } from "../features/logistics.js";
 import {
-  openProductQuickDialog, openProductQuickDialogForListing, saveProduct, deleteProduct, bindProductFormAutoSku,
+  openProductQuickDialog, saveProduct, deleteProduct, bindProductFormAutoSku,
   openPriceCalculatorDialog, bindPriceCalculatorForm, openFinancialSettingsDialog, saveFinancialSettings,
   renderCommercialIntelligence, dismissSuggestion, resolveSuggestion, simulateSalesForGoal,
   renderOrderProductOptions, bindProductMarketplaceCheckboxes, bindProductImageInputs,
@@ -774,7 +774,7 @@ export function bindActions() {
       }
       if (action === "marketplace-edit") {
         if (!ensureCanEdit()) return;
-        openProductQuickDialogForListing(button.dataset.marketplace, id);
+        await openMarketplaceEdit(id, button.dataset.marketplace);
         return;
       }
       if (action === "storefront-edit") {

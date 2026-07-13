@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="./css/11-fiscal-forms.css?v=200" />
     <link rel="stylesheet" href="./css/12-global-search.css?v=200" />
     <script src="./supabase-config.js?v=200" defer></script>
-    <script type="module" src="./js/app.js?v=209"></script>
+    <script type="module" src="./js/app.js?v=210"></script>
   </head>
   <body>
     <main id="appView" class="app-shell" hidden>
@@ -968,16 +968,25 @@
         </section>
 
         <section id="marketplaceView" class="view">
-          <div class="view-tabs" role="tablist" aria-label="Marketplace">
-            <button class="view-tab active" type="button" data-marketplace-view="listings">Anúncios</button>
-            <button class="view-tab" type="button" data-marketplace-view="storefront">Vitrine</button>
-            <button class="view-tab" type="button" data-marketplace-view="sales">Vendas</button>
-            <button class="view-tab" type="button" data-marketplace-view="integrations">Integrações</button>
-            <button class="view-tab" type="button" data-marketplace-view="intelligence">Inteligência</button>
-            <button class="view-tab" type="button" data-marketplace-view="ml-questions">Perguntas ML</button>
-            <button class="view-tab" type="button" data-marketplace-view="whatsapp">WhatsApp</button>
-            <button class="view-tab" type="button" data-marketplace-view="api-logs">Logs API</button>
-            <button class="view-tab" type="button" data-marketplace-view="backup">Backup</button>
+          <div class="view-tabs marketplace-tab-groups" role="tablist" aria-label="Marketplace">
+            <div class="marketplace-tab-group">
+              <span>Operação</span>
+              <button class="view-tab active" type="button" data-marketplace-view="listings">Anúncios</button>
+              <button class="view-tab" type="button" data-marketplace-view="sales">Vendas</button>
+              <button class="view-tab" type="button" data-marketplace-view="ml-questions">Perguntas</button>
+              <button class="view-tab" type="button" data-marketplace-view="storefront">Vitrine</button>
+            </div>
+            <div class="marketplace-tab-group">
+              <span>Inteligência</span>
+              <button class="view-tab" type="button" data-marketplace-view="intelligence">Diagnóstico</button>
+              <button class="view-tab" type="button" data-marketplace-view="whatsapp">WhatsApp</button>
+            </div>
+            <div class="marketplace-tab-group">
+              <span>Configurações</span>
+              <button class="view-tab" type="button" data-marketplace-view="integrations">Integrações</button>
+              <button class="view-tab" type="button" data-marketplace-view="api-logs">Logs</button>
+              <button class="view-tab" type="button" data-marketplace-view="backup">Backup</button>
+            </div>
           </div>
 
           <div class="marketplace-channel-filters" role="group" aria-label="Filtrar por marketplace">
@@ -1569,6 +1578,18 @@
         </section>
 
         <section id="fiscalView" class="view">
+          <div class="fiscal-vault-hero">
+            <div>
+              <p class="eyebrow">Cofre fiscal</p>
+              <h3>XML, PDF e notas vinculadas à operação</h3>
+              <span>Guarde notas de compra e venda, links de XML/PDF e referências para localizar rápido por pedido, produto, cliente ou fornecedor.</span>
+            </div>
+            <div class="fiscal-vault-hints">
+              <span>Compra: fornecedor e material</span>
+              <span>Venda: pedido e cliente</span>
+              <span>Documento: XML/PDF/link</span>
+            </div>
+          </div>
           <div class="report-tabs">
             <button class="tab active" data-fiscal-tab="documentos">Documentos</button>
             <button class="tab" data-fiscal-tab="das">DAS/Impostos</button>
@@ -1579,7 +1600,7 @@
         </section>
 
         <!-- Modal Documento Fiscal - Compacto -->
-        <dialog id="fiscalDocumentDialog" class="fiscal-dialog fiscal-compact">
+        <dialog id="fiscalDocumentDialog" class="fiscal-dialog fiscal-compact drawer-dialog">
           <div class="fiscal-dialog-header">
             <h2>Novo Documento</h2>
             <button type="button" class="dialog-close" data-action="close-fiscal-dialog">✕</button>
@@ -2053,12 +2074,16 @@
         <button class="primary-btn" type="submit">Salvar configurações</button>
       </form>
     </dialog>
-    <dialog id="logisticsDialog" class="history-dialog marketplace-dialog">
-      <div class="panel-head">
-        <h3 id="logisticsDialogTitle">Rastreio</h3>
-        <button class="icon-btn" type="button" data-close-dialog="logisticsDialog">Fechar</button>
+    <dialog id="logisticsDialog" class="history-dialog marketplace-dialog drawer-dialog">
+      <div class="drawer-header">
+        <div>
+          <span class="order-code">Logística</span>
+          <h3 id="logisticsDialogTitle">Rastreio</h3>
+          <small>Status real, rastreio e eventos da entrega</small>
+        </div>
+        <button class="icon-btn" type="button" data-close-dialog="logisticsDialog" aria-label="Fechar">×</button>
       </div>
-      <form id="logisticsForm" class="login-form">
+      <form id="logisticsForm" class="login-form drawer-body">
         <input name="orderId" type="hidden" />
         <label>Transportadora<input name="carrier" placeholder="Ex: Correios, Jadlog, Loggi" /></label>
         <label>Código de rastreio<input name="trackingCode" placeholder="Código informado pela transportadora" /></label>
@@ -2078,7 +2103,7 @@
         <button class="secondary-btn" type="button" id="logisticsSyncMlButton" data-action="sync-ml-shipment">Buscar status no Mercado Livre</button>
       </form>
       <div class="panel-head subhead"><h3>Adicionar evento na timeline</h3></div>
-      <form id="logisticsEventForm" class="compact-form">
+      <form id="logisticsEventForm" class="compact-form drawer-body">
         <input name="orderId" type="hidden" />
         <select name="eventStatus">
           <option value="">Sem mudança de status</option>
@@ -2094,7 +2119,7 @@
         <button class="secondary-btn" type="submit">Adicionar evento</button>
       </form>
       <div class="panel-head subhead"><h3>Timeline de rastreio</h3></div>
-      <div id="logisticsTimeline" class="stack-list"></div>
+      <div id="logisticsTimeline" class="stack-list drawer-body"></div>
     </dialog>
     <dialog id="leadDialog" class="history-dialog lead-dialog">
       <div class="panel-head">

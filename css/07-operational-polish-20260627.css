@@ -1160,6 +1160,24 @@ button.attention-item:hover {
   box-shadow: -12px 0 32px rgba(15, 23, 42, 0.24);
 }
 
+.drawer-dialog.fiscal-dialog {
+  position: fixed;
+  inset: 0 0 0 auto;
+  width: min(520px, 100%);
+  max-width: none;
+  max-height: none;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: -12px 0 32px rgba(15, 23, 42, 0.24);
+  overflow: auto;
+}
+
 .drawer-dialog::backdrop {
   background: rgba(15, 23, 42, 0.45);
 }
@@ -2754,6 +2772,71 @@ button.attention-item:hover {
 
 .danger-text {
   color: var(--red);
+}
+
+.marketplace-tab-groups {
+  align-items: stretch;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.marketplace-tab-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-1);
+}
+
+.marketplace-tab-group > span {
+  padding: 0 8px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.marketplace-tab-group .view-tab {
+  border-radius: 6px;
+}
+
+.fiscal-vault-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  padding: 16px;
+  margin-bottom: 12px;
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-1);
+}
+
+.fiscal-vault-hero h3 {
+  margin: 2px 0 4px;
+  font-size: 18px;
+}
+
+.fiscal-vault-hero span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.fiscal-vault-hints {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.fiscal-vault-hints span {
+  padding: 6px 8px;
+  border: 0.5px solid var(--border);
+  border-radius: 999px;
+  background: var(--canvas);
+  font-size: 11px;
 }
 
 /* Feedback de usabilidade: paineis colapsaveis fora do dashboard (aba

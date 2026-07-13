@@ -2,6 +2,9 @@ import { state } from "./state.js";
 import { byId, html, showAppMessage } from "./dom.js";
 import { setView } from "./router.js";
 
+const PRODUCT_ASSETS_MARKER = "[[FLOWOPS_PRODUCT_ASSETS:";
+const PRODUCT_ASSETS_MARKER_END = "]]";
+
 export function initGlobalSearch() {
   const searchInput = byId("globalSearch");
   if (!searchInput) return;
@@ -175,92 +178,123 @@ function showSearchResults(query) {
 
 function searchAllData(query) {
   const items = [];
-
-  // Buscar em pedidos
-  if (state.data.orders) {
-    state.data.orders.forEach(order => {
-      if (
-        order.description?.toLowerCase().includes(query) ||
-        order.client?.toLowerCase().includes(query) ||
-        order.id?.toLowerCase().includes(query)
-      ) {
-        items.push({
-          title: order.description || "Sem descrição",
-          description: `Cliente: ${order.client || "N/A"} | Valor: R$ ${order.charged || 0}`,
-          category: "Pedido",
-          view: "orders",
-          id: order.id,
-          meta: order.status || "Sem status",
-        });
-      }
-    });
-  }
-
-  // Buscar em materiais
-  if (state.data.materials) {
-    state.data.materials.forEach(material => {
-      if (
-        material.type?.toLowerCase().includes(query) ||
-        material.supplier?.toLowerCase().includes(query) ||
-        material.spec?.toLowerCase().includes(query)
-      ) {
-        items.push({
-          title: material.type || "Material",
-          description: `Fornecedor: ${material.supplier || "N/A"} | Qtd: ${material.quantity}`,
-          category: "Material",
-          view: "materials",
-          id: material.id,
-          meta: material.spec || "",
-        });
-      }
-    });
-  }
-
-  // Buscar em transações de caixa
-  if (state.data.cash) {
-    state.data.cash.forEach(entry => {
-      if (
-        entry.description?.toLowerCase().includes(query) ||
-        entry.category?.toLowerCase().includes(query)
-      ) {
-        items.push({
-          title: entry.description || entry.category,
-          description: `${entry.type}: R$ ${entry.amount || 0}`,
-          category: entry.type,
-          view: "cash",
-          id: entry.id,
-          meta: entry.date || "",
-        });
-      }
-    });
-  }
-
-  // Buscar em leads
-  if (state.leads) {
-    state.leads.forEach(lead => {
-      if (
-        lead.name?.toLowerCase().includes(query) ||
-        lead.email?.toLowerCase().includes(query) ||
-        lead.whatsapp?.toLowerCase().includes(query)
-      ) {
-        items.push({
-          title: lead.name || "Lead",
-          description: `${lead.email || lead.whatsapp || "Sem contato"}`,
-          category: "Lead",
-          view: "leads",
-          id: lead.id,
-          meta: lead.status || "Novo",
-        });
-      }
-    });
-  }
-
-  // Limitar a 10 resultados
-  return {
-    items: items.slice(0, 10),
-    total: items.length,
+  const includes = (...values) => values.some((value) => String(value || "").toLowerCase().includes(query));
+  const productAssets = (product) => {
+    const value = String(product?.description || "");
+    const markerIndex = value.lastIndexOf(PRODUCT_ASSETS_MARKER);
+    if (markerIndex < 0) return {};
+    const endIndex = value.indexOf(PRODUCT_ASSETS_MARKER_END, markerIndex);
+    if (endIndex < 0) return {};
+    try {
+      return JSON.parse(decodeURIComponent(value.slice(markerIndex + PRODUCT_ASSETS_MARKER.length, endIndex))) || {};
+    } catch {
+      return {};
+    }
   };
-}
 
+  state.data.orders?.forEach((order) => {
+    const logistics = state.orderLogistics?.find((item) => item.order_id === order.id);
+    if (includes(order.description, order.client, order.id, order.orderCode, order.marketplaceOrderCode, order.stlLink, logistics?.tracking_code)) {
+      items.push({
+        title: order.description || "Sem descricao",
+        description: `Cliente: ${order.client || "N/A"} | Pedido: ${order.marketplaceOrderCode || order.id}`,
+        category: "Pedido",
+        view: "orders",
+        id: order.id,
+        meta: logistics?.tracking_code ? `Rastreio: ${logistics.tracking_code}` : (order.status || "Sem status"),
+      });
+    }
+  });
+
+  state.products?.forEach((product) => {
+    const assets = productAssets(product);
+    if (includes(product.name, product.sku, product.category, assets.stlLink, assets.imageUrl, assets.notes)) {
+      items.push({
+        title: product.name || product.sku || "Produto",
+        description: `SKU: ${product.sku || "-"} | ${product.category || "Sem categoria"}`,
+        category: "Produto",
+        view: "marketplace",
+        id: product.id,
+        meta: assets.stlLink ? "Tem STL/origem salvo" : "Produto interno",
+      });
+    }
+  });
+
+  state.marketplaceListings?.forEach((listing) => {
+    if (includes(listing.title, listing.sku, listing.external_id, listing.permalink, listing.marketplace)) {
+      items.push({
+        title: listing.title || listing.external_id,
+        description: `${listing.marketplace || "Marketplace"} | ${listing.external_id || "-"}`,
+        category: "Anuncio",
+        view: "marketplace",
+        id: listing.external_id,
+        meta: listing.status || "",
+      });
+    }
+  });
+
+  state.orderLogistics?.forEach((logistics) => {
+    const order = state.data.orders?.find((item) => item.id === logistics.order_id);
+    if (includes(logistics.tracking_code, logistics.carrier, logistics.status, order?.description, order?.client)) {
+      items.push({
+        title: logistics.tracking_code || order?.description || "Rastreio",
+        description: `${order?.client || "Cliente nao informado"} | ${order?.description || logistics.carrier || ""}`,
+        category: "Rastreio",
+        view: "logistics",
+        id: logistics.order_id,
+        meta: logistics.status || "Sem status",
+      });
+    }
+  });
+
+  state.data.materials?.forEach((material) => {
+    if (includes(material.type, material.supplier, material.spec)) {
+      items.push({
+        title: material.type || "Material",
+        description: `Fornecedor: ${material.supplier || "N/A"} | Qtd: ${material.quantity}`,
+        category: "Material",
+        view: "materials",
+        id: material.id,
+        meta: material.spec || "",
+      });
+    }
+  });
+
+  state.data.cash?.forEach((entry) => {
+    if (includes(entry.description, entry.category, entry.type, entry.date)) {
+      items.push({
+        title: entry.description || entry.category,
+        description: `${entry.type}: R$ ${entry.amount || 0}`,
+        category: entry.type,
+        view: "cash",
+        id: entry.id,
+        meta: entry.date || "",
+      });
+    }
+  });
+
+  state.leads?.forEach((lead) => {
+    if (includes(lead.name, lead.email, lead.whatsapp, lead.phone, lead.company, lead.status)) {
+      items.push({
+        title: lead.name || "Lead",
+        description: `${lead.email || lead.whatsapp || "Sem contato"}`,
+        category: "Cliente/Lead",
+        view: "leads",
+        id: lead.id,
+        meta: lead.status || "Novo",
+      });
+    }
+  });
+
+  const unique = [];
+  const seen = new Set();
+  for (const item of items) {
+    const key = `${item.category}:${item.id}:${item.title}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(item);
+  }
+  return { items: unique.slice(0, 15), total: unique.length };
+}
 // CSS agora está em 12-global-search.css
 // Nada para inicializar aqui
