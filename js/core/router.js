@@ -74,6 +74,26 @@ import {
   showCalculatorSuggestion, getSuggestionForListing, syncFeeCalculatorFull,
 } from "../features/marketplace-analytics.js";
 
+const APP_VERSION = "217";
+
+async function refreshAppShell() {
+  showAppMessage("Atualizando sistema", "Limpando cache local e carregando a versão mais recente.", "info");
+  try {
+    if ("serviceWorker" in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map((registration) => registration.unregister()));
+    }
+    if ("caches" in window) {
+      const cacheKeys = await caches.keys();
+      await Promise.all(cacheKeys.map((key) => caches.delete(key)));
+    }
+  } catch (error) {
+    console.warn("Falha ao limpar cache do app", error);
+  }
+  localStorage.removeItem("3daft-active-view");
+  window.location.href = `${window.location.origin}${window.location.pathname}?force=${APP_VERSION}-${Date.now()}#dashboard`;
+}
+
 function bindFilter(elementId, filterKey) {
   const element = byId(elementId);
   if (!element) return;
@@ -185,6 +205,7 @@ export function bindEvents() {
   byId("importBtn").addEventListener("click", () => byId("importFileInput").click());
   byId("importFileInput").addEventListener("change", importFile);
   byId("emailDigestBtn").addEventListener("click", openEmailDigest);
+  byId("refreshAppBtn")?.addEventListener("click", refreshAppShell);
   byId("topProductsPeriod").addEventListener("change", (event) => {
     state.topProductsPeriod = event.target.value;
     renderTopProducts();

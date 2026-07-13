@@ -21,13 +21,13 @@
     <link rel="stylesheet" href="./css/04-modern-shell-reports-v109.css?v=200" />
     <link rel="stylesheet" href="./css/05-dense-dark-sidebar-v110.css?v=200" />
     <link rel="stylesheet" href="./css/06-dense-operational-views.css?v=200" />
-    <link rel="stylesheet" href="./css/07-operational-polish-20260627.css?v=200" />
+    <link rel="stylesheet" href="./css/07-operational-polish-20260627.css?v=217" />
     <link rel="stylesheet" href="./css/08-sora-redesign-20260706.css?v=200" />
     <link rel="stylesheet" href="./css/10-modern-calendar.css?v=200" />
     <link rel="stylesheet" href="./css/11-fiscal-forms.css?v=200" />
     <link rel="stylesheet" href="./css/12-global-search.css?v=200" />
     <script src="./supabase-config.js?v=200" defer></script>
-    <script type="module" src="./js/app.js?v=216"></script>
+    <script type="module" src="./js/app.js?v=217"></script>
   </head>
   <body>
     <main id="appView" class="app-shell" hidden>
@@ -86,6 +86,7 @@
         <div class="session-card">
           <span id="activeUserName">Modo teste</span>
           <small id="activeUserRole">Acesso direto sem login</small>
+          <small id="appVersionLabel" class="app-version-label">FlowOps v217</small>
           <button id="logoutBtn" class="ghost-btn" type="button" hidden>Sair</button>
         </div>
       </aside>
@@ -136,6 +137,7 @@
                 <button id="importBtn" type="button"><i class="ti ti-upload" aria-hidden="true"></i> Importar</button>
                 <button id="emailDigestBtn" type="button"><i class="ti ti-mail" aria-hidden="true"></i> Resumo e-mail</button>
                 <button id="exportBtn" type="button"><i class="ti ti-download" aria-hidden="true"></i> Exportar JSON</button>
+                <button id="refreshAppBtn" type="button"><i class="ti ti-refresh" aria-hidden="true"></i> Atualizar sistema</button>
               </div>
             </div>
             <div id="topbarAvatar" class="topbar-avatar" title="">F</div>
