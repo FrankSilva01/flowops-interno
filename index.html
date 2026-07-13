@@ -1881,28 +1881,18 @@
           <label>Categoria do Mercado Livre*
             <select name="mlCategoryId" required>
               <option value="">Selecione uma categoria...</option>
-              <option value="MLB5672">Ação Figures e Bonecos</option>
-              <option value="MLB1366">Acessórios para Crianças</option>
-              <option value="MLB1384">Artesanato</option>
-              <option value="MLB1953">Brinquedos</option>
-              <option value="MLB374">Coleções</option>
-              <option value="MLB1000">Decoração</option>
-              <option value="MLB1051">Eletrônicos e Tecnologia</option>
-              <option value="MLB1132">Esportes e Fitness</option>
-              <option value="MLB1168">Fantasias e Roupas</option>
-              <option value="MLB1201">Hobbies</option>
-              <option value="MLB1246">Iluminação</option>
-              <option value="MLB1276">Jogos</option>
-              <option value="MLB1319">Livros</option>
-              <option value="MLB1403">Miniaturismo</option>
-              <option value="MLB1430">Modelos em Escala</option>
-              <option value="MLB1500">Música</option>
-              <option value="MLB1549">Moda</option>
-              <option value="MLB1574">Pelúcias</option>
-              <option value="MLB1635">Vinil e CDs</option>
-              <option value="MLB1726">Videogames</option>
-              <option value="MLB263">Antigos</option>
-              <option value="MLB264">Outros</option>
+              <option value="MLB457877">Miniaturas e action figures</option>
+              <option value="MLB1839">Figuras de ação</option>
+              <option value="MLB182082">Organizadores e porta-objetos</option>
+              <option value="MLB388338">Gavetas e organizadores para mesa</option>
+              <option value="MLB428957">Organizadores para banheiro</option>
+              <option value="MLB439224">Suportes para celular</option>
+              <option value="MLB58500">Suportes veiculares</option>
+              <option value="MLB271673">Porta utensílios de cozinha</option>
+              <option value="MLB186144">Suportes para toalha</option>
+              <option value="MLB432418">Suportes para ar-condicionado</option>
+              <option value="MLB401159">Organizadores multiuso</option>
+              <option value="MLB271399">Suportes para controle remoto</option>
             </select>
           </label>
           <label>Categoria local (descrição)<input name="category" placeholder="Ex: Action figures" /></label>
@@ -1914,6 +1904,8 @@
             <input id="productImageFiles" type="file" accept="image/*" multiple />
           </label>
           <p class="form-hint">Mínimo de 3 fotos para publicar em um marketplace. Siga o padrão do Mercado Livre: fundo único e liso (branco, preto ou neutro), sem molduras, marcas d'água ou colagens — só o produto em destaque.</p>
+          <label>URLs públicas das imagens para Mercado Livre<textarea name="imageUrls" rows="3" placeholder="https://...jpg&#10;https://...jpg&#10;https://...jpg"></textarea></label>
+          <p class="form-hint">Para publicar automaticamente no Mercado Livre, use pelo menos 3 URLs públicas de imagem. O upload local fica salvo para o fluxo visual, mas a função atual de publicação aceita URLs.</p>
 
           <label>Descrição<textarea name="description" rows="3" placeholder="Descreva o produto: material, tamanho, cores disponíveis, etc."></textarea></label>
         </div>
@@ -1946,6 +1938,10 @@
               </select>
             </label>
             <p class="form-hint">A categoria foi selecionada no primeiro passo. Você pode editar a categoria no Mercado Livre depois de publicar.</p>
+            <label>Marca<input name="mlBrand" value="3D.AFT" /></label>
+            <label>Modelo<input name="mlModel" placeholder="Ex: Deadpool 15cm resina" /></label>
+            <label>Material<input name="mlMaterial" value="Resina" /></label>
+            <label>Tempo de produção<input name="mlManufacturingTime" value="20 dias" /></label>
           </div>
         </div>
 

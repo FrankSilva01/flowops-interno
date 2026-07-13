@@ -164,6 +164,18 @@ const MARKETPLACE_CHECKBOX_NAMES = {
   "tiktok-shop": "publish_tiktok",
 };
 
+const ML_PRODUCT_DEFAULT_ATTRIBUTES = [
+  { id: "EMPTY_GTIN_REASON", value_id: "17055161" },
+  { id: "ITEM_CONDITION", value_id: "2230284" },
+  { id: "IS_COLLECTIBLE", value_id: "242085" },
+  { id: "IS_REALISTIC_REPLICA", value_id: "242084" },
+  { id: "IS_SET", value_id: "242084" },
+  { id: "IS_SURPRISE", value_id: "242084" },
+  { id: "REQUIRES_ASSEMBLY", value_id: "242084" },
+  { id: "PIECES_NUMBER", value_name: "1" },
+  { id: "MIN_RECOMMENDED_AGE", value_name: "12 anos" },
+];
+
 export function isMarketplaceAccountConnected(channel) {
   return state.marketplaceAccounts.some((item) => normalizeMarketplaceChannel(item.marketplace) === channel);
 }
@@ -404,6 +416,27 @@ export function bindProductFormAutoSku() {
   form.elements.category.addEventListener("input", refresh);
 }
 
+function parseProductImageUrls(value) {
+  return String(value || "")
+    .split(/\r?\n|,/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .filter((item) => /^https?:\/\//i.test(item));
+}
+
+function buildMlProductAttributes(data, name) {
+  const brand = String(data.get("mlBrand") || "3D.AFT").trim() || "3D.AFT";
+  const model = String(data.get("mlModel") || name).trim() || name;
+  const material = String(data.get("mlMaterial") || "Resina").trim() || "Resina";
+  return [
+    { id: "BRAND", value_name: brand },
+    { id: "MODEL", value_name: model },
+    { id: "MANUFACTURER", value_name: brand },
+    { id: "MATERIALS", value_name: material },
+    ...ML_PRODUCT_DEFAULT_ATTRIBUTES,
+  ];
+}
+
 export async function saveProduct(event) {
   event.preventDefault();
   if (!ensureCanEdit()) return;
@@ -420,6 +453,7 @@ export async function saveProduct(event) {
   const stock = Math.max(Number(data.get("stock") || 1), 0);
   const listingValue = String(data.get("listingLink") || "");
   const selectedChannels = CREATABLE_MARKETPLACES.filter((channel) => Boolean(data.get(MARKETPLACE_CHECKBOX_NAMES[channel])));
+  const imageUrls = parseProductImageUrls(data.get("imageUrls"));
   if (selectedChannels.includes("mercado-livre") && !isMarketplaceAccountConnected("mercado-livre")) {
     message.textContent = "Conecte o Mercado Livre em Integrações antes de publicar. Para salvar apenas no catálogo, desmarque Mercado Livre.";
     return;
@@ -430,8 +464,8 @@ export async function saveProduct(event) {
   // So exige as 3 fotos quando o cadastro vai CRIAR um anuncio novo (mesmo
   // padrao do Mercado Livre) - vincular a um anuncio ja existente reaproveita
   // as fotos que ja estao la, entao nao entra nessa exigencia.
-  if (!listingValue && channelsWithAutomaticPublication.length && productUploadedImages.length < 3) {
-    message.textContent = `Adicione pelo menos 3 fotos do produto para publicar em um marketplace (${productUploadedImages.length} de 3).`;
+  if (!listingValue && channelsWithAutomaticPublication.length && imageUrls.length < 3) {
+    message.textContent = `Informe pelo menos 3 URLs públicas de imagem para publicar no Mercado Livre (${imageUrls.length} de 3).`;
     return;
   }
   const payload = {
@@ -501,16 +535,17 @@ export async function saveProduct(event) {
       const mlPayload = {
         title: name,
         price: Number(price),
+        currency_id: "BRL",
         available_quantity: Number(stock),
         category_id: mlCategoryId,
         listing_type_id: listingType === "premium" ? "gold_pro" : "gold_special",
         condition: "new",
         sku,
         description: String(data.get("description") || "").trim() || name,
-        // Enviar imagens em base64 - função ML faz upload para Mercado Livre
-        ...(productUploadedImages && productUploadedImages.length > 0 && {
-          pictures: productUploadedImages.slice(0, 6),
-        }),
+        pictures: imageUrls.slice(0, 6),
+        warranty: "Sem garantia",
+        manufacturing_time: String(data.get("mlManufacturingTime") || "20 dias").trim() || "20 dias",
+        attributes: buildMlProductAttributes(data, name),
       };
       console.log("📤 Sending to ML API:", mlPayload);
       const created = await marketplaceRequest("https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-sync?marketplace=ml&action=create-listing", {
