@@ -1,8 +1,8 @@
 import { state, money } from "../core/state.js";
-import { byId, html, showAppMessage } from "../core/dom.js";
+import { byId, html, showAppMessage, flashActionMessage } from "../core/dom.js";
 import { getListingProfitability } from "./pricing.js";
 import { getListingAnalytics } from "./marketplace-analytics.js";
-import { normalizeMarketplaceChannel, marketplaceDisplayName } from "./marketplace.js";
+import { normalizeMarketplaceChannel, marketplaceDisplayName, marketplaceRequest, openMarketplaceEdit } from "./marketplace.js";
 
 // ========================================================================
 // BLOCO 3: INTELIGÊNCIA COMERCIAL
@@ -598,13 +598,24 @@ function setupXRayHandlers(drawer, listing) {
   document.addEventListener("keydown", handleEsc);
 }
 
-function handleXRayAction(action, listing) {
+async function handleXRayAction(action, listing) {
   switch(action) {
     case "edit-price":
-      console.log("TODO: Abrir editor de preço", listing);
+      await openMarketplaceEdit(listing.external_id || listing.id, listing.marketplace || "Mercado Livre");
       break;
     case "pause":
-      console.log("TODO: Pausar anúncio", listing);
+      if (!confirm(`Pausar o anúncio ${listing.title || listing.external_id || "selecionado"}?`)) return;
+      try {
+        const itemId = listing.external_id || listing.id;
+        await marketplaceRequest(`https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-sync?marketplace=ml&action=edit&item_id=${encodeURIComponent(itemId)}`, {
+          method: "POST",
+          body: JSON.stringify({ status: "paused" }),
+        });
+        listing.status = "paused";
+        flashActionMessage("Anúncio pausado no Mercado Livre.");
+      } catch (error) {
+        showAppMessage("Não foi possível pausar", error.message || String(error), "error");
+      }
       break;
     case "copy-sku":
       if (listing.sku) {

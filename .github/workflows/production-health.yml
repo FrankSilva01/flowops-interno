@@ -1,0 +1,26 @@
+name: Production health
+on:
+  schedule:
+    - cron: "17,47 * * * *"
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify public application and legal pages
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://rainbow-lokum-1fad14.netlify.app"
+          curl --fail --silent --show-error "$base/?health=1" | grep -q 'FlowOps v'
+          curl --fail --silent --show-error "$base/termos.html" | grep -q 'Termos de Uso'
+          curl --fail --silent --show-error "$base/privacidade.html" | grep -q 'Política de Privacidade'
+      - name: Verify critical Edge Functions respond
+        shell: bash
+        run: |
+          set -euo pipefail
+          functions="https://djvrhvzjvnyensbobtby.functions.supabase.co"
+          for name in marketplace-sync get-real-shipping-cost nfe-sync system-maintenance mercadopago-subscriptions public-onboarding; do
+            status=$(curl --silent --output /dev/null --write-out '%{http_code}' -X OPTIONS "$functions/$name")
+            test "$status" -ge 200 && test "$status" -lt 500
+          done

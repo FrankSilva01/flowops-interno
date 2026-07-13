@@ -29,6 +29,19 @@ export async function saveFiscalDocument(doc) {
     description: doc.description,
     value: parseFloat(doc.value) || 0,
     status: doc.status || "Pendente",
+    due_date: doc.due_date || null,
+    category: doc.category || null,
+    payment_method: doc.payment_method || null,
+    issuer: doc.issuer || null,
+    order_id: doc.order_id || null,
+    product_id: doc.product_id || null,
+    supplier: doc.supplier || null,
+    storage_path: doc.storage_path || null,
+    file_name: doc.file_name || null,
+    mime_type: doc.mime_type || null,
+    size_bytes: Number(doc.size_bytes || 0) || null,
+    checksum_sha256: doc.checksum_sha256 || null,
+    updated_at: new Date().toISOString(),
     created_at: new Date().toISOString(),
   });
 
@@ -114,6 +127,7 @@ export async function deleteFiscalDocument(docId) {
   initFiscalData();
 
   try {
+    const existing = state.fiscalDocuments.find(d => d.id === docId);
     if (state.supabase) {
       let query = state.supabase.from("fiscal_documents").delete().eq("id", docId);
       query = scopeOrganization(query);
@@ -310,6 +324,12 @@ export async function deletePurchaseInvoice(invoiceId) {
       query = scopeOrganization(query);
       const { error } = await query;
       if (error) throw error;
+      if (existing?.storage_path) {
+        const { error: storageError } = await state.supabase.storage
+          .from("fiscal-documents")
+          .remove([existing.storage_path]);
+        if (storageError) console.warn("Documento removido, mas o arquivo exigira limpeza posterior.", storageError);
+      }
     }
 
     state.purchaseInvoices = state.purchaseInvoices.filter((item) => item.id !== invoiceId);

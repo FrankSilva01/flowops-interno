@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="./css/11-fiscal-forms.css?v=200" />
     <link rel="stylesheet" href="./css/12-global-search.css?v=200" />
     <script src="./supabase-config.js?v=200" defer></script>
-    <script type="module" src="./js/app.js?v=220"></script>
+    <script type="module" src="./js/app.js?v=221"></script>
   </head>
   <body>
     <main id="appView" class="app-shell" hidden>
@@ -86,7 +86,7 @@
         <div class="session-card">
           <span id="activeUserName">Modo teste</span>
           <small id="activeUserRole">Acesso direto sem login</small>
-          <small id="appVersionLabel" class="app-version-label">FlowOps v220</small>
+          <small id="appVersionLabel" class="app-version-label">FlowOps v221</small>
           <button id="logoutBtn" class="ghost-btn" type="button" hidden>Sair</button>
         </div>
       </aside>
@@ -1697,6 +1697,23 @@
                 <div class="form-group-compact">
                   <label>Emitente</label>
                   <input type="text" name="issuer" placeholder="Nome ou CNPJ" />
+                </div>
+                <div class="form-group-compact">
+                  <label>Pedido vinculado</label>
+                  <input type="text" name="order_id" placeholder="Ex.: PED-0025" />
+                </div>
+                <div class="form-group-compact">
+                  <label>Produto/SKU</label>
+                  <input type="text" name="product_id" placeholder="SKU ou anúncio ML" />
+                </div>
+                <div class="form-group-compact">
+                  <label>Fornecedor</label>
+                  <input type="text" name="supplier" placeholder="Nome do fornecedor" />
+                </div>
+                <div class="form-group-compact full">
+                  <label>Arquivo XML ou PDF</label>
+                  <input type="file" name="fiscal_file" accept=".xml,.pdf,application/xml,text/xml,application/pdf" />
+                  <small>Arquivo privado, até 20 MB. O download usa link temporário.</small>
                 </div>
               </div>
             </div>

@@ -1,0 +1,10 @@
+node_modules/
+playwright-report/
+test-results/
+server*.log
+supabase/.temp/
+.env
+.env.*
+!.env.example
+*.local
+*.zip

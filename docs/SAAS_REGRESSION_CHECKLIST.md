@@ -2,6 +2,8 @@
 
 Use antes de cada deploy publico ou mudanca em Supabase/Netlify.
 
+Antes dos testes manuais, execute `npm test` e confirme que o workflow `Quality` passou. Depois do deploy, execute manualmente o workflow `Production health`.
+
 ## 1. Acesso e isolamento
 
 - Entrar com usuario da empresa A.

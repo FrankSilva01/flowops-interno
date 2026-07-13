@@ -98,6 +98,7 @@ export function showLoginOverlay() {
         <button class="primary-btn" type="submit">Entrar</button>
         <button id="recoverPasswordBtn" class="ghost-btn" type="button">Recuperar senha</button>
         <p id="onlineLoginError" class="form-error" aria-live="polite"></p>
+        <p class="login-legal-links"><a href="termos.html" target="_blank" rel="noopener">Termos</a> · <a href="privacidade.html" target="_blank" rel="noopener">Privacidade</a> · <a href="cancelamento.html" target="_blank" rel="noopener">Cancelamento</a></p>
       </form>
     </section>
   `;

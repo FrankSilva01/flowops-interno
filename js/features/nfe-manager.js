@@ -109,28 +109,6 @@ async function nfeAuthHeaders() {
   return { Authorization: `Bearer ${token}` };
 }
 
-export async function sendDANFEByEmail(orderId) {
-  const order = state.data?.orders?.find(o => o.id === orderId);
-  if (!order?.client) {
-    showAppMessage("Pedido sem cliente", "error");
-    return;
-  }
-
-  const invoice = getInvoiceForOrder(orderId);
-  if (!invoice?.danfe_url) {
-    showAppMessage("DANFE nao disponivel", "error");
-    return;
-  }
-
-  // TODO: Chamar Edge Function para enviar via Brevo
-  showAppMessage("DANFE será enviado por email em breve...", "info");
-
-  // Simular
-  setTimeout(() => {
-    flashActionMessage(`DANFE enviado para ${order.client}@example.com ✉️`);
-  }, 1000);
-}
-
 export function renderNFeActions(orderId) {
   const order = state.data?.orders?.find(o => o.id === orderId);
   const invoice = getInvoiceForOrder(orderId);
@@ -141,9 +119,6 @@ export function renderNFeActions(orderId) {
     <div class="nfe-actions">
       <button class="icon-btn" onclick="downloadDANFE('${orderId}')" title="Baixar DANFE">
         📄 DANFE
-      </button>
-      <button class="icon-btn" onclick="sendDANFEByEmail('${orderId}')" title="Enviar por email">
-        ✉️ Email
       </button>
       <button class="icon-btn" onclick="viewNFeDetails('${orderId}')" title="Ver detalhes">
         ℹ️ Detalhes

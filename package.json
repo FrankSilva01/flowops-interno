@@ -1,0 +1,13 @@
+{
+  "name": "flowops-saas",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "check": "node scripts/check-js.mjs",
+    "test:e2e": "playwright test",
+    "test": "npm run check && npm run test:e2e"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.54.1"
+  }
+}

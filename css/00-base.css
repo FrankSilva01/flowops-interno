@@ -102,6 +102,17 @@ select {
   color: #16803c;
 }
 
+.login-legal-links {
+  margin: 2px 0 0;
+  text-align: center;
+  color: #667085;
+  font-size: 11px;
+}
+
+.login-legal-links a {
+  color: #0f766e;
+}
+
 .eyebrow {
   margin: 0 0 12px;
   color: var(--teal);

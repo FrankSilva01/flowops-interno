@@ -50,12 +50,13 @@ export async function renderFiscalDocs() {
               <th>Descrição</th>
               <th>Valor</th>
               <th>Status</th>
+              <th>Arquivo</th>
               <th></th>
             </tr>
           </thead>
           <tbody id="fiscalDocsTable">
             ${docs.length === 0 ?
-              `<tr><td colspan="7" class="empty-state">Nenhum documento registrado.</td></tr>` :
+              `<tr><td colspan="8" class="empty-state">Nenhum documento registrado.</td></tr>` :
               docs.map(doc => `
                 <tr>
                   <td>${formatDate(doc.date)}</td>
@@ -64,6 +65,7 @@ export async function renderFiscalDocs() {
                   <td>${html(doc.description || "-")}</td>
                   <td>${money.format(doc.value)}</td>
                   <td><span class="status-badge status-${doc.status.toLowerCase()}">${html(doc.status)}</span></td>
+                  <td>${doc.storage_path ? `<button class="secondary-btn compact" type="button" data-fiscal-download="${html(doc.id)}">${html(doc.file_name || "Baixar")}</button>` : "-"}</td>
                   <td>
                     <button class="icon-btn" type="button" data-fiscal-delete="${doc.id}" title="Deletar">🗑️</button>
                   </td>
@@ -88,6 +90,22 @@ export async function renderFiscalDocs() {
       }
     });
   });
+  document.querySelectorAll('[data-fiscal-download]').forEach(btn => {
+    btn.addEventListener("click", () => downloadFiscalDocument(btn.dataset.fiscalDownload));
+  });
+}
+
+async function downloadFiscalDocument(docId) {
+  const doc = state.fiscalDocuments.find(item => item.id === docId);
+  if (!doc?.storage_path || !state.supabase) return;
+  const { data, error } = await state.supabase.storage
+    .from("fiscal-documents")
+    .createSignedUrl(doc.storage_path, 120, { download: doc.file_name || true });
+  if (error || !data?.signedUrl) {
+    showAppMessage("Arquivo indisponível", error?.message || "Não foi possível gerar o link temporário.", "error");
+    return;
+  }
+  window.open(data.signedUrl, "_blank", "noopener");
 }
 
 export async function renderDAS() {
@@ -530,13 +548,50 @@ async function saveFiscalDocumentFromForm(form) {
     document_number: formData.get("document_number"),
     category: formData.get("category"),
     payment_method: formData.get("payment_method"),
+    order_id: String(formData.get("order_id") || "").trim(),
+    product_id: String(formData.get("product_id") || "").trim(),
+    supplier: String(formData.get("supplier") || "").trim(),
     created_at: new Date().toISOString(),
   };
 
-  await saveFiscalDocument(doc);
-  showAppMessage("Documento Salvo", "Documento fiscal registrado com sucesso!", "success");
+  const file = formData.get("fiscal_file");
+  let uploadedPath = "";
+  try {
+    if (file instanceof File && file.size > 0) {
+      Object.assign(doc, await uploadFiscalFile(file, doc.id));
+      uploadedPath = doc.storage_path;
+    }
+    const saved = await saveFiscalDocument(doc);
+    if (!saved) throw new Error("Não foi possível registrar os metadados do documento.");
+  } catch (error) {
+    if (uploadedPath && state.supabase) {
+      await state.supabase.storage.from("fiscal-documents").remove([uploadedPath]).catch(() => {});
+    }
+    showAppMessage("Falha ao guardar documento", error.message || String(error), "error");
+    return;
+  }
   form.reset();
   await renderFiscalDocs();
+}
+
+async function uploadFiscalFile(file, documentId) {
+  if (!state.supabase || !state.organizationId) throw new Error("Sessão ou empresa não identificada.");
+  const allowedTypes = new Set(["application/pdf", "application/xml", "text/xml"]);
+  const extension = file.name.split(".").pop()?.toLowerCase();
+  if (!allowedTypes.has(file.type) && !["pdf", "xml"].includes(extension)) {
+    throw new Error("Envie apenas arquivos XML ou PDF.");
+  }
+  if (file.size > 20 * 1024 * 1024) throw new Error("O arquivo excede o limite de 20 MB.");
+  const safeName = file.name.normalize("NFKD").replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || `documento.${extension}`;
+  const path = `${state.organizationId}/${documentId}/${crypto.randomUUID()}-${safeName}`;
+  const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
+  const checksum = [...new Uint8Array(digest)].map(value => value.toString(16).padStart(2, "0")).join("");
+  const { error } = await state.supabase.storage.from("fiscal-documents").upload(path, file, {
+    contentType: file.type || (extension === "pdf" ? "application/pdf" : "application/xml"),
+    upsert: false,
+  });
+  if (error) throw error;
+  return { storage_path: path, file_name: file.name, mime_type: file.type || null, size_bytes: file.size, checksum_sha256: checksum };
 }
 
 async function generateFiscalReport() {

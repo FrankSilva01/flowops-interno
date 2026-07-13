@@ -38,9 +38,8 @@ export function html(body: string, init: ResponseInit = {}) {
 }
 
 export function adminClient() {
-  // service_role e usado nas funcoes de marketplace para renovar tokens,
-  // gravar logs e sincronizar dados. Cada endpoint valida usuario/empresa
-  // antes de usar consultas sensiveis, e payloads sao redigidos antes do log.
+  // service_role is limited to server-side integration work after access checks.
+  // Sensitive provider payloads must be redacted before they reach audit logs.
   const url = Deno.env.get("SUPABASE_URL");
   const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !key) throw new Error("SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY ausentes.");
