@@ -550,6 +550,7 @@ export async function saveOrder(event) {
   const nextOrderId = existingId || nextId("ENC", state.data.orders);
   const item = {
     id: nextOrderId,
+    createdAt: previous?.createdAt || new Date().toISOString(),
     orderCode: previous?.orderCode || nextOrderCode(),
     marketplaceOrderCode: form.get("marketplaceOrderCode").trim(),
     quantity: Math.max(Number(form.get("quantity") || 1), 1),
@@ -630,6 +631,7 @@ export async function saveOrderFromDialog(event) {
   if (!item) return;
   const previous = structuredClone(item);
   Object.assign(item, {
+    createdAt: item.createdAt || item.created_at || new Date().toISOString(),
     description: String(form.get("description") || "").trim(),
     client: String(form.get("client") || "").trim(),
     marketplaceOrderCode: String(form.get("marketplaceOrderCode") || "").trim(),

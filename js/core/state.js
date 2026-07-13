@@ -39,6 +39,7 @@ export const SUBSCRIPTION_DEFAULT_GRACE_DAYS = 5;
 export function order(id, description, material, deliveryDate, charged, received, status, notes = "") {
   return {
     id,
+    createdAt: "",
     quantity: 1,
     client: "",
     description,

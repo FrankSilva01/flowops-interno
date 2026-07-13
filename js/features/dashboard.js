@@ -544,8 +544,9 @@ export function renderTopProducts() {
   const days = state.topProductsPeriod === "all" ? null : Number(state.topProductsPeriod || 30);
   const cutoff = days ? Date.now() - days * 86400000 : 0;
   const rows = state.data.orders.filter((item) => {
-    if (!(item.status === "Entregue" || Number(item.received || 0) > 0)) return false;
-    const date = new Date(item.deliveryDate || item.createdAt || 0).getTime();
+    if (item.quoteStage && item.quoteStage !== "Convertido em encomenda") return false;
+    if (Number(item.charged || 0) <= 0) return false;
+    const date = new Date(item.createdAt || item.created_at || item.orderDate || item.order_date || item.deliveryDate || 0).getTime();
     return !days || !date || date >= cutoff;
   });
   const grouped = new Map();
@@ -553,7 +554,7 @@ export function renderTopProducts() {
     const key = item.description || "Produto";
     const current = grouped.get(key) || { title: key, quantity: 0, revenue: 0, origin: getMarketplaceLabel(item) };
     current.quantity += Number(item.quantity || 1);
-    current.revenue += Number(item.received || item.charged || 0);
+    current.revenue += Number(item.charged || item.received || 0);
     grouped.set(key, current);
   });
   const top = [...grouped.values()].sort((a, b) => b.quantity - a.quantity || b.revenue - a.revenue).slice(0, 10);
