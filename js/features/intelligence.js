@@ -151,7 +151,6 @@ export function buildListingXRay(listing) {
   const intentScore = computeIntentScore(listing, analytics, sales);
   const priceSuggestion = computePriceSuggestion(listing, analytics, profitability);
 
-  // Histórico de preços (simulado por enquanto - será preenchido pela API)
   const priceHistory = buildPriceHistoryData(listing);
 
   return {
@@ -178,34 +177,11 @@ export function buildListingXRay(listing) {
   };
 }
 
-// Dados de histórico de preços
 function buildPriceHistoryData(listing) {
-  // Dados simulados - será preenchido pela API real
-  // Format: { date, oldPrice, newPrice, changePercent, salesBefore, salesAfter, revenueImpact }
   return {
-    changes: [
-      {
-        date: "2026-07-08",
-        oldPrice: 150.00,
-        newPrice: 139.90,
-        changePercent: -6.73,
-        salesWeekBefore: 8,
-        salesWeekAfter: 12,
-        conversionsWeekBefore: 2.5,
-        conversionsWeekAfter: 3.2
-      },
-      {
-        date: "2026-06-20",
-        oldPrice: 169.90,
-        newPrice: 150.00,
-        changePercent: -11.77,
-        salesWeekBefore: 5,
-        salesWeekAfter: 8,
-        conversionsWeekBefore: 1.8,
-        conversionsWeekAfter: 2.5
-      }
-    ],
-    recentChange: null // null = sem mudanças recentes, ou últimas mudanças
+    changes: [],
+    recentChange: null,
+    source: "not_connected"
   };
 }
 

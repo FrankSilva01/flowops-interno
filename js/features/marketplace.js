@@ -355,10 +355,12 @@ export function renderMarketplaceApiLog(item) {
         ${item.external_item_id ? `<div><dt>Anúncio</dt><dd>${html(item.external_item_id)}</dd></div>` : ""}
         ${item.external_order_id ? `<div><dt>Venda</dt><dd>${html(item.external_order_id)}</dd></div>` : ""}
         ${internalCode ? `<div><dt>Encomenda</dt><dd>${html(internalCode)}</dd></div>` : ""}
+        ${item.organization_id ? `<div><dt>Empresa</dt><dd>${html(String(item.organization_id).slice(0, 8))}</dd></div>` : ""}
+        ${item.raw_payload?.source ? `<div><dt>Fonte</dt><dd>${html(item.raw_payload.source)}</dd></div>` : ""}
         <div><dt>Usuário</dt><dd>${html(item.actor_email || "Sistema")}</dd></div>
       </dl>
       ${changes.length ? `<div class="api-log-changes">${changes.map((change) => `<span>${html(change)}</span>`).join("")}</div>` : ""}
-      ${item.status === "error" && item.raw_payload?.error ? `<div class="api-error-detail">${html(item.raw_payload.error)}</div>` : ""}
+      ${item.status === "error" && (item.raw_payload?.error || item.raw_payload?.hint || item.raw_payload?.code) ? `<div class="api-error-detail">${html([item.raw_payload.error, item.raw_payload.hint, item.raw_payload.code].filter(Boolean).join(" | "))}</div>` : ""}
     </article>
   `;
 }
@@ -373,6 +375,7 @@ export function marketplaceLogLabel(kind) {
     "create-order": "order-import",
     "token-refresh": "token",
     "oauth-connect": "oauth",
+    "supabase-load": "supabase",
     "document-label": "etiqueta",
     "document-declaration": "declaracao"
   }[kind] || kind || "api";
@@ -384,6 +387,7 @@ export function marketplaceLogKindClass(kind) {
   if (kind === "edit-listing") return "edit";
   if (["order-import", "create-order"].includes(kind)) return "sale";
   if (kind === "token-refresh") return "token";
+  if (kind === "supabase-load") return "neutral";
   if (["document-label", "document-declaration"].includes(kind)) return "document";
   return "neutral";
 }
@@ -424,12 +428,37 @@ export async function loadMarketplaces() {
     state.supabase.from("marketplace_accounts").select("marketplace,seller_name,external_seller_id,token_expires_at,updated_at,raw_payload").eq("organization_id", state.organizationId).order("updated_at", { ascending: false }),
     state.supabase.from("marketplace_listings").select("marketplace,external_id,title,sku,price,status,permalink,thumbnail_url,raw_payload,updated_at").eq("organization_id", state.organizationId).order("updated_at", { ascending: false }).limit(100),
     state.supabase.from("marketplace_order_links").select("marketplace,external_order_id,internal_order_id,raw_payload,created_at,updated_at").eq("organization_id", state.organizationId).order("created_at", { ascending: false }).limit(100),
-    state.supabase.from("marketplace_sync_log").select("id,marketplace,kind,status,message,external_item_id,external_order_id,internal_order_id,actor_email,raw_payload,created_at").eq("organization_id", state.organizationId).order("created_at", { ascending: false }).limit(200)
+    state.supabase.from("marketplace_sync_log").select("id,organization_id,marketplace,kind,status,message,external_item_id,external_order_id,internal_order_id,actor_email,raw_payload,created_at").eq("organization_id", state.organizationId).order("created_at", { ascending: false }).limit(200)
   ]);
+  const loadErrors = [
+    ["marketplace_accounts", accounts.error],
+    ["marketplace_listings", listings.error],
+    ["marketplace_order_links", sales.error],
+    ["marketplace_sync_log", logs.error]
+  ].filter(([, error]) => error);
   state.marketplaceAccounts = accounts.error ? [] : accounts.data || [];
   state.marketplaceListings = listings.error ? [] : listings.data || [];
   state.marketplaceSales = sales.error ? [] : sales.data || [];
-  state.marketplaceLogs = logs.error ? [] : logs.data || [];
+  state.marketplaceLogs = [
+    ...(logs.error ? [] : logs.data || []),
+    ...loadErrors.map(([table, error]) => ({
+      id: `local-${table}-${Date.now()}`,
+      organization_id: state.organizationId,
+      marketplace: "Supabase",
+      kind: "supabase-load",
+      status: "error",
+      message: `Falha ao consultar ${table}. Verifique RLS, vinculo do usuario e policies.`,
+      actor_email: state.activeUserEmail || "Usuario atual",
+      raw_payload: {
+        source: "client",
+        table,
+        error: error.message,
+        code: error.code,
+        hint: error.hint
+      },
+      created_at: new Date().toISOString()
+    }))
+  ];
 }
 
 export async function loadAndRenderMarketplaces() {
