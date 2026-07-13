@@ -116,6 +116,13 @@ Deno.serve(async (req) => {
       return json({ ok: true, ...summary });
     }
 
+    if (action === "fee-preview") {
+      if (req.method !== "POST") return json({ ok: false, error: "Use POST para simular taxas." }, { status: 405 });
+      const body = await req.json();
+      const preview = await previewMlListingFees(body, account);
+      return json({ ok: true, ...preview });
+    }
+
     if (action === "fee-calculator-full") {
       const force = url.searchParams.get("force") === "true";
       const summary = await syncFeeCalculatorFull(account, activeOrganizationId, actorEmail, force);
@@ -497,6 +504,13 @@ async function uploadMlPicture(pic: unknown, account: Record<string, any>, index
   return { source: secureUrl };
 }
 
+function formatMlApiError(payload: Record<string, any>) {
+  const causes = Array.isArray(payload.cause)
+    ? payload.cause.map((item: Record<string, any>) => item.message || item.code).filter(Boolean)
+    : [];
+  return causes.length ? causes.join(" ") : payload.message || payload.error || "Falha ao publicar no Mercado Livre.";
+}
+
 async function createMlListing(body: Record<string, any>, account: Record<string, any>, actorEmail: string) {
   if (!body.title) throw new Error("Titulo obrigatorio para publicar no Mercado Livre.");
   if (!body.category_id) throw new Error("Categoria ML obrigatoria.");
@@ -572,7 +586,7 @@ async function createMlListing(body: Record<string, any>, account: Record<string
   });
   const item = await response.json();
   if (!response.ok) {
-    throw new Error(item.message || JSON.stringify(item.cause || item));
+    throw new Error(formatMlApiError(item));
   }
 
   if (body.description) {
@@ -909,6 +923,43 @@ async function getVisitsTimeWindow(itemId: string, account: Record<string, any>)
 // pricing.js). Usa o endpoint oficial de simulacao de precos do ML
 // (/sites/MLB/listing_prices) - a fonte real da comissao (% + taxa fixa)
 // pro preco/categoria/tipo de anuncio atual, em vez de uma tabela estimada.
+
+async function previewMlListingFees(body: Record<string, any>, account: Record<string, any>) {
+  const price = Number(body.price || 0);
+  const listingTypeId = String(body.listing_type_id || "gold_special");
+  const categoryId = String(body.category_id || "").trim();
+  if (price <= 0) throw new Error("Preco obrigatorio para simular taxas do Mercado Livre.");
+  if (!categoryId) throw new Error("Categoria obrigatoria para simular taxas do Mercado Livre.");
+
+  const params = new URLSearchParams({
+    price: String(price),
+    listing_type_id: listingTypeId,
+    category_id: categoryId,
+  });
+  const response = await fetch(`https://api.mercadolibre.com/sites/MLB/listing_prices?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${account.access_token}` },
+  });
+  const payload = await response.json();
+  const priceInfo = Array.isArray(payload) ? payload[0] : payload;
+  if (!response.ok || !priceInfo) throw new Error(`Falha ao simular taxas do Mercado Livre: ${JSON.stringify(payload)}`);
+
+  const saleFeeAmount = Number(priceInfo.sale_fee_amount || 0);
+  const feeDetails = priceInfo.sale_fee_details || {};
+  const fixedFee = Number(feeDetails.fixed_fee || 0);
+  const percentageFee = feeDetails.percentage_fee != null
+    ? Number(feeDetails.percentage_fee)
+    : (price > 0 ? ((saleFeeAmount - fixedFee) / price) * 100 : 0);
+
+  return {
+    price,
+    listing_type_id: listingTypeId,
+    category_id: categoryId,
+    real_fee_pct: percentageFee,
+    real_fee_fixed: fixedFee,
+    sale_fee_amount: saleFeeAmount,
+    raw_payload: priceInfo,
+  };
+}
 
 async function getListingFeeSyncSnapshot(itemId: string, account: Record<string, any>, force: boolean) {
   const supabase = adminClient();

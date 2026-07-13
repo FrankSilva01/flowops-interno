@@ -12,8 +12,12 @@ import {
 } from "./marketplace.js";
 
 const CREATABLE_MARKETPLACES = ["mercado-livre", "shopee", "amazon", "tiktok-shop"];
+const ML_FEE_PREVIEW_URL = "https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-sync?marketplace=ml&action=fee-preview";
 let productUploadedImages = [];
 let currentProductStep = 1;
+let productMlFeePreview = null;
+let productMlFeePreviewKey = "";
+let productMlFeePreviewRequestId = 0;
 
 const DEFAULT_FINANCIAL_SETTINGS = {
   marketplace_fee_rules: {
@@ -188,10 +192,14 @@ export function openProductQuickDialog(productId = "") {
   form.elements.name.value = product?.name || "";
   form.elements.category.value = product?.category || "";
   form.elements.costPrice.value = product?.cost_price ?? "";
+  form.elements.weightKg.value = product?.weight_kg ?? "";
   form.elements.description.value = product?.description || "";
   form.elements.sku.value = product?.sku || "";
   form.dataset.skuTouched = product ? "true" : "false";
   productUploadedImages = [];
+  productMlFeePreview = null;
+  productMlFeePreviewKey = "";
+  productMlFeePreviewRequestId++;
   byId("productImageStatus").textContent = "Selecionar, arrastar ou soltar imagens aqui";
 
   const linkedListing = product ? state.productListings.find((item) => item.product_id === product.id) : null;
@@ -290,14 +298,15 @@ async function addProductImageFiles(files) {
 // Previa de custos/lucro no proprio cadastro rapido - reaproveita a mesma
 // matematica usada na rentabilidade de anuncios/vendas (computeMarginBreakdown).
 // Recurso de analise: so aparece para planos com acesso a Inteligencia Comercial.
-// Card com o breakdown visual tipo funil (preco -> taxas -> imposto -> frete/
-// embalagem -> custo -> lucro). Reaproveitado na previa de cadastro de produto
+// Card com o breakdown visual tipo funil (preco -> taxas -> imposto -> frete
+// -> custo -> lucro). Reaproveitado na previa de cadastro de produto
 // e na calculadora de preco.
 function renderPriceBreakdownCard(label, breakdown, note = "") {
-  // CRÍTICO: se frete for null (não calculado), mostrar aviso
+  // Frete null/undefined significa pendente; frete 0 e um valor valido retornado/calculado.
   const shippingDisplay = breakdown.shipping !== null
     ? `-${money.format(breakdown.shipping)}`
-    : `<span title="Frete não foi calculado - o anúncio tem frete grátis" style="color: #ff6b6b; font-weight: 600;">⚠️ Não calculado</span>`;
+    : `<span title="Frete ainda não foi calculado" style="color: #ff6b6b; font-weight: 600;">⚠️ Não calculado</span>`;
+  const totalLabel = breakdown.shipping === null ? "Sobra estimada sem frete" : "Sobra líquida estimada";
 
   return `
     <article class="profit-preview-card">
@@ -309,12 +318,60 @@ function renderPriceBreakdownCard(label, breakdown, note = "") {
         ${breakdown.fixedFee > 0 ? `<div><dt>Taxa fixa (item de baixo valor)</dt><dd>-${money.format(breakdown.fixedFee)}</dd></div>` : ""}
         <div><dt>Imposto (${breakdown.taxPct}%)</dt><dd>-${money.format(breakdown.taxAmount)}</dd></div>
         <div><dt>Frete</dt><dd>${shippingDisplay}</dd></div>
-        <div><dt>Embalagem</dt><dd>-${money.format(breakdown.packaging)}</dd></div>
-        <div class="profit-preview-total"><dt>Sobra líquida estimada</dt><dd>${money.format(breakdown.netProfit)} (${breakdown.marginPct.toFixed(1)}%)</dd></div>
+        <div class="profit-preview-total"><dt>${totalLabel}</dt><dd>${money.format(breakdown.netProfit)} (${breakdown.marginPct.toFixed(1)}%)</dd></div>
       </dl>
       ${note ? `<small class="form-hint">${html(note)}</small>` : ""}
     </article>
   `;
+}
+
+function getMlFeePreviewKey(data) {
+  const price = number(data.get("price"));
+  const categoryId = String(data.get("mlCategoryId") || "").trim();
+  const listingType = String(data.get("listingType") || "classic");
+  if (price <= 0 || !categoryId || !isMarketplaceAccountConnected("mercado-livre")) return "";
+  return `${price}|${categoryId}|${listingType}`;
+}
+
+async function loadMlFeePreviewForProduct(data, key) {
+  const requestId = ++productMlFeePreviewRequestId;
+  try {
+    const listingType = String(data.get("listingType") || "classic");
+    const result = await marketplaceRequest(ML_FEE_PREVIEW_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        price: number(data.get("price")),
+        category_id: String(data.get("mlCategoryId") || "").trim(),
+        listing_type_id: listingType === "premium" ? "gold_pro" : "gold_special",
+      }),
+    });
+    if (requestId !== productMlFeePreviewRequestId) return;
+    productMlFeePreviewKey = key;
+    productMlFeePreview = {
+      pct: Number(result.real_fee_pct || 0),
+      fixedFee: Number(result.real_fee_fixed || 0),
+    };
+    renderProductProfitPreview();
+  } catch (error) {
+    if (requestId !== productMlFeePreviewRequestId) return;
+    productMlFeePreviewKey = key;
+    productMlFeePreview = { error: error.message || "Falha ao simular taxa do Mercado Livre." };
+    renderProductProfitPreview();
+  }
+}
+
+function ensureMlFeePreview(data) {
+  const key = getMlFeePreviewKey(data);
+  if (!key) {
+    productMlFeePreviewKey = "";
+    productMlFeePreview = null;
+    return { key: "", preview: null, loading: false };
+  }
+  if (productMlFeePreviewKey === key) return { key, preview: productMlFeePreview, loading: false };
+  productMlFeePreviewKey = key;
+  productMlFeePreview = null;
+  loadMlFeePreviewForProduct(data, key);
+  return { key, preview: null, loading: true };
 }
 
 export function renderProductProfitPreview() {
@@ -346,15 +403,15 @@ export function renderProductProfitPreview() {
       const breakdown = computeMarginBreakdown({
         cost, revenue: price || Number(linkedListing.price || 0),
         feePct: feeInfo.pct, fixedFee: feeInfo.fixedFee, taxPct: settings.default_tax_pct,
-        shipping: feeInfo.shipping, packaging: settings.default_packaging_cost,
+        shipping: feeInfo.shipping, packaging: 0,
       });
       let note = feeInfo.real
         ? "Taxa e frete sincronizados da API do Mercado Livre."
         : "Estimativa por tabela - sincronize as taxas em Marketplace > Inteligência para o valor real.";
-      // CRÍTICO: Alertar se free_shipping está ativo mas frete não foi calculado
+      // Frete 0 e valido; so trate null/undefined como pendente.
       const hasFreShipping = linkedListing.shipping?.free_shipping || linkedListing.raw_payload?.shipping?.free_shipping;
-      if (hasFreShipping && (feeInfo.shipping === 0 || feeInfo.shipping === null || feeInfo.shipping === undefined)) {
-        note = "⚠️ Frete não calculado — o anúncio tem frete grátis mas não conseguimos determinar o custo. Informe o peso do produto para uma estimativa.";
+      if (feeInfo.notCalculated || (hasFreShipping && (feeInfo.shipping === null || feeInfo.shipping === undefined))) {
+        note = "⚠️ Frete não calculado — o anúncio tem frete grátis, mas não recebemos o custo do Mercado Livre. Informe o peso para estimar ou sincronize as taxas.";
       }
       target.innerHTML = renderPriceBreakdownCard(`${marketplaceDisplayName(linkedMarketplace)} (anúncio vinculado)`, breakdown, note);
       return;
@@ -366,17 +423,31 @@ export function renderProductProfitPreview() {
   const settings = getFinancialSettings();
   const checkedChannels = CREATABLE_MARKETPLACES.filter((channel) => form.elements[MARKETPLACE_CHECKBOX_NAMES[channel]]?.checked);
   const previewChannels = checkedChannels.length ? checkedChannels : ["direct"];
+  const mlPreview = previewChannels.includes("mercado-livre") ? ensureMlFeePreview(data) : { preview: null, loading: false };
   // Sem peso cadastrado e sem anuncio real ainda, o frete cai no default (as
   // vezes R$0) - deixa isso explicito em vez de parecer "frete gratis calculado".
   const shippingNote = weight > 0 ? "" : "Frete estimado sem peso cadastrado — informe o peso do produto para uma estimativa mais próxima da real.";
   target.innerHTML = previewChannels.map((channel) => {
-    const feePct = resolveChannelFeePct(channel, channel === "mercado-livre" ? listingType : "classic");
+    let feePct = resolveChannelFeePct(channel, channel === "mercado-livre" ? listingType : "classic");
+    let fixedFee = resolveFixedFee(channel, price);
+    let note = shippingNote;
+    if (channel === "mercado-livre") {
+      if (mlPreview.preview?.pct != null) {
+        feePct = mlPreview.preview.pct;
+        fixedFee = mlPreview.preview.fixedFee;
+        note = [shippingNote, "Taxa do Mercado Livre simulada pela API para preço, categoria e tipo de anúncio."].filter(Boolean).join(" ");
+      } else if (mlPreview.preview?.error) {
+        note = [shippingNote, `Não foi possível simular a taxa do Mercado Livre: ${mlPreview.preview.error}`].filter(Boolean).join(" ");
+      } else if (mlPreview.key) {
+        note = [shippingNote, "Simulando taxa do Mercado Livre..."].filter(Boolean).join(" ");
+      }
+    }
     const breakdown = computeMarginBreakdown({
-      cost, revenue: price, feePct, fixedFee: resolveFixedFee(channel, price), taxPct: settings.default_tax_pct,
-      shipping: resolveShippingCost(weight, null), packaging: settings.default_packaging_cost,
+      cost, revenue: price, feePct, fixedFee, taxPct: settings.default_tax_pct,
+      shipping: resolveShippingCost(weight, null), packaging: 0,
     });
     const label = channel === "direct" ? "Venda direta (estimativa)" : marketplaceDisplayName(channel);
-    return renderPriceBreakdownCard(label, breakdown, shippingNote);
+    return renderPriceBreakdownCard(label, breakdown, note);
   }).join("");
 }
 
@@ -429,6 +500,15 @@ function buildMlProductAttributes(data, name) {
   ];
 }
 
+function validateMlProductTitle(name) {
+  const clean = String(name || "").trim().replace(/\s+/g, " ");
+  const words = clean.split(" ").filter(Boolean);
+  if (clean.length < 10 || words.length < 2) {
+    return "Para publicar no Mercado Livre, use um nome mais completo com marca, modelo ou categoria. Ex: Miniatura Deadpool 15cm Resina.";
+  }
+  return "";
+}
+
 export async function saveProduct(event) {
   event.preventDefault();
   if (!ensureCanEdit()) return;
@@ -443,8 +523,14 @@ export async function saveProduct(event) {
   const sku = String(data.get("sku") || "").trim() || nextProductSku(category, name);
   const price = number(data.get("price"));
   const stock = Math.max(Number(data.get("stock") || 1), 0);
+  const rawCost = String(data.get("costPrice") || "").trim();
   const listingValue = String(data.get("listingLink") || "");
   const selectedChannels = CREATABLE_MARKETPLACES.filter((channel) => Boolean(data.get(MARKETPLACE_CHECKBOX_NAMES[channel])));
+  const mlTitleError = selectedChannels.includes("mercado-livre") ? validateMlProductTitle(name) : "";
+  if (mlTitleError) {
+    message.textContent = mlTitleError;
+    return;
+  }
   if (selectedChannels.includes("mercado-livre") && !isMarketplaceAccountConnected("mercado-livre")) {
     message.textContent = "Conecte o Mercado Livre em Integrações antes de publicar. Para salvar apenas no catálogo, desmarque Mercado Livre.";
     return;
@@ -464,7 +550,8 @@ export async function saveProduct(event) {
     sku,
     name,
     category,
-    cost_price: number(data.get("costPrice")),
+    cost_price: rawCost ? number(rawCost) : null,
+    weight_kg: number(data.get("weightKg")) || null,
     description: String(data.get("description") || "").trim() || null,
     updated_at: new Date().toISOString(),
   };
@@ -652,7 +739,7 @@ export function resolveListingFeeInfo(listing) {
       fixedFee: Number(realSync.real_fee_fixed || 0),
       shipping: finalShipping,
       real: true,
-      notCalculated: isFreeShipping && shippingCost === null,
+      notCalculated: isFreeShipping && (shippingCost === null || shippingCost === undefined),
     };
   }
   const tier = channel === "mercado-livre" ? classifyMlListingType(listing.raw_payload || {}) : "classic";
@@ -726,7 +813,7 @@ export function getListingProfitability(listing) {
     fixedFee: feeInfo.fixedFee,
     taxPct: settings.default_tax_pct,
     shipping: feeInfo.shipping,
-    packaging: settings.default_packaging_cost,
+    packaging: 0,
   });
   return { hasCost: true, product, ...breakdown, real: feeInfo.real };
 }
@@ -745,7 +832,7 @@ export function getOrderProfitability(order) {
     fixedFee: feeInfo.fixedFee,
     taxPct: settings.default_tax_pct,
     shipping: resolveShippingCost(product.weight_kg, settings.default_shipping_cost),
-    packaging: settings.default_packaging_cost,
+    packaging: 0,
   });
   return { hasCost: true, product, ...breakdown, real: feeInfo.real };
 }
@@ -868,7 +955,6 @@ export function renderPriceCalculator() {
   if (form.dataset.initialized !== "true") {
     form.elements.taxPct.value = settings.default_tax_pct;
     form.elements.shipping.value = settings.default_shipping_cost;
-    form.elements.packaging.value = settings.default_packaging_cost;
     form.dataset.initialized = "true";
   }
   const calcListingTypeEl = byId("priceCalculatorListingType");
@@ -895,7 +981,7 @@ export function updatePriceCalculatorResult() {
     fixedFeeThreshold: fixedFeeRule.threshold,
     taxPct: number(data.get("taxPct")),
     shipping: resolveShippingCost(number(data.get("weightKg")), data.get("shipping")),
-    packaging: number(data.get("packaging")),
+    packaging: 0,
   };
   const settings = getFinancialSettings();
   const output = buildPriceCalculatorResult(inputs);
@@ -1509,7 +1595,7 @@ export function renderListingProfitabilityTable() {
     const feesTotal = profitability.feeAmount + (profitability.fixedFee || 0) + profitability.taxAmount + profitability.shipping + profitability.packaging;
     const feeBreakdown = `Comissão ${profitability.feePct.toFixed(1)}%: ${money.format(profitability.feeAmount)}`
       + (profitability.fixedFee > 0 ? ` + Taxa fixa: ${money.format(profitability.fixedFee)}` : "")
-      + ` + Imposto: ${money.format(profitability.taxAmount)} + Frete/embalagem: ${money.format(profitability.shipping + profitability.packaging)}`;
+      + ` + Imposto: ${money.format(profitability.taxAmount)} + Frete: ${money.format(profitability.shipping)}`;
     const profitColor = profitability.netProfit >= 0 ? "var(--green)" : "var(--red)";
     const feeSourceTag = profitability.real
       ? `<span class="badge done" title="Taxa sincronizada da API do Mercado Livre">real</span>`
@@ -1569,7 +1655,6 @@ export function openPriceCalculatorForListing(marketplace, externalId) {
   form.elements.listingType.value = channel === "mercado-livre" ? classifyMlListingType(listing.raw_payload || {}) : "classic";
   form.elements.taxPct.value = profitability.taxPct;
   form.elements.shipping.value = profitability.shipping;
-  form.elements.packaging.value = profitability.packaging;
   form.elements.targetMargin.value = "";
   form.dataset.initialized = "true";
   const calcListingTypeEl = byId("priceCalculatorListingType");
@@ -1596,7 +1681,6 @@ export function openFinancialSettingsDialog() {
   form.elements.tiktokFee.value = rules.tiktok_shop?.default ?? 7;
   form.elements.taxPct.value = settings.default_tax_pct;
   form.elements.shippingCost.value = settings.default_shipping_cost;
-  form.elements.packagingCost.value = settings.default_packaging_cost;
   form.elements.shippingTier1.value = tiers[0]?.cost ?? 15;
   form.elements.shippingTier2.value = tiers[1]?.cost ?? 20;
   form.elements.shippingTier3.value = tiers[2]?.cost ?? 30;
@@ -1625,7 +1709,7 @@ export async function saveFinancialSettings(event) {
     },
     default_tax_pct: number(data.get("taxPct")),
     default_shipping_cost: number(data.get("shippingCost")),
-    default_packaging_cost: number(data.get("packagingCost")),
+    default_packaging_cost: 0,
     shipping_weight_tiers: [
       { max_kg: 0.3, cost: number(data.get("shippingTier1")) },
       { max_kg: 1, cost: number(data.get("shippingTier2")) },
@@ -1775,11 +1859,6 @@ function validateProductStep(step) {
 
     case 2:
       // Passo 2: Validar Preços
-      if (!form.elements.costPrice.value) {
-        showAppMessage("Campo obrigatório", "Por favor, preencha o custo do produto.", "error");
-        form.elements.costPrice.focus();
-        return false;
-      }
       if (!form.elements.price.value) {
         showAppMessage("Campo obrigatório", "Por favor, preencha o preço de venda.", "error");
         form.elements.price.focus();
@@ -1796,6 +1875,14 @@ function validateProductStep(step) {
           "error"
         );
         return false;
+      }
+      if (form.elements.publish_ml.checked) {
+        const titleError = validateMlProductTitle(form.elements.name.value);
+        if (titleError) {
+          showAppMessage("Nome incompleto para Mercado Livre", titleError, "error");
+          form.elements.name.focus();
+          return false;
+        }
       }
       if (form.elements.publish_ml.checked && !form.elements.mlCategoryId.value.trim()) {
         showAppMessage("Campo obrigatório", "Por favor, selecione a categoria do Mercado Livre.", "error");
