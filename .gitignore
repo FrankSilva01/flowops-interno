@@ -1,5 +1,6 @@
 node_modules/
 playwright-report/
+.playwright-cli/
 test-results/
 server*.log
 supabase/.temp/

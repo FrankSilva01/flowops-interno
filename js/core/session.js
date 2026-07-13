@@ -430,7 +430,10 @@ export function setSessionInfo(name, role, mode, canLogout) {
   state.activeUserName = name;
   byId("activeUserName").textContent = name;
   byId("activeUserRole").textContent = role;
-  byId("syncMode").textContent = mode;
+  const syncMode = byId("syncMode");
+  const staging = window.SUPABASE_CONFIG?.ENVIRONMENT === "staging";
+  syncMode.textContent = staging ? "Ambiente de homologacao" : mode;
+  syncMode.hidden = !staging;
   byId("logoutBtn").hidden = !canLogout;
   const avatar = byId("topbarAvatar");
   if (avatar) {

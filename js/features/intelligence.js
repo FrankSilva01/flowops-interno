@@ -1,4 +1,5 @@
 import { state, money } from "../core/state.js";
+import { supabaseFunctionUrl } from "../core/config.js";
 import { byId, html, showAppMessage, flashActionMessage } from "../core/dom.js";
 import { getListingProfitability } from "./pricing.js";
 import { getListingAnalytics } from "./marketplace-analytics.js";
@@ -607,7 +608,7 @@ async function handleXRayAction(action, listing) {
       if (!confirm(`Pausar o anúncio ${listing.title || listing.external_id || "selecionado"}?`)) return;
       try {
         const itemId = listing.external_id || listing.id;
-        await marketplaceRequest(`https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-sync?marketplace=ml&action=edit&item_id=${encodeURIComponent(itemId)}`, {
+        await marketplaceRequest(`${supabaseFunctionUrl("marketplace-sync")}?marketplace=ml&action=edit&item_id=${encodeURIComponent(itemId)}`, {
           method: "POST",
           body: JSON.stringify({ status: "paused" }),
         });

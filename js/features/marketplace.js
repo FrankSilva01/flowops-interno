@@ -1,4 +1,5 @@
 import { state, money, saveData } from "../core/state.js";
+import { supabaseFunctionUrl } from "../core/config.js";
 import {
   byId, html, number, formatDateTime, flashActionMessage, showAppMessage, sanitizeRichHtml,
   renderOperationalSummary,
@@ -12,6 +13,7 @@ import { getTokenAlert } from "./dashboard.js";
 import { renderProfitabilityBadge, renderCommercialIntelligence, getListingProfitability } from "./pricing.js";
 import { renderMarketplaceAnalyticsPanel, getListingAnalytics, computeIntentScore } from "./marketplace-analytics.js";
 import { getProductForSale, renderProductionAssetShortcut } from "./product-assets.js";
+import { buildMarketplaceMigration, migrationTargetFor } from "./marketplace-migration.js";
 
 const MARKETPLACE_CHANNELS = [
   { id: "mercado-livre", label: "Mercado Livre" },
@@ -205,7 +207,7 @@ export function renderMarketplaces() {
             <td>${Number(item.conversion || 0).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%</td>
             <td>${intent ? `<span class="badge ${intent.level.className}" title="${html(intent.level.advice)}">${intent.level.emoji} ${intent.score}</span>` : `<span class="badge neutral" title="Sincronize as métricas para calcular">-</span>`}</td>
             <td><span class="badge ${item.status === "active" ? "done" : "neutral"}">${html(item.status || "-")}</span></td>
-            <td><div class="inline-actions"><button class="secondary-btn" type="button" data-action="marketplace-stats" data-id="${html(item.external_id)}" data-marketplace="${html(item.marketplace || "Mercado Livre")}">Ver</button><button class="secondary-btn" type="button" data-action="marketplace-edit" data-id="${html(item.external_id)}" data-marketplace="${html(item.marketplace || "Mercado Livre")}">Editar</button></div></td>
+            <td><div class="inline-actions"><button class="secondary-btn" type="button" data-action="marketplace-stats" data-id="${html(item.external_id)}" data-marketplace="${html(item.marketplace || "Mercado Livre")}">Ver</button><button class="secondary-btn" type="button" data-action="marketplace-edit" data-id="${html(item.external_id)}" data-marketplace="${html(item.marketplace || "Mercado Livre")}">Editar</button>${["mercado-livre", "shopee"].includes(normalizeMarketplaceChannel(item.marketplace)) ? `<button class="secondary-btn" type="button" data-action="marketplace-migrate" data-id="${html(item.external_id)}" data-marketplace="${html(item.marketplace || "Mercado Livre")}">Replicar</button>` : ""}</div></td>
           </tr>`;
         }).join("")}
         </tbody>
@@ -512,21 +514,10 @@ export function renderStorefrontAdmin() {
 export function updateStorefrontTargetFields() {
   const form = byId("storefrontProductForm");
   if (!form) return;
-  const marketplace = form.elements.marketplace.value;
   const mlFields = byId("storefrontMlFields");
   const shopeeFields = byId("storefrontShopeeFields");
   const tiktokFields = byId("storefrontTiktokFields");
   const amazonFields = byId("storefrontAmazonFields");
-
-  const showMl = form.elements.publish_ml.checked || marketplace === "Mercado Livre";
-  const showShopee = form.elements.publish_shopee.checked || marketplace === "Shopee";
-  const showTiktok = form.elements.publish_tiktok?.checked || marketplace === "tiktok_shop";
-  const showAmazon = form.elements.publish_amazon.checked || marketplace === "Amazon";
-
-  if (mlFields) mlFields.hidden = !showMl;
-  if (shopeeFields) shopeeFields.hidden = !showShopee;
-  if (tiktokFields) tiktokFields.hidden = !showTiktok;
-  if (amazonFields) amazonFields.hidden = !showAmazon;
 
   if (form.elements.publish_ml.checked) form.elements.marketplace.value = "Mercado Livre";
   if (form.elements.publish_shopee.checked && !form.elements.publish_ml.checked) form.elements.marketplace.value = "Shopee";
@@ -534,6 +525,17 @@ export function updateStorefrontTargetFields() {
   if (form.elements.publish_amazon.checked && !form.elements.publish_ml.checked && !form.elements.publish_shopee.checked && !form.elements.publish_tiktok?.checked) {
     form.elements.marketplace.value = "Amazon";
   }
+  const marketplace = form.elements.marketplace.value;
+  const showMl = form.elements.publish_ml.checked || marketplace === "Mercado Livre";
+  const showShopee = form.elements.publish_shopee.checked || marketplace === "Shopee";
+  const showTiktok = form.elements.publish_tiktok?.checked || marketplace === "tiktok_shop";
+  const showAmazon = form.elements.publish_amazon.checked || marketplace === "Amazon";
+
+  if (mlFields) mlFields.hidden = !showMl;
+  if (shopeeFields) shopeeFields.hidden = !showShopee;
+  if (form.elements.ml_category_id) form.elements.ml_category_id.required = form.elements.publish_ml.checked;
+  if (tiktokFields) tiktokFields.hidden = !showTiktok;
+  if (amazonFields) amazonFields.hidden = !showAmazon;
 }
 
 export function storefrontListingImages(item) {
@@ -616,7 +618,7 @@ export async function saveStorefrontProduct(event) {
   form.elements.description_html.value = descriptionHtml;
 
   let mlCategoryId = data.get("ml_category_id");
-  if (!mlCategoryId) {
+  if (data.get("publish_ml") === "on" && !mlCategoryId) {
     message.textContent = "Selecione uma categoria do Mercado Livre";
     return;
   }
@@ -687,7 +689,7 @@ export async function saveStorefrontProduct(event) {
   message.textContent = "Salvando produto da vitrine...";
   try {
     if (publishTargets.mercado_livre) {
-      const created = await marketplaceRequest("https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-sync?marketplace=ml&action=create-listing", {
+      const created = await marketplaceRequest(`${supabaseFunctionUrl("marketplace-sync")}?marketplace=ml&action=create-listing`, {
         method: "POST",
         body: JSON.stringify({
           title: payload.title,
@@ -721,6 +723,77 @@ export async function saveStorefrontProduct(event) {
   } catch (error) {
     message.textContent = error.message;
   }
+}
+
+function findMarketplaceListing(itemId, marketplace) {
+  const expectedChannel = normalizeMarketplaceChannel(marketplace);
+  return state.marketplaceListings.find((item) =>
+    String(item.external_id || "") === String(itemId || "")
+      && normalizeMarketplaceChannel(item.marketplace) === expectedChannel
+  ) || state.marketplaceListings.find((item) => String(item.external_id || "") === String(itemId || ""));
+}
+
+function renderMarketplaceMigrationPreview(migration) {
+  const targetLabel = marketplaceDisplayName(migration.target);
+  byId("marketplaceMigrationTarget").value = migration.target;
+  byId("marketplaceMigrationSummary").innerHTML = `
+    <div class="drawer-field-list">
+      <div class="drawer-field-row"><span>Destino</span><strong>${html(targetLabel)}</strong></div>
+      <div class="drawer-field-row"><span>Preco</span><strong>${money.format(migration.price)}</strong></div>
+      <div class="drawer-field-row"><span>Estoque</span><strong>${migration.stock}</strong></div>
+      <div class="drawer-field-row"><span>Imagens</span><strong>${migration.images.length}</strong></div>
+    </div>
+    <div class="listing-drawer-suggestion ${migration.ready ? "" : "danger"}">
+      ${migration.ready ? "Dados minimos prontos para revisao." : `Complete no rascunho: ${html(migration.missing.join(", "))}.`}
+    </div>`;
+}
+
+export function openMarketplaceMigration(itemId, marketplace) {
+  const listing = findMarketplaceListing(itemId, marketplace);
+  if (!listing) {
+    showAppMessage("Anuncio nao encontrado", "Atualize os anuncios antes de iniciar a replicacao.", "warning");
+    return;
+  }
+  const form = byId("marketplaceMigrationForm");
+  form.elements.itemId.value = listing.external_id;
+  form.elements.sourceMarketplace.value = listing.marketplace;
+  byId("marketplaceMigrationCode").textContent = listing.external_id;
+  byId("marketplaceMigrationTitle").textContent = listing.title || "Replicar anuncio";
+  renderMarketplaceMigrationPreview(buildMarketplaceMigration(listing, migrationTargetFor(listing.marketplace)));
+  byId("marketplaceMigrationDialog").showModal();
+}
+
+export function refreshMarketplaceMigrationPreview() {
+  const form = byId("marketplaceMigrationForm");
+  const listing = findMarketplaceListing(form.elements.itemId.value, form.elements.sourceMarketplace.value);
+  if (listing) renderMarketplaceMigrationPreview(buildMarketplaceMigration(listing, form.elements.targetMarketplace.value));
+}
+
+export function prepareMarketplaceMigration(event) {
+  event.preventDefault();
+  if (!ensureCanAdmin()) return;
+  const form = event.currentTarget;
+  const listing = findMarketplaceListing(form.elements.itemId.value, form.elements.sourceMarketplace.value);
+  if (!listing) return;
+  const migration = buildMarketplaceMigration(listing, form.elements.targetMarketplace.value);
+  fillStorefrontFormFromListing(listing);
+  const productForm = byId("storefrontProductForm");
+  productForm.elements.external_id.value = "";
+  productForm.elements.publish_ml.checked = migration.target === "mercado-livre";
+  productForm.elements.publish_shopee.checked = migration.target === "shopee";
+  productForm.elements.marketplace.value = marketplaceDisplayName(migration.target);
+  productForm.elements.sku.value = migration.sku;
+  productForm.elements.shopee_sku.value = migration.sku;
+  productForm.elements.shopee_category_id.value = migration.shopee.categoryId;
+  productForm.elements.shopee_weight.value = migration.shopee.weight || "";
+  productForm.elements.shopee_days_to_ship.value = migration.shopee.daysToShip;
+  productForm.elements.shopee_attributes_json.value = JSON.stringify(migration.shopee.attributes, null, 2);
+  if (migration.target === "mercado-livre") productForm.elements.ml_category_id.value = migration.ml.categoryId;
+  updateStorefrontTargetFields();
+  byId("marketplaceMigrationDialog").close();
+  setMarketplaceView("storefront");
+  productForm.scrollIntoView({ behavior: "smooth", block: "start" });
+  flashActionMessage(`Rascunho para ${marketplaceDisplayName(migration.target)} preparado. Revise os campos destacados antes de publicar.`);
 }
 
 export function bindStorefrontImageInputs() {
@@ -803,7 +876,7 @@ export async function storefrontRequest(payload) {
   const { data } = await state.supabase.auth.getSession();
   const token = data.session?.access_token;
   if (!token) throw new Error("Sessão expirada. Entre novamente.");
-  const response = await fetch("https://djvrhvzjvnyensbobtby.functions.supabase.co/storefront", {
+  const response = await fetch(supabaseFunctionUrl("storefront"), {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -863,7 +936,7 @@ export async function loadMlCategoryFields() {
   }
   preview.innerHTML = "Carregando campos obrigatórios...";
   try {
-    const data = await marketplaceRequest(`https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-sync?marketplace=ml&action=category-fields&category_id=${encodeURIComponent(categoryId)}`);
+    const data = await marketplaceRequest(`${supabaseFunctionUrl("marketplace-sync")}?marketplace=ml&action=category-fields&category_id=${encodeURIComponent(categoryId)}`);
     const required = (data.attributes || []).filter((item) => item.tags?.required || item.tags?.catalog_required);
     preview.innerHTML = required.length ?
        required.slice(0, 20).map((item) => `<span>${html(item.id)} - ${html(item.name)}</span>`).join("")
@@ -888,7 +961,7 @@ export async function connectMercadoLivre() {
     const { data } = await state.supabase.auth.getSession();
     const token = data.session?.access_token;
     if (!token) throw new Error("Sessao expirada. Entre novamente.");
-    const endpoint = "https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-auth/ml/start";
+    const endpoint = supabaseFunctionUrl("marketplace-auth/ml/start");
     const response = await fetch(endpoint, {
       method: "POST",
       headers: {
@@ -915,7 +988,7 @@ export async function disconnectMercadoLivre() {
     const { data } = await state.supabase.auth.getSession();
     const token = data.session?.access_token;
     if (!token) throw new Error("Sessao expirada. Entre novamente.");
-    const response = await fetch("https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-auth/ml/disconnect", {
+    const response = await fetch(supabaseFunctionUrl("marketplace-auth/ml/disconnect"), {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -1017,7 +1090,7 @@ export async function createMarketplaceOrder(externalOrderId, marketplace = "Mer
   }
   if (!ensureCanAdmin()) return;
   try {
-    await marketplaceRequest(`https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-sync?marketplace=ml&action=create-order&order_id=${encodeURIComponent(externalOrderId)}`, {
+    await marketplaceRequest(`${supabaseFunctionUrl("marketplace-sync")}?marketplace=ml&action=create-order&order_id=${encodeURIComponent(externalOrderId)}`, {
       method: "POST",
       body: "{}"
     });
@@ -1033,7 +1106,7 @@ export async function createMarketplaceOrder(externalOrderId, marketplace = "Mer
 }
 
 export async function syncMlShipment(orderId) {
-  return marketplaceRequest(`https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-sync?marketplace=ml&action=sync-shipment&order_id=${encodeURIComponent(orderId)}`);
+  return marketplaceRequest(`${supabaseFunctionUrl("marketplace-sync")}?marketplace=ml&action=sync-shipment&order_id=${encodeURIComponent(orderId)}`);
 }
 
 export async function marketplaceRequest(url, options = {}) {
@@ -1074,7 +1147,7 @@ export async function downloadMarketplaceDocument(externalOrderId, marketplace, 
     const { data } = await state.supabase.auth.getSession();
     const token = data.session?.access_token;
     if (!token) throw new Error("Sessao expirada. Entre novamente.");
-    const url = new URL("https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-sync");
+    const url = new URL(supabaseFunctionUrl("marketplace-sync"));
     url.searchParams.set("marketplace", "ml");
     url.searchParams.set("action", "document");
     url.searchParams.set("order_id", externalOrderId);
@@ -1199,7 +1272,7 @@ export async function syncMercadoLivre() {
   const status = byId("marketplaceStatus");
   if (status) status.innerHTML = `<span class="badge queue">Sincronizando Mercado Livre...</span>`;
   try {
-    const data = await marketplaceRequest("https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-sync?marketplace=ml");
+    const data = await marketplaceRequest(`${supabaseFunctionUrl("marketplace-sync")}?marketplace=ml`);
     await loadRemoteData();
     await loadMarketplaces();
     saveData();
@@ -1227,13 +1300,13 @@ export async function syncMercadoLivre() {
 
 export function connectAmazon() {
   if (!ensureCanAdmin()) return;
-  window.location.href = "https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-auth/amazon/start";
+  window.location.href = supabaseFunctionUrl("marketplace-auth/amazon/start");
 }
 
 export async function syncAmazon() {
   if (!ensureCanAdmin()) return;
   try {
-    const data = await marketplaceRequest("https://djvrhvzjvnyensbobtby.functions.supabase.co/amazon-sync?action=sync");
+    const data = await marketplaceRequest(`${supabaseFunctionUrl("amazon-sync")}?action=sync`);
     await loadRemoteData();
     await loadMarketplaces();
     render();
@@ -1256,7 +1329,7 @@ export async function showMarketplaceStats(itemId, marketplace = "Mercado Livre"
   content.innerHTML = `<div class="empty-chart">Carregando estatisticas...</div>`;
   byId("marketplaceStatsDialog").showModal();
   try {
-    const data = await marketplaceRequest(`https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-sync?marketplace=ml&action=stats&item_id=${encodeURIComponent(itemId)}`);
+    const data = await marketplaceRequest(`${supabaseFunctionUrl("marketplace-sync")}?marketplace=ml&action=stats&item_id=${encodeURIComponent(itemId)}`);
     const stats = data.stats || {};
     const visits = Number(stats.visits || 0);
     const sold = Number(stats.sold_quantity || 0);
@@ -1366,7 +1439,7 @@ export async function saveMarketplaceListing(event) {
       attributes = JSON.parse(attributesJson);
       if (!Array.isArray(attributes)) throw new Error("Atributos ML precisam estar em formato de lista JSON.");
     }
-    await marketplaceRequest(`https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-sync?marketplace=ml&action=edit&item_id=${encodeURIComponent(itemId)}`, {
+    await marketplaceRequest(`${supabaseFunctionUrl("marketplace-sync")}?marketplace=ml&action=edit&item_id=${encodeURIComponent(itemId)}`, {
       method: "POST",
       body: JSON.stringify({
         title: data.get("title"),

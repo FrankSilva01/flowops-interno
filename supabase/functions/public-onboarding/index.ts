@@ -231,16 +231,20 @@ Deno.serve(async (req) => {
         organization_id: organizationId, priority: "normal",
       });
       await queueWelcome(admin, organizationId, email, contactName, companyName).catch(async (emailError) => {
-        await admin.from("saas_email_delivery_logs").insert({
-          organization_id: organizationId,
-          recipient_email: email,
-          template_code: "welcome",
-          provider: "brevo",
-          status: "failed",
-          attempt: 1,
-          error_message: emailError instanceof Error ? emailError.message : String(emailError),
-          response_payload: { source: "public-onboarding" },
-        }).catch(() => null);
+        try {
+          await admin.from("saas_email_delivery_logs").insert({
+            organization_id: organizationId,
+            recipient_email: email,
+            template_code: "welcome",
+            provider: "brevo",
+            status: "failed",
+            attempt: 1,
+            error_message: emailError instanceof Error ? emailError.message : String(emailError),
+            response_payload: { source: "public-onboarding" },
+          });
+        } catch {
+          // Email telemetry must not roll back a valid signup.
+        }
       });
       return respond({
         ok: true,

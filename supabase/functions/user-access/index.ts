@@ -83,16 +83,20 @@ Deno.serve(async (req) => {
       if (!queueError && queued) {
         await sendQueuedEmail(admin, queued).catch(() => null);
       } else if (queueError) {
-        await admin.from("saas_email_delivery_logs").insert({
-          organization_id: approved.organization_id || defaultOrganizationId,
-          recipient_email: email,
-          template_code: "password_recovery",
-          provider: "brevo",
-          status: "failed",
-          attempt: 1,
-          error_message: queueError.message || String(queueError),
-          response_payload: { source: "recover-password" },
-        }).catch(() => null);
+        try {
+          await admin.from("saas_email_delivery_logs").insert({
+            organization_id: approved.organization_id || defaultOrganizationId,
+            recipient_email: email,
+            template_code: "password_recovery",
+            provider: "brevo",
+            status: "failed",
+            attempt: 1,
+            error_message: queueError.message || String(queueError),
+            response_payload: { source: "recover-password" },
+          });
+        } catch {
+          // Recovery response must not disclose telemetry failures.
+        }
       }
       return json({ ok: true });
     }

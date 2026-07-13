@@ -1,4 +1,5 @@
 import { state, money } from "../core/state.js";
+import { supabaseFunctionUrl } from "../core/config.js";
 import { byId, html, flashActionMessage, number, showAppMessage, safeUrl } from "../core/dom.js";
 import { bindActions } from "../core/router.js";
 import { ensureCanEdit } from "../core/permissions.js";
@@ -12,7 +13,7 @@ import {
 } from "./marketplace.js";
 
 const CREATABLE_MARKETPLACES = ["mercado-livre", "shopee", "amazon", "tiktok-shop"];
-const ML_FEE_PREVIEW_URL = "https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-sync?marketplace=ml&action=fee-preview";
+const ML_FEE_PREVIEW_URL = `${supabaseFunctionUrl("marketplace-sync")}?marketplace=ml&action=fee-preview`;
 let productUploadedImages = [];
 let currentProductStep = 1;
 let productMlFeePreview = null;
@@ -743,7 +744,7 @@ export async function saveProduct(event) {
         attributes: buildMlProductAttributes(data, name),
       };
       console.log("📤 Sending to ML API:", mlPayload);
-      const created = await marketplaceRequest("https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-sync?marketplace=ml&action=create-listing", {
+      const created = await marketplaceRequest(`${supabaseFunctionUrl("marketplace-sync")}?marketplace=ml&action=create-listing`, {
         method: "POST",
         body: JSON.stringify(mlPayload),
       });
@@ -789,7 +790,7 @@ async function updateLinkedMarketplaceListing(listingValue, { name, price, stock
   const [marketplace, ...idParts] = String(listingValue || "").split(":");
   const externalId = idParts.join(":");
   if (!externalId || normalizeMarketplaceChannel(marketplace) !== "mercado-livre") return null;
-  return marketplaceRequest(`https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-sync?marketplace=ml&action=edit&item_id=${encodeURIComponent(externalId)}`, {
+  return marketplaceRequest(`${supabaseFunctionUrl("marketplace-sync")}?marketplace=ml&action=edit&item_id=${encodeURIComponent(externalId)}`, {
     method: "POST",
     body: JSON.stringify({
       title: name,

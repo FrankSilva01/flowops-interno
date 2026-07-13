@@ -1,4 +1,5 @@
 import { state, money } from "../core/state.js";
+import { supabaseFunctionUrl } from "../core/config.js";
 import { byId, html, showAppMessage, flashActionMessage } from "../core/dom.js";
 
 // ========================================================================
@@ -9,7 +10,7 @@ export async function syncNFe() {
   showAppMessage("Sincronizando NF-e do servidor...", "info");
 
   const response = await fetch(
-    `https://djvrhvzjvnyensbobtby.functions.supabase.co/nfe-sync?action=sync&organization_id=${state.organizationId}`,
+    `${supabaseFunctionUrl("nfe-sync")}?action=sync&organization_id=${state.organizationId}`,
     { method: "GET", headers: await nfeAuthHeaders() }
   );
 
@@ -80,7 +81,7 @@ export async function downloadDANFE(orderId) {
 
   try {
     const response = await fetch(
-      `https://djvrhvzjvnyensbobtby.functions.supabase.co/nfe-sync?action=get-danfe&invoice_id=${invoice.external_id}&organization_id=${state.organizationId}`,
+      `${supabaseFunctionUrl("nfe-sync")}?action=get-danfe&invoice_id=${invoice.external_id}&organization_id=${state.organizationId}`,
       { headers: await nfeAuthHeaders() }
     );
 

@@ -51,6 +51,7 @@ import {
   loadMlCategoryFields, bindStorefrontImageInputs, bindStorefrontDescriptionEditor, bindMlCategorySelect, setMarketplaceView,
   applyMarketplaceLogRange, showMarketplaceStats, fillStorefrontFormFromListing,
   openMarketplaceEdit, viewMarketplaceOrder, createMarketplaceOrder, downloadMarketplaceDocument,
+  openMarketplaceMigration, prepareMarketplaceMigration, refreshMarketplaceMigrationPreview,
 } from "../features/marketplace.js";
 import {
   runManualBackup, downloadBackupScope, simulateBackupRestore, restoreBackupFromFile,
@@ -408,6 +409,8 @@ export function bindEvents() {
   byId("syncMercadoLivreBtn").addEventListener("click", syncMercadoLivre);
   byId("syncMarketplaceSalesBtn").addEventListener("click", syncMercadoLivre);
   byId("marketplaceEditForm").addEventListener("submit", saveMarketplaceListing);
+  byId("marketplaceMigrationForm")?.addEventListener("submit", prepareMarketplaceMigration);
+  byId("marketplaceMigrationTarget")?.addEventListener("change", refreshMarketplaceMigrationPreview);
   byId("storefrontProductForm").addEventListener("submit", saveStorefrontProduct);
   byId("storefrontProductForm").elements.publish_ml.addEventListener("change", updateStorefrontTargetFields);
   byId("storefrontProductForm").elements.publish_shopee.addEventListener("change", updateStorefrontTargetFields);
@@ -798,6 +801,11 @@ export function bindActions() {
       if (action === "marketplace-edit") {
         if (!ensureCanAdmin()) return;
         await openMarketplaceEdit(id, button.dataset.marketplace);
+        return;
+      }
+      if (action === "marketplace-migrate") {
+        if (!ensureCanAdmin()) return;
+        openMarketplaceMigration(id, button.dataset.marketplace);
         return;
       }
       if (action === "storefront-edit") {

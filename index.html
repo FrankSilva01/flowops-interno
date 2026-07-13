@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="./css/11-fiscal-forms.css?v=200" />
     <link rel="stylesheet" href="./css/12-global-search.css?v=200" />
     <script src="./supabase-config.js?v=200" defer></script>
-    <script type="module" src="./js/app.js?v=221"></script>
+    <script type="module" src="./js/app.js?v=222"></script>
   </head>
   <body>
     <main id="appView" class="app-shell" hidden>
@@ -86,7 +86,7 @@
         <div class="session-card">
           <span id="activeUserName">Modo teste</span>
           <small id="activeUserRole">Acesso direto sem login</small>
-          <small id="appVersionLabel" class="app-version-label">FlowOps v221</small>
+          <small id="appVersionLabel" class="app-version-label">FlowOps v222</small>
           <button id="logoutBtn" class="ghost-btn" type="button" hidden>Sair</button>
         </div>
       </aside>
@@ -1096,7 +1096,7 @@
                   <input id="storefrontImageFiles" type="file" accept="image/*" multiple />
                 </label>
 
-                <div id="storefrontMlFields" class="marketplace-extra-fields" style="display: block !important;">
+                <div id="storefrontMlFields" class="marketplace-extra-fields">
                   <div class="form-section-title">Campos Mercado Livre</div>
                   <label>Categoria *
                     <select name="ml_category_id" id="mlCategorySelect" required>
@@ -1942,6 +1942,29 @@
         <p class="muted">Categoria é exibida como referência: o Mercado Livre normalmente não permite alterar a categoria de um anúncio já publicado. Imagens também devem ser alteradas pelo fluxo de cadastrar/republicar produto quando necessário.</p>
         <p class="form-error" id="marketplaceEditMessage"></p>
         <button class="primary-btn" type="submit">Salvar no marketplace</button>
+      </form>
+    </dialog>
+    <dialog id="marketplaceMigrationDialog" class="history-dialog marketplace-dialog drawer-dialog">
+      <div class="drawer-header">
+        <div>
+          <span class="order-code" id="marketplaceMigrationCode">Anuncio</span>
+          <h3 id="marketplaceMigrationTitle">Replicar anuncio</h3>
+          <small>Converta os dados e revise as exigencias do canal de destino.</small>
+        </div>
+        <button class="icon-btn" type="button" data-close-dialog="marketplaceMigrationDialog" aria-label="Fechar">×</button>
+      </div>
+      <form id="marketplaceMigrationForm" class="login-form drawer-body">
+        <input name="itemId" type="hidden" />
+        <input name="sourceMarketplace" type="hidden" />
+        <label>Destino
+          <select id="marketplaceMigrationTarget" name="targetMarketplace">
+            <option value="shopee">Shopee</option>
+            <option value="mercado-livre">Mercado Livre</option>
+          </select>
+        </label>
+        <div id="marketplaceMigrationSummary"></div>
+        <p class="muted">A categoria e os atributos variam entre marketplaces. O FlowOps copia os dados compativeis e indica o que precisa ser completado.</p>
+        <button class="primary-btn" type="submit">Preparar rascunho</button>
       </form>
     </dialog>
     <dialog id="productDialog" class="history-dialog marketplace-dialog product-steps-dialog">

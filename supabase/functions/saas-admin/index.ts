@@ -501,16 +501,20 @@ Deno.serve(async (req) => {
             message,
             company: target.name,
           }).catch(async (emailError) => {
-            await admin.from("saas_email_delivery_logs").insert({
-              organization_id: target.id,
-              recipient_email: target.owner_email,
-              template_code: "global_announcement",
-              provider: "brevo",
-              status: "failed",
-              attempt: 1,
-              error_message: emailError instanceof Error ? emailError.message : String(emailError),
-              response_payload: { source: "create-announcement" },
-            }).catch(() => null);
+            try {
+              await admin.from("saas_email_delivery_logs").insert({
+                organization_id: target.id,
+                recipient_email: target.owner_email,
+                template_code: "global_announcement",
+                provider: "brevo",
+                status: "failed",
+                attempt: 1,
+                error_message: emailError instanceof Error ? emailError.message : String(emailError),
+                response_payload: { source: "create-announcement" },
+              });
+            } catch {
+              // Announcement delivery remains best effort.
+            }
           });
         }
       }

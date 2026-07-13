@@ -5,6 +5,7 @@
 // anuncio, frete e reputacao do vendedor. Modulo separado pra nao inflar
 // pricing.js, que ja cobre custo/margem/sugestoes de cadastro em lote.
 import { state, money } from "../core/state.js";
+import { supabaseFunctionUrl } from "../core/config.js";
 import { byId, html, safeUrl, formatDateTime, flashActionMessage } from "../core/dom.js";
 import { bindActions } from "../core/router.js";
 import { ensureCanEdit } from "../core/permissions.js";
@@ -16,8 +17,8 @@ import {
   getProductForListing, getProductAssetInfo,
 } from "./pricing.js";
 
-const ANALYTICS_URL = "https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-sync?marketplace=ml&action=analytics-full";
-const INTENT_SCORE_URL = "https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-sync?marketplace=ml&action=intent-score";
+const ANALYTICS_URL = `${supabaseFunctionUrl("marketplace-sync")}?marketplace=ml&action=analytics-full`;
+const INTENT_SCORE_URL = `${supabaseFunctionUrl("marketplace-sync")}?marketplace=ml&action=intent-score`;
 
 function analyticsKey(marketplace, externalId) {
   return `${marketplace}:${externalId}`;
@@ -80,7 +81,7 @@ export async function loadListingFeeSync() {
   state.listingFeeSync = latestByListing;
 }
 
-const FEE_CALCULATOR_URL = "https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-sync?marketplace=ml&action=fee-calculator-full";
+const FEE_CALCULATOR_URL = `${supabaseFunctionUrl("marketplace-sync")}?marketplace=ml&action=fee-calculator-full`;
 
 export async function syncFeeCalculatorFull(force = false) {
   if (!ensureCanEdit()) return;

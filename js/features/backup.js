@@ -1,4 +1,5 @@
 import { state } from "../core/state.js";
+import { supabaseFunctionUrl } from "../core/config.js";
 import { byId, html, formatDateTime, flashActionMessage } from "../core/dom.js";
 import { ensureCanAdmin } from "../core/permissions.js";
 import { bindActions, render } from "../core/router.js";
@@ -50,7 +51,7 @@ export async function runManualBackup() {
   button.textContent = "Executando...";
   try {
     const { data: sessionData } = await state.supabase.auth.getSession();
-    const response = await fetch("https://djvrhvzjvnyensbobtby.functions.supabase.co/system-maintenance", {
+    const response = await fetch(supabaseFunctionUrl("system-maintenance"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -74,7 +75,7 @@ export async function runManualBackup() {
 export async function maintenanceRequest(payload) {
   if (!ensureCanAdmin()) throw new Error("Apenas administradores podem gerenciar backups.");
   const { data: sessionData } = await state.supabase.auth.getSession();
-  const response = await fetch("https://djvrhvzjvnyensbobtby.functions.supabase.co/system-maintenance", {
+  const response = await fetch(supabaseFunctionUrl("system-maintenance"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

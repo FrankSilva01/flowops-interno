@@ -201,7 +201,7 @@ export async function applyMercadoPagoAttempt(
 
   if (changed && (status === "approved" || status === "rejected" || status === "cancelled")) {
     await Promise.all([
-      admin.from("notifications").insert({
+      ignoreFailure(admin.from("notifications").insert({
         organization_id: subscription.organization_id,
         role_target: "admin",
         type: status === "approved" ? "subscription" : "error",
@@ -210,9 +210,9 @@ export async function applyMercadoPagoAttempt(
         related_entity: "subscription",
         related_entity_id: subscription.id,
         priority: status === "approved" ? "normal" : "high",
-      }).catch(() => null),
+      })),
       queueBillingEmail(admin, subscription, status, amount, reason).catch(() => null),
-      admin.from("audit_events").insert({
+      ignoreFailure(admin.from("audit_events").insert({
         organization_id: subscription.organization_id,
         action: status === "approved" ? "subscription_payment_approved" : "subscription_payment_failed",
         entity_type: "subscription",
@@ -226,10 +226,18 @@ export async function applyMercadoPagoAttempt(
           provider_invoice_id: input.providerInvoiceId || null,
           attempted_at: attemptedAt,
         },
-      }).catch(() => null),
+      })),
     ]);
   }
   return { status, reason, changed };
+}
+
+async function ignoreFailure(operation: PromiseLike<unknown>) {
+  try {
+    await operation;
+  } catch {
+    return null;
+  }
 }
 
 export async function syncMercadoPagoPayment(admin: AdminClient, paymentId: string) {
