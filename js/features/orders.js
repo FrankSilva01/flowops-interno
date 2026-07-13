@@ -1192,18 +1192,39 @@ export function appendHistory(history, changes) {
 export function showOrderHistory(id) {
   const item = state.data.orders.find((orderItem) => orderItem.id === id);
   if (!item) return;
+  byId("historyDialogCode").textContent = getOrderCode(item);
+  byId("historyDialogTitle").textContent = item.description || "Historico da encomenda";
+  byId("historyDialogSubtitle").textContent = `${item.client || "Cliente nao informado"} · ${getMarketplaceLabel(item)}`;
+  byId("historySummary").innerHTML = `
+    <div class="drawer-field-row"><span>Status atual</span><strong>${html(normalizeOrderStatus(item.status))}</strong></div>
+    <div class="drawer-field-row"><span>Etapa</span><strong>${html(item.productionStage || "Em fila")}</strong></div>
+    <div class="drawer-field-row"><span>Responsavel</span><strong>${html(item.responsible || "-")}</strong></div>
+    <div class="drawer-field-row"><span>Entrega</span><strong>${item.deliveryDate ? formatDate(item.deliveryDate) : "Sem data"}</strong></div>
+  `;
   const content = byId("historyContent");
   content.innerHTML = item.history?.length ? item.history.map((entry) => `
-    <div class="list-row history-row">
+    <article class="history-event-card">
+      <i aria-hidden="true"></i>
       <div>
-        <strong>${formatDateTime(entry.at)} - ${html(entry.by || "Usuário")}</strong>
-        <span>${entry.changes.map((change) => `${html(change.field)}: ${html(change.from)} -> ${html(change.to)}`).join("<br>")}</span>
+        <header>
+          <strong>${html(entry.by || "Usuario")}</strong>
+          <span>${formatDateTime(entry.at)}</span>
+        </header>
+        <div class="history-change-list">
+          ${entry.changes.map((change) => `
+            <div class="history-change">
+              <span>${html(change.field)}</span>
+              <strong>${html(String(change.from || "-"))}</strong>
+              <em>para</em>
+              <strong>${html(String(change.to || "-"))}</strong>
+            </div>
+          `).join("")}
+        </div>
       </div>
-    </div>
-  `).join("") : `<div class="empty-chart">Sem alterações registradas neste pedido</div>`;
+    </article>
+  `).join("") : `<div class="empty-chart">Sem alteracoes registradas neste pedido</div>`;
   byId("historyDialog").showModal();
 }
-
 export function customTagClass(color) {
   return {
     positive: "tag-positive",

@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="./css/11-fiscal-forms.css?v=200" />
     <link rel="stylesheet" href="./css/12-global-search.css?v=200" />
     <script src="./supabase-config.js?v=200" defer></script>
-    <script type="module" src="./js/app.js?v=207"></script>
+    <script type="module" src="./js/app.js?v=208"></script>
   </head>
   <body>
     <main id="appView" class="app-shell" hidden>
@@ -1825,19 +1825,31 @@
         <div class="dialog-actions"><button id="confirmAppMessageBtn" class="primary-btn" type="button">Entendi</button></div>
       </div>
     </dialog>
-    <dialog id="historyDialog" class="history-dialog">
-      <div class="panel-head">
-        <h3>Histórico</h3>
-        <button id="closeHistoryBtn" class="icon-btn" type="button">Fechar</button>
+    <dialog id="historyDialog" class="history-dialog drawer-dialog">
+      <div class="drawer-header">
+        <div>
+          <span class="order-code" id="historyDialogCode">Histórico</span>
+          <h3 id="historyDialogTitle">Histórico da encomenda</h3>
+          <small id="historyDialogSubtitle"></small>
+        </div>
+        <button id="closeHistoryBtn" class="icon-btn" type="button" aria-label="Fechar">×</button>
       </div>
-      <div id="historyContent" class="stack-list"></div>
+      <div class="drawer-body">
+        <div id="historySummary" class="drawer-field-list"></div>
+        <div class="drawer-section-title">Linha do tempo</div>
+        <div id="historyContent" class="history-timeline"></div>
+      </div>
     </dialog>
-    <dialog id="marketplaceStatsDialog" class="history-dialog marketplace-dialog">
-      <div class="panel-head">
-        <h3>Estatísticas do anúncio</h3>
-        <button class="icon-btn" type="button" data-close-dialog="marketplaceStatsDialog">Fechar</button>
+    <dialog id="marketplaceStatsDialog" class="history-dialog marketplace-dialog drawer-dialog">
+      <div class="drawer-header">
+        <div>
+          <span class="order-code" id="marketplaceStatsCode">Anúncio</span>
+          <h3 id="marketplaceStatsTitle">Estatísticas do anúncio</h3>
+          <small id="marketplaceStatsSubtitle"></small>
+        </div>
+        <button class="icon-btn" type="button" data-close-dialog="marketplaceStatsDialog" aria-label="Fechar">×</button>
       </div>
-      <div id="marketplaceStatsContent"></div>
+      <div id="marketplaceStatsContent" class="drawer-body"></div>
     </dialog>
     <dialog id="marketplaceEditDialog" class="history-dialog marketplace-dialog">
       <div class="panel-head">

@@ -1145,6 +1145,9 @@ export async function syncAmazon() {
 
 export async function showMarketplaceStats(itemId, marketplace = "Mercado Livre") {
   const content = byId("marketplaceStatsContent");
+  byId("marketplaceStatsCode").textContent = itemId;
+  byId("marketplaceStatsTitle").textContent = "Estatisticas do anuncio";
+  byId("marketplaceStatsSubtitle").textContent = marketplaceDisplayName(marketplace);
   if (normalizeMarketplaceChannel(marketplace) === "shopee") {
     content.innerHTML = `<div class="empty-chart">As estatisticas da Shopee ficarao disponiveis assim que a conta for conectada.</div>`;
     byId("marketplaceStatsDialog").showModal();
@@ -1154,26 +1157,43 @@ export async function showMarketplaceStats(itemId, marketplace = "Mercado Livre"
   byId("marketplaceStatsDialog").showModal();
   try {
     const data = await marketplaceRequest(`https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-sync?marketplace=ml&action=stats&item_id=${encodeURIComponent(itemId)}`);
-    const stats = data.stats;
+    const stats = data.stats || {};
+    const visits = Number(stats.visits || 0);
+    const sold = Number(stats.sold_quantity || 0);
+    const conversion = visits > 0 ? sold / visits * 100 : 0;
+    const health = stats.health == null ? null : Math.round(Number(stats.health) * 100);
+    const statusClass = String(stats.status || "").toLowerCase() === "active" ? "done" : "neutral";
+    byId("marketplaceStatsCode").textContent = itemId;
+    byId("marketplaceStatsTitle").textContent = stats.title || "Estatisticas do anuncio";
+    byId("marketplaceStatsSubtitle").textContent = `Criado em ${formatDateTime(stats.date_created)} · Atualizado em ${formatDateTime(stats.last_updated)}`;
     content.innerHTML = `
-      <div class="stats-grid">
-        <article><span>Vendas efetuadas</span><strong>${Number(stats.sold_quantity || 0).toLocaleString("pt-BR")}</strong></article>
-        <article><span>Visualizacoes</span><strong>${Number(stats.visits || 0).toLocaleString("pt-BR")}</strong></article>
-        <article><span>Estoque disponivel</span><strong>${Number(stats.available_quantity || 0).toLocaleString("pt-BR")}</strong></article>
-        <article><span>Preco</span><strong>${money.format(Number(stats.price || 0))}</strong></article>
-        <article><span>Status</span><strong>${html(stats.status || "-")}</strong></article>
-        <article><span>Saude do anuncio</span><strong>${stats.health == null ? "-" : `${Math.round(Number(stats.health) * 100)}%`}</strong></article>
+      <section class="stats-hero-card">
+        <div>
+          <span class="badge ${statusClass}">${html(stats.status || "-")}</span>
+          <strong>${html(stats.title || itemId)}</strong>
+          <small>${html(marketplaceDisplayName(marketplace))}</small>
+        </div>
+        <div class="stats-health-ring ${health != null && health >= 70 ? "ok" : health != null && health >= 40 ? "warn" : "risk"}">
+          <strong>${health == null ? "-" : `${health}%`}</strong>
+          <span>saude</span>
+        </div>
+      </section>
+      <div class="stats-grid stats-grid-modern">
+        <article><span>Vendas</span><strong>${sold.toLocaleString("pt-BR")}</strong><small>efetuadas</small></article>
+        <article><span>Visualizacoes</span><strong>${visits.toLocaleString("pt-BR")}</strong><small>visitas totais</small></article>
+        <article><span>Conversao</span><strong>${conversion.toFixed(1)}%</strong><small>vendas / visitas</small></article>
+        <article><span>Estoque</span><strong>${Number(stats.available_quantity || 0).toLocaleString("pt-BR")}</strong><small>disponivel</small></article>
+        <article><span>Preco</span><strong>${money.format(Number(stats.price || 0))}</strong><small>valor atual</small></article>
+        <article><span>Status</span><strong>${html(stats.status || "-")}</strong><small>publicacao</small></article>
       </div>
-      <div class="listing-stats-detail">
-        <strong>${html(stats.title || itemId)}</strong>
-        <span>Criado em ${formatDateTime(stats.date_created)} • Atualizado em ${formatDateTime(stats.last_updated)}</span>
+      <div class="listing-drawer-suggestion">
+        ${visits === 0 ? "Sem visitas recentes: revise titulo, foto principal e categoria." : sold === 0 ? "Tem visualizacao, mas ainda nao vendeu: valide preco, fotos e descricao." : "Anuncio com venda registrada: acompanhe estoque, margem e perguntas para escalar com seguranca."}
       </div>
     `;
   } catch (error) {
     content.innerHTML = `<p class="form-error">${html(error.message)}</p>`;
   }
 }
-
 export async function openMarketplaceEdit(itemId, marketplace = "Mercado Livre") {
   const channel = normalizeMarketplaceChannel(marketplace);
   if (channel === "shopee") {
