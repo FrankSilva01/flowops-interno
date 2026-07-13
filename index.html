@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="./css/11-fiscal-forms.css?v=200" />
     <link rel="stylesheet" href="./css/12-global-search.css?v=200" />
     <script src="./supabase-config.js?v=200" defer></script>
-    <script type="module" src="./js/app.js?v=202"></script>
+    <script type="module" src="./js/app.js?v=203"></script>
   </head>
   <body>
     <main id="appView" class="app-shell" hidden>
@@ -604,6 +604,8 @@
                 <option>Devolvido</option>
               </select>
             </label>
+            <button id="syncAllMlShipmentsBtn" class="secondary-btn" type="button" data-action="sync-all-ml-shipments">Atualizar rastreios ML</button>
+            <span id="logisticsSyncStatus" class="form-hint"></span>
           </div>
           <div class="table-wrap">
             <table>

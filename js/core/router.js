@@ -58,7 +58,7 @@ import {
 } from "../features/backup.js";
 import { exportJson, importFile } from "./importer.js";
 import {
-  renderLogistics, openLogisticsDialog, saveLogisticsInfo, addLogisticsEvent, syncLogisticsFromMarketplace,
+  renderLogistics, openLogisticsDialog, saveLogisticsInfo, addLogisticsEvent, syncLogisticsFromMarketplace, syncAllMarketplaceLogistics,
 } from "../features/logistics.js";
 import {
   openProductQuickDialog, openProductQuickDialogForListing, saveProduct, deleteProduct, bindProductFormAutoSku,
@@ -664,6 +664,11 @@ export function bindActions() {
       if (action === "sync-ml-shipment") {
         if (!ensureCanEdit()) return;
         syncLogisticsFromMarketplace(id);
+        return;
+      }
+      if (action === "sync-all-ml-shipments") {
+        if (!ensureCanEdit()) return;
+        await syncAllMarketplaceLogistics(true);
         return;
       }
       if (action === "open-product-dialog") {

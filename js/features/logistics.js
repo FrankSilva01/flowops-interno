@@ -11,6 +11,10 @@ export const LOGISTICS_STATUSES = [
   "Aguardando envio", "Postado", "Em trânsito", "Saiu para entrega", "Entregue", "Problema na entrega", "Devolvido",
 ];
 
+const LOGISTICS_AUTO_SYNC_INTERVAL_MS = 15 * 60 * 1000;
+let logisticsAutoSyncInFlight = false;
+let logisticsLastAutoSyncAt = 0;
+
 export function getOrderLogistics(orderId) {
   return state.orderLogistics.find((item) => item.order_id === orderId) || null;
 }
@@ -80,6 +84,26 @@ function getLogisticsRows() {
     });
 }
 
+function getMarketplaceSyncCandidates(force = false) {
+  const staleBefore = Date.now() - LOGISTICS_AUTO_SYNC_INTERVAL_MS;
+  return state.data.orders
+    .filter((order) => order.status !== "Orçamento" && order.status !== "Entregue")
+    .filter(hasMarketplaceTrackingSource)
+    .filter((order) => {
+      const logistics = getOrderLogistics(order.id);
+      if (force) return logistics?.status !== "Entregue";
+      if (!logistics || !logistics.tracking_code || !logistics.status) return true;
+      if (logistics.status === "Entregue" || logistics.status === "Devolvido") return false;
+      const updatedAt = logistics.updated_at ? new Date(logistics.updated_at).getTime() : 0;
+      return !updatedAt || updatedAt < staleBefore;
+    });
+}
+
+function renderLogisticsSyncStatus(text = "") {
+  const target = byId("logisticsSyncStatus");
+  if (target) target.textContent = text;
+}
+
 function renderLogisticsActionBoard(rows) {
   const target = byId("logisticsActionBoard");
   if (!target) return;
@@ -115,6 +139,7 @@ export function renderLogistics() {
     ["Entregues hoje", counts.deliveredToday, "concluídos no dia", "green"],
   ]);
   renderLogisticsActionBoard(rows);
+  maybeAutoSyncMarketplaceLogistics();
   target.innerHTML = rows.length ? rows.map(({ order, logistics, action }) => `
     <tr>
       <td><strong>${html(getOrderCode(order))}</strong><br><small>${html(order.client || order.description || "")}</small></td>
@@ -126,6 +151,27 @@ export function renderLogistics() {
     </tr>
   `).join("") : `<tr><td colspan="6"><div class="empty-state compact"><strong>Nenhuma encomenda encontrada</strong><span>Ajuste os filtros ou aguarde novas encomendas.</span></div></td></tr>`;
   bindActions();
+}
+
+async function maybeAutoSyncMarketplaceLogistics() {
+  if (!state.canEdit || !state.supabase || logisticsAutoSyncInFlight) return;
+  const now = Date.now();
+  if (now - logisticsLastAutoSyncAt < LOGISTICS_AUTO_SYNC_INTERVAL_MS) return;
+  const candidates = getMarketplaceSyncCandidates(false).slice(0, 12);
+  if (!candidates.length) return;
+  logisticsAutoSyncInFlight = true;
+  logisticsLastAutoSyncAt = now;
+  renderLogisticsSyncStatus(`Atualizando ${candidates.length} rastreio(s) do Mercado Livre...`);
+  try {
+    for (const order of candidates) {
+      await applyLogisticsSync(order.id);
+    }
+    renderLogisticsSyncStatus(`Rastreios ML atualizados automaticamente: ${candidates.length}.`);
+  } catch (error) {
+    renderLogisticsSyncStatus("Nao foi possivel atualizar todos os rastreios automaticamente.");
+  } finally {
+    logisticsAutoSyncInFlight = false;
+  }
 }
 
 export function openLogisticsDialog(orderId) {
@@ -204,6 +250,50 @@ export async function syncLogisticsFromMarketplace(orderId) {
       button.disabled = false;
       button.textContent = "Buscar status no Mercado Livre";
     }
+  }
+}
+
+export async function syncAllMarketplaceLogistics(force = true) {
+  if (!ensureCanEdit() || logisticsAutoSyncInFlight) return;
+  const candidates = getMarketplaceSyncCandidates(force);
+  const button = byId("syncAllMlShipmentsBtn");
+  if (!candidates.length) {
+    flashActionMessage("Nenhum pedido do Mercado Livre pendente para atualizar.");
+    renderLogisticsSyncStatus("Nenhum rastreio ML pendente.");
+    return;
+  }
+  logisticsAutoSyncInFlight = true;
+  if (button) {
+    button.disabled = true;
+    button.textContent = `Atualizando ${candidates.length}...`;
+  }
+  renderLogisticsSyncStatus(`Atualizando ${candidates.length} rastreio(s) do Mercado Livre...`);
+  let ok = 0;
+  let failed = 0;
+  try {
+    for (const order of candidates) {
+      try {
+        await applyLogisticsSync(order.id);
+        ok++;
+      } catch (error) {
+        failed++;
+        console.warn("Falha ao atualizar rastreio ML", order.id, error);
+      }
+    }
+    logisticsLastAutoSyncAt = Date.now();
+    flashActionMessage(failed
+      ? `Rastreios atualizados: ${ok}. Falhas: ${failed}.`
+      : `Rastreios ML atualizados: ${ok}.`);
+    renderLogisticsSyncStatus(failed
+      ? `Atualizados ${ok}; ${failed} falharam.`
+      : `Atualizados ${ok} rastreio(s) do Mercado Livre.`);
+  } finally {
+    logisticsAutoSyncInFlight = false;
+    if (button) {
+      button.disabled = false;
+      button.textContent = "Atualizar rastreios ML";
+    }
+    renderLogistics();
   }
 }
 
