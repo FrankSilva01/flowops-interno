@@ -49,7 +49,7 @@ import {
   configureShopee, connectAmazon, syncAmazon, syncMercadoLivre, saveMarketplaceListing,
   saveStorefrontProduct, updateStorefrontTargetFields, importSelectedListingToStorefrontForm,
   loadMlCategoryFields, bindStorefrontImageInputs, bindStorefrontDescriptionEditor, bindMlCategorySelect, setMarketplaceView,
-  applyMarketplaceLogRange, showMarketplaceStats, openMarketplaceEdit, fillStorefrontFormFromListing,
+  applyMarketplaceLogRange, showMarketplaceStats, fillStorefrontFormFromListing,
   viewMarketplaceOrder, createMarketplaceOrder, downloadMarketplaceDocument,
 } from "../features/marketplace.js";
 import {
@@ -61,7 +61,7 @@ import {
   renderLogistics, openLogisticsDialog, saveLogisticsInfo, addLogisticsEvent, syncLogisticsFromMarketplace,
 } from "../features/logistics.js";
 import {
-  openProductQuickDialog, saveProduct, deleteProduct, bindProductFormAutoSku, getProductForListing,
+  openProductQuickDialog, openProductQuickDialogForListing, saveProduct, deleteProduct, bindProductFormAutoSku,
   openPriceCalculatorDialog, bindPriceCalculatorForm, openFinancialSettingsDialog, saveFinancialSettings,
   renderCommercialIntelligence, dismissSuggestion, resolveSuggestion, simulateSalesForGoal,
   renderOrderProductOptions, bindProductMarketplaceCheckboxes, bindProductImageInputs,
@@ -680,17 +680,6 @@ export function bindActions() {
         await deleteProduct(id);
         return;
       }
-      if (action === "edit-listing-product") {
-        if (!ensureCanEdit()) return;
-        const form = byId("marketplaceEditForm");
-        const marketplace = form.elements.marketplace.value;
-        const externalId = form.elements.itemId.value;
-        const product = getProductForListing(marketplace, externalId);
-        byId("marketplaceEditDialog").close();
-        openProductQuickDialog(product?.id || "");
-        if (!product) byId("productForm").elements.listingLink.value = `${marketplace}:${externalId}`;
-        return;
-      }
       if (action === "open-price-calculator") {
         openPriceCalculatorDialog();
         showCalculatorSuggestion(null);
@@ -783,7 +772,8 @@ export function bindActions() {
         return;
       }
       if (action === "marketplace-edit") {
-        await openMarketplaceEdit(id, button.dataset.marketplace);
+        if (!ensureCanEdit()) return;
+        openProductQuickDialogForListing(button.dataset.marketplace, id);
         return;
       }
       if (action === "storefront-edit") {

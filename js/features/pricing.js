@@ -212,6 +212,7 @@ export function openProductQuickDialog(productId = "") {
   // Se o produto ja tem um anuncio real vinculado, usa o tipo real (evita
   // presumir "Classico" quando o anuncio de verdade e Premium).
   form.elements.listingType.value = linkedListingData ? classifyMlListingType(linkedListingData.raw_payload || {}) : "classic";
+  form.elements.publish_ml.checked = normalizeMarketplaceChannel(linkedListing?.marketplace) === "mercado-livre";
 
   renderProductListingOptions(product);
   updateProductMarketplaceStatusHints();
@@ -224,6 +225,37 @@ export function openProductQuickDialog(productId = "") {
   goToProductStep(1);
 
   byId("productDialog").showModal();
+}
+
+export function openProductQuickDialogForListing(marketplace, externalId) {
+  const listing = state.marketplaceListings.find((item) =>
+    item.marketplace === marketplace && item.external_id === externalId
+  ) || state.marketplaceListings.find((item) =>
+    normalizeMarketplaceChannel(item.marketplace) === normalizeMarketplaceChannel(marketplace) && item.external_id === externalId
+  );
+  const product = getProductForListing(marketplace, externalId);
+  openProductQuickDialog(product?.id || "");
+  const form = byId("productForm");
+  const listingMarketplace = listing?.marketplace || marketplace || "Mercado Livre";
+  form.elements.listingLink.value = `${listingMarketplace}:${externalId}`;
+
+  if (listing && !product) {
+    form.elements.name.value = listing.title || "";
+    form.elements.sku.value = listing.sku || "";
+    form.elements.price.value = Number(listing.price || 0) || "";
+    form.elements.stock.value = Number(listing.raw_payload?.available_quantity || 1);
+    form.elements.mlCategoryId.value = listing.raw_payload?.category_id || "";
+    form.elements.listingType.value = classifyMlListingType(listing.raw_payload || {});
+    form.dataset.skuTouched = listing.sku ? "true" : "false";
+  }
+
+  const channel = normalizeMarketplaceChannel(listingMarketplace);
+  if (channel === "mercado-livre") form.elements.publish_ml.checked = true;
+  updateProductMarketplaceStatusHints();
+  renderProductProfitPreview();
+  byId("productDialogTitle").textContent = product
+    ? `Editar produto - ${product.sku}`
+    : `Editar anúncio - ${listing?.sku || externalId}`;
 }
 
 export function updateProductMarketplaceStatusHints() {
@@ -526,7 +558,8 @@ export async function saveProduct(event) {
   const rawCost = String(data.get("costPrice") || "").trim();
   const listingValue = String(data.get("listingLink") || "");
   const selectedChannels = CREATABLE_MARKETPLACES.filter((channel) => Boolean(data.get(MARKETPLACE_CHECKBOX_NAMES[channel])));
-  const mlTitleError = selectedChannels.includes("mercado-livre") ? validateMlProductTitle(name) : "";
+  const linkedMarketplace = normalizeMarketplaceChannel(listingValue.split(":")[0] || "");
+  const mlTitleError = (selectedChannels.includes("mercado-livre") || linkedMarketplace === "mercado-livre") ? validateMlProductTitle(name) : "";
   if (mlTitleError) {
     message.textContent = mlTitleError;
     return;
@@ -569,8 +602,12 @@ export async function saveProduct(event) {
 
   if (listingValue) {
     await syncProductListingLink(saved.id, listingValue);
+    const listingUpdate = await updateLinkedMarketplaceListing(listingValue, { name, price, stock }).catch((error) => ({ error }));
+    await loadMarketplaces();
     byId("productDialog").close();
-    flashActionMessage("Produto salvo e vinculado ao anúncio selecionado.");
+    flashActionMessage(listingUpdate?.error
+      ? `Produto salvo, mas não consegui atualizar o anúncio: ${listingUpdate.error.message}`
+      : "Produto e anúncio atualizados.");
     renderProductCatalogTable();
     renderMarketplaces();
     return;
@@ -666,6 +703,20 @@ async function syncProductListingLink(productId, listingValue) {
     external_id: externalId,
   }).select().single();
   if (!error && data) state.productListings.push(data);
+}
+
+async function updateLinkedMarketplaceListing(listingValue, { name, price, stock }) {
+  const [marketplace, ...idParts] = String(listingValue || "").split(":");
+  const externalId = idParts.join(":");
+  if (!externalId || normalizeMarketplaceChannel(marketplace) !== "mercado-livre") return null;
+  return marketplaceRequest(`https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-sync?marketplace=ml&action=edit&item_id=${encodeURIComponent(externalId)}`, {
+    method: "POST",
+    body: JSON.stringify({
+      title: name,
+      price: Number(price),
+      available_quantity: Number(stock),
+    }),
+  });
 }
 
 export async function deleteProduct(id) {
