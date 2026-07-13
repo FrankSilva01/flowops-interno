@@ -41,11 +41,29 @@ export async function setupBackend() {
 export function loadSupabase() {
   if (window.supabase) return Promise.resolve();
   return new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = "https://unpkg.com/@supabase/supabase-js@2";
-    script.onload = resolve;
-    script.onerror = () => reject(new Error("Não foi possível carregar a biblioteca do Supabase."));
-    document.head.appendChild(script);
+    const sources = [
+      "https://unpkg.com/@supabase/supabase-js@2",
+      "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
+    ];
+    let index = 0;
+
+    const loadNext = () => {
+      const script = document.createElement("script");
+      script.src = sources[index];
+      script.onload = resolve;
+      script.onerror = () => {
+        script.remove();
+        index += 1;
+        if (index < sources.length) {
+          loadNext();
+        } else {
+          reject(new Error("Não foi possível carregar a biblioteca do Supabase."));
+        }
+      };
+      document.head.appendChild(script);
+    };
+
+    loadNext();
   });
 }
 
