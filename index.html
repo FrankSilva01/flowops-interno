@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="./css/11-fiscal-forms.css?v=200" />
     <link rel="stylesheet" href="./css/12-global-search.css?v=200" />
     <script src="./supabase-config.js?v=200" defer></script>
-    <script type="module" src="./js/app.js?v=212"></script>
+    <script type="module" src="./js/app.js?v=213"></script>
   </head>
   <body>
     <main id="appView" class="app-shell" hidden>
@@ -1888,12 +1888,31 @@
         <label>Título<input name="title" required /></label>
         <label>Preço<input name="price" type="number" min="0.01" step="0.01" required /></label>
         <label>Estoque<input name="availableQuantity" type="number" min="0" step="1" required /></label>
+        <label>Categoria ML<input name="categoryId" readonly /></label>
+        <label>Tipo de anúncio
+          <select name="listingTypeId">
+            <option value="gold_special">Clássico</option>
+            <option value="gold_pro">Premium</option>
+            <option value="free">Grátis</option>
+          </select>
+        </label>
+        <label>Condição
+          <select name="condition">
+            <option value="new">Novo</option>
+            <option value="used">Usado</option>
+          </select>
+        </label>
+        <label>Garantia<input name="warranty" placeholder="Ex: Sem garantia" /></label>
+        <label>Tempo de preparo<input name="manufacturingTime" placeholder="Ex: 20 dias" /></label>
         <label>Status
           <select name="status">
             <option value="active">Ativo</option>
             <option value="paused">Pausado</option>
           </select>
         </label>
+        <label>Descrição<textarea name="description" rows="6" placeholder="Descrição do anúncio no Mercado Livre"></textarea></label>
+        <label>Atributos ML em JSON<textarea name="attributesJson" rows="6" placeholder='[{"id":"BRAND","value_name":"3D.AFT"}]'></textarea></label>
+        <p class="muted">Categoria é exibida como referência: o Mercado Livre normalmente não permite alterar a categoria de um anúncio já publicado. Imagens também devem ser alteradas pelo fluxo de cadastrar/republicar produto quando necessário.</p>
         <p class="form-error" id="marketplaceEditMessage"></p>
         <button class="primary-btn" type="submit">Salvar no marketplace</button>
       </form>

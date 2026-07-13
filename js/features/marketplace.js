@@ -1284,6 +1284,10 @@ export async function openMarketplaceEdit(itemId, marketplace = "Mercado Livre")
     return;
   }
   const resolvedMarketplace = listing.marketplace || marketplace || "Mercado Livre";
+  const payload = listing.raw_payload || {};
+  const saleTerms = Array.isArray(payload.sale_terms) ? payload.sale_terms : [];
+  const warranty = saleTerms.find((term) => ["WARRANTY_TYPE", "WARRANTY_TIME"].includes(term.id))?.value_name || payload.warranty || "";
+  const manufacturingTime = saleTerms.find((term) => term.id === "MANUFACTURING_TIME")?.value_name || "";
   const form = byId("marketplaceEditForm");
   form.elements.itemId.value = normalizedId;
   form.elements.marketplace.value = resolvedMarketplace;
@@ -1296,7 +1300,14 @@ export async function openMarketplaceEdit(itemId, marketplace = "Mercado Livre")
     ?? listing.available_quantity
     ?? 0
   );
+  form.elements.categoryId.value = payload.category_id || "";
+  form.elements.listingTypeId.value = payload.listing_type_id || "gold_special";
+  form.elements.condition.value = payload.condition || "new";
+  form.elements.warranty.value = warranty;
+  form.elements.manufacturingTime.value = manufacturingTime;
   form.elements.status.value = listing.status === "paused" ? "paused" : "active";
+  form.elements.description.value = payload.description || payload.plain_text || "";
+  form.elements.attributesJson.value = JSON.stringify(payload.attributes || [], null, 2);
   byId("marketplaceEditCode").textContent = normalizedId;
   byId("marketplaceEditTitle").textContent = listing.title || "Editar anuncio";
   byId("marketplaceEditSubtitle").textContent = marketplaceDisplayName(resolvedMarketplace);
@@ -1320,13 +1331,25 @@ export async function saveMarketplaceListing(event) {
   }
   message.textContent = "Salvando no Mercado Livre...";
   try {
+    let attributes = [];
+    const attributesJson = String(data.get("attributesJson") || "").trim();
+    if (attributesJson) {
+      attributes = JSON.parse(attributesJson);
+      if (!Array.isArray(attributes)) throw new Error("Atributos ML precisam estar em formato de lista JSON.");
+    }
     await marketplaceRequest(`https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-sync?marketplace=ml&action=edit&item_id=${encodeURIComponent(itemId)}`, {
       method: "POST",
       body: JSON.stringify({
         title: data.get("title"),
         price: number(data.get("price")),
         available_quantity: Number(data.get("availableQuantity") || 0),
-        status: data.get("status")
+        status: data.get("status"),
+        listing_type_id: data.get("listingTypeId"),
+        condition: data.get("condition"),
+        warranty: data.get("warranty"),
+        manufacturing_time: data.get("manufacturingTime"),
+        description: data.get("description"),
+        attributes
       })
     });
     await loadMarketplaces();

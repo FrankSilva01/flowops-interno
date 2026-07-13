@@ -395,26 +395,67 @@ async function updateMlItem(itemId: string, changes: Record<string, any>, accoun
     }
   }
   if (["active", "paused"].includes(changes.status) && changes.status !== current.status) allowed.status = changes.status;
-  if (!Object.keys(allowed).length) return current;
+  if (["gold_special", "gold_pro", "free"].includes(String(changes.listing_type_id || "")) && changes.listing_type_id !== current.listing_type_id) {
+    allowed.listing_type_id = changes.listing_type_id;
+  }
+  if (["new", "used"].includes(String(changes.condition || "")) && changes.condition !== current.condition) {
+    allowed.condition = changes.condition;
+  }
+  if (Array.isArray(changes.attributes)) {
+    allowed.attributes = changes.attributes;
+  }
+  const saleTerms: Array<Record<string, string>> = [];
+  if (typeof changes.warranty === "string" && changes.warranty.trim()) {
+    saleTerms.push({ id: "WARRANTY_TYPE", value_name: changes.warranty.trim() });
+  }
+  if (typeof changes.manufacturing_time === "string" && changes.manufacturing_time.trim()) {
+    saleTerms.push({ id: "MANUFACTURING_TIME", value_name: changes.manufacturing_time.trim() });
+  }
+  if (saleTerms.length) allowed.sale_terms = saleTerms;
 
-  const response = await fetch(`https://api.mercadolibre.com/items/${itemId}`, {
-    method: "PUT",
-    headers: {
-      Authorization: `Bearer ${account.access_token}`,
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify(allowed),
-  });
-  const item = await response.json();
-  if (!response.ok) {
-    const detail = `${item.message || ""} ${JSON.stringify(item.cause || [])}`;
-    if (/unauthorized|policy/i.test(detail)) {
-      throw new Error(
-        "Mercado Livre recusou a edicao porque a conta esta conectada com Publicacao e sincronizacao em somente leitura. Altere para leitura e escrita no ML Developers e conecte a conta novamente.",
-      );
+  let item = current;
+  if (Object.keys(allowed).length) {
+    const response = await fetch(`https://api.mercadolibre.com/items/${itemId}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${account.access_token}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(allowed),
+    });
+    item = await response.json();
+    if (!response.ok) {
+      const detail = `${item.message || ""} ${JSON.stringify(item.cause || [])}`;
+      if (/unauthorized|policy/i.test(detail)) {
+        throw new Error(
+          "Mercado Livre recusou a edicao porque a conta esta conectada com Publicacao e sincronizacao em somente leitura. Altere para leitura e escrita no ML Developers e conecte a conta novamente.",
+        );
+      }
+      throw new Error(item.message || JSON.stringify(item));
     }
-    throw new Error(item.message || JSON.stringify(item));
+  }
+
+  if (typeof changes.description === "string") {
+    const currentDescription = await fetchMlDescription(itemId, account).catch(() => "");
+    if (changes.description.trim() !== String(currentDescription || "").trim()) {
+      const descriptionResponse = await fetch(`https://api.mercadolibre.com/items/${itemId}/description`, {
+        method: currentDescription ? "PUT" : "POST",
+        headers: {
+          Authorization: `Bearer ${account.access_token}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ plain_text: changes.description.trim() }),
+      });
+      const descriptionPayload = await descriptionResponse.json().catch(() => ({}));
+      if (!descriptionResponse.ok) {
+        throw new Error(descriptionPayload.message || `Falha ao atualizar descricao: ${JSON.stringify(descriptionPayload)}`);
+      }
+      item.description = changes.description.trim();
+    } else {
+      item.description = currentDescription;
+    }
   }
 
   const supabase = adminClient();
@@ -422,7 +463,7 @@ async function updateMlItem(itemId: string, changes: Record<string, any>, accoun
     title: item.title || changes.title,
     price: Number(item.price || changes.price || 0),
     status: item.status || changes.status,
-    raw_payload: item,
+    raw_payload: { ...item, description: item.description ?? current.description ?? "" },
     updated_at: new Date().toISOString(),
   }).eq("organization_id", account.organization_id).eq("marketplace", "Mercado Livre").eq("external_id", itemId);
   await logSync("Mercado Livre", "edit-listing", "success", `Anuncio ${itemId} atualizado`, {
