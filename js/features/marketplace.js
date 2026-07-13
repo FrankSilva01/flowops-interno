@@ -3,7 +3,7 @@ import {
   byId, html, number, formatDateTime, flashActionMessage, showAppMessage, sanitizeRichHtml,
   renderOperationalSummary,
 } from "../core/dom.js";
-import { ensureCanAdmin } from "../core/permissions.js";
+import { ensureCanAdmin, ensureCanEdit } from "../core/permissions.js";
 import { setView, bindActions, render, renderTables } from "../core/router.js";
 import { loadRemoteData } from "../data/remote.js";
 import { getOrderCode, syncOrderFilterControls } from "./orders.js";
@@ -1200,27 +1200,44 @@ export async function openMarketplaceEdit(itemId, marketplace = "Mercado Livre")
     alert("A edicao de anuncios da Shopee sera liberada depois que a conta estiver conectada ao Shopee Open Platform.");
     return;
   }
+  const normalizedId = String(itemId || "");
   const listing = state.marketplaceListings.find((item) =>
-    item.external_id === itemId && normalizeMarketplaceChannel(item.marketplace) === channel
+    String(item.external_id || "") === normalizedId && normalizeMarketplaceChannel(item.marketplace) === channel
+  ) || state.marketplaceListings.find((item) =>
+    String(item.external_id || "") === normalizedId
+  ) || state.marketplaceListings.find((item) =>
+    String(item.raw_payload?.id || item.raw_payload?.item_id || "") === normalizedId
   );
-  if (!listing) return;
+  if (!listing) {
+    showAppMessage("Anuncio nao encontrado", "Atualize os anuncios ou sincronize o Mercado Livre antes de editar.", "warning");
+    return;
+  }
+  const resolvedMarketplace = listing.marketplace || marketplace || "Mercado Livre";
   const form = byId("marketplaceEditForm");
-  form.elements.itemId.value = itemId;
-  form.elements.marketplace.value = marketplace;
+  form.elements.itemId.value = normalizedId;
+  form.elements.marketplace.value = resolvedMarketplace;
   form.elements.title.value = listing.title || "";
   form.elements.price.value = Number(listing.price || 0);
-  form.elements.availableQuantity.value = Number(listing.raw_payload?.available_quantity || 0);
+  form.elements.availableQuantity.value = Number(
+    listing.raw_payload?.available_quantity
+    ?? listing.raw_payload?.initial_quantity
+    ?? listing.stock
+    ?? listing.available_quantity
+    ?? 0
+  );
   form.elements.status.value = listing.status === "paused" ? "paused" : "active";
-  byId("marketplaceEditCode").textContent = itemId;
+  byId("marketplaceEditCode").textContent = normalizedId;
   byId("marketplaceEditTitle").textContent = listing.title || "Editar anuncio";
-  byId("marketplaceEditSubtitle").textContent = marketplaceDisplayName(marketplace);
+  byId("marketplaceEditSubtitle").textContent = marketplaceDisplayName(resolvedMarketplace);
   byId("marketplaceEditMessage").textContent = "";
-  byId("marketplaceEditDialog").showModal();
+  const dialog = byId("marketplaceEditDialog");
+  if (dialog.open) dialog.close();
+  dialog.showModal();
 }
 
 export async function saveMarketplaceListing(event) {
   event.preventDefault();
-  if (!ensureCanAdmin()) return;
+  if (!ensureCanEdit()) return;
   const form = event.currentTarget;
   const data = new FormData(form);
   const itemId = String(data.get("itemId") || "");
