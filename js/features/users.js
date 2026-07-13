@@ -61,8 +61,10 @@ export function renderActiveUsers() {
       <td class="cell-truncate" title="${html(user.email)}">${html(user.email)}</td>
       <td>
         <select class="role-select" data-action="change-user-role" data-email="${html(user.email)}" ${user.email === state.activeUserEmail ? "disabled" : ""}>
-          <option value="Administrador" ${user.role === "Administrador" ? "selected" : ""}>Administrador</option>
-          <option value="Edicao" ${isEditorRole(user.role) && !isAdminRole(user.role) ? "selected" : ""}>Edição</option>
+          <option value="Administrador" ${isAdminRole(user.role) ? "selected" : ""}>Administrador</option>
+          <option value="Supervisor" ${String(user.role || "").toLowerCase() === "supervisor" ? "selected" : ""}>Supervisor</option>
+          <option value="Operador" ${["operador", "edicao", "edição", "editor", "equipe"].includes(String(user.role || "").toLowerCase()) && !isAdminRole(user.role) ? "selected" : ""}>Operador</option>
+          <option value="Responsavel" ${["responsavel", "responsável", "responsible"].includes(String(user.role || "").toLowerCase()) ? "selected" : ""}>Responsável</option>
           <option value="Leitura" ${!isEditorRole(user.role) && !isAdminRole(user.role) ? "selected" : ""}>Somente leitura</option>
         </select>
       </td>
@@ -182,7 +184,7 @@ export async function approveAccess(email) {
     await userAccessRequest({
       action: "approve-request",
       email,
-      role: "Edicao",
+      role: "Operador",
     }, true);
   } catch (error) {
     showAppMessage(
@@ -255,7 +257,7 @@ export async function createManualUserAccess(event) {
   const name = String(data.get("name") || "").trim();
   const email = String(data.get("email") || "").trim().toLowerCase();
   const password = String(data.get("password") || "");
-  const role = String(data.get("role") || "Edicao");
+  const role = String(data.get("role") || "Operador");
   if (!email) return;
   const currentPlan = state.subscriptionPlans.find((item) => item.code === state.subscription?.plan_code);
   const userLimit = Number(currentPlan?.limits?.users || 0);

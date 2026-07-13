@@ -9,6 +9,10 @@ Use antes de cada deploy publico ou mudanca em Supabase/Netlify.
 - Entrar com usuario da empresa B em janela anonima.
 - Confirmar que nenhum pedido, anuncio, documento fiscal, lead, material ou rastreio da empresa A aparece na empresa B.
 - Rodar `sql/2026-07-13_two_org_isolation_smoke_test.sql` com os UUIDs reais das duas empresas.
+- Rodar `sql/2026-07-13_role_permission_hardening.sql` quando alterar regras de perfil.
+- Testar usuario `Leitura`: deve conseguir entrar e ver dados da propria empresa, mas nao criar/editar pedido via UI ou SQL simulado.
+- Testar usuario `Operador` ou `Supervisor`: deve criar/editar dados operacionais, mas nao acessar Gestao de usuarios nem Marketplace admin.
+- Testar `Administrador`: deve conseguir gerir usuarios e executar exclusoes autorizadas.
 
 ## 2. Fluxos criticos
 

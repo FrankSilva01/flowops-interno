@@ -1,17 +1,39 @@
 import { state } from "./state.js";
 import { byId } from "./dom.js";
 
+export function normalizeRole(role) {
+  return String(role || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
 export function isAdminRole(role) {
-  return ["administrador", "admin"].includes(String(role || "").toLowerCase());
+  return ["administrador", "admin", "owner"].includes(normalizeRole(role));
+}
+
+export function isSupervisorRole(role) {
+  return ["supervisor", "gestor", "gerente"].includes(normalizeRole(role));
+}
+
+export function isOperatorRole(role) {
+  return ["operador", "operacao", "edicao", "editor", "equipe"].includes(normalizeRole(role));
+}
+
+export function isResponsibleRole(role) {
+  return ["responsavel", "responsible"].includes(normalizeRole(role));
 }
 
 export function isEditorRole(role) {
-  return ["administrador", "admin", "edição", "edicao", "editor", "equipe"].includes(String(role || "").toLowerCase());
+  return isAdminRole(role) || isSupervisorRole(role) || isOperatorRole(role) || isResponsibleRole(role);
 }
 
 export function displayRole(role) {
   if (isAdminRole(role)) return "Administrador";
-  if (isEditorRole(role)) return "Edição";
+  if (isSupervisorRole(role)) return "Supervisor";
+  if (isOperatorRole(role)) return "Operador";
+  if (isResponsibleRole(role)) return "Responsavel";
   return "Somente leitura";
 }
 

@@ -1,8 +1,11 @@
--- FlowOps SaaS hardening - RLS por organizacao
--- Execute no Supabase SQL Editor antes de abrir para clientes externos.
--- Objetivo: todo dado operacional com organization_id deve ficar isolado por
--- membership ativa. Tabelas de integracao escritas por Edge Functions ficam
--- somente leitura para o cliente web.
+-- FlowOps SaaS hardening - permissoes por perfil dentro da empresa
+-- Execute no Supabase SQL Editor depois do hardening de RLS por organizacao.
+--
+-- Matriz aplicada no banco:
+-- - Administrador/admin/owner: le, cria, edita e exclui dados operacionais.
+-- - Supervisor/Operador/Responsavel/Edicao: le, cria e edita dados operacionais.
+-- - Leitura: apenas le dados da propria empresa.
+-- - Tabelas de marketplace gerenciadas por Edge Functions continuam somente leitura no cliente.
 
 create or replace function public.flowops_normalized_role(role_text text)
 returns text
@@ -89,7 +92,6 @@ declare
     'lead_files',
     'backup_runs',
     'marketplace_reviews',
-    'organization_subscriptions',
     'subscription_payments',
     'saas_support_tickets',
     'storefront_events',
@@ -106,17 +108,6 @@ declare
     'das_records',
     'weekly_summary_settings',
     'responsibles'
-  ];
-  readonly_tables text[] := array[
-    'marketplace_accounts',
-    'marketplace_documents',
-    'marketplace_listings',
-    'marketplace_order_links',
-    'marketplace_sync_log',
-    'listing_analytics',
-    'seller_metrics',
-    'listing_fee_sync',
-    'auto_sync_runs'
   ];
   t text;
 begin
@@ -157,70 +148,10 @@ begin
       );
     end if;
   end loop;
-
-  foreach t in array readonly_tables loop
-    if to_regclass(format('public.%I', t)) is not null
-       and exists (
-         select 1
-         from information_schema.columns
-         where table_schema = 'public'
-           and table_name = t
-           and column_name = 'organization_id'
-       ) then
-      execute format('alter table public.%I enable row level security', t);
-      execute format('alter table public.%I force row level security', t);
-
-      execute format('drop policy if exists %I on public.%I', t || '_select_own_org', t);
-      execute format('drop policy if exists %I on public.%I', t || '_tenant_read', t);
-      execute format('drop policy if exists %I on public.%I', t || '_tenant_write', t);
-      execute format(
-        'create policy %I on public.%I for select using (public.user_in_organization(organization_id))',
-        t || '_select_own_org', t
-      );
-    end if;
-  end loop;
 end $$;
 
--- Memberships: usuario ve as empresas em que participa; admin/owner gerencia a propria empresa.
-do $$
-begin
-  if to_regclass('public.organization_members') is not null then
-    alter table public.organization_members enable row level security;
-    alter table public.organization_members force row level security;
-
-    drop policy if exists organization_members_select_self_or_own_org on public.organization_members;
-    drop policy if exists organization_members_admin_manage_own_org on public.organization_members;
-
-    create policy organization_members_select_self_or_own_org
-      on public.organization_members
-      for select
-      using (lower(user_email) = lower(auth.jwt()->>'email') or public.user_admin_in_organization(organization_id));
-
-    create policy organization_members_admin_manage_own_org
-      on public.organization_members
-      for all
-      using (public.user_admin_in_organization(organization_id))
-      with check (public.user_admin_in_organization(organization_id));
-  end if;
-end $$;
-
--- Diagnostico rapido: deve retornar apenas tabelas org-scoped com RLS ativo.
-select
-  c.relname as table_name,
-  c.relrowsecurity as rls_enabled,
-  c.relforcerowsecurity as rls_forced,
-  count(p.policyname) as policies
-from pg_class c
-join pg_namespace n on n.oid = c.relnamespace
-left join pg_policies p on p.schemaname = n.nspname and p.tablename = c.relname
-where n.nspname = 'public'
-  and c.relkind = 'r'
-  and exists (
-    select 1
-    from information_schema.columns col
-    where col.table_schema = 'public'
-      and col.table_name = c.relname
-      and col.column_name = 'organization_id'
-  )
-group by c.relname, c.relrowsecurity, c.relforcerowsecurity
-order by c.relname;
+-- Diagnostico: informe um email real para conferir permissao por empresa.
+-- select
+--   public.user_in_organization('00000000-0000-0000-0000-000000000001') as can_read,
+--   public.user_can_edit_organization('00000000-0000-0000-0000-000000000001') as can_edit,
+--   public.user_admin_in_organization('00000000-0000-0000-0000-000000000001') as can_admin;

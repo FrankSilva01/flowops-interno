@@ -74,7 +74,7 @@ import {
   showCalculatorSuggestion, getSuggestionForListing, syncFeeCalculatorFull,
 } from "../features/marketplace-analytics.js";
 
-const APP_VERSION = "218";
+const APP_VERSION = "219";
 
 async function refreshAppShell() {
   showAppMessage("Atualizando sistema", "Limpando cache local e carregando a versão mais recente.", "info");
@@ -698,7 +698,7 @@ export function bindActions() {
         return;
       }
       if (action === "delete-product") {
-        if (!ensureCanEdit()) return;
+        if (!ensureCanAdmin()) return;
         await deleteProduct(id);
         return;
       }
@@ -727,6 +727,7 @@ export function bindActions() {
         return;
       }
       if (action === "sync-analytics-full") {
+        if (!ensureCanAdmin()) return;
         // Clique manual e uma acao deliberada - ignora o cache (1h/6h) que
         // existe pra evitar sync automatico repetido, nao pra travar um
         // pedido explicito do usuario.
@@ -734,6 +735,7 @@ export function bindActions() {
         return;
       }
       if (action === "sync-fee-calculator") {
+        if (!ensureCanAdmin()) return;
         await syncFeeCalculatorFull(true);
         return;
       }
@@ -794,7 +796,7 @@ export function bindActions() {
         return;
       }
       if (action === "marketplace-edit") {
-        if (!ensureCanEdit()) return;
+        if (!ensureCanAdmin()) return;
         await openMarketplaceEdit(id, button.dataset.marketplace);
         return;
       }
@@ -811,6 +813,7 @@ export function bindActions() {
         return;
       }
       if (action === "marketplace-create-order") {
+        if (!ensureCanAdmin()) return;
         await createMarketplaceOrder(id, button.dataset.marketplace);
         return;
       }
@@ -819,10 +822,12 @@ export function bindActions() {
         return;
       }
       if (action === "marketplace-reconnect-ml") {
+        if (!ensureCanAdmin()) return;
         await connectMercadoLivre();
         return;
       }
       if (action === "marketplace-disconnect-ml") {
+        if (!ensureCanAdmin()) return;
         await disconnectMercadoLivre();
         return;
       }
@@ -888,10 +893,12 @@ export function bindActions() {
         return;
       }
       if (action === "edit-lead") {
+        if (!ensureCanEdit()) return;
         openLeadDialog(id);
         return;
       }
       if (action === "open-lead-order") {
+        if (!ensureCanEdit()) return;
         openOrderFromLead(id);
         return;
       }
@@ -900,12 +907,12 @@ export function bindActions() {
         return;
       }
       if (action === "delete-lead-file") {
-        if (!ensureCanEdit()) return;
+        if (!ensureCanAdmin()) return;
         await deleteLeadFile(id);
         return;
       }
       if (action === "delete-custom-tag") {
-        if (!ensureCanEdit()) return;
+        if (!ensureCanAdmin()) return;
         await deleteCustomTag(id);
         return;
       }
@@ -944,19 +951,19 @@ export function bindActions() {
         await syncOrderPaymentCash(item, previousOrder);
       }
       if (action === "delete-order") {
-        if (!ensureCanEdit() || !confirm("Excluir esta encomenda?")) return;
+        if (!ensureCanAdmin() || !confirm("Excluir esta encomenda?")) return;
         const deleted = state.data.orders.find((item) => item.id === id);
         await recordAudit("delete", "order", id, deleted?.orderCode, deleted, null, "manual");
         state.data.orders = state.data.orders.filter((item) => item.id !== id);
         await removeRemote("orders", id);
       }
       if (action === "delete-cash") {
-        if (!ensureCanEdit() || !confirm("Excluir este lançamento do fluxo de caixa?")) return;
+        if (!ensureCanAdmin() || !confirm("Excluir este lançamento do fluxo de caixa?")) return;
         state.data.cash = state.data.cash.filter((item) => item.id !== id);
         await removeRemote("cash", id);
       }
       if (action === "delete-material") {
-        if (!ensureCanEdit() || !confirm("Excluir este material e a saída vinculada no caixa?")) return;
+        if (!ensureCanAdmin() || !confirm("Excluir este material e a saída vinculada no caixa?")) return;
         state.data.materials = state.data.materials.filter((item) => item.id !== id);
         const cashId = materialCashId(id);
         state.data.cash = state.data.cash.filter((item) => item.id !== cashId);
@@ -969,7 +976,7 @@ export function bindActions() {
         return;
       }
       if (action === "delete-inventory") {
-        if (!ensureCanEdit() || !confirm("Excluir este item do estoque?")) return;
+        if (!ensureCanAdmin() || !confirm("Excluir este item do estoque?")) return;
         const { error } = await state.supabase.from("inventory_items").delete().eq("id", id);
         if (error) {
           showAppMessage("Não foi possível excluir", error.message, "error");
