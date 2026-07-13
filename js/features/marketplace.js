@@ -11,6 +11,7 @@ import { recordAudit, isWithinDateRange } from "./logs.js";
 import { getTokenAlert } from "./dashboard.js";
 import { renderProfitabilityBadge, renderCommercialIntelligence, getListingProfitability } from "./pricing.js";
 import { renderMarketplaceAnalyticsPanel, getListingAnalytics, computeIntentScore } from "./marketplace-analytics.js";
+import { getProductForSale, renderProductionAssetShortcut } from "./product-assets.js";
 
 const MARKETPLACE_CHANNELS = [
   { id: "mercado-livre", label: "Mercado Livre" },
@@ -226,6 +227,7 @@ export function renderMarketplaces() {
     const amount = Number(payload.total_amount || orderItem.unit_price || 0);
     const internalOrder = state.data.orders.find((item) => item.id === sale.internal_order_id);
     const internalCode = internalOrder ? getOrderCode(internalOrder) : "";
+    const internalProduct = getProductForSale(sale);
     return `
       <article class="marketplace-sale-card">
         <div class="marketplace-sale-head">
@@ -242,6 +244,9 @@ export function renderMarketplaces() {
           <div><dt>Data</dt><dd>${formatDateTime(payload.date_created || sale.created_at)}</dd></div>
           <div><dt>Encomenda</dt><dd>${internalCode ? html(internalCode) : "Ainda não criada"}</dd></div>
         </dl>
+        <div class="marketplace-sale-production">
+          ${renderProductionAssetShortcut(internalProduct, { empty: "Venda sem produto interno vinculado" })}
+        </div>
         <div class="listing-actions">
           ${internalOrder ?
              `<button class="primary-btn" type="button" data-action="marketplace-view-order" data-id="${html(internalOrder.id)}">Ver encomenda</button>`

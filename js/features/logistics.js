@@ -6,6 +6,7 @@ import { recordAudit } from "./logs.js";
 import { getOrderCode } from "./orders.js";
 import { createNotification } from "./notifications.js";
 import { syncMlShipment } from "./marketplace.js";
+import { getProductForOrder, renderProductionAssetShortcut } from "./product-assets.js";
 
 export const LOGISTICS_STATUSES = [
   "Aguardando envio", "Postado", "Em trânsito", "Saiu para entrega", "Entregue", "Problema na entrega", "Devolvido",
@@ -143,13 +144,14 @@ export function renderLogistics() {
   target.innerHTML = rows.length ? rows.map(({ order, logistics, action }) => `
     <tr>
       <td><strong>${html(getOrderCode(order))}</strong><br><small>${html(order.client || order.description || "")}</small></td>
+      <td>${renderProductionAssetShortcut(getProductForOrder(order), { compact: true, empty: "Sem produto vinculado" })}</td>
       <td><span class="badge ${getLogisticsStatusClass(logistics?.status)}">${html(getLogisticsStatusLabel(logistics?.status))}</span><br><small>${html(logistics?.carrier || (hasMarketplaceTrackingSource(order) ? "Mercado Livre vinculado" : "Sem transportadora"))}</small></td>
       <td>${logistics?.tracking_code ? html(logistics.tracking_code) : `<span class="muted">Sem codigo</span>`}</td>
       <td>${logistics?.estimated_delivery_date ? formatDate(logistics.estimated_delivery_date) : "-"}</td>
       <td><strong class="logistics-next-action ${html(action.tone)}">${html(action.label)}</strong><br><small>${html(action.detail)}</small></td>
       <td><button class="secondary-btn" type="button" data-action="open-logistics" data-id="${html(order.id)}">Abrir</button></td>
     </tr>
-  `).join("") : `<tr><td colspan="6"><div class="empty-state compact"><strong>Nenhuma encomenda encontrada</strong><span>Ajuste os filtros ou aguarde novas encomendas.</span></div></td></tr>`;
+  `).join("") : `<tr><td colspan="7"><div class="empty-state compact"><strong>Nenhuma encomenda encontrada</strong><span>Ajuste os filtros ou aguarde novas encomendas.</span></div></td></tr>`;
   bindActions();
 }
 

@@ -12,6 +12,7 @@ import { renderSettingsData } from "./backup.js";
 import { pick, normalizeText, normalizeDate, normalizeKey } from "../core/importer.js";
 import { createNotification } from "./notifications.js";
 import { renderLogisticsBadge } from "./logistics.js";
+import { getProductForOrder, getProductAssetInfo, renderProductionAssetShortcut } from "./product-assets.js";
 
 export function renderOrders() {
   const rows = sortOrders(filterOrders(filterRows(state.data.orders, ["orderCode", "marketplaceOrderCode", "description", "client", "material", "status", "responsible", "productionStage", "stlLink", "referenceImageUrl", "internalNotes", "tags"])));
@@ -79,7 +80,7 @@ function renderOrderDetailPanel(item) {
       <div class="drawer-field-list">
         ${rows.map(([label, value]) => `<div class="drawer-field-row"><span>${html(label)}</span><strong>${html(String(value))}</strong></div>`).join("")}
       </div>
-      ${renderOrderReferences(item)}
+      ${renderOrderProductionAssets(item)}
       ${item.internalNotes ? `<div class="drawer-notes"><strong>Nota interna</strong><p>${html(item.internalNotes)}</p></div>` : ""}
       <div class="drawer-section-title">Histórico recente</div>
       <div class="drawer-timeline">
@@ -114,7 +115,7 @@ function renderOrderTableRow(item) {
           ${item.status !== "Orçamento" ? renderLogisticsBadge(item.id) : ""}
           <small>${html(item.client || "Cliente não informado")}</small>
           ${renderTags((item.tags || []).filter((tag) => !isMarketplaceTag(tag)), item.id)}
-          ${renderOrderReferences(item)}
+          ${renderOrderProductionAssets(item, { compact: true })}
         </td>
         <td>
           <div class="marketplace-code-cell">
@@ -160,8 +161,10 @@ function renderOrderCard(item, selectedOrder) {
   const isLate = sla.className === "danger-badge" && status !== "Entregue";
   const edgeClass = status === "Entregue" ? "order-card-paid" : isLate ? "order-card-late" : "";
   const selectedClass = selectedOrder?.id === item.id ? "selected" : "";
-  const thumbUrl = safeUrl(item.referenceImageUrl);
-  const stlLink = safeUrl(item.stlLink);
+  const product = getProductForOrder(item);
+  const productAssets = getProductAssetInfo(product);
+  const thumbUrl = safeUrl(item.referenceImageUrl) || safeUrl(productAssets.imageUrl);
+  const stlLink = safeUrl(item.stlLink) || safeUrl(productAssets.stlLink);
   return `
     <article class="order-card ${edgeClass} ${selectedClass}" data-action="select-order" data-id="${html(item.id)}" tabindex="0" role="button" aria-label="Ver detalhes de ${html(getOrderCode(item))}">
       <div class="order-card-thumb">
@@ -178,6 +181,7 @@ function renderOrderCard(item, selectedOrder) {
           <span><i class="ti ti-clock" aria-hidden="true"></i> ${item.deliveryDate ? formatDate(item.deliveryDate) : "Sem data"}</span>
           ${item.responsible ? `<span><i class="ti ti-user" aria-hidden="true"></i> ${html(item.responsible)}</span>` : ""}
           ${stlLink ? `<a class="order-link order-card-link" href="${html(stlLink)}" target="_blank" rel="noopener"><i class="ti ti-file-3d" aria-hidden="true"></i> STL/origem</a>` : ""}
+          ${product ? `<span><i class="ti ti-cube" aria-hidden="true"></i> ${html(product.sku || product.name)}</span>` : ""}
         </div>
       </div>
       <div class="order-card-side">
@@ -232,7 +236,7 @@ export function openOrderDrawer(id) {
   byId("orderDrawerFields").innerHTML = rows.map(([label, value]) => `
     <div class="drawer-field-row"><span>${html(label)}</span><strong>${html(String(value))}</strong></div>
   `).join("");
-  byId("orderDrawerReference").innerHTML = renderOrderReferences(item);
+  byId("orderDrawerReference").innerHTML = renderOrderProductionAssets(item);
   const notesTarget = byId("orderDrawerNotes");
   if (item.internalNotes) {
     notesTarget.hidden = false;
@@ -304,6 +308,22 @@ export function renderOrderReferences(item) {
         ${stlLink ? `<a class="order-link" href="${html(stlLink)}" target="_blank" rel="noopener">Abrir STL/origem</a>` : ""}
         ${imageUrl ? `<a class="order-link" href="${html(imageUrl)}" target="_blank" rel="noopener">Ver referência</a>` : ""}
       </div>
+    </div>
+  `;
+}
+
+function renderOrderProductionAssets(item, options = {}) {
+  const product = getProductForOrder(item);
+  const productBlock = renderProductionAssetShortcut(product, { compact: options.compact });
+  const directReference = renderOrderReferences(item);
+  if (!productBlock && !directReference) return "";
+  if (options.compact) {
+    return `<div class="order-production-assets">${productBlock}${directReference}</div>`;
+  }
+  return `
+    <div class="order-production-assets">
+      ${productBlock ? `<div class="drawer-section-title">Produto interno / arquivos</div>${productBlock}` : ""}
+      ${directReference ? `<div class="drawer-section-title">Arquivos da encomenda</div>${directReference}` : ""}
     </div>
   `;
 }
