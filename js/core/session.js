@@ -42,6 +42,7 @@ export function loadSupabase() {
   if (window.supabase) return Promise.resolve();
   return new Promise((resolve, reject) => {
     const sources = [
+      "./assets/vendor/supabase.js",
       "https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js",
       "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js",
     ];
