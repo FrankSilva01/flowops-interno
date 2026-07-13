@@ -1182,6 +1182,24 @@ button.attention-item:hover {
   background: rgba(15, 23, 42, 0.45);
 }
 
+.advanced-json-fields {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.18);
+  padding: 10px 12px;
+}
+
+.advanced-json-fields summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-weight: 700;
+  list-style-position: inside;
+}
+
+.advanced-json-fields label {
+  margin-top: 10px;
+}
+
 .history-timeline {
   display: flex;
   flex-direction: column;

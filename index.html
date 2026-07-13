@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="./css/11-fiscal-forms.css?v=200" />
     <link rel="stylesheet" href="./css/12-global-search.css?v=200" />
     <script src="./supabase-config.js?v=200" defer></script>
-    <script type="module" src="./js/app.js?v=215"></script>
+    <script type="module" src="./js/app.js?v=216"></script>
   </head>
   <body>
     <main id="appView" class="app-shell" hidden>
@@ -1138,7 +1138,10 @@
                   <label>Garantia<input name="ml_warranty" value="Sem garantia" /></label>
                   <label>Tempo de preparo<input name="ml_manufacturing_time" placeholder="20 dias" /></label>
                   <label>SKU<input name="sku" /></label>
-                  <label class="wide">Atributos ML em JSON<textarea name="ml_attributes_json" rows="5" placeholder='[{"id":"BRAND","value_name":"3D.AFT"}]'></textarea></label>
+                  <details class="advanced-json-fields wide">
+                    <summary>Opções avançadas do Mercado Livre</summary>
+                    <label>Atributos ML em JSON<textarea name="ml_attributes_json" rows="5" placeholder='[{"id":"BRAND","value_name":"3D.AFT"}]'></textarea></label>
+                  </details>
                   <div id="mlCategoryFieldsPreview" class="category-fields-preview"></div>
                 </div>
 
@@ -1911,7 +1914,10 @@
           </select>
         </label>
         <label>Descrição<textarea name="description" rows="6" placeholder="Descrição do anúncio no Mercado Livre"></textarea></label>
-        <label>Atributos ML em JSON<textarea name="attributesJson" rows="6" placeholder='[{"id":"BRAND","value_name":"3D.AFT"}]'></textarea></label>
+        <details class="advanced-json-fields">
+          <summary>Opções avançadas do Mercado Livre</summary>
+          <label>Atributos ML em JSON<textarea name="attributesJson" rows="6" placeholder='[{"id":"BRAND","value_name":"3D.AFT"}]'></textarea></label>
+        </details>
         <p class="muted">Categoria é exibida como referência: o Mercado Livre normalmente não permite alterar a categoria de um anúncio já publicado. Imagens também devem ser alteradas pelo fluxo de cadastrar/republicar produto quando necessário.</p>
         <p class="form-error" id="marketplaceEditMessage"></p>
         <button class="primary-btn" type="submit">Salvar no marketplace</button>
