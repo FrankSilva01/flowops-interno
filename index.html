@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="./css/11-fiscal-forms.css?v=200" />
     <link rel="stylesheet" href="./css/12-global-search.css?v=200" />
     <script src="./supabase-config.js?v=200" defer></script>
-    <script type="module" src="./js/app.js?v=205"></script>
+    <script type="module" src="./js/app.js?v=206"></script>
   </head>
   <body>
     <main id="appView" class="app-shell" hidden>
@@ -1233,7 +1233,7 @@
             <div class="panel-head">
               <div>
                 <h3>Inteligência Comercial</h3>
-                <small>Catálogo de produtos, rentabilidade, sugestões e simulações.</small>
+                <small>Produtos internos, arquivos de produção, rentabilidade e performance dos anúncios.</small>
               </div>
               <div class="inline-actions">
                 <button id="syncFeeCalculatorBtn" class="secondary-btn" type="button" data-action="sync-fee-calculator">Sincronizar taxas</button>
@@ -1255,7 +1255,7 @@
             <div class="panel panel-collapsible collapsed" data-panel-collapsible="product-catalog">
               <div class="panel-head">
                 <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="false">
-                  <span class="dashboard-collapsible-head"><strong>Catálogo de produtos</strong></span>
+                  <span class="dashboard-collapsible-head"><strong>Produtos e arquivos de produção</strong><small>Base interna: SKU, custo, STL, imagem e vínculos com anúncios</small></span>
                   <i class="ti ti-chevron-down" aria-hidden="true"></i>
                 </button>
                 <div class="panel-filters">
@@ -1265,7 +1265,7 @@
               <div class="dashboard-collapsible-body">
                 <div class="table-wrap">
                   <table>
-                    <thead><tr><th>SKU</th><th>Nome</th><th>Categoria</th><th>Custo</th><th>Ações</th></tr></thead>
+                    <thead><tr><th>SKU</th><th>Produto interno</th><th>Arquivos</th><th>Anúncios vinculados</th><th>Custo</th><th>Ações</th></tr></thead>
                     <tbody id="productCatalogTable"></tbody>
                   </table>
                 </div>
@@ -1747,6 +1747,9 @@
       <div class="drawer-body">
         <div class="drawer-section-title">Resumo financeiro</div>
         <div id="listingDrawerFinancial" class="drawer-field-list"></div>
+
+        <div class="drawer-section-title">Produto interno</div>
+        <div id="listingDrawerProductAssets"></div>
 
         <div class="drawer-section-title">Performance (30 dias)</div>
         <div id="listingDrawerPerformance" class="drawer-field-list"></div>

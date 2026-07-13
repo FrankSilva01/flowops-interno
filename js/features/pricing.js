@@ -189,6 +189,26 @@ function renderProductAssetLinks(product) {
   `;
 }
 
+function renderProductLinkedListings(product) {
+  const links = state.productListings.filter((item) => item.product_id === product.id);
+  if (!links.length) return `<small class="muted">Sem anuncio vinculado</small>`;
+  return `
+    <div class="product-linked-listings">
+      ${links.map((link) => {
+        const listing = state.marketplaceListings.find((item) =>
+          item.marketplace === link.marketplace && item.external_id === link.external_id
+        );
+        const title = listing?.title || link.external_id || "Anuncio";
+        return `
+          <button class="link-cell" type="button" data-action="open-listing-drawer" data-marketplace="${html(link.marketplace)}" data-external-id="${html(link.external_id)}" title="${html(title)}">
+            ${html(marketplaceDisplayName(link.marketplace))} · ${html(link.external_id || "-")}
+          </button>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
 export function renderProductCatalogTable() {
   const target = byId("productCatalogTable");
   if (!target) return;
@@ -199,15 +219,16 @@ export function renderProductCatalogTable() {
   target.innerHTML = rows.length ? rows.map((item) => `
     <tr>
       <td><strong>${html(item.sku)}</strong></td>
-      <td><strong>${html(item.name)}</strong><br>${renderProductAssetLinks(item)}</td>
-      <td>${html(item.category || "-")}</td>
+      <td><strong>${html(item.name)}</strong><br><small class="muted">${html(item.category || "Sem categoria")}${item.weight_kg ? ` · ${Number(item.weight_kg).toLocaleString("pt-BR")} kg` : ""}</small></td>
+      <td>${renderProductAssetLinks(item)}</td>
+      <td>${renderProductLinkedListings(item)}</td>
       <td>${money.format(Number(item.cost_price || 0))}</td>
       <td>
         ${state.canEdit ? `<button class="icon-btn" type="button" data-action="edit-product" data-id="${html(item.id)}">Editar</button>
         <button class="icon-btn danger" type="button" data-action="delete-product" data-id="${html(item.id)}">Excluir</button>` : "-"}
       </td>
     </tr>
-  `).join("") : `<tr><td colspan="5">Nenhum produto cadastrado.</td></tr>`;
+  `).join("") : `<tr><td colspan="6">Nenhum produto interno cadastrado.</td></tr>`;
   bindActions();
 }
 

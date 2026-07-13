@@ -13,6 +13,7 @@ import { marketplaceRequest } from "./marketplace.js";
 import {
   hasCommercialIntelligenceAccess, getListingProfitability, getFinancialSettings,
   computeMarginBreakdown, openPriceCalculatorForListing, renderCommercialIntelligence,
+  getProductForListing, getProductAssetInfo,
 } from "./pricing.js";
 
 const ANALYTICS_URL = "https://djvrhvzjvnyensbobtby.functions.supabase.co/marketplace-sync?marketplace=ml&action=analytics-full";
@@ -906,6 +907,7 @@ export function openListingDrawer(marketplace, externalId) {
   byId("listingDrawerMarketplace").textContent = marketplace;
 
   renderListingDrawerFinancial(profitability, suggestion);
+  renderListingDrawerProductAssets(marketplace, externalId);
   renderListingDrawerPerformance(analytics, portfolioAvgConversion);
   renderListingDrawerCompetitiveness(listing, analytics);
   renderListingDrawerHealth(analytics);
@@ -933,6 +935,34 @@ export function openListingDrawer(marketplace, externalId) {
   byId("listingDrawer").classList.add("open");
   byId("listingDrawer").setAttribute("aria-hidden", "false");
   byId("listingDrawerOverlay").hidden = false;
+}
+
+function renderListingDrawerProductAssets(marketplace, externalId) {
+  const target = byId("listingDrawerProductAssets");
+  if (!target) return;
+  const product = getProductForListing(marketplace, externalId);
+  if (!product) {
+    target.innerHTML = `<div class="empty-chart">Nenhum produto interno vinculado. Clique em Editar anuncio para criar o vinculo e salvar STL, imagem e observacoes de producao.</div>`;
+    return;
+  }
+  const assets = getProductAssetInfo(product);
+  const stl = safeUrl(assets.stlLink);
+  const image = safeUrl(assets.imageUrl);
+  const notes = String(assets.notes || "").trim();
+  target.innerHTML = `
+    <div class="product-asset-card">
+      ${image ? `<a href="${html(image)}" target="_blank" rel="noopener"><img src="${html(image)}" alt="${html(product.name || "Produto")}" loading="lazy" /></a>` : `<div class="product-asset-placeholder">Sem imagem</div>`}
+      <div>
+        <strong>${html(product.name || "Produto interno")}</strong>
+        <span>SKU ${html(product.sku || "-")}${product.category ? ` · ${html(product.category)}` : ""}</span>
+        <div class="inline-actions">
+          ${stl ? `<a class="order-link" href="${html(stl)}" target="_blank" rel="noopener">Abrir STL/origem</a>` : ""}
+          ${image ? `<a class="order-link" href="${html(image)}" target="_blank" rel="noopener">Abrir imagem</a>` : ""}
+        </div>
+        ${notes ? `<small class="muted">${html(notes)}</small>` : `<small class="muted">Sem observacoes de producao.</small>`}
+      </div>
+    </div>
+  `;
 }
 
 function renderListingDrawerFinancial(profitability, suggestion) {
