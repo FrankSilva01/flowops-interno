@@ -416,14 +416,6 @@ export function bindProductFormAutoSku() {
   form.elements.category.addEventListener("input", refresh);
 }
 
-function parseProductImageUrls(value) {
-  return String(value || "")
-    .split(/\r?\n|,/)
-    .map((item) => item.trim())
-    .filter(Boolean)
-    .filter((item) => /^https?:\/\//i.test(item));
-}
-
 function buildMlProductAttributes(data, name) {
   const brand = String(data.get("mlBrand") || "3D.AFT").trim() || "3D.AFT";
   const model = String(data.get("mlModel") || name).trim() || name;
@@ -453,7 +445,6 @@ export async function saveProduct(event) {
   const stock = Math.max(Number(data.get("stock") || 1), 0);
   const listingValue = String(data.get("listingLink") || "");
   const selectedChannels = CREATABLE_MARKETPLACES.filter((channel) => Boolean(data.get(MARKETPLACE_CHECKBOX_NAMES[channel])));
-  const imageUrls = parseProductImageUrls(data.get("imageUrls"));
   if (selectedChannels.includes("mercado-livre") && !isMarketplaceAccountConnected("mercado-livre")) {
     message.textContent = "Conecte o Mercado Livre em Integrações antes de publicar. Para salvar apenas no catálogo, desmarque Mercado Livre.";
     return;
@@ -464,8 +455,8 @@ export async function saveProduct(event) {
   // So exige as 3 fotos quando o cadastro vai CRIAR um anuncio novo (mesmo
   // padrao do Mercado Livre) - vincular a um anuncio ja existente reaproveita
   // as fotos que ja estao la, entao nao entra nessa exigencia.
-  if (!listingValue && channelsWithAutomaticPublication.length && imageUrls.length < 3) {
-    message.textContent = `Informe pelo menos 3 URLs públicas de imagem para publicar no Mercado Livre (${imageUrls.length} de 3).`;
+  if (!listingValue && channelsWithAutomaticPublication.length && productUploadedImages.length < 3) {
+    message.textContent = `Adicione pelo menos 3 fotos do produto para publicar no Mercado Livre (${productUploadedImages.length} de 3).`;
     return;
   }
   const payload = {
@@ -542,7 +533,7 @@ export async function saveProduct(event) {
         condition: "new",
         sku,
         description: String(data.get("description") || "").trim() || name,
-        pictures: imageUrls.slice(0, 6),
+        pictures: productUploadedImages.slice(0, 6),
         warranty: "Sem garantia",
         manufacturing_time: String(data.get("mlManufacturingTime") || "20 dias").trim() || "20 dias",
         attributes: buildMlProductAttributes(data, name),
