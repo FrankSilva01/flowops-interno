@@ -55,6 +55,7 @@ declare
     'subscription_payments',
     'saas_support_tickets',
     'storefront_events',
+    'order_history_events',
     'order_logistics',
     'logistics_events',
     'products',
@@ -70,6 +71,7 @@ declare
   ];
   readonly_tables text[] := array[
     'marketplace_accounts',
+    'marketplace_documents',
     'marketplace_listings',
     'marketplace_order_links',
     'marketplace_sync_log',
@@ -96,6 +98,8 @@ begin
       execute format('drop policy if exists %I on public.%I', t || '_insert_own_org', t);
       execute format('drop policy if exists %I on public.%I', t || '_update_own_org', t);
       execute format('drop policy if exists %I on public.%I', t || '_delete_own_org', t);
+      execute format('drop policy if exists %I on public.%I', t || '_tenant_read', t);
+      execute format('drop policy if exists %I on public.%I', t || '_tenant_write', t);
 
       execute format(
         'create policy %I on public.%I for select using (public.user_in_organization(organization_id))',
@@ -129,6 +133,8 @@ begin
       execute format('alter table public.%I force row level security', t);
 
       execute format('drop policy if exists %I on public.%I', t || '_select_own_org', t);
+      execute format('drop policy if exists %I on public.%I', t || '_tenant_read', t);
+      execute format('drop policy if exists %I on public.%I', t || '_tenant_write', t);
       execute format(
         'create policy %I on public.%I for select using (public.user_in_organization(organization_id))',
         t || '_select_own_org', t
