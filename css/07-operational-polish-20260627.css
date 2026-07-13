@@ -1977,14 +1977,92 @@ button.attention-item:hover {
 .intelligence-priority-card.danger { border-left-color: var(--red); }
 .intelligence-priority-card.opportunity { border-left-color: var(--teal); }
 
+.intelligence-decision-board,
+.logistics-action-board {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.intelligence-decision-card,
+.logistics-action-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 150px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--muted);
+  border-radius: 8px;
+  background: var(--surface-1);
+}
+
+.logistics-action-card {
+  min-height: 104px;
+}
+
+.intelligence-decision-card span,
+.intelligence-decision-card small,
+.logistics-action-card span,
+.logistics-action-card small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.intelligence-decision-card strong,
+.logistics-action-card strong {
+  display: block;
+  margin: 6px 0 4px;
+  font-size: 18px;
+  line-height: 1.15;
+}
+
+.intelligence-decision-card ul {
+  display: grid;
+  gap: 4px;
+  margin: 10px 0;
+  padding-left: 16px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.intelligence-decision-card button {
+  align-self: flex-start;
+  margin-top: 10px;
+}
+
+.intelligence-decision-card.ok,
+.logistics-action-card.ok { border-left-color: var(--green); }
+.intelligence-decision-card.warning,
+.logistics-action-card.warning { border-left-color: var(--amber); }
+.intelligence-decision-card.danger,
+.logistics-action-card.danger { border-left-color: var(--red); }
+.intelligence-decision-card.opportunity,
+.logistics-action-card.info { border-left-color: var(--teal); }
+
+.logistics-next-action {
+  font-size: 13px;
+}
+
+.logistics-next-action.danger { color: var(--red); }
+.logistics-next-action.warning { color: var(--amber); }
+.logistics-next-action.ok { color: var(--green); }
+.logistics-next-action.info { color: var(--teal); }
+
 @media (max-width: 1100px) {
-  .intelligence-priority-strip {
+  .intelligence-priority-strip,
+  .intelligence-decision-board,
+  .logistics-action-board {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 640px) {
-  .intelligence-priority-strip {
+  .intelligence-priority-strip,
+  .intelligence-decision-board,
+  .logistics-action-board {
     grid-template-columns: 1fr;
   }
 }

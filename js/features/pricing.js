@@ -1629,7 +1629,7 @@ export function renderCommercialIntelligence() {
     bindActions();
     return;
   }
-  renderIntelligencePriorityStrip();
+  renderIntelligenceDecisionBoard();
   renderProfitabilitySummaryPanel();
   renderProfitabilityDistributionChart();
   renderTopProductsProfitChart();
@@ -1637,6 +1637,127 @@ export function renderCommercialIntelligence() {
   renderSuggestions();
   renderProfitSimulator();
   renderMarketplaceComparison();
+}
+
+function getListingAnalyticsSnapshot(listing) {
+  return state.listingAnalytics?.[`${listing.marketplace}:${listing.external_id}`] || null;
+}
+
+function getIntelligenceDecisionData() {
+  const coverage = getCostCoverage();
+  const missingCost = Math.max(coverage.total - coverage.withCost, 0);
+  const summary = getProfitabilitySummary();
+  const atRisk = summary.loss + summary.critical + summary.attention;
+  const potential = getProfitPotential();
+  const potentialGain = Math.max(potential.potentialProfit - potential.currentProfit, 0);
+  const rows = state.marketplaceListings.map((listing) => ({
+    listing,
+    profitability: getListingProfitability(listing),
+    analytics: getListingAnalyticsSnapshot(listing),
+  }));
+  const withAnalytics = rows.filter((row) => row.analytics);
+  const avgConversion = withAnalytics.length
+    ? withAnalytics.reduce((sum, row) => sum + Number(row.analytics.conversion_rate || 0), 0) / withAnalytics.length
+    : null;
+  const highViewsLowSales = withAnalytics.filter((row) =>
+    Number(row.analytics.visits || 0) >= 50
+    && Number(row.analytics.sales_30d || row.analytics.sales || 0) === 0
+  );
+  const noTraffic = withAnalytics.filter((row) => Number(row.analytics.visits || row.analytics.visits_7d || 0) === 0);
+  const investable = rows
+    .filter((row) => row.profitability.hasCost && row.profitability.marginPct >= 20 && row.analytics)
+    .sort((a, b) => Number(b.analytics.conversion_rate || 0) - Number(a.analytics.conversion_rate || 0));
+  const intentRows = withAnalytics
+    .map((row) => ({
+      ...row,
+      intentScore: Number(row.analytics.visits_7d || 0)
+        + Number(row.analytics.questions || row.analytics.questions_7d || 0) * 12
+        + Number(row.analytics.sales_30d || row.analytics.sales || 0) * 20
+        + Number(row.analytics.conversion_rate || 0) * 4,
+    }))
+    .sort((a, b) => b.intentScore - a.intentScore);
+  return { missingCost, atRisk, potentialGain, avgConversion, highViewsLowSales, noTraffic, investable, intentRows };
+}
+
+function renderDecisionCard(card) {
+  return `
+    <article class="intelligence-decision-card ${card.tone}">
+      <div>
+        <span>${html(card.label)}</span>
+        <strong>${html(card.value)}</strong>
+        <small>${html(card.detail)}</small>
+      </div>
+      ${card.items?.length ? `<ul>${card.items.slice(0, 2).map((item) => `<li>${html(item)}</li>`).join("")}</ul>` : ""}
+      ${card.action ? `<button class="${html(card.action.className || "secondary-btn")}" type="button" data-action="${html(card.action.action)}">${html(card.action.label)}</button>` : ""}
+    </article>
+  `;
+}
+
+function renderIntelligenceDecisionBoard() {
+  const target = byId("intelligenceDecisionBoard");
+  if (!target) return;
+  const decision = getIntelligenceDecisionData();
+  const mainPerformanceIssue = decision.highViewsLowSales.length
+    ? `${decision.highViewsLowSales.length} anuncio(s) com visita e sem venda`
+    : decision.noTraffic.length
+      ? `${decision.noTraffic.length} anuncio(s) sem trafego`
+      : decision.avgConversion == null
+        ? "Metricas nao sincronizadas"
+        : `Conversao media ${decision.avgConversion.toFixed(1)}%`;
+  const investTop = decision.investable[0];
+  const intentTop = decision.intentRows[0];
+  const actionLabel = decision.missingCost
+    ? "Cadastrar custos"
+    : decision.atRisk
+      ? "Revisar margem"
+      : decision.potentialGain > 0
+        ? "Simular precos"
+        : "Monitorar";
+  const cards = [
+    {
+      tone: decision.highViewsLowSales.length || decision.noTraffic.length ? "warning" : "ok",
+      label: "Diagnostico de performance",
+      value: mainPerformanceIssue,
+      detail: decision.avgConversion == null ? "Atualize metricas para puxar dados do Mercado Livre." : "Gargalo principal antes da tabela detalhada.",
+      items: [
+        decision.highViewsLowSales[0] ? `Revisar: ${decision.highViewsLowSales[0].listing.title}` : "",
+        decision.noTraffic[0] ? `Sem trafego: ${decision.noTraffic[0].listing.title}` : "",
+      ].filter(Boolean),
+      action: { action: "sync-analytics-full", label: "Atualizar metricas" },
+    },
+    {
+      tone: investTop ? "opportunity" : "neutral",
+      label: "Onde investir",
+      value: investTop ? investTop.listing.title : "Sem candidato claro",
+      detail: investTop ? `Margem ${investTop.profitability.marginPct.toFixed(1)}% e melhor conversao relativa.` : "Cadastre custos e sincronize metricas.",
+      items: investTop ? [`Lucro unitario: ${money.format(investTop.profitability.netProfit)}`] : [],
+    },
+    {
+      tone: intentTop ? "ok" : "neutral",
+      label: "Intencao de compra",
+      value: intentTop ? intentTop.listing.title : "Sem sinais recentes",
+      detail: intentTop ? "Maior combinacao de visitas, perguntas, vendas e conversao." : "Sincronize metricas e perguntas.",
+      items: intentTop ? [
+        `${Number(intentTop.analytics.visits_7d || intentTop.analytics.visits || 0)} visitas recentes`,
+        `${Number(intentTop.analytics.questions || intentTop.analytics.questions_7d || 0)} perguntas`,
+      ] : [],
+    },
+    {
+      tone: decision.missingCost || decision.atRisk ? "danger" : "ok",
+      label: "Acao recomendada",
+      value: actionLabel,
+      detail: decision.missingCost
+        ? `${decision.missingCost} anuncio(s) sem custo impedem margem real.`
+        : decision.atRisk
+          ? `${decision.atRisk} anuncio(s) pedem revisao de preco, frete ou taxa.`
+          : `Ganho potencial estimado: ${money.format(decision.potentialGain)}.`,
+      action: decision.missingCost
+        ? { action: "open-bulk-cost-dialog", label: "Cadastrar custos", className: "primary-btn" }
+        : null,
+    },
+  ];
+  target.innerHTML = cards.map(renderDecisionCard).join("");
+  bindActions();
 }
 
 function renderIntelligencePriorityStrip() {

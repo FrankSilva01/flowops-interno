@@ -35,23 +35,78 @@ export function renderLogisticsBadge(orderId) {
   return `<button class="badge ${status ? getLogisticsStatusClass(status) : "neutral"}" type="button" data-action="open-logistics" data-id="${html(orderId)}" title="Rastreio da encomenda">${html(label)}</button>`;
 }
 
-export function renderLogistics() {
-  const target = byId("logisticsTable");
-  if (!target) return;
+function hasMarketplaceTrackingSource(order) {
+  return Boolean(order?.marketplaceOrderCode || order?.marketplaceCode);
+}
+
+function isLogisticsLate(logistics) {
+  if (!logistics?.estimated_delivery_date || logistics.status === "Entregue" || logistics.status === "Devolvido") return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return new Date(`${logistics.estimated_delivery_date}T00:00:00`) < today;
+}
+
+function getLogisticsNextAction(order, logistics) {
+  if (isLogisticsLate(logistics)) return { tone: "danger", label: "Verificar atraso", detail: "Previsao vencida. Confirme no Mercado Livre ou Correios." };
+  if (logistics?.status === "Problema na entrega") return { tone: "danger", label: "Resolver problema", detail: "Priorize contato com cliente ou transportadora." };
+  if (logistics?.status === "Entregue") return { tone: "ok", label: "Concluido", detail: "Entrega finalizada." };
+  if (!logistics && hasMarketplaceTrackingSource(order)) return { tone: "warning", label: "Buscar rastreio ML", detail: "Venda tem codigo do marketplace, mas nao ha rastreio salvo." };
+  if (!logistics) return { tone: "warning", label: "Adicionar rastreio", detail: "Pedido sem codigo de rastreio ou sincronizacao." };
+  if (!logistics.tracking_code && hasMarketplaceTrackingSource(order)) return { tone: "warning", label: "Sincronizar codigo", detail: "Existe venda vinculada, mas falta codigo de rastreio." };
+  if (!logistics.tracking_code) return { tone: "warning", label: "Informar codigo", detail: "Status existe, mas falta codigo para consulta." };
+  if (["Postado", "Em trânsito", "Saiu para entrega"].includes(logistics.status)) return { tone: "info", label: "Acompanhar entrega", detail: "Pedido em movimento. Revise se passar da previsao." };
+  if (logistics.status === "Aguardando envio") return { tone: "warning", label: "Postar pedido", detail: "Ainda nao consta postagem em andamento." };
+  return { tone: "neutral", label: "Revisar", detail: "Abra o rastreio para conferir os dados." };
+}
+
+function getLogisticsRows() {
   const search = state.logisticsSearch || "";
   const statusFilter = state.logisticsStatusFilter || "all";
-  const rows = state.data.orders
+  return state.data.orders
     .filter((order) => order.status !== "Orçamento")
-    .map((order) => ({ order, logistics: getOrderLogistics(order.id) }))
+    .map((order) => {
+      const logistics = getOrderLogistics(order.id);
+      return { order, logistics, action: getLogisticsNextAction(order, logistics) };
+    })
     .filter(({ order, logistics }) => {
-      if (statusFilter === "sem-rastreio" && logistics) return false;
+      const missingTracking = !logistics || !logistics.tracking_code;
+      if (statusFilter === "sem-rastreio" && !missingTracking) return false;
       if (statusFilter !== "all" && statusFilter !== "sem-rastreio" && (logistics?.status || "") !== statusFilter) return false;
       if (search) {
-        const text = `${getOrderCode(order)} ${order.client || ""} ${order.description || ""}`.toLowerCase();
+        const text = `${getOrderCode(order)} ${order.client || ""} ${order.description || ""} ${order.marketplaceOrderCode || ""} ${logistics?.tracking_code || ""}`.toLowerCase();
         if (!text.includes(search)) return false;
       }
       return true;
     });
+}
+
+function renderLogisticsActionBoard(rows) {
+  const target = byId("logisticsActionBoard");
+  if (!target) return;
+  const sourceRows = rows || getLogisticsRows();
+  const late = sourceRows.filter(({ logistics }) => isLogisticsLate(logistics));
+  const missing = sourceRows.filter(({ logistics }) => !logistics || !logistics.tracking_code);
+  const problems = sourceRows.filter(({ logistics }) => logistics?.status === "Problema na entrega" || logistics?.status === "Devolvido");
+  const moving = sourceRows.filter(({ logistics }) => ["Postado", "Em trânsito", "Saiu para entrega"].includes(logistics?.status));
+  const cards = [
+    { tone: late.length ? "danger" : "ok", label: "Atrasos", value: late.length, detail: late.length ? "Prioridade maxima: verificar promessa de entrega." : "Sem entregas vencidas." },
+    { tone: missing.length ? "warning" : "ok", label: "Sem rastreio util", value: missing.length, detail: missing.length ? "Buscar ML/Correios ou preencher codigo." : "Pedidos ativos tem rastreio." },
+    { tone: problems.length ? "danger" : "ok", label: "Com problema", value: problems.length, detail: problems.length ? "Resolver antes de novas postagens." : "Sem ocorrencias abertas." },
+    { tone: moving.length ? "info" : "neutral", label: "Em movimento", value: moving.length, detail: "Postados, em transito ou saiu para entrega." },
+  ];
+  target.innerHTML = cards.map((card) => `
+    <article class="logistics-action-card ${card.tone}">
+      <span>${html(card.label)}</span>
+      <strong>${card.value}</strong>
+      <small>${html(card.detail)}</small>
+    </article>
+  `).join("");
+}
+
+export function renderLogistics() {
+  const target = byId("logisticsTable");
+  if (!target) return;
+  const rows = getLogisticsRows();
   const counts = getDeliveryStatusCounts();
   renderOperationalSummary("logisticsView", "logisticsPageSummary", [
     ["Aguardando envio", counts.waiting, "sem despacho ainda", "amber"],
@@ -59,14 +114,15 @@ export function renderLogistics() {
     ["Atrasados", counts.late, "passaram da previsão", "red"],
     ["Entregues hoje", counts.deliveredToday, "concluídos no dia", "green"],
   ]);
-  target.innerHTML = rows.length ? rows.map(({ order, logistics }) => `
+  renderLogisticsActionBoard(rows);
+  target.innerHTML = rows.length ? rows.map(({ order, logistics, action }) => `
     <tr>
       <td><strong>${html(getOrderCode(order))}</strong><br><small>${html(order.client || order.description || "")}</small></td>
-      <td>${html(logistics?.carrier || "-")}</td>
-      <td>${html(logistics?.tracking_code || "-")}</td>
-      <td><span class="badge ${getLogisticsStatusClass(logistics?.status)}">${html(getLogisticsStatusLabel(logistics?.status))}</span></td>
+      <td><span class="badge ${getLogisticsStatusClass(logistics?.status)}">${html(getLogisticsStatusLabel(logistics?.status))}</span><br><small>${html(logistics?.carrier || (hasMarketplaceTrackingSource(order) ? "Mercado Livre vinculado" : "Sem transportadora"))}</small></td>
+      <td>${logistics?.tracking_code ? html(logistics.tracking_code) : `<span class="muted">Sem codigo</span>`}</td>
       <td>${logistics?.estimated_delivery_date ? formatDate(logistics.estimated_delivery_date) : "-"}</td>
-      <td><button class="secondary-btn" type="button" data-action="open-logistics" data-id="${html(order.id)}">Gerenciar</button></td>
+      <td><strong class="logistics-next-action ${html(action.tone)}">${html(action.label)}</strong><br><small>${html(action.detail)}</small></td>
+      <td><button class="secondary-btn" type="button" data-action="open-logistics" data-id="${html(order.id)}">Abrir</button></td>
     </tr>
   `).join("") : `<tr><td colspan="6"><div class="empty-state compact"><strong>Nenhuma encomenda encontrada</strong><span>Ajuste os filtros ou aguarde novas encomendas.</span></div></td></tr>`;
   bindActions();

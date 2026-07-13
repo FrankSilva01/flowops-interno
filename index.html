@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="./css/11-fiscal-forms.css?v=200" />
     <link rel="stylesheet" href="./css/12-global-search.css?v=200" />
     <script src="./supabase-config.js?v=200" defer></script>
-    <script type="module" src="./js/app.js?v=201"></script>
+    <script type="module" src="./js/app.js?v=202"></script>
   </head>
   <body>
     <main id="appView" class="app-shell" hidden>
@@ -584,6 +584,7 @@
 
         <section id="logisticsView" class="view">
           <div id="logisticsPageSummary" class="operational-summary-grid"></div>
+          <div id="logisticsActionBoard" class="logistics-action-board"></div>
           <div class="filter-bar">
             <label>
               Buscar
@@ -608,7 +609,7 @@
             <table>
               <thead>
                 <tr>
-                  <th>Encomenda</th><th>Transportadora</th><th>Código de rastreio</th><th>Status</th><th>Previsão</th><th></th>
+                  <th>Encomenda</th><th>Situação</th><th>Rastreio</th><th>Previsão</th><th>Próxima ação</th><th></th>
                 </tr>
               </thead>
               <tbody id="logisticsTable"></tbody>
@@ -1296,11 +1297,11 @@
             </div>
 
             <div id="intelligenceAnalysisSection">
-              <div id="intelligencePriorityStrip" class="intelligence-priority-strip"></div>
+              <div id="intelligenceDecisionBoard" class="intelligence-decision-board"></div>
               <div class="panel panel-collapsible" data-panel-collapsible="suggestions">
                 <div class="panel-head">
                   <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="true">
-                    <span class="dashboard-collapsible-head"><strong>Ações recomendadas</strong><small>O que revisar primeiro</small></span>
+                    <span class="dashboard-collapsible-head"><strong>Ações recomendadas</strong><small>Lista curta, priorizada pelo impacto operacional</small></span>
                     <i class="ti ti-chevron-down" aria-hidden="true"></i>
                   </button>
                 </div>
@@ -1308,10 +1309,10 @@
                   <div id="suggestionsList" class="stack-list"></div>
                 </div>
               </div>
-              <div class="panel panel-collapsible" data-panel-collapsible="profitability-summary">
+              <div class="panel panel-collapsible collapsed" data-panel-collapsible="profitability-summary">
                 <div class="panel-head">
-                  <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="true">
-                    <span class="dashboard-collapsible-head"><strong>Rentabilidade geral</strong></span>
+                  <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="false">
+                    <span class="dashboard-collapsible-head"><strong>Detalhes financeiros</strong><small>Receita, custos, margem média e potencial</small></span>
                     <i class="ti ti-chevron-down" aria-hidden="true"></i>
                   </button>
                 </div>
@@ -1323,7 +1324,7 @@
                 <div class="panel panel-collapsible collapsed" data-panel-collapsible="margin-distribution-chart">
                   <div class="panel-head">
                     <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="false">
-                      <span class="dashboard-collapsible-head"><strong>Distribuição de margem</strong></span>
+                      <span class="dashboard-collapsible-head"><strong>Margem por faixa</strong></span>
                       <i class="ti ti-chevron-down" aria-hidden="true"></i>
                     </button>
                   </div>
@@ -1334,7 +1335,7 @@
                 <div class="panel panel-collapsible collapsed" data-panel-collapsible="top-products-chart">
                   <div class="panel-head">
                     <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="false">
-                      <span class="dashboard-collapsible-head"><strong>Lucro por produto (top 10)</strong></span>
+                      <span class="dashboard-collapsible-head"><strong>Produtos mais lucrativos</strong></span>
                       <i class="ti ti-chevron-down" aria-hidden="true"></i>
                     </button>
                   </div>
@@ -1346,7 +1347,7 @@
               <div class="panel panel-collapsible collapsed" data-panel-collapsible="profitability-table">
                 <div class="panel-head">
                   <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="false">
-                    <span class="dashboard-collapsible-head"><strong>Rentabilidade por anúncio</strong></span>
+                    <span class="dashboard-collapsible-head"><strong>Tabela de rentabilidade</strong><small>Detalhe por anúncio</small></span>
                     <i class="ti ti-chevron-down" aria-hidden="true"></i>
                   </button>
                   <div class="panel-filters">
@@ -1387,7 +1388,7 @@
               <div id="marketplacePerformancePanel" class="panel panel-collapsible collapsed" data-panel-collapsible="performance-table">
                 <div class="panel-head">
                   <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="false">
-                    <span class="dashboard-collapsible-head"><strong>Diagnóstico de performance</strong><small id="analyticsSyncedAtLabel">Ainda não sincronizado</small></span>
+                    <span class="dashboard-collapsible-head"><strong>Performance dos anúncios</strong><small id="analyticsSyncedAtLabel">Ainda não sincronizado</small></span>
                     <i class="ti ti-chevron-down" aria-hidden="true"></i>
                   </button>
                   <div class="panel-filters">
@@ -1419,7 +1420,7 @@
               <div id="investmentRankingPanel" class="panel panel-collapsible collapsed" data-panel-collapsible="investment-ranking">
                 <div class="panel-head">
                   <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="false">
-                    <span class="dashboard-collapsible-head"><strong>Onde investir</strong><small>Score composto: conversão, margem, visitas, competitividade e tendência</small></span>
+                    <span class="dashboard-collapsible-head"><strong>Ranking de investimento</strong><small>Onde colocar energia depois dos ajustes</small></span>
                     <i class="ti ti-chevron-down" aria-hidden="true"></i>
                   </button>
                 </div>
@@ -1430,7 +1431,7 @@
               <div id="intentScoreRankingPanel" class="panel panel-collapsible collapsed" data-panel-collapsible="intent-score-ranking">
                 <div class="panel-head">
                   <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="false">
-                    <span class="dashboard-collapsible-head"><strong>Intenção de compra</strong><small>Vendas recentes, perguntas, visitas e conversão - top 10 anúncios com maior interesse</small></span>
+                    <span class="dashboard-collapsible-head"><strong>Sinais de compra</strong><small>Visitas, perguntas, vendas recentes e conversão</small></span>
                     <i class="ti ti-chevron-down" aria-hidden="true"></i>
                   </button>
                 </div>
