@@ -10,7 +10,7 @@ export async function syncNFe() {
 
   const response = await fetch(
     `https://djvrhvzjvnyensbobtby.functions.supabase.co/nfe-sync?action=sync&organization_id=${state.organizationId}`,
-    { method: "GET" }
+    { method: "GET", headers: await nfeAuthHeaders() }
   );
 
   const result = await response.json();
@@ -80,7 +80,8 @@ export async function downloadDANFE(orderId) {
 
   try {
     const response = await fetch(
-      `https://djvrhvzjvnyensbobtby.functions.supabase.co/nfe-sync?action=get-danfe&invoice_id=${invoice.external_id}&organization_id=${state.organizationId}`
+      `https://djvrhvzjvnyensbobtby.functions.supabase.co/nfe-sync?action=get-danfe&invoice_id=${invoice.external_id}&organization_id=${state.organizationId}`,
+      { headers: await nfeAuthHeaders() }
     );
 
     if (!response.ok) throw new Error("DANFE nao disponivel");
@@ -99,6 +100,13 @@ export async function downloadDANFE(orderId) {
   } catch (error) {
     showAppMessage(`Erro ao baixar DANFE: ${error.message}`, "error");
   }
+}
+
+async function nfeAuthHeaders() {
+  const { data } = await state.supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) throw new Error("Sessao expirada. Entre novamente.");
+  return { Authorization: `Bearer ${token}` };
 }
 
 export async function sendDANFEByEmail(orderId) {
