@@ -13,7 +13,7 @@ const ONBOARDING_STEP_KEY = "flowops-onboarding-step";
 export async function initOnboarding() {
   // Nao abre onboarding por cima da tela de login; ele bloqueia os cliques do
   // formulario quando ainda nao existe sessao autenticada.
-  if (byId("onlineLogin") || byId("appView")?.hidden) return;
+  if (byId("onlineLogin") || byId("appView")?.hidden || state.activeUserEmail) return;
 
   // Verificar se já completou onboarding
   const isComplete = localStorage.getItem(ONBOARDING_COMPLETE_KEY) === "true";
