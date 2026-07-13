@@ -10,6 +10,7 @@ import {
   syncAuthorizedPayment,
   syncMercadoPagoPayment,
 } from "../_shared/subscription-billing.ts";
+import { normalizeProviderSubscriptionStatus } from "../_shared/subscription-lifecycle.mjs";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -93,7 +94,7 @@ async function createCheckoutResponse(
     .upsert({
       organization_id: actor.organizationId,
       plan_code: plan.code,
-      status: mapSubscriptionStatus(subscription.status),
+      status: normalizeProviderSubscriptionStatus(subscription.status),
       provider: "mercado_pago",
       provider_subscription_id: subscription.id,
       provider_payer_id: String(subscription.payer_id || ""),
@@ -448,7 +449,7 @@ async function updateSubscription(
   organizationId: string,
   planCode: string,
 ) {
-  const status = mapSubscriptionStatus(resource.status);
+  const status = normalizeProviderSubscriptionStatus(resource.status);
   const now = new Date().toISOString();
   const { data: existing } = await admin
     .from("organization_subscriptions")
@@ -505,14 +506,4 @@ async function processPayment(
   id: string,
 ) {
   return await syncMercadoPagoPayment(admin, id);
-}
-
-function mapSubscriptionStatus(status: string) {
-  return ({
-    authorized: "active",
-    pending: "pending",
-    paused: "paused",
-    cancelled: "cancelled",
-    canceled: "cancelled",
-  } as Record<string, string>)[String(status || "").toLowerCase()] || "pending";
 }

@@ -524,7 +524,7 @@ function renderListingXRayDrawer(xray) {
                   <span style="font-size: 12px; color: var(--muted);">De</span>
                   <div style="font-size: 16px; font-weight: 700; color: var(--ink);">R\$ ${blocks.priceHistory.lastChange.from.toFixed(2)}</div>
                 </div>
-                <div style="text-align: center; color: ${blocks.priceHistory.lastChange.changePercent < 0 ? 'var(--green)' : 'var(--red)';}; font-weight: 700;">
+                <div style="text-align: center; color: ${blocks.priceHistory.lastChange.changePercent < 0 ? 'var(--green)' : 'var(--red)'}; font-weight: 700;">
                   ${blocks.priceHistory.lastChange.changePercent < 0 ? '↓' : '↑'} ${Math.abs(blocks.priceHistory.lastChange.changePercent).toFixed(1)}%
                 </div>
                 <div>

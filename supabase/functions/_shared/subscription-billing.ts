@@ -1,10 +1,11 @@
 import { mercadoPagoRequest } from "./mercado-pago.ts";
+import {
+  derivePaymentTransition,
+  normalizePaymentStatus,
+} from "./subscription-lifecycle.mjs";
 
 type AdminClient = any;
 type JsonRecord = Record<string, any>;
-
-const APPROVED = new Set(["approved", "authorized", "paid", "processed", "accredited"]);
-const DECLINED = new Set(["rejected", "cancelled", "canceled", "refunded", "charged_back"]);
 
 const PAYMENT_REASONS: Record<string, string> = {
   accredited: "Pagamento aprovado.",
@@ -30,18 +31,6 @@ export function friendlyPaymentReason(detail: unknown, fallback = "") {
   const code = String(detail || "").trim();
   if (!code) return fallback || "Sem detalhe informado pelo Mercado Pago.";
   return PAYMENT_REASONS[code] || fallback || code.replaceAll("_", " ");
-}
-
-function normalizedStatus(value: unknown) {
-  const status = String(value || "pending").toLowerCase();
-  if (APPROVED.has(status)) return "approved";
-  if (DECLINED.has(status)) return status === "cancelled" || status === "canceled" ? "cancelled" : "rejected";
-  return status === "in_process" ? "pending" : status;
-}
-
-function addDays(value: string, days: number) {
-  const date = new Date(value);
-  return new Date(date.getTime() + days * 86400000).toISOString();
 }
 
 function cardMetadata(payment: JsonRecord | null) {
@@ -110,7 +99,7 @@ export async function applyMercadoPagoAttempt(
   },
 ) {
   const subscription = input.subscription;
-  const status = normalizedStatus(input.status);
+  const status = normalizePaymentStatus(input.status);
   const attemptedAt = input.attemptedAt || new Date().toISOString();
   const paidAt = status === "approved" ? input.paidAt || attemptedAt : null;
   const reason = friendlyPaymentReason(input.statusDetail, status === "approved" ? "Pagamento aprovado." : "");
@@ -172,21 +161,26 @@ export async function applyMercadoPagoAttempt(
     billing_reconciled_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
-  let organizationStatus = "active";
+  const transition = derivePaymentTransition({
+    currentStatus: subscription.status,
+    paymentStatus: status,
+    attemptedAt,
+    currentGraceEndsAt: subscription.grace_ends_at,
+    nextPaymentAt: input.nextPaymentAt || input.providerResource?.next_payment_date || null,
+  });
+  let organizationStatus = transition.organizationStatus;
   if (status === "approved") {
-    update.status = "active";
+    update.status = transition.subscriptionStatus;
     update.last_payment_at = paidAt;
     update.current_period_start = paidAt;
     update.current_period_end = input.nextPaymentAt || input.providerResource?.next_payment_date || null;
     update.next_payment_at = input.nextPaymentAt || input.providerResource?.next_payment_date || null;
-    update.grace_ends_at = null;
+    update.grace_ends_at = transition.graceEndsAt;
   } else if (status === "rejected" || status === "cancelled") {
-    update.status = "past_due";
-    update.grace_ends_at = subscription.grace_ends_at || addDays(attemptedAt, 5);
-    organizationStatus = "pending";
+    update.status = transition.subscriptionStatus;
+    update.grace_ends_at = transition.graceEndsAt;
   } else {
-    update.status = subscription.status === "active" ? "active" : "pending";
-    organizationStatus = update.status === "active" ? "active" : "pending";
+    update.status = transition.subscriptionStatus;
   }
   if (paymentMeta.card_last_four) {
     update.metadata = {
