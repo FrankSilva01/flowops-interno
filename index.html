@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="./css/11-fiscal-forms.css?v=200" />
     <link rel="stylesheet" href="./css/12-global-search.css?v=200" />
     <script src="./supabase-config.js?v=200" defer></script>
-    <script type="module" src="./js/app.js?v=211"></script>
+    <script type="module" src="./js/app.js?v=212"></script>
   </head>
   <body>
     <main id="appView" class="app-shell" hidden>
@@ -1590,11 +1590,17 @@
               <span>Documento: XML/PDF/link</span>
             </div>
           </div>
-          <div class="report-tabs">
-            <button class="tab active" data-fiscal-tab="documentos">Documentos</button>
-            <button class="tab" data-fiscal-tab="das">DAS/Impostos</button>
-            <button class="tab" data-fiscal-tab="compra">Notas de Compra</button>
-            <button class="tab" data-fiscal-tab="venda">Notas de Venda</button>
+          <div class="view-tabs marketplace-tab-groups fiscal-tab-groups" role="tablist" aria-label="Fiscal">
+            <div class="marketplace-tab-group">
+              <span>Operação</span>
+              <button class="view-tab active" type="button" data-fiscal-tab="documentos">Documentos</button>
+              <button class="view-tab" type="button" data-fiscal-tab="compra">Notas de Compra</button>
+              <button class="view-tab" type="button" data-fiscal-tab="venda">Notas de Venda</button>
+            </div>
+            <div class="marketplace-tab-group">
+              <span>Impostos</span>
+              <button class="view-tab" type="button" data-fiscal-tab="das">DAS/Impostos</button>
+            </div>
           </div>
           <div id="fiscalContainer"></div>
         </section>

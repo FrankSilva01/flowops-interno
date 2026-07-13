@@ -432,8 +432,8 @@ function bindFiscalActions() {
   }
 
   if (generateBtn) {
-    generateBtn.addEventListener("click", () => {
-      generateFiscalReport();
+    generateBtn.addEventListener("click", async () => {
+      await generateFiscalReport();
     });
   }
 
@@ -539,50 +539,100 @@ async function saveFiscalDocumentFromForm(form) {
   await renderFiscalDocs();
 }
 
-function generateFiscalReport() {
+async function generateFiscalReport() {
+  const [docs, purchaseInvoices, salesInvoices] = await Promise.all([
+    loadFiscalDocuments(),
+    loadPurchaseInvoices(),
+    loadSalesInvoices(),
+  ]);
+  const rows = [
+    ...docs.map((item) => ({
+      date: item.date,
+      origin: "Documento",
+      type: item.type || "-",
+      number: item.number || "-",
+      party: item.issuer || item.reference || "-",
+      value: Number(item.value || 0),
+      status: item.status || "-",
+      tax: 0,
+    })),
+    ...purchaseInvoices.map((item) => ({
+      date: item.date,
+      origin: "Nota de compra",
+      type: "Compra",
+      number: [item.invoice_number, item.invoice_series].filter(Boolean).join(" / ") || "-",
+      party: item.supplier || "-",
+      value: Number(item.amount || 0),
+      status: item.status || "-",
+      tax: 0,
+    })),
+    ...salesInvoices.map((item) => ({
+      date: item.date,
+      origin: "Nota de venda",
+      type: "Venda",
+      number: item.invoice_number || "-",
+      party: item.client || "-",
+      value: Number(item.amount || 0),
+      status: item.status || "-",
+      tax: 0,
+    })),
+  ].sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
+  const total = rows.reduce((sum, item) => sum + item.value, 0);
+  const taxes = rows.reduce((sum, item) => sum + item.tax, 0);
+  const firstDate = rows[0]?.date ? formatDate(rows[0].date) : "-";
+  const lastDate = rows.at(-1)?.date ? formatDate(rows.at(-1).date) : "-";
+  const period = rows.length ? `${firstDate} a ${lastDate}` : "Sem documentos";
+  const rowsHtml = rows.length ? rows.map((item) => `
+          <tr>
+            <td>${html(item.date ? formatDate(item.date) : "-")}</td>
+            <td>${html(item.origin)} / ${html(item.type)}</td>
+            <td>${html(item.number)}</td>
+            <td>${html(item.party)}</td>
+            <td>${money.format(item.value)}</td>
+            <td>${html(item.status)}</td>
+          </tr>`).join("") : `<tr><td colspan="6">Nenhum documento fiscal registrado.</td></tr>`;
   const reportWindow = window.open("", "_blank");
   if (!reportWindow) {
-    showAppMessage("Gerar Relatório", "Permita pop-ups para gerar o relatório fiscal.", "error");
+    showAppMessage("Gerar Relatorio", "Permita pop-ups para gerar o relatorio fiscal.", "error");
     return;
   }
 
   reportWindow.document.open();
-  reportWindow.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Relatório Fiscal</title>
+  reportWindow.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Relatorio Fiscal</title>
     <style>
       body { font-family: Arial, sans-serif; color: #333; margin: 0; background: #fff; }
-      .report { padding: 40px; max-width: 900px; margin: 0 auto; }
+      .report { padding: 40px; max-width: 980px; margin: 0 auto; }
       .header { border-bottom: 2px solid #0f8f7e; padding-bottom: 20px; margin-bottom: 30px; }
       h1 { margin: 0; color: #0f8f7e; }
       .date { color: #666; font-size: 12px; margin-top: 5px; }
       .section { margin: 30px 0; }
       h2 { font-size: 16px; color: #17212b; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
       table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-      th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+      th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; vertical-align: top; }
       th { background: #f5f5f5; font-weight: bold; }
-      .total { font-weight: bold; text-align: right; }
       .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; }
     </style>
   </head><body>
     <div class="report">
       <div class="header">
-        <h1>Relatório Fiscal - FlowOps</h1>
-        <div class="date">Gerado em ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}</div>
+        <h1>Relatorio Fiscal - FlowOps</h1>
+        <div class="date">Gerado em ${new Date().toLocaleDateString("pt-BR")} as ${new Date().toLocaleTimeString("pt-BR")}</div>
       </div>
 
       <div class="section">
         <h2>Resumo Fiscal</h2>
         <table>
           <tr>
-            <th>Período</th>
+            <th>Periodo</th>
             <th>Documentos</th>
             <th>Valor Total</th>
-            <th>Impostos</th>
+            <th>Impostos informados</th>
           </tr>
           <tr>
-            <td>Julho 2026</td>
-            <td>12</td>
-            <td>R$ 15.340,00</td>
-            <td>R$ 2.340,50</td>
+            <td>${html(period)}</td>
+            <td>${rows.length}</td>
+            <td>${money.format(total)}</td>
+            <td>${money.format(taxes)}</td>
           </tr>
         </table>
       </div>
@@ -592,37 +642,25 @@ function generateFiscalReport() {
         <table>
           <tr>
             <th>Data</th>
-            <th>Tipo</th>
-            <th>Número</th>
+            <th>Origem</th>
+            <th>Numero</th>
+            <th>Cliente/Fornecedor</th>
             <th>Valor</th>
             <th>Status</th>
           </tr>
-          <tr>
-            <td>10/07/2026</td>
-            <td>Recibo</td>
-            <td>001</td>
-            <td>R$ 1.200,00</td>
-            <td>Pago</td>
-          </tr>
-          <tr>
-            <td>15/07/2026</td>
-            <td>RPA</td>
-            <td>002</td>
-            <td>R$ 850,00</td>
-            <td>Pendente</td>
-          </tr>
+          ${rowsHtml}
         </table>
       </div>
 
       <div class="footer">
-        <p>Este relatório foi gerado automaticamente pelo sistema FlowOps.</p>
-        <p>Para mais informações, acesse seu dashboard financeiro.</p>
+        <p>Este relatorio foi gerado automaticamente com os documentos salvos no FlowOps.</p>
+        <p>Nenhum valor demonstrativo ou ficticio e incluido quando nao ha documentos cadastrados.</p>
       </div>
     </div>
     <script>window.addEventListener('load', () => { window.print(); });</script>
   </body></html>`);
   reportWindow.document.close();
-  showAppMessage("Relatório Gerado", "Clique em Imprimir/Salvar para fazer download.", "success");
+  showAppMessage("Relatorio Gerado", "Clique em Imprimir/Salvar para fazer download.", "success");
 }
 
 function bindDASActions() {
@@ -632,9 +670,7 @@ function bindDASActions() {
 
   if (generateBtn) {
     generateBtn.addEventListener("click", () => {
-      showAppMessage("Gerar DAS", "DAS gerada com sucesso! Clique em 'Pagar' para gerar o PIX.", "success");
-      updateDASSummary();
-      renderDASList();
+      showAppMessage("Gerar DAS", "Geração automática ainda não conectada a dados fiscais reais. Registre uma DAS real ou importe o comprovante antes de pagar.", "info");
     });
   }
 
@@ -648,41 +684,46 @@ function bindDASActions() {
 function renderDASList() {
   const dasList = document.getElementById("dasList");
   if (!dasList) return;
+  const rows = Array.isArray(state.dasPayments) ? state.dasPayments : [];
+  if (!rows.length) {
+    dasList.innerHTML = `<div class="empty-state">Nenhuma DAS real registrada.</div>`;
+    return;
+  }
 
-  const mockDAS = [
-    { id: 1, month: "Julho 2026", value: 1200, status: "Pendente", dueDate: "2026-07-20", pix: null },
-    { id: 2, month: "Junho 2026", value: 1100, status: "Pago", dueDate: "2026-06-20", pix: "00020126580014br.gov.bcb.brcode..." },
-  ];
-
-  dasList.innerHTML = mockDAS.map(das => `
+  dasList.innerHTML = rows.map(das => `
     <div class="das-item" style="padding: 12px; border-bottom: 1px solid #d7e0e7; display: flex; justify-content: space-between; align-items: center;">
       <div>
-        <div style="font-weight: 600; color: #17212b;">${das.month}</div>
-        <div style="font-size: 12px; color: #607181; margin-top: 4px;">Vencimento: ${das.dueDate}</div>
-        <div style="font-size: 12px; color: #607181;">Valor: <strong>${money.format(das.value)}</strong></div>
+        <div style="font-weight: 600; color: #17212b;">${html(das.month || "DAS")}</div>
+        <div style="font-size: 12px; color: #607181; margin-top: 4px;">Vencimento: ${html(das.dueDate || das.due_date || "-")}</div>
+        <div style="font-size: 12px; color: #607181;">Valor: <strong>${money.format(Number(das.value || 0))}</strong></div>
       </div>
       <div style="display: flex; gap: 8px; align-items: center;">
-        <span style="font-size: 11px; padding: 4px 8px; background: ${das.status === 'Pago' ? '#dcfce7' : '#fef3c7'}; color: ${das.status === 'Pago' ? '#166534' : '#92400e'}; border-radius: 4px; font-weight: 600;">${das.status}</span>
-        ${das.status === 'Pendente' ? `<button class="primary-btn" type="button" data-das-pay-action="${das.id}" style="padding: 6px 12px; font-size: 12px;">Pagar com PIX</button>` : '<span style="color: #667181; font-size: 12px;">✓</span>'}
+        <span style="font-size: 11px; padding: 4px 8px; background: ${das.status === 'Pago' ? '#dcfce7' : '#fef3c7'}; color: ${das.status === 'Pago' ? '#166534' : '#92400e'}; border-radius: 4px; font-weight: 600;">${html(das.status || "Pendente")}</span>
+        ${das.status === 'Pendente' && das.pix ? `<button class="primary-btn" type="button" data-das-pay-action="${html(das.id)}" style="padding: 6px 12px; font-size: 12px;">Pagar com PIX</button>` : '<span style="color: #667181; font-size: 12px;">-</span>'}
       </div>
     </div>
   `).join('');
 
-  // Bind pay actions
   dasList.querySelectorAll('[data-das-pay-action]').forEach(btn => {
     btn.addEventListener("click", () => {
-      const dasId = btn.dataset.dasPayAction;
-      generateDASPIX(dasId);
+      const das = rows.find((item) => String(item.id) === String(btn.dataset.dasPayAction));
+      if (!das?.pix) {
+        showAppMessage("PIX indisponivel", "Esta DAS nao possui codigo PIX salvo.", "warning");
+        return;
+      }
+      generateDASPIX(btn.dataset.dasPayAction, das);
     });
   });
 }
 
 function generateDASPIX(dasId, das = null) {
-  // Usar dados reais se fornecidos, senão usar mock
-  const dasData = das || { id: 1, month: "Julho 2026", value: 1200, status: "Pendente" };
-  const pixCode = "00020126580014br.gov.bcb.brcode01051.0.062360014br.gov.bcb.dash011206170000340012345678901234" + dasId;
-  showAppMessage("PIX Gerado", `PIX gerado! Use este código em seu banco para pagar.`, "success");
-
+  if (!das?.pix) {
+    showAppMessage("PIX indisponivel", "Esta DAS nao possui codigo PIX salvo.", "warning");
+    return;
+  }
+  const dasData = das;
+  const pixCode = String(das.pix);
+  showAppMessage("PIX", `PIX da DAS ${dasData.month || dasId} disponivel para copia.`, "success");
   // Create modal to show PIX
   const modal = document.createElement("div");
   modal.style.cssText = `

@@ -50,7 +50,7 @@ import {
   saveStorefrontProduct, updateStorefrontTargetFields, importSelectedListingToStorefrontForm,
   loadMlCategoryFields, bindStorefrontImageInputs, bindStorefrontDescriptionEditor, bindMlCategorySelect, setMarketplaceView,
   applyMarketplaceLogRange, showMarketplaceStats, fillStorefrontFormFromListing,
-  viewMarketplaceOrder, createMarketplaceOrder, downloadMarketplaceDocument,
+  openMarketplaceEdit, viewMarketplaceOrder, createMarketplaceOrder, downloadMarketplaceDocument,
 } from "../features/marketplace.js";
 import {
   runManualBackup, downloadBackupScope, simulateBackupRestore, restoreBackupFromFile,

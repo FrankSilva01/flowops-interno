@@ -936,7 +936,7 @@ export function marketplaceSaleStatusClass(status) {
 }
 
 export function setMarketplaceView(view) {
-  state.marketplaceView = ["listings", "storefront", "sales", "integrations", "intelligence", "api-logs", "backup", "whatsapp"].includes(view) ? view : "listings";
+  state.marketplaceView = ["listings", "storefront", "sales", "integrations", "intelligence", "api-logs", "backup", "whatsapp", "ml-questions"].includes(view) ? view : "listings";
   document.querySelectorAll("[data-marketplace-view]").forEach((button) => {
     button.classList.toggle("active", button.dataset.marketplaceView === state.marketplaceView);
   });
@@ -948,6 +948,7 @@ export function setMarketplaceView(view) {
   byId("marketplaceApiLogsView").classList.toggle("active", state.marketplaceView === "api-logs");
   byId("marketplaceBackupView").classList.toggle("active", state.marketplaceView === "backup");
   byId("marketplaceWhatsappView").classList.toggle("active", state.marketplaceView === "whatsapp");
+  byId("marketplaceMLQuestionsView").classList.toggle("active", state.marketplaceView === "ml-questions");
 
   // Renderizar whatsapp se necessário
   if (state.marketplaceView === "whatsapp") {
@@ -1035,6 +1036,10 @@ export async function downloadMarketplaceDocument(externalOrderId, marketplace, 
     alert("Os documentos da Shopee serao liberados quando a conta estiver conectada ao Shopee Open Platform.");
     return;
   }
+  if (documentType === "declaration") {
+    downloadLocalMarketplaceDocument(externalOrderId, marketplace, documentType, printAfter);
+    return;
+  }
   const printWindow = printAfter ? window.open("", "_blank") : null;
   try {
     const { data } = await state.supabase.auth.getSession();
@@ -1054,10 +1059,14 @@ export async function downloadMarketplaceDocument(externalOrderId, marketplace, 
 
     if (!response.ok) {
       const payload = await response.json().catch(() => ({}));
-      // Provide more helpful error message
       const errorMsg = payload.error || "Erro ao gerar documento.";
-      if (errorMsg.includes("delivered")) {
-        throw new Error("Documento não pode ser regenerado para pedidos já entregues. Verifique o status do pedido no Mercado Livre.");
+      const sale = findMarketplaceSale(externalOrderId, marketplace);
+      const saleStatus = String(sale?.raw_payload?.status || sale?.status || "").toLowerCase();
+      if (saleStatus === "delivered" || errorMsg.toLowerCase().includes("delivered") || response.status === 409) {
+        if (printWindow) printWindow.close();
+        downloadLocalMarketplaceDocument(externalOrderId, marketplace, "label-fallback", printAfter);
+        await loadAndRenderMarketplaces();
+        return;
       }
       throw new Error(errorMsg);
     }
@@ -1084,6 +1093,68 @@ export async function downloadMarketplaceDocument(externalOrderId, marketplace, 
     alert(error.message || "Erro ao gerar documento.");
     await loadAndRenderMarketplaces();
   }
+}
+
+function findMarketplaceSale(externalOrderId, marketplace) {
+  const channel = normalizeMarketplaceChannel(marketplace);
+  return state.marketplaceSales.find((sale) =>
+    String(sale.external_order_id || "") === String(externalOrderId || "")
+    && normalizeMarketplaceChannel(sale.marketplace || "Mercado Livre") === channel
+  ) || state.marketplaceSales.find((sale) => String(sale.external_order_id || "") === String(externalOrderId || ""));
+}
+
+function downloadLocalMarketplaceDocument(externalOrderId, marketplace, documentType, printAfter = false) {
+  const sale = findMarketplaceSale(externalOrderId, marketplace);
+  const payload = sale?.raw_payload || {};
+  const order = state.data.orders.find((item) =>
+    String(item.marketplaceOrderCode || item.external_order_id || "") === String(externalOrderId || "")
+  );
+  const title = documentType === "label-fallback" ? "Comprovante operacional de envio" : "Declaracao de conteudo";
+  const product = payload.order_items?.[0]?.item?.title || order?.product || "Produto nao informado";
+  const buyer = payload.buyer?.nickname || payload.buyer?.first_name || order?.client || "Cliente nao informado";
+  const amount = Number(payload.total_amount || order?.charged || 0);
+  const htmlDoc = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>${html(title)} - ${html(String(externalOrderId))}</title>
+    <style>
+      body{font-family:Arial,sans-serif;margin:0;background:#fff;color:#111827}.doc{max-width:760px;margin:0 auto;padding:36px}
+      h1{margin:0 0 6px;color:#0f8f7e}.muted{color:#64748b;font-size:12px}.box{border:1px solid #cbd5e1;border-radius:8px;padding:14px;margin:18px 0}
+      dl{display:grid;grid-template-columns:170px 1fr;gap:8px 14px}dt{color:#64748b}dd{margin:0;font-weight:700}.note{font-size:12px;color:#475569}
+    </style></head><body><main class="doc">
+      <h1>${html(title)}</h1>
+      <div class="muted">Gerado pelo FlowOps em ${new Date().toLocaleString("pt-BR")}</div>
+      <section class="box"><dl>
+        <dt>Marketplace</dt><dd>${html(marketplaceDisplayName(marketplace))}</dd>
+        <dt>Pedido</dt><dd>${html(String(externalOrderId || "-"))}</dd>
+        <dt>Status</dt><dd>${html(marketplaceSaleStatus(payload.status || sale?.status))}</dd>
+        <dt>Cliente</dt><dd>${html(buyer)}</dd>
+        <dt>Produto</dt><dd>${html(product)}</dd>
+        <dt>Valor declarado</dt><dd>${money.format(amount)}</dd>
+        <dt>Encomenda interna</dt><dd>${html(order ? getOrderCode(order) : "Nao vinculada")}</dd>
+      </dl></section>
+      <p class="note">${documentType === "label-fallback"
+        ? "Este comprovante operacional nao substitui a etiqueta oficial do Mercado Livre para postagem. Use apenas para arquivo interno quando o pedido ja foi entregue ou a API nao disponibilizar mais a etiqueta."
+        : "Declaracao operacional para arquivo interno. Confira as exigencias fiscais e de transporte aplicaveis antes de usar fora do FlowOps."}</p>
+    </main><script>window.addEventListener("load",()=>window.print());</script></body></html>`;
+  if (printAfter) {
+    const win = window.open("", "_blank");
+    if (!win) {
+      showAppMessage("Documento", "Permita pop-ups para imprimir o documento.", "error");
+      return;
+    }
+    win.document.open();
+    win.document.write(htmlDoc);
+    win.document.close();
+    return;
+  }
+  const blob = new Blob([htmlDoc], { type: "text/html;charset=utf-8" });
+  const blobUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = blobUrl;
+  anchor.download = `${documentType === "label-fallback" ? "comprovante-envio" : "declaracao-conteudo"}-${externalOrderId}.html`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+  showAppMessage("Documento gerado", documentType === "label-fallback" ? "Etiqueta oficial indisponivel; gerado comprovante operacional." : "Declaracao de conteudo gerada.", "success");
 }
 
 export async function syncMercadoLivre() {

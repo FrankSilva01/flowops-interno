@@ -23,6 +23,21 @@ Deno.serve(async (req) => {
     if (!organizationId) return json({ ok: false, error: "organization_id obrigatorio" }, { status: 400 });
 
     const supabase = adminClient();
+    const authorization = req.headers.get("Authorization") || "";
+    const token = authorization.replace(/^Bearer\s+/i, "");
+    if (!token) return json({ ok: false, error: "Autenticacao obrigatoria" }, { status: 401 });
+    const { data: userData, error: userError } = await supabase.auth.getUser(token);
+    const email = userData.user?.email?.toLowerCase();
+    if (userError || !email) return json({ ok: false, error: "Sessao invalida" }, { status: 401 });
+    const { data: member, error: memberError } = await supabase
+      .from("organization_members")
+      .select("organization_id,role,status")
+      .eq("organization_id", organizationId)
+      .eq("user_email", email)
+      .eq("status", "active")
+      .maybeSingle();
+    if (memberError) throw memberError;
+    if (!member) return json({ ok: false, error: "Acesso negado para esta organizacao" }, { status: 403 });
 
     // Busca a conta ML da organização
     const { data: account, error: accountError } = await supabase
