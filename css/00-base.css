@@ -53,7 +53,7 @@ select {
   overflow: auto;
   background:
     linear-gradient(rgba(20, 124, 114, 0.78), rgba(23, 32, 42, 0.72)),
-    url("https://images.unsplash.com/photo-1631700611307-37dbcb89ef7eauto=format&fit=crop&w=1600&q=80") center/cover;
+    url("https://images.unsplash.com/photo-1631700611307-37dbcb89ef7e?auto=format&fit=crop&w=1600&q=80") center/cover;
 }
 
 .login-panel {

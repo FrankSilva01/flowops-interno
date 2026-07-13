@@ -11,9 +11,15 @@ const ONBOARDING_COMPLETE_KEY = "flowops-onboarding-completed";
 const ONBOARDING_STEP_KEY = "flowops-onboarding-step";
 
 export async function initOnboarding() {
+  // Nao abre onboarding por cima da tela de login; ele bloqueia os cliques do
+  // formulario quando ainda nao existe sessao autenticada.
+  if (byId("onlineLogin") || byId("appView")?.hidden) return;
+
   // Verificar se já completou onboarding
   const isComplete = localStorage.getItem(ONBOARDING_COMPLETE_KEY) === "true";
   if (isComplete) return;
+
+  if (document.querySelector(".onboarding-overlay, .onboarding-wizard")) return;
 
   // Mostrar wizard no primeiro login
   const currentStep = parseInt(localStorage.getItem(ONBOARDING_STEP_KEY) || "1");
@@ -37,11 +43,16 @@ function showOnboardingWizard(startStep = 1) {
   const wizard = document.createElement("div");
   wizard.className = "onboarding-wizard";
   wizard.style.cssText = `
+    position: fixed;
+    z-index: 10001;
     background: var(--panel);
     border-radius: 16px;
     box-shadow: 0 20px 60px rgba(0,0,0,0.3);
     min-width: 500px;
     max-width: 90vw;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
   `;
 
   const steps = [

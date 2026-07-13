@@ -214,8 +214,10 @@ export function updateProductMarketplaceStatusHints() {
     if (!hint) return;
     if (channel === "mercado-livre" && isMarketplaceAccountConnected(channel)) {
       hint.textContent = "(conectado)";
+    } else if (channel === "mercado-livre") {
+      hint.textContent = "(conecte em Integrações para publicar)";
     } else {
-      hint.textContent = "(ainda não disponível para criação automática)";
+      hint.textContent = "(publicação automática em breve)";
     }
   });
   // Mostrar/esconder configuração ML baseado na checkbox
@@ -418,10 +420,17 @@ export async function saveProduct(event) {
   const stock = Math.max(Number(data.get("stock") || 1), 0);
   const listingValue = String(data.get("listingLink") || "");
   const selectedChannels = CREATABLE_MARKETPLACES.filter((channel) => Boolean(data.get(MARKETPLACE_CHECKBOX_NAMES[channel])));
+  if (selectedChannels.includes("mercado-livre") && !isMarketplaceAccountConnected("mercado-livre")) {
+    message.textContent = "Conecte o Mercado Livre em Integrações antes de publicar. Para salvar apenas no catálogo, desmarque Mercado Livre.";
+    return;
+  }
+  const channelsWithAutomaticPublication = selectedChannels.filter((channel) =>
+    channel === "mercado-livre" && isMarketplaceAccountConnected(channel)
+  );
   // So exige as 3 fotos quando o cadastro vai CRIAR um anuncio novo (mesmo
   // padrao do Mercado Livre) - vincular a um anuncio ja existente reaproveita
   // as fotos que ja estao la, entao nao entra nessa exigencia.
-  if (!listingValue && selectedChannels.length && productUploadedImages.length < 3) {
+  if (!listingValue && channelsWithAutomaticPublication.length && productUploadedImages.length < 3) {
     message.textContent = `Adicione pelo menos 3 fotos do produto para publicar em um marketplace (${productUploadedImages.length} de 3).`;
     return;
   }
@@ -1732,7 +1741,7 @@ function validateProductStep(step) {
     case 1:
       // Passo 1: Validar Nome (obrigatório)
       if (!form.elements.name.value.trim()) {
-        showAppMessage("Por favor, preencha o nome do produto", "error");
+        showAppMessage("Campo obrigatório", "Por favor, preencha o nome do produto.", "error");
         form.elements.name.focus();
         return false;
       }
@@ -1741,27 +1750,29 @@ function validateProductStep(step) {
     case 2:
       // Passo 2: Validar Preços
       if (!form.elements.costPrice.value) {
-        showAppMessage("Por favor, preencha o custo do produto", "error");
+        showAppMessage("Campo obrigatório", "Por favor, preencha o custo do produto.", "error");
         form.elements.costPrice.focus();
         return false;
       }
       if (!form.elements.price.value) {
-        showAppMessage("Por favor, preencha o preço de venda", "error");
+        showAppMessage("Campo obrigatório", "Por favor, preencha o preço de venda.", "error");
         form.elements.price.focus();
         return false;
       }
       return true;
 
     case 3:
-      // Passo 3: Validar marketplace (obrigatório) e categoria se ML selecionado
-      const hasMarketplace = form.elements.publish_ml.checked || form.elements.publish_shopee.checked ||
-                            form.elements.publish_amazon.checked || form.elements.publish_tiktok.checked;
-      if (!hasMarketplace) {
-        showAppMessage("Por favor, selecione pelo menos um marketplace para publicar", "error");
+      // Marketplace é opcional: sem seleção, o produto será salvo apenas no catálogo.
+      if (form.elements.publish_ml.checked && !isMarketplaceAccountConnected("mercado-livre")) {
+        showAppMessage(
+          "Mercado Livre não conectado",
+          "Conecte sua conta em Marketplace > Integrações antes de publicar. Para salvar apenas no catálogo, desmarque Mercado Livre.",
+          "error"
+        );
         return false;
       }
       if (form.elements.publish_ml.checked && !form.elements.mlCategoryId.value.trim()) {
-        showAppMessage("Por favor, selecione a categoria do Mercado Livre", "error");
+        showAppMessage("Campo obrigatório", "Por favor, selecione a categoria do Mercado Livre.", "error");
         form.elements.mlCategoryId.focus();
         return false;
       }
