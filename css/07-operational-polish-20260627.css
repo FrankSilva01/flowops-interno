@@ -2375,6 +2375,61 @@ button.attention-item:hover {
   gap: 4px;
 }
 
+.intelligence-focus-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 0.5px solid color-mix(in srgb, var(--teal) 35%, var(--border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--teal) 8%, var(--surface-1));
+}
+
+.intelligence-focus-card strong {
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.intelligence-focus-card span,
+.intelligence-focus-card small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.investment-action-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.investment-action-list li,
+.intent-action-note {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.investment-action-list li::before {
+  content: "Acao: ";
+  color: var(--teal);
+  font-weight: 600;
+}
+
+.intent-action-note {
+  margin-top: 5px;
+}
+
+.intent-action-note::before {
+  content: "Proximo passo: ";
+  color: var(--teal);
+  font-weight: 600;
+}
+
 /* Inteligencia Comercial - tendencias e demanda */
 
 .trend-keyword-list {

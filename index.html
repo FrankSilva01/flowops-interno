@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="./css/11-fiscal-forms.css?v=200" />
     <link rel="stylesheet" href="./css/12-global-search.css?v=200" />
     <script src="./supabase-config.js?v=200" defer></script>
-    <script type="module" src="./js/app.js?v=204"></script>
+    <script type="module" src="./js/app.js?v=205"></script>
   </head>
   <body>
     <main id="appView" class="app-shell" hidden>
@@ -999,7 +999,6 @@
               <h3>Anúncios sincronizados</h3>
               <div class="inline-actions">
                 <button id="openProductDialogBtn" class="secondary-btn" type="button" data-action="open-product-dialog">Cadastrar produto</button>
-                <button id="openPriceCalculatorBtn" class="secondary-btn" type="button" data-action="open-price-calculator">Calculadora de preço</button>
                 <button id="exportListingsBtn" class="secondary-btn" type="button" data-action="marketplace-export-csv">Exportar</button>
                 <button id="refreshMarketplacesBtn" class="secondary-btn" type="button">Atualizar</button>
                 <button id="syncMercadoLivreBtn" class="primary-btn" type="button">Sincronizar ML</button>
@@ -1404,7 +1403,6 @@
                       <option value="score_desc">Maior score</option>
                       <option value="conversion_desc">Maior conversão</option>
                       <option value="visits_desc">Mais visitas</option>
-                      <option value="margin_desc">Maior margem</option>
                     </select>
                     <button id="syncAnalyticsBtn" class="secondary-btn" type="button" data-action="sync-analytics-full">Atualizar métricas</button>
                   </div>
@@ -1412,7 +1410,7 @@
                 <div class="dashboard-collapsible-body">
                   <div class="table-wrap">
                     <table>
-                      <thead><tr><th>Produto</th><th>Preço</th><th>vs Média</th><th>Visitas</th><th>Conversão</th><th>Vendas</th><th>Margem</th><th>Saúde</th><th>Score</th><th>Sugestão</th></tr></thead>
+                      <thead><tr><th>Produto</th><th>Preço</th><th>vs Média</th><th>Visitas</th><th>Conversão</th><th>Vendas</th><th>Perguntas</th><th>Saúde</th><th>Score</th><th>Sugestão</th></tr></thead>
                       <tbody id="performanceTable"></tbody>
                       <tfoot id="performanceTableTotals"></tfoot>
                     </table>

@@ -353,7 +353,6 @@ export function renderPerformanceTable() {
     score_desc: (a, b) => (b.composite ? b.composite.score : -1) - (a.composite ? a.composite.score : -1),
     conversion_desc: (a, b) => (b.analytics ? b.analytics.conversion_rate || 0 : -1) - (a.analytics ? a.analytics.conversion_rate || 0 : -1),
     visits_desc: (a, b) => (b.analytics ? b.analytics.visits || 0 : -1) - (a.analytics ? a.analytics.visits || 0 : -1),
-    margin_desc: (a, b) => (b.profitability.hasCost ? b.profitability.marginPct : -999) - (a.profitability.hasCost ? a.profitability.marginPct : -999),
   };
   rows.sort(sorters[sortBy] || sorters.score_desc);
 
@@ -369,7 +368,7 @@ export function renderPerformanceTable() {
         <td>${analytics && analytics.visits != null ? Number(analytics.visits).toLocaleString("pt-BR") : "-"}</td>
         <td>${analytics && analytics.conversion_rate != null ? `${analytics.conversion_rate.toFixed(1)}%` : "-"}</td>
         <td>${analytics && analytics.sold_quantity != null ? Number(analytics.sold_quantity).toLocaleString("pt-BR") : "-"}</td>
-        <td>${profitability.hasCost ? `${profitability.marginPct.toFixed(1)}%` : "-"}</td>
+        <td>${analytics && analytics.questions_total != null ? Number(analytics.questions_total).toLocaleString("pt-BR") : "-"}</td>
         <td><span class="badge ${health.className}">${html(health.label)}</span></td>
         <td><strong style="color:${scoreColor}" title="${html(factorsTooltip)}">${composite ? composite.score : "-"}</strong></td>
         <td>${suggestion
@@ -393,8 +392,7 @@ function renderPerformanceTotals(rows) {
   const withAnalytics = rows.filter((row) => row.analytics);
   const totalVisits = withAnalytics.reduce((sum, row) => sum + Number(row.analytics.visits || 0), 0);
   const totalSold = withAnalytics.reduce((sum, row) => sum + Number(row.analytics.sold_quantity || 0), 0);
-  const withMargin = rows.filter((row) => row.profitability.hasCost);
-  const avgMargin = withMargin.length ? withMargin.reduce((sum, row) => sum + row.profitability.marginPct, 0) / withMargin.length : null;
+  const totalQuestions = withAnalytics.reduce((sum, row) => sum + Number(row.analytics.questions_total || 0), 0);
   target.innerHTML = `
     <tr class="table-totals-row">
       <td>Total (${rows.length})</td>
@@ -403,7 +401,7 @@ function renderPerformanceTotals(rows) {
       <td>${totalVisits.toLocaleString("pt-BR")}</td>
       <td></td>
       <td>${totalSold.toLocaleString("pt-BR")}</td>
-      <td>${avgMargin === null ? "-" : `${avgMargin.toFixed(1)}%`}</td>
+      <td>${totalQuestions.toLocaleString("pt-BR")}</td>
       <td></td>
       <td></td>
       <td></td>
@@ -428,6 +426,106 @@ function investmentTier(score) {
   return { className: "danger-badge", label: "Não investir agora", color: "var(--red)" };
 }
 
+function getInvestmentActionTips(listing, analytics, profitability, composite, suggestion, portfolioAvgConversion) {
+  const tips = [];
+  if (suggestion?.text) tips.push(suggestion.text);
+  if (!profitability.hasCost) {
+    tips.push("Cadastre o custo do produto antes de decidir investimento pago.");
+  } else if (profitability.marginPct < 15) {
+    tips.push("Margem baixa: ajuste preco, custo ou frete antes de aumentar exposicao.");
+  }
+  if (!analytics) {
+    tips.push("Atualize metricas do Mercado Livre para validar demanda real.");
+  } else {
+    const visits = Number(analytics.visits || 0);
+    const conversion = Number(analytics.conversion_rate || 0);
+    const questions = Number(analytics.questions_total || 0);
+    const sold = Number(analytics.sold_quantity || 0);
+    if (analytics.price_competitiveness === "above") tips.push("Preco acima da media: simule um preco mais competitivo antes de investir.");
+    if (visits < 30) tips.push("Baixa exposicao: revise titulo, categoria e foto principal.");
+    if (portfolioAvgConversion != null && conversion < portfolioAvgConversion * 0.7 && visits >= 30) {
+      tips.push("Tem trafego, mas converte abaixo da media: melhorar fotos, descricao e proposta de valor.");
+    }
+    if (questions >= 3 && sold === 0) tips.push("Perguntas sem venda: transforme as duvidas em descricao e revise preco.");
+    if (analytics.search_position && Number(analytics.search_position) > 30) tips.push("Posicao de busca baixa: revisar palavras do titulo e categoria.");
+    if (analytics.shipping?.free_shipping && Number(analytics.shipping?.shipping_share_pct || 0) > 20) tips.push("Frete pesa no lucro: valide preco com frete antes de impulsionar.");
+  }
+  if (composite?.score >= 70 && profitability.hasCost && profitability.marginPct >= 20) {
+    tips.push("Bom candidato: priorize estoque, foto principal e teste de exposicao.");
+  }
+  return [...new Set(tips)].slice(0, 3);
+}
+
+function renderInvestmentFocusCard(ranked) {
+  if (!ranked.length) return "";
+  const ready = ranked.find((row) => row.composite.score >= 70 && row.profitability.hasCost && row.profitability.marginPct >= 20);
+  const missingCost = ranked.filter((row) => !row.profitability.hasCost).length;
+  const weakMargin = ranked.filter((row) => row.profitability.hasCost && row.profitability.marginPct < 15).length;
+  let title = "Foco recomendado";
+  let message = "Atualize metricas e custos para separar oportunidade real de anuncio apenas ranqueado.";
+  if (ready) {
+    title = "Foque em escala controlada";
+    message = `${ready.listing.title}: melhor combinacao de demanda e margem. Antes de investir mais, garanta estoque, foto principal forte e preco validado.`;
+  } else if (weakMargin >= Math.max(1, ranked.length / 3)) {
+    title = "Foque em margem antes de trafego";
+    message = "Varios anuncios aparecem com demanda, mas margem baixa. Ajuste preco, custo ou frete antes de investir em exposicao.";
+  } else if (missingCost >= Math.max(1, ranked.length / 3)) {
+    title = "Foque em completar custos";
+    message = "Ha oportunidades sem custo cadastrado. Sem custo real, o ranking pode superestimar o que vale investir.";
+  } else {
+    const top = ranked[0];
+    message = `${top.listing.title}: revise os pontos sugeridos abaixo e teste melhoria antes de colocar verba.`;
+  }
+  return `<div class="intelligence-focus-card"><strong>${html(title)}</strong><span>${html(message)}</span></div>`;
+}
+
+function getIntentAction(intent, analytics, portfolioAvgConversion) {
+  if (!intent || !analytics) return "Atualize metricas para medir intencao real.";
+  if (intent.visits7d >= 50 && intent.questions >= 3 && intent.sales30d === 0) return "Muito interesse sem venda: revisar preco, fotos, descricao e respostas das perguntas.";
+  if (intent.questionsUnanswered > 0) return "Responda perguntas pendentes e inclua essas duvidas na descricao do anuncio.";
+  if (portfolioAvgConversion != null && intent.conversion >= portfolioAvgConversion * 1.5 && intent.conversion > 0) return "Boa conversao: aumentar exposicao e garantir estoque.";
+  if (intent.visits7d === 0 && intent.sales30d === 0) return "Sem sinal recente: revisar titulo/categoria ou pausar ate ter nova estrategia.";
+  if (intent.visitsGrowth === "up" && intent.conversion === 0) return "Visitas subindo sem conversao: ajustar foto principal e preco antes de investir.";
+  if (intent.level.key === "very-high" || intent.level.key === "high") return "Sinal bom: priorize estoque, resposta rapida e teste de exposicao.";
+  return intent.level.advice;
+}
+
+function renderIntentFocusCard(ranked, portfolioAvgConversion) {
+  if (!ranked.length) return "";
+  const noSalesWithDemand = ranked.find((row) => row.intent.visits7d >= 50 && row.intent.questions >= 3 && row.intent.sales30d === 0);
+  const highConversion = ranked.find((row) => portfolioAvgConversion != null && row.intent.conversion >= portfolioAvgConversion * 1.5 && row.intent.conversion > 0);
+  let title = "Foco dos sinais de compra";
+  let message = "Use este bloco para decidir onde responder, melhorar o anuncio ou aumentar exposicao.";
+  if (noSalesWithDemand) {
+    title = "Corrigir gargalo de conversao";
+    message = `${noSalesWithDemand.listing.title}: tem visitas e perguntas, mas nao vendeu. Priorize preco, foto principal e descricao.`;
+  } else if (highConversion) {
+    title = "Acelerar o que ja converte";
+    message = `${highConversion.listing.title}: conversao acima da media. Vale priorizar estoque e exposicao.`;
+  } else if (ranked[0].intent.visits7d === 0) {
+    title = "Gerar demanda primeiro";
+    message = "Os principais anuncios nao tiveram visitas recentes. Revise titulo, categoria e imagem antes de investir.";
+  }
+  return `<div class="intelligence-focus-card"><strong>${html(title)}</strong><span>${html(message)}</span></div>`;
+}
+
+function renderTrendFocusCard(keywords, highlightedListings) {
+  const terms = [...keywords].slice(0, 3);
+  let message = "Sincronize as metricas para cruzar termos de busca, destaques de categoria e desempenho real.";
+  if (highlightedListings.length) {
+    message = `${highlightedListings[0].title}: aparece como destaque da categoria. Priorize estoque, foto principal e preco desse item antes de testar novos produtos parecidos.`;
+  } else if (terms.length) {
+    message = `Teste foco em produtos/titulos ligados a: ${terms.join(", ")}. Use como direcao, nao como previsao de venda.`;
+  }
+  return `
+    <div class="intelligence-focus-card trend-focus-card">
+      <strong>Foco sugerido</strong>
+      <span>${html(message)}</span>
+      <small>Confiabilidade: media. O Mercado Livre retorna termos e destaques, mas nao volume, crescimento ou previsao de vendas.</small>
+    </div>
+  `;
+}
+
 // --- Tendencias e demanda ---
 // Nao mostramos badge de "categoria em alta/queda": a API de trends do ML
 // devolve so termos ranqueados, sem volume numerico, entao nao ha como
@@ -450,6 +548,7 @@ export function renderCategoryTrendsPanel() {
     return;
   }
   target.innerHTML = `
+    ${renderTrendFocusCard(keywords, highlightedListings)}
     ${keywords.size ? `
       <div class="drawer-section-title">Termos mais buscados nas suas categorias</div>
       <div class="trend-keyword-list">${[...keywords].slice(0, 20).map((word) => `<span class="badge neutral">${html(word)}</span>`).join("")}</div>
@@ -473,22 +572,26 @@ export function renderInvestmentRanking() {
       const profitability = getListingProfitability(listing);
       const composite = computeCompositeScore(listing, analytics, profitability);
       const suggestion = getPriceSuggestionScenario(listing, analytics, profitability, portfolioAvgConversion);
-      return { listing, composite, suggestion };
+      return { listing, analytics, profitability, composite, suggestion };
     })
     .filter((row) => row.composite)
     .sort((a, b) => b.composite.score - a.composite.score)
     .slice(0, 10);
 
-  target.innerHTML = ranked.length ? ranked.map(({ listing, composite, suggestion }, index) => {
+  target.innerHTML = ranked.length ? `
+    ${renderInvestmentFocusCard(ranked)}
+    ${ranked.map(({ listing, analytics, profitability, composite, suggestion }, index) => {
     const tier = investmentTier(composite.score);
     const factorsTooltip = composite.factors.map(([label, value, weight]) => `${label}: ${value.toFixed(0)} × ${(weight * 100).toFixed(0)}%`).join(" | ");
     const text = suggestion ? suggestion.text : `Score ${composite.score} de 100 - ${tier.label.toLowerCase()}.`;
+    const tips = getInvestmentActionTips(listing, analytics, profitability, composite, suggestion, portfolioAvgConversion);
     return `
       <div class="list-row investment-ranking-row">
         <div>
           <span class="investment-ranking-position">#${index + 1}</span>
           <button class="link-cell" type="button" data-action="open-listing-drawer" data-marketplace="${html(listing.marketplace)}" data-external-id="${html(listing.external_id)}">${html(listing.title)}</button>
           <span>${html(text)}</span>
+          ${tips.length ? `<ul class="investment-action-list">${tips.map((tip) => `<li>${html(tip)}</li>`).join("")}</ul>` : ""}
         </div>
         <div class="investment-ranking-side">
           <strong style="color:${tier.color}" title="${html(factorsTooltip)}">${composite.score}</strong>
@@ -496,27 +599,36 @@ export function renderInvestmentRanking() {
         </div>
       </div>
     `;
-  }).join("") : `<div class="empty-chart">Sincronize as métricas para ver o ranking.</div>`;
+  }).join("")}
+  ` : `<div class="empty-chart">Sincronize as metricas para ver o ranking.</div>`;
 }
 
 // --- Ranking "Intencao de compra" (Bloco 2, aba Inteligencia) ---
 export function renderIntentScoreRanking() {
   const target = byId("intentScoreRankingList");
   if (!target) return;
+  const portfolioAvgConversion = computePortfolioAvgConversion();
   const ranked = state.marketplaceListings
-    .map((listing) => ({ listing, intent: computeIntentScore(getListingAnalytics(listing.marketplace, listing.external_id)) }))
+    .map((listing) => {
+      const analytics = getListingAnalytics(listing.marketplace, listing.external_id);
+      return { listing, analytics, intent: computeIntentScore(analytics) };
+    })
     .filter((row) => row.intent)
     .sort((a, b) => b.intent.score - a.intent.score)
     .slice(0, 10);
 
-  target.innerHTML = ranked.length ? ranked.map(({ listing, intent }, index) => {
+  target.innerHTML = ranked.length ? `
+    ${renderIntentFocusCard(ranked, portfolioAvgConversion)}
+    ${ranked.map(({ listing, analytics, intent }, index) => {
     const factorsTooltip = intent.factors.map(([label, value, max]) => `${label}: ${value.toFixed(0)} de ${max}`).join(" | ");
+    const action = getIntentAction(intent, analytics, portfolioAvgConversion);
     return `
       <div class="list-row investment-ranking-row">
         <div>
           <span class="investment-ranking-position">#${index + 1}</span>
           <button class="link-cell" type="button" data-action="open-listing-drawer" data-marketplace="${html(listing.marketplace)}" data-external-id="${html(listing.external_id)}">${html(listing.title)}</button>
           <span>${intent.visits7d} visita${intent.visits7d === 1 ? "" : "s"} (7d) · ${intent.questions} pergunta${intent.questions === 1 ? "" : "s"} · ${intent.sales30d} venda${intent.sales30d === 1 ? "" : "s"} (30d) · ${intent.conversion.toFixed(1)}% conversão</span>
+          <span class="intent-action-note">${html(action)}</span>
         </div>
         <div class="investment-ranking-side">
           <strong title="${html(factorsTooltip)}">${intent.level.emoji} ${intent.score}</strong>
@@ -524,7 +636,8 @@ export function renderIntentScoreRanking() {
         </div>
       </div>
     `;
-  }).join("") : `<div class="empty-chart">Sincronize as métricas e as perguntas para ver o ranking.</div>`;
+  }).join("")}
+  ` : `<div class="empty-chart">Sincronize as metricas e as perguntas para ver o ranking.</div>`;
 }
 
 // --- Insights automaticos de intencao de compra (Bloco 2) ---
