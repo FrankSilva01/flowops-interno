@@ -1296,6 +1296,18 @@
             </div>
 
             <div id="intelligenceAnalysisSection">
+              <div id="intelligencePriorityStrip" class="intelligence-priority-strip"></div>
+              <div class="panel panel-collapsible" data-panel-collapsible="suggestions">
+                <div class="panel-head">
+                  <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="true">
+                    <span class="dashboard-collapsible-head"><strong>Ações recomendadas</strong><small>O que revisar primeiro</small></span>
+                    <i class="ti ti-chevron-down" aria-hidden="true"></i>
+                  </button>
+                </div>
+                <div class="dashboard-collapsible-body">
+                  <div id="suggestionsList" class="stack-list"></div>
+                </div>
+              </div>
               <div class="panel panel-collapsible" data-panel-collapsible="profitability-summary">
                 <div class="panel-head">
                   <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="true">
@@ -1372,10 +1384,10 @@
                   </div>
                 </div>
               </div>
-              <div id="marketplacePerformancePanel" class="panel panel-collapsible" data-panel-collapsible="performance-table">
+              <div id="marketplacePerformancePanel" class="panel panel-collapsible collapsed" data-panel-collapsible="performance-table">
                 <div class="panel-head">
-                  <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="true">
-                    <span class="dashboard-collapsible-head"><strong>Performance dos anúncios</strong><small id="analyticsSyncedAtLabel">Ainda não sincronizado</small></span>
+                  <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="false">
+                    <span class="dashboard-collapsible-head"><strong>Diagnóstico de performance</strong><small id="analyticsSyncedAtLabel">Ainda não sincronizado</small></span>
                     <i class="ti ti-chevron-down" aria-hidden="true"></i>
                   </button>
                   <div class="panel-filters">
@@ -1404,9 +1416,9 @@
                   </div>
                 </div>
               </div>
-              <div id="investmentRankingPanel" class="panel panel-collapsible" data-panel-collapsible="investment-ranking">
+              <div id="investmentRankingPanel" class="panel panel-collapsible collapsed" data-panel-collapsible="investment-ranking">
                 <div class="panel-head">
-                  <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="true">
+                  <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="false">
                     <span class="dashboard-collapsible-head"><strong>Onde investir</strong><small>Score composto: conversão, margem, visitas, competitividade e tendência</small></span>
                     <i class="ti ti-chevron-down" aria-hidden="true"></i>
                   </button>
@@ -1415,9 +1427,9 @@
                   <div id="investmentRankingList" class="stack-list"></div>
                 </div>
               </div>
-              <div id="intentScoreRankingPanel" class="panel panel-collapsible" data-panel-collapsible="intent-score-ranking">
+              <div id="intentScoreRankingPanel" class="panel panel-collapsible collapsed" data-panel-collapsible="intent-score-ranking">
                 <div class="panel-head">
-                  <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="true">
+                  <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="false">
                     <span class="dashboard-collapsible-head"><strong>Intenção de compra</strong><small>Vendas recentes, perguntas, visitas e conversão - top 10 anúncios com maior interesse</small></span>
                     <i class="ti ti-chevron-down" aria-hidden="true"></i>
                   </button>
@@ -1426,17 +1438,6 @@
                   <div id="intentScoreRankingList" class="stack-list"></div>
                   <div class="drawer-section-title">Insights automáticos</div>
                   <div id="intentScoreInsightsList" class="stack-list"></div>
-                </div>
-              </div>
-              <div class="panel panel-collapsible" data-panel-collapsible="suggestions">
-                <div class="panel-head">
-                  <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="true">
-                    <span class="dashboard-collapsible-head"><strong>Sugestões automáticas</strong></span>
-                    <i class="ti ti-chevron-down" aria-hidden="true"></i>
-                  </button>
-                </div>
-                <div class="dashboard-collapsible-body">
-                  <div id="suggestionsList" class="stack-list"></div>
                 </div>
               </div>
               <div class="panel panel-collapsible collapsed" data-panel-collapsible="simulator">
@@ -1472,9 +1473,9 @@
                   <p id="marketplaceComparisonInsight" class="form-hint" hidden></p>
                 </div>
               </div>
-              <div id="categoryTrendsPanel" class="panel panel-collapsible" data-panel-collapsible="category-trends">
+              <div id="categoryTrendsPanel" class="panel panel-collapsible collapsed" data-panel-collapsible="category-trends">
                 <div class="panel-head">
-                  <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="true">
+                  <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="false">
                     <span class="dashboard-collapsible-head"><strong>Tendências e demanda</strong><small>Termos mais buscados nas categorias onde você vende</small></span>
                     <i class="ti ti-chevron-down" aria-hidden="true"></i>
                   </button>

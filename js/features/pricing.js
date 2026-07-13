@@ -1556,6 +1556,7 @@ export function renderCommercialIntelligence() {
     bindActions();
     return;
   }
+  renderIntelligencePriorityStrip();
   renderProfitabilitySummaryPanel();
   renderProfitabilityDistributionChart();
   renderTopProductsProfitChart();
@@ -1563,6 +1564,51 @@ export function renderCommercialIntelligence() {
   renderSuggestions();
   renderProfitSimulator();
   renderMarketplaceComparison();
+}
+
+function renderIntelligencePriorityStrip() {
+  const target = byId("intelligencePriorityStrip");
+  if (!target) return;
+  const coverage = getCostCoverage();
+  const missingCost = Math.max(coverage.total - coverage.withCost, 0);
+  const summary = getProfitabilitySummary();
+  const atRisk = summary.loss + summary.critical + summary.attention;
+  const healthy = summary.healthy + summary.excellent;
+  const potential = getProfitPotential();
+  const potentialGain = Math.max(potential.potentialProfit - potential.currentProfit, 0);
+  const cards = [
+    {
+      tone: missingCost ? "warning" : "ok",
+      label: "Custos pendentes",
+      value: String(missingCost),
+      detail: missingCost ? "Complete para liberar margem real" : "Cobertura de custos em dia",
+    },
+    {
+      tone: atRisk ? "danger" : "ok",
+      label: "Margem em atenção",
+      value: String(atRisk),
+      detail: atRisk ? "Revise preço, taxa ou frete" : "Sem anúncios em faixa crítica",
+    },
+    {
+      tone: healthy ? "ok" : "neutral",
+      label: "Saudáveis",
+      value: String(healthy),
+      detail: "Anúncios com margem saudável ou excelente",
+    },
+    {
+      tone: potentialGain > 0 ? "opportunity" : "neutral",
+      label: "Ganho potencial",
+      value: money.format(potentialGain),
+      detail: "Estimativa ao reprecificar itens abaixo da meta",
+    },
+  ];
+  target.innerHTML = cards.map((card) => `
+    <article class="intelligence-priority-card ${card.tone}">
+      <span>${html(card.label)}</span>
+      <strong>${html(card.value)}</strong>
+      <small>${html(card.detail)}</small>
+    </article>
+  `).join("");
 }
 
 export function renderProfitabilitySummaryPanel() {
@@ -1575,7 +1621,7 @@ export function renderProfitabilitySummaryPanel() {
   target.innerHTML = `
     <article><span>Receita bruta total</span><strong>${money.format(totals.revenueTotal)}</strong><small>Estimado, ${totals.count} anúncio${totals.count === 1 ? "" : "s"} com custo</small></article>
     <article><span>Custo total</span><strong>${money.format(totals.costTotal)}</strong></article>
-    <article><span>Taxas estimadas totais</span><strong>${money.format(totals.feeTotal)}</strong><small>Comissão + imposto + frete + embalagem</small></article>
+    <article><span>Taxas estimadas totais</span><strong>${money.format(totals.feeTotal)}</strong><small>Comissão + imposto + frete</small></article>
     <article><span>Lucro líquido total</span><strong style="color:${profitColor}">${money.format(totals.netProfitTotal)}</strong></article>
     <article><span>Margem média</span><strong>${totals.avgMarginPct.toFixed(1)}%</strong></article>
     <article><span>Lucro potencial estimado</span><strong style="color:var(--green)">${money.format(potentialGain)}</strong><small>Estimado, se reprecificado para margem saudável</small></article>
