@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="./css/11-fiscal-forms.css?v=200" />
     <link rel="stylesheet" href="./css/12-global-search.css?v=200" />
     <script src="./supabase-config.js?v=200" defer></script>
-    <script type="module" src="./js/app.js?v=200"></script>
+    <script type="module" src="./js/app.js?v=201"></script>
   </head>
   <body>
     <main id="appView" class="app-shell" hidden>
@@ -1904,6 +1904,11 @@
           </label>
           <p class="form-hint">Mínimo de 3 fotos para publicar em um marketplace. Siga o padrão do Mercado Livre: fundo único e liso (branco, preto ou neutro), sem molduras, marcas d'água ou colagens — só o produto em destaque.</p>
           <label>Descrição<textarea name="description" rows="3" placeholder="Descreva o produto: material, tamanho, cores disponíveis, etc."></textarea></label>
+          <div class="form-section-title">Arquivos de produção</div>
+          <label>Link STL/origem<input name="assetStlLink" type="url" placeholder="Drive, MakerWorld, Cults, Printables..." /></label>
+          <label>Imagem de referência<input name="assetImageUrl" type="url" placeholder="URL da imagem do item" /></label>
+          <label class="wide">Observações de produção<textarea name="assetNotes" rows="2" placeholder="Cor, variação, arquivo correto ou qualquer detalhe para imprimir depois"></textarea></label>
+          <p class="form-hint">Esses dados ficam no catálogo do Flow Ops e preenchem o pedido quando este produto for selecionado.</p>
         </div>
 
         <!-- STEP 2: Preços -->

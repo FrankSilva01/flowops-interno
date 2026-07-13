@@ -1,5 +1,5 @@
 import { state, money } from "../core/state.js";
-import { byId, html, flashActionMessage, number, showAppMessage } from "../core/dom.js";
+import { byId, html, flashActionMessage, number, showAppMessage, safeUrl } from "../core/dom.js";
 import { bindActions } from "../core/router.js";
 import { ensureCanEdit } from "../core/permissions.js";
 import { renderBarChart } from "../core/charts.js";
@@ -18,6 +18,8 @@ let currentProductStep = 1;
 let productMlFeePreview = null;
 let productMlFeePreviewKey = "";
 let productMlFeePreviewRequestId = 0;
+const PRODUCT_ASSETS_MARKER = "[[FLOWOPS_PRODUCT_ASSETS:";
+const PRODUCT_ASSETS_MARKER_END = "]]";
 
 const DEFAULT_FINANCIAL_SETTINGS = {
   marketplace_fee_rules: {
@@ -139,6 +141,54 @@ export function getProductForOrder(order) {
   return getProductForListing(link.marketplace, externalItemId);
 }
 
+export function parseProductDescriptionAssets(description) {
+  const value = String(description || "");
+  const markerIndex = value.lastIndexOf(PRODUCT_ASSETS_MARKER);
+  if (markerIndex < 0) return { cleanDescription: value, assets: {} };
+  const endIndex = value.indexOf(PRODUCT_ASSETS_MARKER_END, markerIndex);
+  if (endIndex < 0) return { cleanDescription: value, assets: {} };
+  const encoded = value.slice(markerIndex + PRODUCT_ASSETS_MARKER.length, endIndex);
+  try {
+    return {
+      cleanDescription: value.slice(0, markerIndex).trim(),
+      assets: JSON.parse(decodeURIComponent(encoded)) || {},
+    };
+  } catch (error) {
+    return { cleanDescription: value.slice(0, markerIndex).trim(), assets: {} };
+  }
+}
+
+export function serializeProductDescriptionAssets(description, assets = {}) {
+  const cleanDescription = String(description || "").trim();
+  const normalized = {
+    stlLink: String(assets.stlLink || "").trim(),
+    imageUrl: String(assets.imageUrl || "").trim(),
+    notes: String(assets.notes || "").trim(),
+  };
+  if (!normalized.stlLink && !normalized.imageUrl && !normalized.notes) return cleanDescription || null;
+  return `${cleanDescription}${cleanDescription ? "\n\n" : ""}${PRODUCT_ASSETS_MARKER}${encodeURIComponent(JSON.stringify(normalized))}${PRODUCT_ASSETS_MARKER_END}`;
+}
+
+export function getProductAssetInfo(product) {
+  const parsed = parseProductDescriptionAssets(product?.description || "");
+  return parsed.assets || {};
+}
+
+function renderProductAssetLinks(product) {
+  const assets = getProductAssetInfo(product);
+  const stl = safeUrl(assets.stlLink);
+  const image = safeUrl(assets.imageUrl);
+  const notes = String(assets.notes || "").trim();
+  if (!stl && !image && !notes) return `<small class="muted">Sem arquivo de producao</small>`;
+  return `
+    <div class="inline-actions">
+      ${stl ? `<a class="order-link" href="${html(stl)}" target="_blank" rel="noopener">STL/origem</a>` : ""}
+      ${image ? `<a class="order-link" href="${html(image)}" target="_blank" rel="noopener">Imagem</a>` : ""}
+      ${notes ? `<small class="muted">${html(notes)}</small>` : ""}
+    </div>
+  `;
+}
+
 export function renderProductCatalogTable() {
   const target = byId("productCatalogTable");
   if (!target) return;
@@ -149,7 +199,7 @@ export function renderProductCatalogTable() {
   target.innerHTML = rows.length ? rows.map((item) => `
     <tr>
       <td><strong>${html(item.sku)}</strong></td>
-      <td>${html(item.name)}</td>
+      <td><strong>${html(item.name)}</strong><br>${renderProductAssetLinks(item)}</td>
       <td>${html(item.category || "-")}</td>
       <td>${money.format(Number(item.cost_price || 0))}</td>
       <td>
@@ -186,6 +236,8 @@ export function isMarketplaceAccountConnected(channel) {
 
 export function openProductQuickDialog(productId = "") {
   const product = state.products.find((item) => item.id === productId) || null;
+  const parsedDescription = parseProductDescriptionAssets(product?.description || "");
+  const assets = parsedDescription.assets || {};
   const form = byId("productForm");
   form.reset();
   form.elements.id.value = product?.id || "";
@@ -193,7 +245,10 @@ export function openProductQuickDialog(productId = "") {
   form.elements.category.value = product?.category || "";
   form.elements.costPrice.value = product?.cost_price ?? "";
   form.elements.weightKg.value = product?.weight_kg ?? "";
-  form.elements.description.value = product?.description || "";
+  form.elements.description.value = parsedDescription.cleanDescription || "";
+  form.elements.assetStlLink.value = assets.stlLink || "";
+  form.elements.assetImageUrl.value = assets.imageUrl || "";
+  form.elements.assetNotes.value = assets.notes || "";
   form.elements.sku.value = product?.sku || "";
   form.dataset.skuTouched = product ? "true" : "false";
   productUploadedImages = [];
@@ -585,7 +640,11 @@ export async function saveProduct(event) {
     category,
     cost_price: rawCost ? number(rawCost) : null,
     weight_kg: number(data.get("weightKg")) || null,
-    description: String(data.get("description") || "").trim() || null,
+    description: serializeProductDescriptionAssets(String(data.get("description") || "").trim(), {
+      stlLink: data.get("assetStlLink"),
+      imageUrl: data.get("assetImageUrl"),
+      notes: data.get("assetNotes"),
+    }),
     updated_at: new Date().toISOString(),
   };
   if (id) payload.id = id;
@@ -745,6 +804,20 @@ export function renderOrderProductOptions() {
     .map((item) => `<option value="${html(item.id)}">${html(item.sku)} - ${html(item.name)}</option>`)
     .join("");
   select.value = current;
+}
+
+export function applyProductAssetsToOrderForm(productId) {
+  const form = byId("orderForm");
+  if (!form || !productId) return;
+  const product = state.products.find((item) => item.id === productId);
+  const assets = getProductAssetInfo(product);
+  if (assets.stlLink && form.elements.stlLink && !form.elements.stlLink.value) {
+    form.elements.stlLink.value = assets.stlLink;
+  }
+  if (assets.imageUrl && form.elements.referenceImageUrl && !form.elements.referenceImageUrl.value) {
+    form.elements.referenceImageUrl.value = assets.imageUrl;
+    form.elements.referenceImageUrl.dispatchEvent(new Event("input", { bubbles: true }));
+  }
 }
 
 // --- Resolucao de taxas por marketplace/tipo de anuncio ---

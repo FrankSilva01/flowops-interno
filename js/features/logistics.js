@@ -28,8 +28,10 @@ export function getLogisticsStatusClass(status) {
 
 export function renderLogisticsBadge(orderId) {
   const logistics = getOrderLogistics(orderId);
+  const order = state.data.orders.find((item) => item.id === orderId);
   const status = logistics?.status || "";
-  const label = status ? getLogisticsStatusLabel(status) : "Rastreio";
+  const hasMarketplaceCode = Boolean(order?.marketplaceOrderCode || order?.marketplaceCode);
+  const label = status ? getLogisticsStatusLabel(status) : (hasMarketplaceCode ? "Buscar rastreio" : "Rastreio");
   return `<button class="badge ${status ? getLogisticsStatusClass(status) : "neutral"}" type="button" data-action="open-logistics" data-id="${html(orderId)}" title="Rastreio da encomenda">${html(label)}</button>`;
 }
 
@@ -86,7 +88,8 @@ export function openLogisticsDialog(orderId) {
   renderLogisticsTimeline(orderId);
   byId("logisticsDialog").showModal();
   // Auto-sync if order has marketplace code and is not delivered
-  if (order.marketplaceCode && order.status !== "Entregue") {
+  const marketplaceCode = order.marketplaceOrderCode || order.marketplaceCode;
+  if (marketplaceCode && logistics?.status !== "Entregue" && order.status !== "Entregue") {
     syncLogisticsFromMarketplaceQuiet(orderId).catch(e => console.log("Auto-sync skipped:", e.message));
   }
 }
@@ -105,9 +108,17 @@ async function applyLogisticsSync(orderId) {
     delivered_at: result.status === "Entregue" ? (previous?.delivered_at || new Date().toISOString()) : (previous?.delivered_at || null),
     updated_at: new Date().toISOString(),
   };
+  const { error } = await state.supabase.from("order_logistics").upsert(payload);
+  if (error) throw error;
+
   const index = state.orderLogistics.findIndex((item) => item.order_id === orderId);
   if (index >= 0) state.orderLogistics[index] = payload;
   else state.orderLogistics.push(payload);
+
+  if (!previous || previous.status !== payload.status || previous.tracking_code !== payload.tracking_code) {
+    const trackingText = payload.tracking_code ? ` Codigo: ${payload.tracking_code}.` : "";
+    await addLogisticsEventRow(orderId, payload.status, `Sincronizado do Mercado Livre.${trackingText}`, "marketplace");
+  }
 
   const form = byId("logisticsForm");
   if (form && form.elements.orderId.value === orderId) {

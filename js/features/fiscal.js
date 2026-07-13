@@ -3,8 +3,8 @@ import { byId, html, formatDate, showAppMessage, renderPagination, countBy } fro
 import {
   saveFiscalDocument, loadFiscalDocuments, deleteFiscalDocument,
   saveDASPayment, loadDASPayments,
-  savePurchaseInvoice, loadPurchaseInvoices,
-  saveSalesInvoice, loadSalesInvoices,
+  savePurchaseInvoice, loadPurchaseInvoices, deletePurchaseInvoice,
+  saveSalesInvoice, loadSalesInvoices, deleteSalesInvoice,
   getUniqueSuppliersFromPurchases, getUniqueClientsFromSales,
   getTotalByMonth, getDASForYear, initFiscalData
 } from "./fiscal-persistence.js";
@@ -269,9 +269,8 @@ export async function renderPurchaseInvoices() {
   document.querySelectorAll('[data-purchase-delete]').forEach(btn => {
     btn.addEventListener("click", async () => {
       if (confirm("Tem certeza que deseja deletar esta nota?")) {
-        // Implementar delete quando tiver função
-        showAppMessage("Deletado", "Nota removida com sucesso!", "success");
-        await renderPurchaseInvoices();
+        const success = await deletePurchaseInvoice(btn.dataset.purchaseDelete);
+        if (success) await renderPurchaseInvoices();
       }
     });
   });
@@ -291,15 +290,15 @@ export async function renderSalesInvoices() {
           <p class="eyebrow">Vendas</p>
           <h2>Notas Fiscais de Venda</h2>
         </div>
-        <span>Controle todas as suas notas de venda. Conecte sua conta para sincronizar automaticamente.</span>
+        <span>Guarde notas emitidas, links, XML/PDF e referências de venda para consulta rápida.</span>
       </div>
       <div class="connection-banner" id="salesConnectionBanner">
         <div class="connection-status">
-          <span class="status-badge status-pending">Aguardando conexão</span>
-          <p>Conecte sua conta de emissão para sincronizar notas automaticamente.</p>
+          <span class="status-badge status-pending">Cofre manual</span>
+          <p>Registre notas de venda manualmente agora. A conexão automática pode ser adicionada depois.</p>
         </div>
         <div class="connection-actions">
-          <button class="primary-btn" type="button" data-sales-action="connect">Conectar Conta</button>
+          <button class="primary-btn" type="button" data-sales-action="new-invoice">+ Nova nota</button>
           <button class="secondary-btn" type="button" data-sales-action="guide">Ver Guia</button>
         </div>
       </div>
@@ -335,7 +334,7 @@ export async function renderSalesInvoices() {
           </form>
         </div>
       </div>
-      <div class="sales-toolbar" style="display:none;" id="salesToolbar">
+      <div class="sales-toolbar" id="salesToolbar">
         <div class="sales-filters">
           <label>Buscar<input type="search" id="salesSearchInput" placeholder="Cliente, número ou descrição" /></label>
           <label>Cliente<select id="salesClientFilter"><option value="">Todos</option></select></label>
@@ -349,7 +348,30 @@ export async function renderSalesInvoices() {
           <button class="secondary-btn" type="button" data-sales-action="sync">Sincronizar</button>
         </div>
       </div>
-      <div class="table-wrap" id="salesTableWrapper" style="display:none;">
+      <form id="salesInvoiceForm" class="entry-form sales-form" style="display:none;">
+        <div class="form-row">
+          <input name="client" type="text" placeholder="Cliente" required />
+          <input name="invoice_number" type="text" placeholder="Número da NF" required />
+          <input name="invoice_date" type="date" required />
+        </div>
+        <div class="form-row">
+          <input name="amount" type="number" step="0.01" min="0" placeholder="Valor" required />
+          <select name="status">
+            <option>Emitida</option>
+            <option>Aprovada</option>
+            <option>Cancelada</option>
+            <option>Rascunho</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <textarea name="description" placeholder="Descrição, link do XML/PDF ou observações da nota"></textarea>
+        </div>
+        <div class="form-actions">
+          <button class="primary-btn" type="submit">Salvar</button>
+          <button class="secondary-btn" type="button" data-sales-action="cancel-form">Cancelar</button>
+        </div>
+      </form>
+      <div class="table-wrap" id="salesTableWrapper">
         <table>
           <thead>
             <tr>
@@ -391,8 +413,8 @@ export async function renderSalesInvoices() {
   document.querySelectorAll('[data-sales-delete]').forEach(btn => {
     btn.addEventListener("click", async () => {
       if (confirm("Tem certeza que deseja deletar esta nota?")) {
-        showAppMessage("Deletado", "Nota removida com sucesso!", "success");
-        await renderSalesInvoices();
+        const success = await deleteSalesInvoice(btn.dataset.salesDelete);
+        if (success) await renderSalesInvoices();
       }
     });
   });
@@ -772,7 +794,10 @@ function bindSalesActions() {
   const closeGuideBtn = document.querySelector('[data-sales-action="close-guide"]');
   const testBtn = document.querySelector('[data-sales-action="test-connection"]');
   const importBtn = document.querySelector('[data-sales-action="import-orders"]');
+  const newInvoiceBtns = document.querySelectorAll('[data-sales-action="new-invoice"]');
+  const cancelFormBtn = document.querySelector('[data-sales-action="cancel-form"]');
   const salesForm = document.getElementById("salesConnectionForm");
+  const invoiceForm = document.getElementById("salesInvoiceForm");
 
   if (connectBtn) {
     connectBtn.addEventListener("click", () => {
@@ -802,6 +827,40 @@ function bindSalesActions() {
   if (importBtn) {
     importBtn.addEventListener("click", async () => {
       await importOrdersAsSalesInvoices();
+    });
+  }
+
+  newInvoiceBtns.forEach((button) => {
+    button.addEventListener("click", () => {
+      if (!invoiceForm) return;
+      invoiceForm.style.display = invoiceForm.style.display === "none" ? "block" : "none";
+    });
+  });
+
+  if (cancelFormBtn && invoiceForm) {
+    cancelFormBtn.addEventListener("click", () => {
+      invoiceForm.style.display = "none";
+      invoiceForm.reset();
+    });
+  }
+
+  if (invoiceForm) {
+    invoiceForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const invoice = {
+        date: invoiceForm.elements.invoice_date.value,
+        client: invoiceForm.elements.client.value,
+        invoice_number: invoiceForm.elements.invoice_number.value,
+        amount: invoiceForm.elements.amount.value,
+        status: invoiceForm.elements.status.value,
+        description: invoiceForm.elements.description.value,
+      };
+      const success = await saveSalesInvoice(invoice);
+      if (success) {
+        invoiceForm.style.display = "none";
+        invoiceForm.reset();
+        await renderSalesInvoices();
+      }
     });
   }
 

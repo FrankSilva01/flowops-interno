@@ -66,7 +66,7 @@ import {
   renderCommercialIntelligence, dismissSuggestion, resolveSuggestion, simulateSalesForGoal,
   renderOrderProductOptions, bindProductMarketplaceCheckboxes, bindProductImageInputs,
   bindProductProfitPreview, openBulkCostDialog, saveBulkCosts, renderListingProfitabilityTable,
-  openPriceCalculatorForListing, dismissInsight, initProductSteps,
+  openPriceCalculatorForListing, dismissInsight, initProductSteps, applyProductAssetsToOrderForm,
 } from "../features/pricing.js";
 import {
   syncAnalyticsFull, renderPerformanceTable, bindPerformanceTableToggles,
@@ -366,6 +366,7 @@ export function bindEvents() {
   byId("orderEditDialogForm").addEventListener("submit", saveOrderFromDialog);
   byId("orderForm").elements.marketplaceTagToAdd.addEventListener("change", updateMarketplaceCodePlaceholder);
   byId("orderForm").elements.status.addEventListener("change", updateOrderFormStatusColor);
+  byId("orderForm").elements.productId?.addEventListener("change", (event) => applyProductAssetsToOrderForm(event.target.value));
   bindReferenceImageInput();
   byId("cancelOrderEditBtn").addEventListener("click", cancelOrderEdit);
   byId("closeHistoryBtn").addEventListener("click", () => byId("historyDialog").close());

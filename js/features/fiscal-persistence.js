@@ -9,11 +9,19 @@ export function initFiscalData() {
   if (!state.salesInvoices) state.salesInvoices = [];
 }
 
+function withOrganization(payload) {
+  return state.organizationId ? { ...payload, organization_id: state.organizationId } : payload;
+}
+
+function scopeOrganization(query) {
+  return state.organizationId ? query.eq("organization_id", state.organizationId) : query;
+}
+
 // FISCAL DOCUMENTS
 export async function saveFiscalDocument(doc) {
   initFiscalData();
 
-  const docData = {
+  const docData = withOrganization({
     id: doc.id || `DOC-${Date.now()}`,
     date: doc.date,
     type: doc.type,
@@ -22,7 +30,7 @@ export async function saveFiscalDocument(doc) {
     value: parseFloat(doc.value) || 0,
     status: doc.status || "Pendente",
     created_at: new Date().toISOString(),
-  };
+  });
 
   // Validar
   if (!docData.date || !docData.type || !docData.number) {
@@ -64,7 +72,7 @@ export async function loadFiscalDocuments(filters = {}) {
   try {
     // Se houver Supabase, carregar de lá
     if (state.supabase) {
-      let query = state.supabase.from("fiscal_documents").select("*");
+      let query = scopeOrganization(state.supabase.from("fiscal_documents").select("*"));
 
       if (filters.dateFrom) query = query.gte("date", filters.dateFrom);
       if (filters.dateTo) query = query.lte("date", filters.dateTo);
@@ -107,10 +115,9 @@ export async function deleteFiscalDocument(docId) {
 
   try {
     if (state.supabase) {
-      const { error } = await state.supabase
-        .from("fiscal_documents")
-        .delete()
-        .eq("id", docId);
+      let query = state.supabase.from("fiscal_documents").delete().eq("id", docId);
+      query = scopeOrganization(query);
+      const { error } = await query;
 
       if (error) throw error;
     }
@@ -129,7 +136,7 @@ export async function deleteFiscalDocument(docId) {
 export async function saveDASPayment(das) {
   initFiscalData();
 
-  const dasData = {
+  const dasData = withOrganization({
     id: das.id || `DAS-${Date.now()}`,
     month: das.month,
     year: das.year,
@@ -139,7 +146,7 @@ export async function saveDASPayment(das) {
     pix_code: das.pix_code || null,
     paid_at: das.paid_at || null,
     created_at: new Date().toISOString(),
-  };
+  });
 
   // Validar
   if (!dasData.month || !dasData.year || dasData.value <= 0) {
@@ -178,7 +185,7 @@ export async function loadDASPayments(filters = {}) {
 
   try {
     if (state.supabase) {
-      let query = state.supabase.from("das_payments").select("*");
+      let query = scopeOrganization(state.supabase.from("das_payments").select("*"));
 
       if (filters.year) query = query.eq("year", filters.year);
       if (filters.status) query = query.eq("status", filters.status);
@@ -202,7 +209,7 @@ export async function loadDASPayments(filters = {}) {
 export async function savePurchaseInvoice(invoice) {
   initFiscalData();
 
-  const invoiceData = {
+  const invoiceData = withOrganization({
     id: invoice.id || `COMP-${Date.now()}`,
     date: invoice.date,
     supplier: invoice.supplier,
@@ -212,7 +219,7 @@ export async function savePurchaseInvoice(invoice) {
     status: invoice.status || "Registrada",
     description: invoice.description || "",
     created_at: new Date().toISOString(),
-  };
+  });
 
   // Validar
   if (!invoiceData.date || !invoiceData.supplier || !invoiceData.invoice_number) {
@@ -256,7 +263,7 @@ export async function loadPurchaseInvoices(filters = {}) {
 
   try {
     if (state.supabase) {
-      let query = state.supabase.from("purchase_invoices").select("*");
+      let query = scopeOrganization(state.supabase.from("purchase_invoices").select("*"));
 
       if (filters.dateFrom) query = query.gte("date", filters.dateFrom);
       if (filters.dateTo) query = query.lte("date", filters.dateTo);
@@ -294,11 +301,32 @@ export async function loadPurchaseInvoices(filters = {}) {
   }
 }
 
+export async function deletePurchaseInvoice(invoiceId) {
+  initFiscalData();
+
+  try {
+    if (state.supabase) {
+      let query = state.supabase.from("purchase_invoices").delete().eq("id", invoiceId);
+      query = scopeOrganization(query);
+      const { error } = await query;
+      if (error) throw error;
+    }
+
+    state.purchaseInvoices = state.purchaseInvoices.filter((item) => item.id !== invoiceId);
+    showAppMessage("Sucesso", "Nota de compra removida.", "success");
+    return true;
+  } catch (error) {
+    console.error("Erro ao deletar nota de compra:", error);
+    showAppMessage("Erro", "Falha ao remover nota de compra.", "error");
+    return false;
+  }
+}
+
 // SALES INVOICES
 export async function saveSalesInvoice(invoice) {
   initFiscalData();
 
-  const invoiceData = {
+  const invoiceData = withOrganization({
     id: invoice.id || `VENDA-${Date.now()}`,
     date: invoice.date,
     client: invoice.client,
@@ -307,7 +335,7 @@ export async function saveSalesInvoice(invoice) {
     status: invoice.status || "Emitida",
     description: invoice.description || "",
     created_at: new Date().toISOString(),
-  };
+  });
 
   // Validar
   if (!invoiceData.date || !invoiceData.client || !invoiceData.invoice_number) {
@@ -351,7 +379,7 @@ export async function loadSalesInvoices(filters = {}) {
 
   try {
     if (state.supabase) {
-      let query = state.supabase.from("sales_invoices").select("*");
+      let query = scopeOrganization(state.supabase.from("sales_invoices").select("*"));
 
       if (filters.dateFrom) query = query.gte("date", filters.dateFrom);
       if (filters.dateTo) query = query.lte("date", filters.dateTo);
@@ -386,6 +414,27 @@ export async function loadSalesInvoices(filters = {}) {
   } catch (error) {
     console.error("Erro ao carregar notas:", error);
     return state.salesInvoices;
+  }
+}
+
+export async function deleteSalesInvoice(invoiceId) {
+  initFiscalData();
+
+  try {
+    if (state.supabase) {
+      let query = state.supabase.from("sales_invoices").delete().eq("id", invoiceId);
+      query = scopeOrganization(query);
+      const { error } = await query;
+      if (error) throw error;
+    }
+
+    state.salesInvoices = state.salesInvoices.filter((item) => item.id !== invoiceId);
+    showAppMessage("Sucesso", "Nota de venda removida.", "success");
+    return true;
+  } catch (error) {
+    console.error("Erro ao deletar nota de venda:", error);
+    showAppMessage("Erro", "Falha ao remover nota de venda.", "error");
+    return false;
   }
 }
 
