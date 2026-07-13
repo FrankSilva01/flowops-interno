@@ -91,7 +91,11 @@ function loadStringArray(key) {
 }
 
 export function getInitialView() {
-  const allowed = ["dashboard", "orders", "production", "logistics", "cash", "materials", "leads", "marketplace", "logs", "settings", "approvals"];
+  const allowed = [
+    "dashboard", "orders", "production", "logistics", "cash", "materials", "reports",
+    "leads", "subscription", "calendar", "notifications", "support", "whatsnew",
+    "marketplace", "logs", "fiscal", "settings", "approvals"
+  ];
   const fromHash = getHashRoute();
   if (allowed.includes(fromHash)) return fromHash;
   const saved = localStorage.getItem("3daft-active-view");

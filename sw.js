@@ -1,4 +1,4 @@
-const CACHE_NAME = "flowops-v15";
+const CACHE_NAME = "flowops-v16";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -40,9 +40,10 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-// Fetch: Network-first for API, Cache-first for static
+// Fetch: network-first for live app shell/assets so new deploys do not keep old modules hidden.
 self.addEventListener("fetch", (event) => {
   const { request } = event;
+  if (request.method !== "GET") return;
   const url = new URL(request.url);
 
   // API calls: network-first
@@ -64,7 +65,26 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Static assets: cache-first
+  if (
+    request.mode === "navigate"
+    || url.pathname.endsWith(".html")
+    || url.pathname.endsWith(".js")
+    || url.pathname.endsWith(".css")
+  ) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone()));
+          }
+          return response;
+        })
+        .catch(() => caches.match(request).then((response) => response || new Response("Offline", { status: 503 })))
+    );
+    return;
+  }
+
+  // Other static assets: cache-first
   event.respondWith(
     caches.match(request).then((response) => {
       if (response) return response;
