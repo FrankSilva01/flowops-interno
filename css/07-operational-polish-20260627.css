@@ -1942,6 +1942,24 @@ button.attention-item:hover {
 
 /* Inteligencia Comercial - tabela de rentabilidade por anuncio */
 
+#intelligenceAnalysisSection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#intelligenceDecisionBoard { order: 1; }
+#intelligenceAnalysisSection [data-panel-collapsible="suggestions"] { order: 2; }
+#intelligenceAnalysisSection [data-panel-collapsible="profitability-summary"] { order: 3; }
+#marketplacePerformancePanel { order: 4; }
+#intelligenceAnalysisSection .intelligence-charts-row { order: 5; }
+#intelligenceAnalysisSection [data-panel-collapsible="profitability-table"] { order: 6; }
+#investmentRankingPanel { order: 7; }
+#intentScoreRankingPanel { order: 8; }
+#intelligenceAnalysisSection [data-panel-collapsible="simulator"] { order: 9; }
+#intelligenceAnalysisSection [data-panel-collapsible="marketplace-comparison"] { order: 10; }
+#categoryTrendsPanel { order: 11; }
+
 .intelligence-priority-strip {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

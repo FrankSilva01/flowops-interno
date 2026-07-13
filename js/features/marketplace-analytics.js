@@ -487,7 +487,7 @@ export function renderInvestmentRanking() {
       <div class="list-row investment-ranking-row">
         <div>
           <span class="investment-ranking-position">#${index + 1}</span>
-          <strong>${html(listing.title)}</strong>
+          <button class="link-cell" type="button" data-action="open-listing-drawer" data-marketplace="${html(listing.marketplace)}" data-external-id="${html(listing.external_id)}">${html(listing.title)}</button>
           <span>${html(text)}</span>
         </div>
         <div class="investment-ranking-side">
@@ -515,7 +515,7 @@ export function renderIntentScoreRanking() {
       <div class="list-row investment-ranking-row">
         <div>
           <span class="investment-ranking-position">#${index + 1}</span>
-          <strong>${html(listing.title)}</strong>
+          <button class="link-cell" type="button" data-action="open-listing-drawer" data-marketplace="${html(listing.marketplace)}" data-external-id="${html(listing.external_id)}">${html(listing.title)}</button>
           <span>${intent.visits7d} visita${intent.visits7d === 1 ? "" : "s"} (7d) · ${intent.questions} pergunta${intent.questions === 1 ? "" : "s"} · ${intent.sales30d} venda${intent.sales30d === 1 ? "" : "s"} (30d) · ${intent.conversion.toFixed(1)}% conversão</span>
         </div>
         <div class="investment-ranking-side">

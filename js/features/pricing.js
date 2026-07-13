@@ -1893,7 +1893,7 @@ export function renderListingProfitabilityTable() {
       : `<span class="badge neutral" title="Estimativa por tabela - conecte o Mercado Livre e sincronize as taxas para o valor real">estimado</span>`;
     return `
       <tr>
-        <td class="listing-profitability-name" title="${html(listing.title)}">${html(listing.title)}</td>
+        <td class="listing-profitability-name" title="${html(listing.title)}"><button class="link-cell" type="button" data-action="open-listing-drawer" data-marketplace="${html(listing.marketplace)}" data-external-id="${html(listing.external_id)}">${html(listing.title)}</button></td>
         <td><span class="badge neutral">${html(marketplaceDisplayName(listing.marketplace))}</span></td>
         <td>${money.format(Number(listing.price || 0))}</td>
         <td>${money.format(profitability.cost)}</td>
