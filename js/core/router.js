@@ -275,11 +275,6 @@ export function bindEvents() {
     }
   });
   document.addEventListener("keydown", (event) => {
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
-      event.preventDefault();
-      byId("globalSearch")?.focus();
-      return;
-    }
     if (event.key !== "Escape") return;
     byId("notificationDropdown").hidden = true;
     byId("dashboardCustomizePanel").hidden = true;

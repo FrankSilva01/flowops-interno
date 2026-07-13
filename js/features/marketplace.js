@@ -1211,6 +1211,9 @@ export async function openMarketplaceEdit(itemId, marketplace = "Mercado Livre")
   form.elements.price.value = Number(listing.price || 0);
   form.elements.availableQuantity.value = Number(listing.raw_payload?.available_quantity || 0);
   form.elements.status.value = listing.status === "paused" ? "paused" : "active";
+  byId("marketplaceEditCode").textContent = itemId;
+  byId("marketplaceEditTitle").textContent = listing.title || "Editar anuncio";
+  byId("marketplaceEditSubtitle").textContent = marketplaceDisplayName(marketplace);
   byId("marketplaceEditMessage").textContent = "";
   byId("marketplaceEditDialog").showModal();
 }

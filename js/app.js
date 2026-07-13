@@ -149,7 +149,6 @@ import {
   bindProductProfitPreview,
 } from "./features/pricing.js";
 import { bindCalendarEvents, renderCalendarWithEvents, attachCalendarEventListeners, updateCalendarStats } from "./features/calendar-navigation.js";
-import { renderAdvancedDashboard, advancedDashboardCSS } from "./features/advanced-dashboard.js";
 import { openMLPricingDialog, applyPriceRecommendation, iaPricingCSS } from "./features/ia-pricing.js";
 import { pushNotificationManager, pushNotificationsCSS } from "./features/push-notifications.js";
 import { accountingIntegration, accountingIntegrationCSS } from "./features/accounting-integration.js";
@@ -193,16 +192,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   } catch (err) {
     console.error("Calendar init error:", err);
-  }
-
-  // Initialize Advanced Dashboard
-  try {
-    const dashboardContainer = byId("advancedDashboard");
-    if (dashboardContainer) {
-      renderAdvancedDashboard();
-    }
-  } catch (err) {
-    console.error("Advanced dashboard init error:", err);
   }
 
   // Initialize all remaining features

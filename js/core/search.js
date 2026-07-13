@@ -30,9 +30,9 @@ export function initGlobalSearch() {
 
   // Suporte para Ctrl+K
   document.addEventListener("keydown", (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
       e.preventDefault();
-      searchInput.focus();
+      openSearchFromShortcut(searchInput);
     }
   });
 
@@ -43,6 +43,13 @@ export function initGlobalSearch() {
       searchInput.blur();
     }
   });
+}
+
+function openSearchFromShortcut(searchInput) {
+  if (searchInput.hidden) searchInput.hidden = false;
+  searchInput.focus({ preventScroll: true });
+  searchInput.select();
+  showSearchDropdown();
 }
 
 function showSearchDropdown() {

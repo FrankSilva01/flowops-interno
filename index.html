@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="./css/11-fiscal-forms.css?v=200" />
     <link rel="stylesheet" href="./css/12-global-search.css?v=200" />
     <script src="./supabase-config.js?v=200" defer></script>
-    <script type="module" src="./js/app.js?v=208"></script>
+    <script type="module" src="./js/app.js?v=209"></script>
   </head>
   <body>
     <main id="appView" class="app-shell" hidden>
@@ -164,9 +164,6 @@
               <button id="resetDashboardBtn" class="secondary-btn" type="button">Restaurar padrão</button>
             </div>
           </div>
-
-          <!-- Advanced Dashboard -->
-          <div id="advancedDashboard" style="margin-top: 30px;"></div>
 
           <!-- Camada 1: KPIs financeiros -->
           <div class="kpi-grid">
@@ -360,8 +357,6 @@
             </section>
           </div>
 
-          <!-- Advanced Dashboard: Charts and Analytics -->
-          <div id="advancedDashboard" class="advanced-dashboard"></div>
         </section>
 
         <section id="reportsView" class="view">
@@ -1851,12 +1846,16 @@
       </div>
       <div id="marketplaceStatsContent" class="drawer-body"></div>
     </dialog>
-    <dialog id="marketplaceEditDialog" class="history-dialog marketplace-dialog">
-      <div class="panel-head">
-        <h3>Editar anúncio</h3>
-        <button class="icon-btn" type="button" data-close-dialog="marketplaceEditDialog">Fechar</button>
+    <dialog id="marketplaceEditDialog" class="history-dialog marketplace-dialog drawer-dialog">
+      <div class="drawer-header">
+        <div>
+          <span class="order-code" id="marketplaceEditCode">Anúncio</span>
+          <h3 id="marketplaceEditTitle">Editar anúncio</h3>
+          <small id="marketplaceEditSubtitle"></small>
+        </div>
+        <button class="icon-btn" type="button" data-close-dialog="marketplaceEditDialog" aria-label="Fechar">×</button>
       </div>
-      <form id="marketplaceEditForm" class="login-form">
+      <form id="marketplaceEditForm" class="login-form drawer-body">
         <input name="itemId" type="hidden" />
         <input name="marketplace" type="hidden" />
         <label>Título<input name="title" required /></label>
