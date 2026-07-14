@@ -5,10 +5,13 @@ import { getOrderCode } from "./orders.js";
 import { normalizeMarketplaceChannel } from "./marketplace.js";
 import { normalizeText } from "../core/importer.js";
 import { reportPricingDefinition } from "./pricing.js";
+import { renderDataQualityReport } from "./data-quality.js";
 
 export function renderReports() {
   const content = byId("reportsContent");
   if (!content) return;
+  const filterPanel = document.querySelector(".report-filter-panel");
+  if (filterPanel) filterPanel.hidden = state.reportTab === "quality";
   const rows = getReportRows();
   const financial = getReportFinancial(rows.cash, rows.orders);
   const totalOrders = rows.orders.length;
@@ -100,6 +103,10 @@ function cellExportText(cell) {
 }
 
 export function renderReportTabContent(content, tab, rows, financial, dailyRows) {
+  if (tab === "quality") {
+    renderDataQualityReport(content);
+    return;
+  }
   const definitions = {
     financial: {
       title: "Financeiro",

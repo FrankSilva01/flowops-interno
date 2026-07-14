@@ -1,4 +1,4 @@
-const CACHE_NAME = "flowops-v30";
+const CACHE_NAME = "flowops-v31";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -18,6 +18,7 @@ const STATIC_ASSETS = [
   "/css/10-modern-calendar.css",
   "/css/11-fiscal-forms.css",
   "/css/12-global-search.css",
+  "/css/13-data-quality.css",
   "/assets/tabler-icons/tabler-icons.min.css",
   "/theme-init.js",
   "/supabase-config.js",

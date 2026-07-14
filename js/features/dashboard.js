@@ -10,6 +10,7 @@ import { normalizeMarketplaceChannel } from "./marketplace.js";
 import { renderDeliveryStatusWidget, getDeliveryStatusCounts } from "./logistics.js";
 import { renderProfitabilityDashboardWidget, getProfitabilitySummary, hasCommercialIntelligenceAccess } from "./pricing.js";
 import { renderMarketplaceCommandWidget } from "./marketplace-analytics.js";
+import { analyzeDataQuality } from "./data-quality.js";
 
 export function initDashboardDrag() {
   applyDashboardOrder();
@@ -299,6 +300,7 @@ export function renderAttentionNeeded() {
   byId("attentionUrgent").textContent = urgent;
   byId("attentionNoValue").textContent = noValue;
   byId("attentionLowStock").textContent = lowStock;
+  byId("attentionDataQuality").textContent = analyzeDataQuality().affectedRecords;
   const subscriptionBadge = byId("attentionSubscriptionBadge");
   if (subscriptionBadge) {
     subscriptionBadge.textContent = subscriptionAlert ? subscriptionAlert.title : subscriptionStatusText(state.subscription?.status);

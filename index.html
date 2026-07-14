@@ -26,8 +26,9 @@
     <link rel="stylesheet" href="./css/10-modern-calendar.css?v=200" />
     <link rel="stylesheet" href="./css/11-fiscal-forms.css?v=200" />
     <link rel="stylesheet" href="./css/12-global-search.css?v=228" />
+    <link rel="stylesheet" href="./css/13-data-quality.css?v=230" />
     <script src="./supabase-config.js?v=200" defer></script>
-    <script type="module" src="./js/app.js?v=229"></script>
+    <script type="module" src="./js/app.js?v=230"></script>
   </head>
   <body>
     <main id="appView" class="app-shell" hidden>
@@ -178,6 +179,7 @@
                 <button class="priority-info" type="button" data-action="focus-orders" data-focus="noDate"><span><i class="ti ti-calendar-off"></i> Sem data de entrega</span><strong id="attentionNoDate">0</strong></button>
                 <button class="priority-finance" type="button" data-action="focus-orders" data-focus="noValue"><span><i class="ti ti-cash-off"></i> Sem valor definido</span><strong id="attentionNoValue">0</strong></button>
                 <div class="priority-stock"><span><i class="ti ti-package-off"></i> Estoque crítico</span><strong id="attentionLowStock">0</strong></div>
+                <button class="priority-info" type="button" data-action="open-data-quality"><span><i class="ti ti-database-search"></i> Dados para revisar</span><strong id="attentionDataQuality">0</strong></button>
                 <div class="priority-subscription"><span><i class="ti ti-credit-card"></i> Assinatura</span><span id="attentionSubscriptionBadge" class="badge neutral">-</span></div>
               </div>
             </section>
@@ -363,6 +365,7 @@
             <button type="button" data-report-tab="materials">Materiais</button>
             <button type="button" data-report-tab="clients">Clientes</button>
             <button type="button" data-report-tab="stock">Estoque</button>
+            <button type="button" data-report-tab="quality">Qualidade dos dados</button>
           </div>
           <section class="panel report-filter-panel">
             <label>Período

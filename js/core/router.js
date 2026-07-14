@@ -80,7 +80,7 @@ import {
   showCalculatorSuggestion, getSuggestionForListing, syncFeeCalculatorFull,
 } from "../features/marketplace-analytics.js";
 
-const APP_VERSION = "229";
+const APP_VERSION = "230";
 
 async function refreshAppShell() {
   showAppMessage("Atualizando sistema", "Limpando cache local e carregando a versão mais recente.", "info");
@@ -250,6 +250,38 @@ export function bindEvents() {
     byId("reportCompareFilter").value = state.reportCompare;
     byId("reportGroupFilter").value = state.reportGroup;
     renderReports();
+  });
+  byId("reportsContent")?.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-quality-open]");
+    if (!button) return;
+    const { qualityOpen, id, marketplace } = button.dataset;
+    if (qualityOpen === "orders") {
+      setView("orders");
+      openOrderDrawer(id);
+      return;
+    }
+    if (qualityOpen === "leads") {
+      setView("leads");
+      selectLead(id);
+      return;
+    }
+    if (qualityOpen === "materials") {
+      setView("materials");
+      setMaterialsTab("purchases");
+      if (ensureCanEdit()) startMaterialEdit(id);
+      return;
+    }
+    if (qualityOpen === "inventory") {
+      setView("materials");
+      setMaterialsTab("inventory");
+      if (ensureCanEdit()) startInventoryEdit(id);
+      return;
+    }
+    if (qualityOpen === "marketplace" && state.isAdmin) {
+      setView("marketplace");
+      setMarketplaceView("listings");
+      await openMarketplaceEdit(id, marketplace);
+    }
   });
   byId("themeToggle").addEventListener("click", cycleTheme);
   byId("topbarHelpBtn")?.addEventListener("click", () => setView("support"));
@@ -796,6 +828,12 @@ export function bindActions() {
       }
       if (action === "view-marketplace") {
         setView("marketplace");
+        return;
+      }
+      if (action === "open-data-quality") {
+        state.reportTab = "quality";
+        document.querySelectorAll("[data-report-tab]").forEach((item) => item.classList.toggle("active", item.dataset.reportTab === "quality"));
+        setView("reports");
         return;
       }
       if (action === "open-quotes") {
