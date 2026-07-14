@@ -152,7 +152,6 @@ import { bindCalendarEvents, renderCalendarWithEvents, attachCalendarEventListen
 import { openMLPricingDialog, applyPriceRecommendation, iaPricingCSS } from "./features/ia-pricing.js";
 import { pushNotificationManager, pushNotificationsCSS } from "./features/push-notifications.js";
 import { accountingIntegration, accountingIntegrationCSS } from "./features/accounting-integration.js";
-import { renderWhatsappTemplatesTab } from "./features/weekly-summary.js";
 import { initGlobalSearch } from "./core/search.js";
 import { initOnboarding } from "./features/pwa-onboarding.js";
 
@@ -253,9 +252,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
   */
   window.syncAllAccountingData = () => accountingIntegration?.syncAllData?.();
-
-  // Expose Prompt 8 & 9 functions globally
-  window.renderWhatsappTemplatesTab = renderWhatsappTemplatesTab;
 
   // Setup export listings button
   const exportBtn = byId("exportListingsBtn");

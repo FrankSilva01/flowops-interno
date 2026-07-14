@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="./css/11-fiscal-forms.css?v=200" />
     <link rel="stylesheet" href="./css/12-global-search.css?v=228" />
     <script src="./supabase-config.js?v=200" defer></script>
-    <script type="module" src="./js/app.js?v=228"></script>
+    <script type="module" src="./js/app.js?v=229"></script>
   </head>
   <body>
     <main id="appView" class="app-shell" hidden>
@@ -971,7 +971,6 @@
             <div class="marketplace-tab-group">
               <span>Inteligência</span>
               <button class="view-tab" type="button" data-marketplace-view="intelligence">Diagnóstico</button>
-              <button class="view-tab" type="button" data-marketplace-view="whatsapp">WhatsApp</button>
             </div>
             <div class="marketplace-tab-group">
               <span>Configurações</span>
@@ -1525,16 +1524,6 @@
               </div>
             </div>
             <div id="mlQuestionsContainer"></div>
-          </div>
-
-          <div id="marketplaceWhatsappView" class="marketplace-subview">
-            <div class="panel-head">
-              <h3>Templates WhatsApp</h3>
-              <div class="inline-actions">
-                <button id="renderWhatsappBtn" class="primary-btn" type="button" onclick="window.renderWhatsappTemplatesTab()">Gerenciar templates</button>
-              </div>
-            </div>
-            <div id="whatsappTemplatesContainer"></div>
           </div>
 
           <div id="marketplaceBackupView" class="marketplace-subview">

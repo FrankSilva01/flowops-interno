@@ -1363,7 +1363,7 @@ export function marketplaceSaleStatusClass(status) {
 }
 
 export function setMarketplaceView(view) {
-  state.marketplaceView = ["listings", "storefront", "sales", "integrations", "intelligence", "api-logs", "backup", "whatsapp", "ml-questions"].includes(view) ? view : "listings";
+  state.marketplaceView = ["listings", "storefront", "sales", "integrations", "intelligence", "api-logs", "backup", "ml-questions"].includes(view) ? view : "listings";
   document.querySelectorAll("[data-marketplace-view]").forEach((button) => {
     button.classList.toggle("active", button.dataset.marketplaceView === state.marketplaceView);
   });
@@ -1374,15 +1374,8 @@ export function setMarketplaceView(view) {
   byId("marketplaceIntelligenceView").classList.toggle("active", state.marketplaceView === "intelligence");
   byId("marketplaceApiLogsView").classList.toggle("active", state.marketplaceView === "api-logs");
   byId("marketplaceBackupView").classList.toggle("active", state.marketplaceView === "backup");
-  byId("marketplaceWhatsappView").classList.toggle("active", state.marketplaceView === "whatsapp");
   byId("marketplaceMLQuestionsView").classList.toggle("active", state.marketplaceView === "ml-questions");
 
-  // Renderizar whatsapp se necessário
-  if (state.marketplaceView === "whatsapp") {
-    import("./marketplace-whatsapp.js").then(({ renderMarketplaceWhatsapp }) => {
-      renderMarketplaceWhatsapp();
-    });
-  }
 }
 
 export function applyMarketplaceLogRange() {
