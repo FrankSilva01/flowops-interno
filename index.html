@@ -25,9 +25,9 @@
     <link rel="stylesheet" href="./css/08-sora-redesign-20260706.css?v=200" />
     <link rel="stylesheet" href="./css/10-modern-calendar.css?v=200" />
     <link rel="stylesheet" href="./css/11-fiscal-forms.css?v=200" />
-    <link rel="stylesheet" href="./css/12-global-search.css?v=224" />
+    <link rel="stylesheet" href="./css/12-global-search.css?v=225" />
     <script src="./supabase-config.js?v=200" defer></script>
-    <script type="module" src="./js/app.js?v=224"></script>
+    <script type="module" src="./js/app.js?v=225"></script>
   </head>
   <body>
     <main id="appView" class="app-shell" hidden>
@@ -86,7 +86,7 @@
         <div class="session-card">
           <span id="activeUserName">Modo teste</span>
           <small id="activeUserRole">Acesso direto sem login</small>
-          <small id="appVersionLabel" class="app-version-label">FlowOps v224</small>
+          <small id="appVersionLabel" class="app-version-label">FlowOps v225</small>
           <button id="logoutBtn" class="ghost-btn" type="button" hidden>Sair</button>
         </div>
       </aside>
@@ -1006,6 +1006,7 @@
             <div class="panel-head">
               <h3>Anúncios sincronizados</h3>
               <div class="inline-actions">
+                <button id="openMarketplaceFileImportBtn" class="secondary-btn" type="button" data-action="marketplace-import-file">Importar arquivo</button>
                 <button id="openBulkMarketplaceMigrationBtn" class="secondary-btn" type="button" data-action="marketplace-migrate-bulk" disabled>Replicar selecionados</button>
                 <button id="openProductDialogBtn" class="secondary-btn" type="button" data-action="open-product-dialog">Cadastrar produto</button>
                 <button id="exportListingsBtn" class="secondary-btn" type="button" data-action="marketplace-export-csv">Exportar</button>
@@ -1966,6 +1967,36 @@
         <div id="marketplaceMigrationSummary"></div>
         <p class="muted">A categoria e os atributos variam entre marketplaces. O FlowOps copia os dados compativeis e indica o que precisa ser completado.</p>
         <button class="primary-btn" type="submit">Preparar rascunho</button>
+      </form>
+    </dialog>
+    <dialog id="marketplaceFileImportDialog" class="history-dialog marketplace-dialog drawer-dialog">
+      <div class="drawer-header">
+        <div>
+          <span class="order-code">Sem API</span>
+          <h3>Importar anúncios por arquivo</h3>
+          <small>Use a planilha exportada do marketplace ou o modelo do FlowOps.</small>
+        </div>
+        <button class="icon-btn" type="button" data-close-dialog="marketplaceFileImportDialog" aria-label="Fechar">×</button>
+      </div>
+      <form id="marketplaceFileImportForm" class="login-form drawer-body">
+        <label>Marketplace de origem
+          <select name="marketplace">
+            <option value="Shopee">Shopee</option>
+            <option value="Mercado Livre">Mercado Livre</option>
+          </select>
+        </label>
+        <label id="marketplaceFileImportDropzone" class="storefront-image-dropzone wide">
+          <span>Arquivo CSV ou Excel</span>
+          <small id="marketplaceFileImportStatus">Selecione ou arraste a planilha exportada</small>
+          <input id="marketplaceFileImportInput" name="file" type="file" accept=".csv,.xlsx,.xls" required />
+        </label>
+        <div class="inline-actions">
+          <button class="secondary-btn" type="button" data-action="marketplace-import-template">Baixar modelo CSV</button>
+        </div>
+        <div id="marketplaceFileImportSummary" class="marketplace-bulk-summary"></div>
+        <p class="muted">Título e preço são obrigatórios. SKU, imagens, categoria, peso e descrição podem ser completados depois antes da replicação.</p>
+        <p id="marketplaceFileImportMessage" class="form-error"></p>
+        <button id="marketplaceFileImportSubmit" class="primary-btn" type="submit" disabled>Importar anúncios válidos</button>
       </form>
     </dialog>
     <dialog id="marketplaceBulkMigrationDialog" class="history-dialog marketplace-dialog drawer-dialog">

@@ -7,6 +7,7 @@ import {
   buildMarketplaceMigrationBatch,
   migrationTargetFor,
 } from "../../js/features/marketplace-migration.js";
+import { normalizeMarketplaceImportRows } from "../../js/features/marketplace-file-import.js";
 
 const mlListing = {
   marketplace: "Mercado Livre",
@@ -75,4 +76,27 @@ test("mantem pendencias que nao podem ser preenchidas pelos valores comuns", () 
   const migration = buildMarketplaceMigration({ ...mlListing, sku: "", raw_payload: {} }, "shopee");
   const updated = applyMarketplaceMigrationDefaults(migration, { shopeeCategoryId: "SHP-1", shopeeWeight: 1 });
   assert.deepEqual(updated.missing, ["SKU", "Imagens (1/3)"]);
+});
+
+test("normaliza planilha exportada da Shopee sem API", () => {
+  const [item] = normalizeMarketplaceImportRows([{
+    "ID do item": "987654", "Nome do produto": "Miniatura importada", "SKU principal": "SHP-987",
+    "Preço": "R$ 79,90", Estoque: "12", "Peso (kg)": "0,25",
+    "Imagem 1": "http://images.example/1.jpg", "Imagem 2": "https://images.example/2.jpg",
+  }], "Shopee");
+  assert.equal(item.marketplace, "Shopee");
+  assert.equal(item.price, 79.9);
+  assert.equal(item.stock, 12);
+  assert.equal(item.weight, 0.25);
+  assert.equal(item.images.length, 2);
+  assert.equal(item.valid, true);
+});
+
+test("aceita colunas comuns de exportacao do Mercado Livre", () => {
+  const [item] = normalizeMarketplaceImportRows([{
+    "Item ID": "MLB123", Title: "Produto ML", "Seller SKU": "ML-123", Price: "129.90", "Available Quantity": "4",
+  }], "Mercado Livre");
+  assert.equal(item.externalId, "MLB123");
+  assert.equal(item.price, 129.9);
+  assert.equal(item.stock, 4);
 });

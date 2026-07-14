@@ -13,6 +13,8 @@ import { getTokenAlert } from "./dashboard.js";
 import { renderProfitabilityBadge, renderCommercialIntelligence, getListingProfitability } from "./pricing.js";
 import { renderMarketplaceAnalyticsPanel, getListingAnalytics, computeIntentScore } from "./marketplace-analytics.js";
 import { getProductForSale, renderProductionAssetShortcut } from "./product-assets.js";
+import { loadXlsx, parseCsv } from "../core/importer.js";
+import { MARKETPLACE_IMPORT_TEMPLATE, normalizeMarketplaceImportRows } from "./marketplace-file-import.js";
 import {
   buildMarketplaceMigration,
   buildMarketplaceMigrationBatch,
@@ -20,6 +22,7 @@ import {
 } from "./marketplace-migration.js";
 
 const selectedMarketplaceMigrations = new Set();
+let marketplaceFileImportRows = [];
 
 const MARKETPLACE_CHANNELS = [
   { id: "mercado-livre", label: "Mercado Livre" },
@@ -775,6 +778,143 @@ export function toggleAllMarketplaceMigrationSelections(selected) {
       else selectedMarketplaceMigrations.delete(key);
     });
   renderMarketplaces();
+}
+
+export function openMarketplaceFileImport() {
+  const form = byId("marketplaceFileImportForm");
+  form.reset();
+  marketplaceFileImportRows = [];
+  byId("marketplaceFileImportStatus").textContent = "Selecione ou arraste a planilha exportada";
+  byId("marketplaceFileImportSummary").innerHTML = "";
+  byId("marketplaceFileImportMessage").textContent = "";
+  byId("marketplaceFileImportSubmit").disabled = true;
+  byId("marketplaceFileImportDialog").showModal();
+}
+
+export function bindMarketplaceFileImportDropzone() {
+  const dropzone = byId("marketplaceFileImportDropzone");
+  const input = byId("marketplaceFileImportInput");
+  if (!dropzone || !input || dropzone.dataset.bound === "true") return;
+  dropzone.dataset.bound = "true";
+  ["dragenter", "dragover"].forEach((eventName) => dropzone.addEventListener(eventName, (event) => {
+    event.preventDefault();
+    dropzone.classList.add("dragging");
+  }));
+  ["dragleave", "drop"].forEach((eventName) => dropzone.addEventListener(eventName, (event) => {
+    event.preventDefault();
+    dropzone.classList.remove("dragging");
+  }));
+  dropzone.addEventListener("drop", async (event) => {
+    const file = event.dataTransfer?.files?.[0];
+    if (!file) return;
+    const transfer = new DataTransfer();
+    transfer.items.add(file);
+    input.files = transfer.files;
+    await previewMarketplaceFileImport();
+  });
+}
+
+async function rowsFromMarketplaceFile(file) {
+  const name = file.name.toLowerCase();
+  if (name.endsWith(".csv")) return parseCsv(await file.text());
+  if (name.endsWith(".xlsx") || name.endsWith(".xls")) {
+    await loadXlsx();
+    const workbook = window.XLSX.read(await file.arrayBuffer(), { type: "array" });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    return window.XLSX.utils.sheet_to_json(sheet, { defval: "" });
+  }
+  throw new Error("Use um arquivo CSV, XLSX ou XLS.");
+}
+
+function renderMarketplaceFileImportPreview() {
+  const valid = marketplaceFileImportRows.filter((row) => row.valid);
+  const incomplete = marketplaceFileImportRows.filter((row) => !row.valid);
+  byId("marketplaceFileImportSubmit").disabled = valid.length === 0;
+  byId("marketplaceFileImportSummary").innerHTML = marketplaceFileImportRows.length ? `
+    <div class="drawer-field-list">
+      <div class="drawer-field-row"><span>Encontrados</span><strong>${marketplaceFileImportRows.length}</strong></div>
+      <div class="drawer-field-row"><span>Prontos</span><strong>${valid.length}</strong></div>
+      <div class="drawer-field-row"><span>Ignorados</span><strong>${incomplete.length}</strong></div>
+    </div>
+    <div class="marketplace-bulk-items">${marketplaceFileImportRows.slice(0, 50).map((row) => `
+      <article><strong>${html(row.title || row.externalId)}</strong><small>${row.valid ? `${html(row.sku || "Sem SKU")} · ${money.format(row.price)} · ${row.images.length} imagem(ns)` : `Pendente: ${html(row.missing.join(", "))}`}</small></article>
+    `).join("")}</div>
+    ${marketplaceFileImportRows.length > 50 ? `<small class="muted">Exibindo os primeiros 50 itens.</small>` : ""}
+  ` : `<div class="listing-drawer-suggestion danger">Nenhum anuncio reconhecido no arquivo.</div>`;
+}
+
+export async function previewMarketplaceFileImport() {
+  const form = byId("marketplaceFileImportForm");
+  const file = form.elements.file.files?.[0];
+  if (!file) return;
+  const status = byId("marketplaceFileImportStatus");
+  try {
+    status.textContent = "Lendo planilha...";
+    marketplaceFileImportRows = normalizeMarketplaceImportRows(await rowsFromMarketplaceFile(file), form.elements.marketplace.value);
+    status.textContent = `${file.name} · ${marketplaceFileImportRows.length} linha(s) reconhecida(s)`;
+    byId("marketplaceFileImportMessage").textContent = "";
+    renderMarketplaceFileImportPreview();
+  } catch (error) {
+    marketplaceFileImportRows = [];
+    status.textContent = file.name;
+    byId("marketplaceFileImportMessage").textContent = error.message;
+    renderMarketplaceFileImportPreview();
+  }
+}
+
+function marketplaceFileRowPayload(row) {
+  return {
+    action: "save",
+    marketplace: row.marketplace,
+    external_id: row.externalId,
+    title: row.title,
+    category: row.category || row.categoryId,
+    price: row.price,
+    marketplace_url: row.permalink,
+    description: row.description,
+    image_urls: row.images,
+    featured: false,
+    status: row.status,
+    sku: row.sku,
+    publish_targets: { vitrine: false, mercado_livre: false, shopee: false, amazon: false },
+    raw_payload: {
+      available_quantity: row.stock,
+      category_id: row.marketplace === "Mercado Livre" ? row.categoryId : "",
+      pictures: row.images.map((url) => ({ secure_url: url, url })),
+      shopee: row.marketplace === "Shopee" ? { category_id: row.categoryId, weight: row.weight, sku: row.sku } : {},
+      source_file_import: true,
+      imported_at: new Date().toISOString(),
+    },
+  };
+}
+
+export async function saveMarketplaceFileImport(event) {
+  event.preventDefault();
+  if (!ensureCanAdmin()) return;
+  const rows = marketplaceFileImportRows.filter((row) => row.valid);
+  if (!rows.length) return;
+  const message = byId("marketplaceFileImportMessage");
+  message.textContent = `Importando ${rows.length} anuncio(s)...`;
+  const results = await Promise.allSettled(rows.map((row) => storefrontRequest(marketplaceFileRowPayload(row))));
+  const failures = results.filter((result) => result.status === "rejected");
+  if (failures.length) {
+    message.textContent = `${results.length - failures.length} importado(s); ${failures.length} falharam.`;
+    return;
+  }
+  byId("marketplaceFileImportDialog").close();
+  await loadMarketplaces();
+  renderMarketplaces();
+  flashActionMessage(`${results.length} anuncio(s) importados. Agora voce pode replica-los individualmente ou em lote.`);
+}
+
+export function downloadMarketplaceImportTemplate() {
+  const example = ["123456", "Miniatura exemplo", "SKU-001", "79,90", "10", "Miniaturas", "", "Descricao do produto", "0,25", "https://", "https://imagem1.jpg|https://imagem2.jpg|https://imagem3.jpg", "active"];
+  const csv = [MARKETPLACE_IMPORT_TEMPLATE, example].map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(";")).join("\n");
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(new Blob([`\ufeff${csv}`], { type: "text/csv;charset=utf-8" }));
+  link.download = "modelo-importacao-marketplace.csv";
+  link.click();
+  URL.revokeObjectURL(link.href);
 }
 
 function migrationBatchDefaults(form) {

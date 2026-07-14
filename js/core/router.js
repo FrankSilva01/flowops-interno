@@ -54,6 +54,9 @@ import {
   openMarketplaceMigration, prepareMarketplaceMigration, refreshMarketplaceMigrationPreview,
   openBulkMarketplaceMigration, saveBulkMarketplaceMigration, refreshBulkMarketplaceMigrationPreview,
   toggleMarketplaceMigrationSelection, toggleAllMarketplaceMigrationSelections,
+  openMarketplaceFileImport, previewMarketplaceFileImport, saveMarketplaceFileImport,
+  downloadMarketplaceImportTemplate,
+  bindMarketplaceFileImportDropzone,
 } from "../features/marketplace.js";
 import {
   runManualBackup, downloadBackupScope, simulateBackupRestore, restoreBackupFromFile,
@@ -415,6 +418,10 @@ export function bindEvents() {
   byId("marketplaceMigrationTarget")?.addEventListener("change", refreshMarketplaceMigrationPreview);
   byId("marketplaceBulkMigrationForm")?.addEventListener("submit", saveBulkMarketplaceMigration);
   byId("marketplaceBulkMigrationForm")?.addEventListener("input", refreshBulkMarketplaceMigrationPreview);
+  byId("marketplaceFileImportForm")?.addEventListener("submit", saveMarketplaceFileImport);
+  byId("marketplaceFileImportInput")?.addEventListener("change", previewMarketplaceFileImport);
+  byId("marketplaceFileImportForm")?.elements.marketplace.addEventListener("change", previewMarketplaceFileImport);
+  bindMarketplaceFileImportDropzone();
   byId("storefrontProductForm").addEventListener("submit", saveStorefrontProduct);
   byId("storefrontProductForm").elements.publish_ml.addEventListener("change", updateStorefrontTargetFields);
   byId("storefrontProductForm").elements.publish_shopee.addEventListener("change", updateStorefrontTargetFields);
@@ -823,6 +830,15 @@ export function bindActions() {
       if (action === "marketplace-migrate-bulk") {
         if (!ensureCanAdmin()) return;
         openBulkMarketplaceMigration();
+        return;
+      }
+      if (action === "marketplace-import-file") {
+        if (!ensureCanAdmin()) return;
+        openMarketplaceFileImport();
+        return;
+      }
+      if (action === "marketplace-import-template") {
+        downloadMarketplaceImportTemplate();
         return;
       }
       if (action === "storefront-edit") {
