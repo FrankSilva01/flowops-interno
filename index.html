@@ -26,9 +26,9 @@
     <link rel="stylesheet" href="./css/10-modern-calendar.css?v=200" />
     <link rel="stylesheet" href="./css/11-fiscal-forms.css?v=200" />
     <link rel="stylesheet" href="./css/12-global-search.css?v=228" />
-    <link rel="stylesheet" href="./css/13-data-quality.css?v=230" />
+    <link rel="stylesheet" href="./css/13-data-quality.css?v=231" />
     <script src="./supabase-config.js?v=200" defer></script>
-    <script type="module" src="./js/app.js?v=230"></script>
+    <script type="module" src="./js/app.js?v=231"></script>
   </head>
   <body>
     <main id="appView" class="app-shell" hidden>
@@ -160,14 +160,14 @@
             </div>
           </div>
           <div class="dashboard-today-grid">
-            <article class="kpi" data-tone="success"><span>Entradas</span><strong id="kpiIncome">R$ 0,00</strong></article>
-            <article class="kpi" data-tone="danger"><span>Saídas</span><strong id="kpiExpense">R$ 0,00</strong></article>
-            <article class="kpi" data-tone="info"><span>Saldo disponível</span><strong id="kpiBalance">R$ 0,00</strong></article>
-            <article class="kpi" data-tone="purple"><span>A receber</span><strong id="kpiReceivable">R$ 0,00</strong></article>
-            <article class="kpi" data-tone="info"><span>Em produção</span><strong id="kpiOpenOrders">0</strong></article>
-            <article class="kpi" data-tone="danger"><span>Atrasadas</span><strong id="kpiLateOrders">0</strong></article>
-            <article class="kpi" data-tone="success"><span>Recebido no mês</span><strong id="kpiMonthIncome">R$ 0,00</strong></article>
-            <article class="kpi" data-tone="success"><span>Pedidos no mês</span><strong id="kpiMonthOrders">0</strong></article>
+            <button class="kpi" type="button" data-tone="success" data-action="view-cash" data-cash-type="Entrada"><span>Entradas</span><strong id="kpiIncome">R$ 0,00</strong></button>
+            <button class="kpi" type="button" data-tone="danger" data-action="view-cash" data-cash-type="Saída"><span>Saídas</span><strong id="kpiExpense">R$ 0,00</strong></button>
+            <button class="kpi" type="button" data-tone="info" data-action="view-cash"><span>Saldo disponível</span><strong id="kpiBalance">R$ 0,00</strong></button>
+            <button class="kpi" type="button" data-tone="purple" data-action="focus-orders" data-focus="receivable"><span>A receber</span><strong id="kpiReceivable">R$ 0,00</strong></button>
+            <button class="kpi" type="button" data-tone="info" data-action="view-production"><span>Em produção</span><strong id="kpiOpenOrders">0</strong></button>
+            <button class="kpi" type="button" data-tone="danger" data-action="focus-orders" data-focus="late"><span>Atrasadas</span><strong id="kpiLateOrders">0</strong></button>
+            <button class="kpi" type="button" data-tone="success" data-action="view-cash" data-cash-type="Entrada"><span>Recebido no mês</span><strong id="kpiMonthIncome">R$ 0,00</strong></button>
+            <button class="kpi" type="button" data-tone="success" data-action="view-orders"><span>Pedidos no mês</span><strong id="kpiMonthOrders">0</strong></button>
           </div>
 
           <div class="dashboard-work-grid">
@@ -548,6 +548,19 @@
               </select>
             </label>
           </div>
+          <div id="ordersBulkToolbar" class="orders-bulk-toolbar" hidden>
+            <label class="orders-bulk-select-all"><input id="ordersSelectAll" type="checkbox" /> <span id="ordersBulkCount">0 selecionadas</span></label>
+            <select id="ordersBulkField" aria-label="Campo para atualização em lote">
+              <option value="">Alterar campo</option>
+              <option value="priority">Prioridade</option>
+              <option value="productionStage">Etapa de produção</option>
+              <option value="responsible">Responsável</option>
+              <option value="status">Status</option>
+            </select>
+            <select id="ordersBulkValue" aria-label="Novo valor" disabled><option value="">Selecione o campo primeiro</option></select>
+            <button id="applyOrdersBulkBtn" class="primary-btn compact" type="button">Aplicar</button>
+            <button id="clearOrdersSelectionBtn" class="secondary-btn compact" type="button">Limpar seleção</button>
+          </div>
           <div id="ordersGrid" class="orders-grid">
             <div id="ordersCardList" class="orders-card-list"></div>
             <aside id="orderDetailPanel" class="order-detail-card"></aside>
@@ -556,7 +569,7 @@
             <table>
               <thead>
                 <tr>
-                  <th>Pedido</th><th>Cód. Marketplace</th><th>Qtd.</th><th>Material</th><th>SLA</th><th>Entrega</th><th>Prioridade</th><th>Etapa</th><th>Responsável</th><th>Status</th><th>Valor</th><th>Recebido</th><th></th>
+                  <th class="order-select-column"><span class="sr-only">Selecionar</span></th><th>Pedido</th><th>Cód. Marketplace</th><th>Qtd.</th><th>Material</th><th>SLA</th><th>Entrega</th><th>Prioridade</th><th>Etapa</th><th>Responsável</th><th>Status</th><th>Valor</th><th>Recebido</th><th></th>
                 </tr>
               </thead>
               <tbody id="ordersTable"></tbody>

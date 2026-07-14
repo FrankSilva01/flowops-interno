@@ -16,6 +16,7 @@ import { getProductForOrder, getProductAssetInfo, renderProductionAssetShortcut 
 
 export function renderOrders() {
   const rows = sortOrders(filterOrders(filterRows(state.data.orders, ["orderCode", "marketplaceOrderCode", "description", "client", "material", "status", "responsible", "productionStage", "stlLink", "referenceImageUrl", "internalNotes", "tags"])));
+  state.selectedOrderIds = (state.selectedOrderIds || []).filter((id) => state.data.orders.some((item) => item.id === id));
   renderOperationalSummary("ordersView", "ordersPageSummary", [
     ["Encomendas", rows.length, "pedidos filtrados", "teal"],
     ["A preparar", rows.filter((item) => normalizeOrderStatus(item.status) === "A preparar").length, "priorize prazos e material", "blue"],
@@ -32,6 +33,7 @@ export function renderOrders() {
     link.addEventListener("click", (event) => event.stopPropagation());
   });
   renderOrderDetailPanel(selectedOrder);
+  renderOrdersBulkToolbar(rows);
   applyOrdersViewMode();
   bindActions();
 }
@@ -108,6 +110,7 @@ function renderOrderTableRow(item) {
   const marketplaceLabel = getMarketplaceLabel(item);
   return `
       <tr>
+        <td class="order-select-column"><input class="order-select-checkbox" type="checkbox" data-order-select="${html(item.id)}" aria-label="Selecionar ${html(getOrderCode(item))}" ${state.selectedOrderIds.includes(item.id) ? "checked" : ""} /></td>
         <td>
           <span class="order-code">${html(getOrderCode(item))}</span>
           <strong>${html(item.description)}</strong>
@@ -167,6 +170,7 @@ function renderOrderCard(item, selectedOrder) {
   const stlLink = safeUrl(item.stlLink) || safeUrl(productAssets.stlLink);
   return `
     <article class="order-card ${edgeClass} ${selectedClass}" data-action="select-order" data-id="${html(item.id)}" tabindex="0" role="button" aria-label="Ver detalhes de ${html(getOrderCode(item))}">
+      <label class="order-card-select" title="Selecionar para ação em lote"><input class="order-select-checkbox" type="checkbox" data-order-select="${html(item.id)}" aria-label="Selecionar ${html(getOrderCode(item))}" ${state.selectedOrderIds.includes(item.id) ? "checked" : ""} /></label>
       <div class="order-card-thumb">
         ${thumbUrl ? `<img src="${html(thumbUrl)}" alt="" loading="lazy" />` : `<i class="ti ti-package" aria-hidden="true"></i>`}
       </div>
@@ -195,6 +199,101 @@ function renderOrderCard(item, selectedOrder) {
       </div>
     </article>
   `;
+}
+
+function renderOrdersBulkToolbar(rows) {
+  const toolbar = byId("ordersBulkToolbar");
+  if (!toolbar) return;
+  const selected = state.selectedOrderIds || [];
+  toolbar.hidden = !state.canEdit;
+  byId("ordersBulkCount").textContent = `${selected.length} selecionada${selected.length === 1 ? "" : "s"}`;
+  byId("applyOrdersBulkBtn").disabled = selected.length === 0;
+  byId("clearOrdersSelectionBtn").disabled = selected.length === 0;
+  const visibleIds = rows.map((item) => item.id);
+  const selectAll = byId("ordersSelectAll");
+  selectAll.checked = visibleIds.length > 0 && visibleIds.every((id) => selected.includes(id));
+  selectAll.indeterminate = visibleIds.some((id) => selected.includes(id)) && !selectAll.checked;
+
+  document.querySelectorAll(".order-select-checkbox").forEach((checkbox) => {
+    checkbox.addEventListener("click", (event) => event.stopPropagation());
+    checkbox.addEventListener("change", () => {
+      toggleOrderSelection(checkbox.dataset.orderSelect, checkbox.checked);
+      renderOrders();
+    });
+  });
+  document.querySelectorAll(".order-card-select").forEach((label) => label.addEventListener("click", (event) => event.stopPropagation()));
+  selectAll.onchange = () => {
+    const next = new Set(state.selectedOrderIds || []);
+    visibleIds.forEach((id) => selectAll.checked ? next.add(id) : next.delete(id));
+    state.selectedOrderIds = [...next];
+    renderOrders();
+  };
+  byId("ordersBulkField").onchange = (event) => renderOrdersBulkValueOptions(event.target.value);
+  byId("clearOrdersSelectionBtn").onclick = () => {
+    state.selectedOrderIds = [];
+    renderOrders();
+  };
+  byId("applyOrdersBulkBtn").onclick = async () => {
+    const field = byId("ordersBulkField").value;
+    const value = byId("ordersBulkValue").value;
+    if (!field || !value) {
+      flashActionMessage("Selecione o campo e o novo valor.");
+      return;
+    }
+    await applyOrdersBulkUpdate(field, value);
+  };
+}
+
+function renderOrdersBulkValueOptions(field) {
+  const target = byId("ordersBulkValue");
+  const options = {
+    priority: PRIORITY_OPTIONS.filter(Boolean),
+    productionStage: PRODUCTION_STAGES,
+    responsible: getResponsibleNames(),
+    status: STATUS_OPTIONS,
+  }[field] || [];
+  target.disabled = !options.length;
+  target.innerHTML = options.length
+    ? `<option value="">Novo valor</option>${options.map((value) => `<option>${html(value)}</option>`).join("")}`
+    : `<option value="">Selecione o campo primeiro</option>`;
+}
+
+export function toggleOrderSelection(id, checked) {
+  const selected = new Set(state.selectedOrderIds || []);
+  if (checked) selected.add(id);
+  else selected.delete(id);
+  state.selectedOrderIds = [...selected];
+}
+
+export async function applyOrdersBulkUpdate(field, value) {
+  if (!ensureCanEdit() || !["priority", "productionStage", "responsible", "status"].includes(field)) return;
+  const selected = state.data.orders.filter((item) => state.selectedOrderIds.includes(item.id));
+  for (const item of selected) {
+    const previous = structuredClone(item);
+    try {
+      const from = item[field] || "Não informado";
+      item[field] = value;
+      if (field === "productionStage" && value === "Entregue") item.status = "Entregue";
+      if (field === "status" && value === "Entregue") item.productionStage = "Entregue";
+      item.history = appendHistory(item.history, [{ field: bulkFieldLabel(field), from, to: value }]);
+      await persist("orders", item);
+      await recordAudit("bulk_update", "order", item.id, getOrderCode(item), previous, item, "manual");
+    } catch (error) {
+      Object.assign(item, previous);
+      saveData();
+      flashActionMessage(`Não foi possível atualizar ${getOrderCode(item)}: ${error.message}`);
+      render();
+      return;
+    }
+  }
+  saveData();
+  state.selectedOrderIds = [];
+  flashActionMessage(`${selected.length} encomenda(s) atualizada(s).`);
+  render();
+}
+
+function bulkFieldLabel(field) {
+  return ({ priority: "Prioridade", productionStage: "Etapa", responsible: "Responsável", status: "Status" })[field] || field;
 }
 
 export function setOrdersViewMode(mode) {
@@ -941,6 +1040,7 @@ export function matchesOrderFocus(item, focus) {
   if (focus === "late") return priority === "late";
   if (focus === "noDate") return item.status !== "Entregue" && !item.deliveryDate;
   if (focus === "noValue") return item.status !== "Entregue" && !Number(item.charged || 0);
+  if (focus === "receivable") return Number(item.charged || 0) > Number(item.received || 0);
   return true;
 }
 

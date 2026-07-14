@@ -80,7 +80,7 @@ import {
   showCalculatorSuggestion, getSuggestionForListing, syncFeeCalculatorFull,
 } from "../features/marketplace-analytics.js";
 
-const APP_VERSION = "230";
+const APP_VERSION = "231";
 
 async function refreshAppShell() {
   showAppMessage("Atualizando sistema", "Limpando cache local e carregando a versão mais recente.", "info");
@@ -816,6 +816,12 @@ export function bindActions() {
       }
       if (action === "view-orders") {
         setView("orders");
+        return;
+      }
+      if (action === "view-cash") {
+        state.filters.cashType = button.dataset.cashType || "all";
+        setView("cash");
+        renderCash();
         return;
       }
       if (action === "view-production") {

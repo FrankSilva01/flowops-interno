@@ -10,6 +10,7 @@ globalThis.window = { location: { hash: "" } };
 
 const { state } = await import("../../js/core/state.js");
 const { analyzeDataQuality } = await import("../../js/features/data-quality.js");
+const { matchesOrderFocus, toggleOrderSelection } = await import("../../js/features/orders.js");
 
 function resetData() {
   state.data = { orders: [], cash: [], materials: [] };
@@ -39,4 +40,16 @@ test("não considera registros válidos como problema", () => {
   assert.equal(report.totalRecords, 2);
   assert.equal(report.affectedRecords, 0);
   assert.equal(report.score, 100);
+});
+
+test("filtra valores a receber e controla seleção em lote sem duplicar IDs", () => {
+  resetData();
+  assert.equal(matchesOrderFocus({ charged: 500, received: 200, status: "A preparar" }, "receivable"), true);
+  assert.equal(matchesOrderFocus({ charged: 500, received: 500, status: "Entregue" }, "receivable"), false);
+  state.selectedOrderIds = [];
+  toggleOrderSelection("PED-1", true);
+  toggleOrderSelection("PED-1", true);
+  assert.deepEqual(state.selectedOrderIds, ["PED-1"]);
+  toggleOrderSelection("PED-1", false);
+  assert.deepEqual(state.selectedOrderIds, []);
 });
