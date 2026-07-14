@@ -64,3 +64,32 @@ export function buildMarketplaceMigration(listing, targetMarketplace = migration
   }
   return { ...draft, missing, ready: missing.length === 0 };
 }
+
+export function applyMarketplaceMigrationDefaults(migration, defaults = {}) {
+  const draft = structuredClone(migration);
+  if (draft.target === "shopee") {
+    draft.shopee.categoryId = String(defaults.shopeeCategoryId || draft.shopee.categoryId || "").trim();
+    draft.shopee.weight = Number(defaults.shopeeWeight || draft.shopee.weight || 0);
+  } else {
+    draft.ml.categoryId = String(defaults.mlCategoryId || draft.ml.categoryId || "").trim();
+  }
+  draft.missing = draft.missing.filter((field) => {
+    if (field === "Categoria Shopee" && draft.shopee.categoryId) return false;
+    if (field === "Peso" && draft.shopee.weight > 0) return false;
+    if (field === "Categoria Mercado Livre" && draft.ml.categoryId) return false;
+    return true;
+  });
+  draft.ready = draft.missing.length === 0;
+  return draft;
+}
+
+export function buildMarketplaceMigrationBatch(listings, targetMarketplace, defaults = {}) {
+  const sourceListings = Array.from(listings || []);
+  if (!sourceListings.length) throw new Error("Selecione pelo menos um anuncio.");
+  const sources = new Set(sourceListings.map((listing) => channel(listing?.marketplace)));
+  if (sources.size !== 1) throw new Error("Selecione anuncios de apenas um marketplace por lote.");
+  return sourceListings.map((listing) => applyMarketplaceMigrationDefaults(
+    buildMarketplaceMigration(listing, targetMarketplace),
+    defaults,
+  ));
+}

@@ -13,7 +13,13 @@ import { getTokenAlert } from "./dashboard.js";
 import { renderProfitabilityBadge, renderCommercialIntelligence, getListingProfitability } from "./pricing.js";
 import { renderMarketplaceAnalyticsPanel, getListingAnalytics, computeIntentScore } from "./marketplace-analytics.js";
 import { getProductForSale, renderProductionAssetShortcut } from "./product-assets.js";
-import { buildMarketplaceMigration, migrationTargetFor } from "./marketplace-migration.js";
+import {
+  buildMarketplaceMigration,
+  buildMarketplaceMigrationBatch,
+  migrationTargetFor,
+} from "./marketplace-migration.js";
+
+const selectedMarketplaceMigrations = new Set();
 
 const MARKETPLACE_CHANNELS = [
   { id: "mercado-livre", label: "Mercado Livre" },
@@ -193,12 +199,13 @@ export function renderMarketplaces() {
   listingsGrid.innerHTML = listings.length ? `
     <div class="marketplace-listing-table-wrap">
       <table class="marketplace-listing-table">
-        <thead><tr><th>Produto</th><th>Marketplace</th><th>Preço</th><th>Estoque</th><th>Visualizações</th><th>Conversão</th><th>Intenção</th><th>Status</th><th>Ações</th></tr></thead>
+        <thead><tr><th class="listing-select-cell"><input type="checkbox" data-action="marketplace-migrate-select-all" aria-label="Selecionar anuncios visiveis" /></th><th>Produto</th><th>Marketplace</th><th>Preço</th><th>Estoque</th><th>Visualizações</th><th>Conversão</th><th>Intenção</th><th>Status</th><th>Ações</th></tr></thead>
         <tbody>${listings.map((item) => {
           const analytics = getListingAnalytics(item.marketplace, item.external_id);
           const intent = computeIntentScore(analytics);
           return `
           <tr>
+            <td class="listing-select-cell"><input type="checkbox" data-action="marketplace-migrate-select" data-id="${html(item.external_id)}" data-marketplace="${html(item.marketplace || "Mercado Livre")}" ${selectedMarketplaceMigrations.has(marketplaceMigrationKey(item)) ? "checked" : ""} aria-label="Selecionar ${html(item.title)}" /></td>
             <td><div class="listing-product-cell">${item.thumbnail_url ? `<img src="${html(ensureHttpsUrl(item.thumbnail_url))}" alt="" loading="lazy" />` : `<span class="listing-placeholder"></span>`}<span><strong>${html(item.title)}</strong><small>${html(item.external_id)}</small></span></div></td>
             <td>${html(marketplaceDisplayName(item.marketplace))}</td>
             <td>${money.format(Number(item.price || 0))} ${renderProfitabilityBadge(item)}</td>
@@ -222,6 +229,7 @@ export function renderMarketplaces() {
       <button class="primary-btn" type="button" data-action="marketplace-edit" data-id="${html(featuredListing.external_id)}" data-marketplace="${html(featuredListing.marketplace || "Mercado Livre")}">Editar anúncio</button>
     </aside>
   ` : `<div class="empty-chart">Nenhum anúncio importado.</div>`;
+  updateMarketplaceMigrationSelectionUi();
   salesGrid.innerHTML = sales.length ? sales.map((sale) => {
     const payload = sale.raw_payload || {};
     const orderItem = payload.order_items?.[0] || {};
@@ -731,6 +739,183 @@ function findMarketplaceListing(itemId, marketplace) {
     String(item.external_id || "") === String(itemId || "")
       && normalizeMarketplaceChannel(item.marketplace) === expectedChannel
   ) || state.marketplaceListings.find((item) => String(item.external_id || "") === String(itemId || ""));
+}
+
+function marketplaceMigrationKey(listing) {
+  return `${normalizeMarketplaceChannel(listing?.marketplace)}:${listing?.external_id || ""}`;
+}
+
+function selectedMarketplaceListings() {
+  return state.marketplaceListings.filter((listing) => selectedMarketplaceMigrations.has(marketplaceMigrationKey(listing)));
+}
+
+function updateMarketplaceMigrationSelectionUi() {
+  const button = byId("openBulkMarketplaceMigrationBtn");
+  if (!button) return;
+  const count = selectedMarketplaceMigrations.size;
+  button.disabled = count === 0;
+  button.textContent = count ? `Replicar selecionados (${count})` : "Replicar selecionados";
+}
+
+export function toggleMarketplaceMigrationSelection(itemId, marketplace, selected) {
+  const listing = findMarketplaceListing(itemId, marketplace);
+  if (!listing) return;
+  const key = marketplaceMigrationKey(listing);
+  if (selected) selectedMarketplaceMigrations.add(key);
+  else selectedMarketplaceMigrations.delete(key);
+  updateMarketplaceMigrationSelectionUi();
+}
+
+export function toggleAllMarketplaceMigrationSelections(selected) {
+  filterListingsForDisplay(state.marketplaceListings.filter(matchesMarketplaceChannel))
+    .filter((listing) => ["mercado-livre", "shopee"].includes(normalizeMarketplaceChannel(listing.marketplace)))
+    .forEach((listing) => {
+      const key = marketplaceMigrationKey(listing);
+      if (selected) selectedMarketplaceMigrations.add(key);
+      else selectedMarketplaceMigrations.delete(key);
+    });
+  renderMarketplaces();
+}
+
+function migrationBatchDefaults(form) {
+  return {
+    shopeeCategoryId: form.elements.shopeeCategoryId.value,
+    shopeeWeight: form.elements.shopeeWeight.value,
+    mlCategoryId: form.elements.mlCategoryId.value,
+  };
+}
+
+function renderMarketplaceBulkMigrationPreview() {
+  const form = byId("marketplaceBulkMigrationForm");
+  const listings = selectedMarketplaceListings();
+  if (!form || !listings.length) return;
+  const target = migrationTargetFor(listings[0].marketplace);
+  let migrations;
+  try {
+    migrations = buildMarketplaceMigrationBatch(listings, target, migrationBatchDefaults(form));
+  } catch (error) {
+    byId("marketplaceBulkMigrationSummary").innerHTML = `<div class="listing-drawer-suggestion danger">${html(error.message)}</div>`;
+    return;
+  }
+  const ready = migrations.filter((migration) => migration.ready).length;
+  byId("marketplaceBulkMigrationSummary").innerHTML = `
+    <div class="drawer-field-list">
+      <div class="drawer-field-row"><span>Prontos</span><strong>${ready}/${migrations.length}</strong></div>
+      <div class="drawer-field-row"><span>Destino</span><strong>${html(marketplaceDisplayName(target))}</strong></div>
+    </div>
+    <div class="marketplace-bulk-items">${migrations.map((migration) => `
+      <article><strong>${html(migration.title)}</strong><small>${migration.ready ? "Pronto para rascunho" : html(migration.missing.join(", "))}</small></article>
+    `).join("")}</div>`;
+}
+
+export function openBulkMarketplaceMigration() {
+  const listings = selectedMarketplaceListings();
+  if (!listings.length) return;
+  const sources = new Set(listings.map((listing) => normalizeMarketplaceChannel(listing.marketplace)));
+  if (sources.size !== 1) {
+    showAppMessage("Selecao de marketplaces misturada", "Selecione apenas anuncios do Mercado Livre ou apenas anuncios da Shopee por lote.", "warning");
+    return;
+  }
+  const source = normalizeMarketplaceChannel(listings[0].marketplace);
+  if (!["mercado-livre", "shopee"].includes(source)) return;
+  const target = migrationTargetFor(source);
+  const form = byId("marketplaceBulkMigrationForm");
+  form.reset();
+  form.elements.sourceMarketplace.value = source;
+  form.elements.targetLabel.value = marketplaceDisplayName(target);
+  byId("marketplaceBulkShopeeDefaults").hidden = target !== "shopee";
+  byId("marketplaceBulkMlDefaults").hidden = target !== "mercado-livre";
+  byId("marketplaceBulkMigrationCount").textContent = `${listings.length} anuncio${listings.length === 1 ? "" : "s"}`;
+  byId("marketplaceBulkMigrationMessage").textContent = "";
+  renderMarketplaceBulkMigrationPreview();
+  byId("marketplaceBulkMigrationDialog").showModal();
+}
+
+function marketplaceMigrationDraftPayload(listing, migration) {
+  return {
+    action: "save",
+    marketplace: marketplaceDisplayName(migration.target),
+    external_id: "",
+    title: migration.title,
+    category: migration.target === "mercado-livre" ? migration.ml.categoryId : migration.shopee.categoryId,
+    price: migration.price,
+    description: migration.description,
+    image_urls: migration.images,
+    featured: false,
+    status: "draft",
+    sku: migration.sku,
+    publish_targets: {
+      vitrine: false,
+      mercado_livre: migration.target === "mercado-livre",
+      shopee: migration.target === "shopee",
+      amazon: false,
+    },
+    raw_payload: {
+      available_quantity: migration.stock,
+      category_id: migration.ml.categoryId,
+      listing_type_id: migration.ml.listingTypeId,
+      condition: migration.ml.condition,
+      attributes: migration.ml.attributes,
+      shopee: {
+        category_id: migration.shopee.categoryId,
+        weight: migration.shopee.weight,
+        days_to_ship: migration.shopee.daysToShip,
+        sku: migration.sku,
+        attributes: migration.shopee.attributes,
+      },
+      migration_source: { marketplace: listing.marketplace, external_id: listing.external_id },
+    },
+  };
+}
+
+export function refreshBulkMarketplaceMigrationPreview() {
+  renderMarketplaceBulkMigrationPreview();
+}
+
+export async function saveBulkMarketplaceMigration(event) {
+  event.preventDefault();
+  if (!ensureCanAdmin()) return;
+  const form = event.currentTarget;
+  const message = byId("marketplaceBulkMigrationMessage");
+  const listings = selectedMarketplaceListings();
+  const target = migrationTargetFor(listings[0]?.marketplace);
+  let migrations;
+  try {
+    migrations = buildMarketplaceMigrationBatch(listings, target, migrationBatchDefaults(form));
+  } catch (error) {
+    message.textContent = error.message;
+    return;
+  }
+  const incomplete = migrations.filter((migration) => !migration.ready);
+  if (incomplete.length) {
+    message.textContent = `${incomplete.length} anuncio(s) ainda possuem campos obrigatorios pendentes.`;
+    renderMarketplaceBulkMigrationPreview();
+    return;
+  }
+  const existingSources = new Set(state.marketplaceListings.map((item) => {
+    const source = item.raw_payload?.migration_source;
+    return source ? `${normalizeMarketplaceChannel(source.marketplace)}:${source.external_id}` : "";
+  }).filter(Boolean));
+  const pending = listings.map((listing, index) => ({ listing, migration: migrations[index] }))
+    .filter(({ listing }) => !existingSources.has(marketplaceMigrationKey(listing)));
+  if (!pending.length) {
+    message.textContent = "Todos os anuncios selecionados ja possuem rascunho de migracao.";
+    return;
+  }
+  message.textContent = `Criando ${pending.length} rascunho(s)...`;
+  const results = await Promise.allSettled(pending.map(({ listing, migration }) =>
+    storefrontRequest(marketplaceMigrationDraftPayload(listing, migration))
+  ));
+  const failures = results.filter((result) => result.status === "rejected");
+  if (failures.length) {
+    message.textContent = `${results.length - failures.length} criado(s); ${failures.length} falharam. Tente novamente.`;
+    return;
+  }
+  selectedMarketplaceMigrations.clear();
+  byId("marketplaceBulkMigrationDialog").close();
+  await loadMarketplaces();
+  renderMarketplaces();
+  flashActionMessage(`${results.length} rascunho(s) para ${marketplaceDisplayName(target)} criados. Revise antes de publicar.`);
 }
 
 function renderMarketplaceMigrationPreview(migration) {

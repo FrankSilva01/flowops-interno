@@ -243,3 +243,9 @@ html[data-theme="dark"] #searchDropdown::-webkit-scrollbar-thumb:hover {
   width: 100% !important;
   min-height: 40px;
 }
+
+.listing-select-cell { width: 34px; text-align: center; }
+.listing-select-cell input { width: 16px; height: 16px; accent-color: var(--teal); }
+.marketplace-bulk-items { display: grid; gap: 6px; max-height: 320px; overflow: auto; }
+.marketplace-bulk-items article { display: grid; gap: 3px; padding: 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--soft); }
+.marketplace-bulk-items small { color: var(--muted); }

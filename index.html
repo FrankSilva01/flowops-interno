@@ -25,9 +25,9 @@
     <link rel="stylesheet" href="./css/08-sora-redesign-20260706.css?v=200" />
     <link rel="stylesheet" href="./css/10-modern-calendar.css?v=200" />
     <link rel="stylesheet" href="./css/11-fiscal-forms.css?v=200" />
-    <link rel="stylesheet" href="./css/12-global-search.css?v=223" />
+    <link rel="stylesheet" href="./css/12-global-search.css?v=224" />
     <script src="./supabase-config.js?v=200" defer></script>
-    <script type="module" src="./js/app.js?v=223"></script>
+    <script type="module" src="./js/app.js?v=224"></script>
   </head>
   <body>
     <main id="appView" class="app-shell" hidden>
@@ -86,7 +86,7 @@
         <div class="session-card">
           <span id="activeUserName">Modo teste</span>
           <small id="activeUserRole">Acesso direto sem login</small>
-          <small id="appVersionLabel" class="app-version-label">FlowOps v223</small>
+          <small id="appVersionLabel" class="app-version-label">FlowOps v224</small>
           <button id="logoutBtn" class="ghost-btn" type="button" hidden>Sair</button>
         </div>
       </aside>
@@ -1006,6 +1006,7 @@
             <div class="panel-head">
               <h3>Anúncios sincronizados</h3>
               <div class="inline-actions">
+                <button id="openBulkMarketplaceMigrationBtn" class="secondary-btn" type="button" data-action="marketplace-migrate-bulk" disabled>Replicar selecionados</button>
                 <button id="openProductDialogBtn" class="secondary-btn" type="button" data-action="open-product-dialog">Cadastrar produto</button>
                 <button id="exportListingsBtn" class="secondary-btn" type="button" data-action="marketplace-export-csv">Exportar</button>
                 <button id="refreshMarketplacesBtn" class="secondary-btn" type="button">Atualizar</button>
@@ -1965,6 +1966,31 @@
         <div id="marketplaceMigrationSummary"></div>
         <p class="muted">A categoria e os atributos variam entre marketplaces. O FlowOps copia os dados compativeis e indica o que precisa ser completado.</p>
         <button class="primary-btn" type="submit">Preparar rascunho</button>
+      </form>
+    </dialog>
+    <dialog id="marketplaceBulkMigrationDialog" class="history-dialog marketplace-dialog drawer-dialog">
+      <div class="drawer-header">
+        <div>
+          <span class="order-code" id="marketplaceBulkMigrationCount">0 anuncios</span>
+          <h3>Replicar anúncios em lote</h3>
+          <small>Crie rascunhos para revisar antes de publicar no marketplace de destino.</small>
+        </div>
+        <button class="icon-btn" type="button" data-close-dialog="marketplaceBulkMigrationDialog" aria-label="Fechar">×</button>
+      </div>
+      <form id="marketplaceBulkMigrationForm" class="login-form drawer-body">
+        <input name="sourceMarketplace" type="hidden" />
+        <label>Destino<input name="targetLabel" readonly /></label>
+        <div id="marketplaceBulkShopeeDefaults">
+          <label>Categoria Shopee para o lote<input name="shopeeCategoryId" placeholder="Código da categoria" /></label>
+          <label>Peso padrão (kg)<input name="shopeeWeight" type="number" min="0.01" step="0.01" placeholder="Ex: 0,35" /></label>
+        </div>
+        <div id="marketplaceBulkMlDefaults" hidden>
+          <label>Categoria Mercado Livre para o lote<input name="mlCategoryId" placeholder="Ex: MLB457877" /></label>
+        </div>
+        <div id="marketplaceBulkMigrationSummary" class="marketplace-bulk-summary"></div>
+        <p class="muted">Título, preço, estoque, SKU, descrição e imagens são copiados. Itens incompletos não serão convertidos até que as pendências sejam resolvidas.</p>
+        <p id="marketplaceBulkMigrationMessage" class="form-error"></p>
+        <button class="primary-btn" type="submit">Criar rascunhos prontos</button>
       </form>
     </dialog>
     <dialog id="productDialog" class="history-dialog marketplace-dialog product-steps-dialog">

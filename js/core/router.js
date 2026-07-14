@@ -52,6 +52,8 @@ import {
   applyMarketplaceLogRange, showMarketplaceStats, fillStorefrontFormFromListing,
   openMarketplaceEdit, viewMarketplaceOrder, createMarketplaceOrder, downloadMarketplaceDocument,
   openMarketplaceMigration, prepareMarketplaceMigration, refreshMarketplaceMigrationPreview,
+  openBulkMarketplaceMigration, saveBulkMarketplaceMigration, refreshBulkMarketplaceMigrationPreview,
+  toggleMarketplaceMigrationSelection, toggleAllMarketplaceMigrationSelections,
 } from "../features/marketplace.js";
 import {
   runManualBackup, downloadBackupScope, simulateBackupRestore, restoreBackupFromFile,
@@ -411,6 +413,8 @@ export function bindEvents() {
   byId("marketplaceEditForm").addEventListener("submit", saveMarketplaceListing);
   byId("marketplaceMigrationForm")?.addEventListener("submit", prepareMarketplaceMigration);
   byId("marketplaceMigrationTarget")?.addEventListener("change", refreshMarketplaceMigrationPreview);
+  byId("marketplaceBulkMigrationForm")?.addEventListener("submit", saveBulkMarketplaceMigration);
+  byId("marketplaceBulkMigrationForm")?.addEventListener("input", refreshBulkMarketplaceMigrationPreview);
   byId("storefrontProductForm").addEventListener("submit", saveStorefrontProduct);
   byId("storefrontProductForm").elements.publish_ml.addEventListener("change", updateStorefrontTargetFields);
   byId("storefrontProductForm").elements.publish_shopee.addEventListener("change", updateStorefrontTargetFields);
@@ -806,6 +810,19 @@ export function bindActions() {
       if (action === "marketplace-migrate") {
         if (!ensureCanAdmin()) return;
         openMarketplaceMigration(id, button.dataset.marketplace);
+        return;
+      }
+      if (action === "marketplace-migrate-select") {
+        toggleMarketplaceMigrationSelection(id, button.dataset.marketplace, button.checked);
+        return;
+      }
+      if (action === "marketplace-migrate-select-all") {
+        toggleAllMarketplaceMigrationSelections(button.checked);
+        return;
+      }
+      if (action === "marketplace-migrate-bulk") {
+        if (!ensureCanAdmin()) return;
+        openBulkMarketplaceMigration();
         return;
       }
       if (action === "storefront-edit") {

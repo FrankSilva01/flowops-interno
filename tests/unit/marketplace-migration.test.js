@@ -1,7 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { buildMarketplaceMigration, migrationTargetFor } from "../../js/features/marketplace-migration.js";
+import {
+  applyMarketplaceMigrationDefaults,
+  buildMarketplaceMigration,
+  buildMarketplaceMigrationBatch,
+  migrationTargetFor,
+} from "../../js/features/marketplace-migration.js";
 
 const mlListing = {
   marketplace: "Mercado Livre",
@@ -46,4 +51,28 @@ test("exige categoria ML ao replicar um anuncio Shopee", () => {
 
 test("rejeita origem e destino iguais", () => {
   assert.throws(() => buildMarketplaceMigration(mlListing, "mercado-livre"), /canais diferentes/);
+});
+
+test("aplica categoria e peso comuns em um lote para Shopee", () => {
+  const migrations = buildMarketplaceMigrationBatch([mlListing], "shopee", {
+    shopeeCategoryId: "SHP-123",
+    shopeeWeight: 0.35,
+  });
+  assert.equal(migrations[0].ready, true);
+  assert.equal(migrations[0].shopee.categoryId, "SHP-123");
+  assert.equal(migrations[0].shopee.weight, 0.35);
+});
+
+test("rejeita lote com origens misturadas", () => {
+  const shopeeListing = { ...mlListing, marketplace: "Shopee" };
+  assert.throws(
+    () => buildMarketplaceMigrationBatch([mlListing, shopeeListing], "shopee"),
+    /apenas um marketplace/,
+  );
+});
+
+test("mantem pendencias que nao podem ser preenchidas pelos valores comuns", () => {
+  const migration = buildMarketplaceMigration({ ...mlListing, sku: "", raw_payload: {} }, "shopee");
+  const updated = applyMarketplaceMigrationDefaults(migration, { shopeeCategoryId: "SHP-1", shopeeWeight: 1 });
+  assert.deepEqual(updated.missing, ["SKU", "Imagens (1/3)"]);
 });
