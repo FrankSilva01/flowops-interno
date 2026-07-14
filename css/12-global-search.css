@@ -379,6 +379,12 @@ html[data-theme="dark"] #searchDropdown::-webkit-scrollbar-thumb:hover {
 }
 
 @media (max-width: 700px) {
+  #dashboardView .dashboard-welcome .quick-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+  #dashboardView .dashboard-welcome .quick-actions button { width: 100%; padding-inline: 8px; }
   .dashboard-today-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .dashboard-today-grid .kpi { min-height: 92px; }
   .dashboard-priority-list { grid-template-columns: 1fr; }
