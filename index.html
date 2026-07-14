@@ -25,9 +25,9 @@
     <link rel="stylesheet" href="./css/08-sora-redesign-20260706.css?v=200" />
     <link rel="stylesheet" href="./css/10-modern-calendar.css?v=200" />
     <link rel="stylesheet" href="./css/11-fiscal-forms.css?v=200" />
-    <link rel="stylesheet" href="./css/12-global-search.css?v=227" />
+    <link rel="stylesheet" href="./css/12-global-search.css?v=228" />
     <script src="./supabase-config.js?v=200" defer></script>
-    <script type="module" src="./js/app.js?v=227"></script>
+    <script type="module" src="./js/app.js?v=228"></script>
   </head>
   <body>
     <main id="appView" class="app-shell" hidden>
@@ -86,7 +86,7 @@
         <div class="session-card">
           <span id="activeUserName">Modo teste</span>
           <small id="activeUserRole">Acesso direto sem login</small>
-          <small id="appVersionLabel" class="app-version-label">FlowOps v227</small>
+          <small id="appVersionLabel" class="app-version-label">FlowOps v228</small>
           <button id="logoutBtn" class="ghost-btn" type="button" hidden>Sair</button>
         </div>
       </aside>
@@ -159,10 +159,13 @@
             </div>
           </div>
           <div class="dashboard-today-grid">
+            <article class="kpi" data-tone="success"><span>Entradas</span><strong id="kpiIncome">R$ 0,00</strong></article>
+            <article class="kpi" data-tone="danger"><span>Saídas</span><strong id="kpiExpense">R$ 0,00</strong></article>
             <article class="kpi" data-tone="info"><span>Saldo disponível</span><strong id="kpiBalance">R$ 0,00</strong></article>
             <article class="kpi" data-tone="purple"><span>A receber</span><strong id="kpiReceivable">R$ 0,00</strong></article>
             <article class="kpi" data-tone="info"><span>Em produção</span><strong id="kpiOpenOrders">0</strong></article>
             <article class="kpi" data-tone="danger"><span>Atrasadas</span><strong id="kpiLateOrders">0</strong></article>
+            <article class="kpi" data-tone="success"><span>Recebido no mês</span><strong id="kpiMonthIncome">R$ 0,00</strong></article>
             <article class="kpi" data-tone="success"><span>Pedidos no mês</span><strong id="kpiMonthOrders">0</strong></article>
           </div>
 
@@ -170,12 +173,12 @@
             <section class="panel dashboard-priority-panel">
               <div class="panel-head"><div><h3>Ações prioritárias</h3><small>O que precisa de decisão agora</small></div></div>
               <div class="dashboard-priority-list">
-                <button type="button" data-action="focus-orders" data-focus="urgent"><span><i class="ti ti-alert-triangle"></i> Alta prioridade</span><strong id="attentionUrgent">0</strong></button>
-                <button type="button" data-action="focus-orders" data-focus="soon"><span><i class="ti ti-clock"></i> Prazo curto</span><strong id="attentionSoon">0</strong></button>
-                <button type="button" data-action="focus-orders" data-focus="noDate"><span><i class="ti ti-calendar-off"></i> Sem data de entrega</span><strong id="attentionNoDate">0</strong></button>
-                <button type="button" data-action="focus-orders" data-focus="noValue"><span><i class="ti ti-cash-off"></i> Sem valor definido</span><strong id="attentionNoValue">0</strong></button>
-                <div><span><i class="ti ti-package-off"></i> Estoque crítico</span><strong id="attentionLowStock">0</strong></div>
-                <div><span><i class="ti ti-credit-card"></i> Assinatura</span><span id="attentionSubscriptionBadge" class="badge neutral">-</span></div>
+                <button class="priority-critical" type="button" data-action="focus-orders" data-focus="urgent"><span><i class="ti ti-alert-triangle"></i> Alta prioridade</span><strong id="attentionUrgent">0</strong></button>
+                <button class="priority-warning" type="button" data-action="focus-orders" data-focus="soon"><span><i class="ti ti-clock"></i> Prazo curto</span><strong id="attentionSoon">0</strong></button>
+                <button class="priority-info" type="button" data-action="focus-orders" data-focus="noDate"><span><i class="ti ti-calendar-off"></i> Sem data de entrega</span><strong id="attentionNoDate">0</strong></button>
+                <button class="priority-finance" type="button" data-action="focus-orders" data-focus="noValue"><span><i class="ti ti-cash-off"></i> Sem valor definido</span><strong id="attentionNoValue">0</strong></button>
+                <div class="priority-stock"><span><i class="ti ti-package-off"></i> Estoque crítico</span><strong id="attentionLowStock">0</strong></div>
+                <div class="priority-subscription"><span><i class="ti ti-credit-card"></i> Assinatura</span><span id="attentionSubscriptionBadge" class="badge neutral">-</span></div>
               </div>
             </section>
             <section class="panel dashboard-upcoming-panel">
@@ -194,7 +197,7 @@
           </section>
 
           <div class="dashboard-data-sink" hidden>
-            <strong id="kpiIncome"></strong><strong id="kpiExpense"></strong><strong id="kpiMonthIncome"></strong><strong id="kpiTopClient"></strong>
+            <strong id="kpiTopClient"></strong>
             <div id="dashboardNotificationList"></div><button id="clearDashboardNotificationsBtn" type="button"></button><button id="openAllNotificationsBtn" type="button"></button>
           </div>
 
