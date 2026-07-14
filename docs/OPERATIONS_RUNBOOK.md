@@ -29,3 +29,10 @@ Executar backup manual antes de mudancas de schema de alto risco. Trimestralment
 ## Segredos
 
 Rotacionar imediatamente qualquer segredo exposto. Conferir Mercado Livre, Mercado Pago, Focus NFe, Brevo e Supabase. Nunca registrar tokens, autorizacao, senhas ou payloads sem redacao.
+## Verificações automatizadas
+
+O workflow `Production health` verifica aplicação, páginas legais, Edge Functions e, quando o segredo `SUPABASE_SERVICE_ROLE_KEY` está configurado no GitHub, se o último backup terminou com sucesso há no máximo oito dias.
+
+O workflow `Authenticated quality` exige os secrets `FLOWOPS_E2E_EMAIL` e `FLOWOPS_E2E_PASSWORD`. Os secrets opcionais `FLOWOPS_E2E_TENANT_NAME` e `FLOWOPS_E2E_FORBIDDEN_TEXT` validam identificação e isolamento do tenant em desktop e mobile.
+
+O workflow `Staging restore drill` exige `FLOWOPS_STAGING_ANON_KEY`, `FLOWOPS_STAGING_ADMIN_EMAIL` e `FLOWOPS_STAGING_ADMIN_PASSWORD`. A execução agendada apenas exporta e simula; a restauração real só ocorre quando `apply_restore` é marcado em uma execução manual.

@@ -346,7 +346,7 @@ export function updateProductMarketplaceStatusHints() {
     } else if (channel === "mercado-livre") {
       hint.textContent = "(conecte em Integrações para publicar)";
     } else {
-      hint.textContent = "(publicação automática em breve)";
+      hint.textContent = "(salva na vitrine; integração externa não habilitada)";
     }
   });
   // Mostrar/esconder configuração ML baseado na checkbox

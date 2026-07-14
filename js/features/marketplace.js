@@ -14,7 +14,7 @@ import { renderProfitabilityBadge, renderCommercialIntelligence, getListingProfi
 import { renderMarketplaceAnalyticsPanel, getListingAnalytics, computeIntentScore } from "./marketplace-analytics.js";
 import { getProductForSale, renderProductionAssetShortcut } from "./product-assets.js";
 import { loadXlsx, parseCsv } from "../core/importer.js";
-import { MARKETPLACE_IMPORT_TEMPLATE, normalizeMarketplaceImportRows } from "./marketplace-file-import.js";
+import { MARKETPLACE_IMPORT_TEMPLATE, normalizeMarketplaceImportRows, runMarketplaceImportBatch } from "./marketplace-file-import.js";
 import {
   buildMarketplaceMigration,
   buildMarketplaceMigrationBatch,
@@ -895,10 +895,11 @@ export async function saveMarketplaceFileImport(event) {
   if (!rows.length) return;
   const message = byId("marketplaceFileImportMessage");
   message.textContent = `Importando ${rows.length} anuncio(s)...`;
-  const results = await Promise.allSettled(rows.map((row) => storefrontRequest(marketplaceFileRowPayload(row))));
+  const results = await runMarketplaceImportBatch(rows, (row) => storefrontRequest(marketplaceFileRowPayload(row)), 4);
   const failures = results.filter((result) => result.status === "rejected");
   if (failures.length) {
-    message.textContent = `${results.length - failures.length} importado(s); ${failures.length} falharam.`;
+    const firstError = failures[0]?.reason?.message || "Falha não identificada";
+    message.textContent = `${results.length - failures.length} importado(s); ${failures.length} falharam. Primeiro erro: ${firstError}`;
     return;
   }
   byId("marketplaceFileImportDialog").close();

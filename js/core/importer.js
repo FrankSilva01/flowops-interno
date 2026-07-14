@@ -5,6 +5,8 @@ import { ensureCanEdit } from "./permissions.js";
 import { persist } from "../data/remote.js";
 import { recordAudit } from "../features/logs.js";
 import { normalizeImportedOrder } from "../features/orders.js";
+export { parseCsv, parseCsvRecords, splitCsvLine } from "./csv.js";
+import { parseCsv } from "./csv.js";
 export function exportJson() {
   const blob = new Blob([JSON.stringify(state.data, null, 2)], { type: "application/json" });
   const link = document.createElement("a");
@@ -74,34 +76,6 @@ export async function importRows(rows) {
   const orders = rows.map((row) => normalizeImportedOrder(row)).filter(Boolean);
   if (!orders.length) throw new Error("Não encontrei colunas de encomenda no arquivo.");
   await importCollection("orders", orders);
-}
-
-export function parseCsv(text) {
-  const lines = text.split(/\r?\n/).filter((line) => line.trim());
-  if (lines.length < 2) return [];
-  const delimiter = lines[0].includes(";") ? ";" : ",";
-  const headers = splitCsvLine(lines[0], delimiter).map((item) => item.trim());
-  return lines.slice(1).map((line) => {
-    const values = splitCsvLine(line, delimiter);
-    return Object.fromEntries(headers.map((header, index) => [header, values[index] || ""]));
-  });
-}
-
-export function splitCsvLine(line, delimiter = ",") {
-  const result = [];
-  let current = "";
-  let quoted = false;
-  for (const char of line) {
-    if (char === '"') quoted = !quoted;
-    else if (char === delimiter && !quoted) {
-      result.push(current);
-      current = "";
-    } else {
-      current += char;
-    }
-  }
-  result.push(current);
-  return result.map((item) => item.replace(/^"|"$/g, "").trim());
 }
 
 export function normalizeText(value) {

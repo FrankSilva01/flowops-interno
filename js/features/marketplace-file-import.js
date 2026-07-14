@@ -56,6 +56,26 @@ export function normalizeMarketplaceImportRows(rows, marketplace) {
     .filter((row) => row.title || row.sku || row.externalId);
 }
 
+export async function runMarketplaceImportBatch(rows, worker, concurrency = 4) {
+  const source = Array.from(rows || []);
+  const results = new Array(source.length);
+  let cursor = 0;
+  async function consume() {
+    while (cursor < source.length) {
+      const index = cursor;
+      cursor += 1;
+      try {
+        results[index] = { status: "fulfilled", value: await worker(source[index], index) };
+      } catch (reason) {
+        results[index] = { status: "rejected", reason };
+      }
+    }
+  }
+  const workers = Math.max(1, Math.min(Number(concurrency) || 1, source.length || 1));
+  await Promise.all(Array.from({ length: workers }, consume));
+  return results;
+}
+
 export const MARKETPLACE_IMPORT_TEMPLATE = [
   "ID do item", "Nome do produto", "SKU", "Preco", "Estoque", "Categoria", "ID da categoria",
   "Descricao", "Peso (kg)", "Link do anuncio", "Imagens", "Status",

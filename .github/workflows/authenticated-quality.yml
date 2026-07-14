@@ -1,0 +1,23 @@
+name: Authenticated quality
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "23 10 * * 1-5"
+jobs:
+  authenticated-smoke:
+    runs-on: ubuntu-latest
+    env:
+      FLOWOPS_BASE_URL: https://rainbow-lokum-1fad14.netlify.app
+      FLOWOPS_E2E_EMAIL: ${{ secrets.FLOWOPS_E2E_EMAIL }}
+      FLOWOPS_E2E_PASSWORD: ${{ secrets.FLOWOPS_E2E_PASSWORD }}
+      FLOWOPS_E2E_TENANT_NAME: ${{ secrets.FLOWOPS_E2E_TENANT_NAME }}
+      FLOWOPS_E2E_FORBIDDEN_TEXT: ${{ secrets.FLOWOPS_E2E_FORBIDDEN_TEXT }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test tests/e2e/authenticated-smoke.spec.js --project=desktop --project=mobile

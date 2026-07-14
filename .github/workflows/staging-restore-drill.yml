@@ -1,0 +1,25 @@
+name: Staging restore drill
+on:
+  workflow_dispatch:
+    inputs:
+      apply_restore:
+        description: Executar restauracao real do snapshot no staging
+        type: boolean
+        default: false
+  schedule:
+    - cron: "41 11 1 */3 *"
+jobs:
+  restore-drill:
+    runs-on: ubuntu-latest
+    env:
+      FLOWOPS_STAGING_URL: https://dirweeevuheunurnxans.supabase.co
+      FLOWOPS_STAGING_ANON_KEY: ${{ secrets.FLOWOPS_STAGING_ANON_KEY }}
+      FLOWOPS_STAGING_ADMIN_EMAIL: ${{ secrets.FLOWOPS_STAGING_ADMIN_EMAIL }}
+      FLOWOPS_STAGING_ADMIN_PASSWORD: ${{ secrets.FLOWOPS_STAGING_ADMIN_PASSWORD }}
+      FLOWOPS_ALLOW_STAGING_RESTORE: ${{ github.event_name == 'workflow_dispatch' && inputs.apply_restore && 'true' || 'false' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/staging-restore-drill.mjs

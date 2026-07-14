@@ -219,7 +219,7 @@ export async function renderPurchaseInvoices() {
         </div>
         <div class="purchase-actions">
           <button class="primary-btn" type="button" data-purchase-action="register">+ Registrar Compra</button>
-          <button class="secondary-btn" type="button" data-purchase-action="import">Importar XML</button>
+          <button class="secondary-btn" type="button" data-purchase-action="import" disabled title="Aguardando homologação fiscal do importador">Importar XML indisponível</button>
         </div>
       </div>
       <form id="purchaseInvoiceForm" class="entry-form purchase-form" style="display:none;">
@@ -810,7 +810,6 @@ function generateDASPIX(dasId, das = null) {
 
 function bindPurchaseActions() {
   const registerBtn = document.querySelector('[data-purchase-action="register"]');
-  const importBtn = document.querySelector('[data-purchase-action="import"]');
   const form = document.getElementById("purchaseInvoiceForm");
   const cancelBtn = document.querySelector('[data-purchase-action="cancel-form"]');
 
@@ -821,12 +820,6 @@ function bindPurchaseActions() {
         // Carregar dados dos selects quando abrir
         loadPurchaseFiltersOptions();
       }
-    });
-  }
-
-  if (importBtn) {
-    importBtn.addEventListener("click", () => {
-      showAppMessage("Importar XML", "Funcionalidade de importação será adicionada em breve.", "info");
     });
   }
 
