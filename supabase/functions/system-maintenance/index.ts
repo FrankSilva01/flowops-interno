@@ -73,13 +73,20 @@ Deno.serve(async (req) => {
     const token = await maintainMlToken();
     const subscriptions = await maintainSubscriptions();
     const emails = await dispatchPendingEmails(adminClient());
+    const logs = await cleanupOperationalLogs();
     const backup = await createBackup(actor, action === "manual");
-    return json({ ok: true, token, subscriptions, emails, backup });
+    return json({ ok: true, token, subscriptions, emails, logs, backup });
   } catch (error) {
     await createSystemNotification("Backup falhou", error.message || String(error), "high").catch(() => {});
     return json({ ok: false, error: error.message || String(error) }, { status: 500 });
   }
 });
+
+async function cleanupOperationalLogs() {
+  const { data, error } = await adminClient().rpc("cleanup_sensitive_logs");
+  if (error) throw error;
+  return data || {};
+}
 
 async function maintainMlToken() {
   try {

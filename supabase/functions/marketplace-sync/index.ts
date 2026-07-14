@@ -1095,9 +1095,6 @@ async function syncFeeCalculatorForItem(
     .maybeSingle();
   const snapshot = await getListingFeeSyncSnapshot(itemId, account, force);
   if (!snapshot) {
-    await logSync("Mercado Livre", "fee-calculator", "success", `Taxas de ${itemId} dentro do cache (6h), nao sincronizado de novo.`, {
-      organizationId, externalItemId: itemId, actorEmail,
-    });
     return { external_id: itemId, skipped: true };
   }
   const { error: insertError } = await supabase.from("listing_fee_sync").insert({

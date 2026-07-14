@@ -25,10 +25,6 @@ Deno.serve(async (req) => {
     const resource = String(payload.resource || "");
     const userId = String(payload.user_id || "");
     if (payload.topic !== "orders_v2" || !/^\/orders\/\d+$/i.test(resource) || !/^\d+$/.test(userId)) {
-      await logSync("Mercado Livre", "webhook", "ignored", "Notificacao ignorada", {
-        actorEmail: "Webhook Mercado Livre",
-        rawPayload: payload,
-      });
       return json({ ok: true, ignored: true });
     }
 
