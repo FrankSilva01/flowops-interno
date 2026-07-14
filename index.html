@@ -25,9 +25,9 @@
     <link rel="stylesheet" href="./css/08-sora-redesign-20260706.css?v=200" />
     <link rel="stylesheet" href="./css/10-modern-calendar.css?v=200" />
     <link rel="stylesheet" href="./css/11-fiscal-forms.css?v=200" />
-    <link rel="stylesheet" href="./css/12-global-search.css?v=225" />
+    <link rel="stylesheet" href="./css/12-global-search.css?v=226" />
     <script src="./supabase-config.js?v=200" defer></script>
-    <script type="module" src="./js/app.js?v=225"></script>
+    <script type="module" src="./js/app.js?v=226"></script>
   </head>
   <body>
     <main id="appView" class="app-shell" hidden>
@@ -86,7 +86,7 @@
         <div class="session-card">
           <span id="activeUserName">Modo teste</span>
           <small id="activeUserRole">Acesso direto sem login</small>
-          <small id="appVersionLabel" class="app-version-label">FlowOps v225</small>
+          <small id="appVersionLabel" class="app-version-label">FlowOps v226</small>
           <button id="logoutBtn" class="ghost-btn" type="button" hidden>Sair</button>
         </div>
       </aside>
@@ -158,71 +158,55 @@
               <button class="secondary-btn" type="button" data-quick-action="material">+ Novo material</button>
             </div>
           </div>
-          <div class="dashboard-toolbar">
-            <button id="customizeDashboardBtn" class="secondary-btn" type="button">Personalizar dashboard</button>
-            <div id="dashboardCustomizePanel" class="dashboard-customize-panel" hidden>
-              <strong>Informações visíveis</strong>
-              <div id="dashboardCustomizeOptions"></div>
-              <button id="resetDashboardBtn" class="secondary-btn" type="button">Restaurar padrão</button>
-            </div>
-          </div>
-
-          <!-- Camada 1: KPIs financeiros -->
-          <div class="kpi-grid">
-            <article class="kpi" data-tone="success"><span>Entradas</span><strong id="kpiIncome">R$ 0,00</strong></article>
-            <article class="kpi" data-tone="danger"><span>Saídas</span><strong id="kpiExpense">R$ 0,00</strong></article>
-            <article class="kpi" data-tone="info"><span>Saldo atual</span><strong id="kpiBalance">R$ 0,00</strong></article>
+          <div class="dashboard-today-grid">
+            <article class="kpi" data-tone="info"><span>Saldo disponível</span><strong id="kpiBalance">R$ 0,00</strong></article>
             <article class="kpi" data-tone="purple"><span>A receber</span><strong id="kpiReceivable">R$ 0,00</strong></article>
-            <article class="kpi" data-tone="info"><span>Encomendas abertas</span><strong id="kpiOpenOrders">0</strong></article>
+            <article class="kpi" data-tone="info"><span>Em produção</span><strong id="kpiOpenOrders">0</strong></article>
             <article class="kpi" data-tone="danger"><span>Atrasadas</span><strong id="kpiLateOrders">0</strong></article>
-            <article class="kpi" data-tone="success"><span>Recebido no mês</span><strong id="kpiMonthIncome">R$ 0,00</strong></article>
-            <article class="kpi" data-tone="info"><span>Pedidos no mês</span><strong id="kpiMonthOrders">0</strong></article>
-            <article class="kpi" data-tone="purple"><span>Cliente que mais comprou</span><strong id="kpiTopClient">-</strong></article>
+            <article class="kpi" data-tone="success"><span>Pedidos no mês</span><strong id="kpiMonthOrders">0</strong></article>
           </div>
 
-          <!-- Camada 2: Atenção necessária -->
-          <div class="attention-row">
-            <section class="panel attention-card">
-              <div class="panel-head"><h3>Prazos</h3></div>
-              <div class="attention-items">
-                <button type="button" class="attention-item" data-action="focus-orders" data-focus="noDate"><span>Sem data de entrega</span><strong id="attentionNoDate">0</strong></button>
-                <button type="button" class="attention-item" data-action="focus-orders" data-focus="soon"><span>Prazo curto</span><strong id="attentionSoon">0</strong></button>
-                <button type="button" class="attention-item" data-action="focus-orders" data-focus="urgent"><span>Alta prioridade</span><strong id="attentionUrgent">0</strong></button>
+          <div class="dashboard-work-grid">
+            <section class="panel dashboard-priority-panel">
+              <div class="panel-head"><div><h3>Ações prioritárias</h3><small>O que precisa de decisão agora</small></div></div>
+              <div class="dashboard-priority-list">
+                <button type="button" data-action="focus-orders" data-focus="urgent"><span><i class="ti ti-alert-triangle"></i> Alta prioridade</span><strong id="attentionUrgent">0</strong></button>
+                <button type="button" data-action="focus-orders" data-focus="soon"><span><i class="ti ti-clock"></i> Prazo curto</span><strong id="attentionSoon">0</strong></button>
+                <button type="button" data-action="focus-orders" data-focus="noDate"><span><i class="ti ti-calendar-off"></i> Sem data de entrega</span><strong id="attentionNoDate">0</strong></button>
+                <button type="button" data-action="focus-orders" data-focus="noValue"><span><i class="ti ti-cash-off"></i> Sem valor definido</span><strong id="attentionNoValue">0</strong></button>
+                <div><span><i class="ti ti-package-off"></i> Estoque crítico</span><strong id="attentionLowStock">0</strong></div>
+                <div><span><i class="ti ti-credit-card"></i> Assinatura</span><span id="attentionSubscriptionBadge" class="badge neutral">-</span></div>
               </div>
             </section>
-            <section class="panel attention-card">
-              <div class="panel-head"><h3>Financeiro</h3></div>
-              <div class="attention-items">
-                <button type="button" class="attention-item" data-action="focus-orders" data-focus="noValue"><span>Sem valor</span><strong id="attentionNoValue">0</strong></button>
-                <div class="attention-item"><span>Estoque crítico</span><strong id="attentionLowStock">0</strong></div>
-                <div class="attention-item"><span>Assinatura</span><span id="attentionSubscriptionBadge" class="badge neutral">-</span></div>
-              </div>
-            </section>
-          </div>
-
-          <!-- Camada 3: Proximas entregas + Notificacoes recentes -->
-          <div class="highlights-row">
-            <section class="panel">
-              <div class="panel-head">
-                <h3>Próximas entregas</h3>
-                <button class="secondary-btn compact" type="button" data-action="view-orders">Ver todas</button>
-              </div>
+            <section class="panel dashboard-upcoming-panel">
+              <div class="panel-head"><div><h3>Próximas entregas</h3><small>Pedidos mais próximos do prazo</small></div><button class="secondary-btn compact" type="button" data-action="view-orders">Ver todas</button></div>
               <div id="upcomingList" class="stack-list"></div>
             </section>
-            <section class="panel">
-              <div class="panel-head">
-                <h3>Notificações recentes</h3>
-                <div class="panel-head-actions">
-                  <button id="clearDashboardNotificationsBtn" class="secondary-btn compact" type="button">Limpar tela</button>
-                  <button id="openAllNotificationsBtn" class="secondary-btn compact" type="button">Ver todas</button>
-                </div>
-              </div>
-              <div id="dashboardNotificationList" class="dashboard-notification-list"></div>
-            </section>
           </div>
 
-          <!-- Camada 4: blocos detalhados colapsaveis -->
-          <div id="dashboardGrid" class="dashboard-grid">
+          <section class="dashboard-flow-section">
+            <div class="dashboard-section-head"><div><h3>Fluxos da operação</h3><small>Leitura rápida sem abrir cada módulo</small></div><small id="dashboardFreshness">Atualizado agora</small></div>
+            <div class="dashboard-flow-grid">
+              <button type="button" class="dashboard-flow-card" data-action="view-production"><span>Produção</span><strong id="dashboardProductionFlow">0 em andamento</strong><small id="dashboardProductionDetail">Fila operacional</small><i class="ti ti-arrow-right"></i></button>
+              <button type="button" class="dashboard-flow-card" data-action="view-logistics"><span>Logística</span><strong id="dashboardLogisticsFlow">0 em trânsito</strong><small id="dashboardLogisticsDetail">Entregas acompanhadas</small><i class="ti ti-arrow-right"></i></button>
+              <button type="button" class="dashboard-flow-card" data-action="view-marketplace"><span>Marketplace</span><strong id="dashboardMarketplaceFlow">0 vendas novas</strong><small id="dashboardMarketplaceDetail">Anúncios e integrações</small><i class="ti ti-arrow-right"></i></button>
+            </div>
+          </section>
+
+          <div class="dashboard-data-sink" hidden>
+            <strong id="kpiIncome"></strong><strong id="kpiExpense"></strong><strong id="kpiMonthIncome"></strong><strong id="kpiTopClient"></strong>
+            <div id="dashboardNotificationList"></div><button id="clearDashboardNotificationsBtn" type="button"></button><button id="openAllNotificationsBtn" type="button"></button>
+          </div>
+
+          <details class="dashboard-secondary-section">
+            <summary><span><strong>Análises complementares</strong><small>Financeiro, materiais, comercial e relatórios operacionais</small></span><i class="ti ti-chevron-down"></i></summary>
+            <div class="dashboard-toolbar">
+              <button id="customizeDashboardBtn" class="secondary-btn" type="button">Personalizar análises</button>
+              <div id="dashboardCustomizePanel" class="dashboard-customize-panel" hidden>
+                <strong>Informações visíveis</strong><div id="dashboardCustomizeOptions"></div><button id="resetDashboardBtn" class="secondary-btn" type="button">Restaurar padrão</button>
+              </div>
+            </div>
+            <div id="dashboardGrid" class="dashboard-grid">
             <section class="panel dashboard-card dashboard-collapsible collapsed" data-dashboard-card="financial" draggable="true">
               <button class="dashboard-collapsible-toggle" type="button" data-collapsible-toggle aria-expanded="false">
                 <span class="dashboard-collapsible-head"><strong>Financeiro</strong><small id="summaryFinancial">-</small></span>
@@ -357,7 +341,8 @@
                 <div id="followUpList" class="stack-list"></div>
               </div>
             </section>
-          </div>
+            </div>
+          </details>
 
         </section>
 

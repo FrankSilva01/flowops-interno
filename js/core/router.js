@@ -786,6 +786,18 @@ export function bindActions() {
         setView("orders");
         return;
       }
+      if (action === "view-production") {
+        setView("production");
+        return;
+      }
+      if (action === "view-logistics") {
+        setView("logistics");
+        return;
+      }
+      if (action === "view-marketplace") {
+        setView("marketplace");
+        return;
+      }
       if (action === "open-quotes") {
         state.filters.orderQuote = "quotes";
         syncOrderFilterControls();

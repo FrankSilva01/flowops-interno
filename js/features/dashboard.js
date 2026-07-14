@@ -168,6 +168,19 @@ export function renderDashboard() {
   byId("kpiMonthIncome").textContent = money.format(monthIncome);
   byId("kpiMonthOrders").textContent = monthOrders;
   byId("kpiTopClient").textContent = topClient;
+  const deliveryFlow = getDeliveryStatusCounts();
+  const marketplaceSalesToday = state.marketplaceSales.filter((sale) => {
+    const createdAt = sale.raw_payload?.date_created || sale.created_at;
+    return createdAt && new Date(createdAt).toDateString() === new Date().toDateString();
+  }).length;
+  const integrationErrors = getRecentIntegrationErrors().length;
+  byId("dashboardProductionFlow").textContent = `${openOrders} em andamento`;
+  byId("dashboardProductionDetail").textContent = lateOrders ? `${lateOrders} atrasado(s) exigem atenção` : "Prazos sob controle";
+  byId("dashboardLogisticsFlow").textContent = `${deliveryFlow.inTransit} em trânsito`;
+  byId("dashboardLogisticsDetail").textContent = deliveryFlow.late ? `${deliveryFlow.late} entrega(s) atrasada(s)` : "Sem atrasos identificados";
+  byId("dashboardMarketplaceFlow").textContent = `${marketplaceSalesToday} venda${marketplaceSalesToday === 1 ? "" : "s"} hoje`;
+  byId("dashboardMarketplaceDetail").textContent = integrationErrors ? `${integrationErrors} erro(s) de integração` : `${state.marketplaceListings.length} anúncio(s) acompanhados`;
+  byId("dashboardFreshness").textContent = `Atualizado ${formatRelativeTime(new Date().toISOString())}`;
   renderIntegrationHealth();
 
   renderBarChart("financeChart", [
