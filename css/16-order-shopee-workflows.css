@@ -1,13 +1,16 @@
 .orders-command-bar{display:flex;align-items:center;justify-content:space-between;gap:24px;margin:0 0 16px;padding:2px 0 14px;border-bottom:1px solid var(--line)}
 .orders-command-bar>div{display:grid;gap:4px}.orders-command-bar strong{font-size:14px}.orders-command-bar small{color:var(--muted)}
-.order-create-dialog,.shopee-export-dialog{width:min(620px,calc(100vw - 24px));max-width:620px}
-.order-create-form{padding:0 24px 84px}.order-form-section{padding:20px 0;border-bottom:1px solid var(--line)}
-.order-form-section h4{margin:0 0 14px;font-size:13px;color:var(--text);letter-spacing:0}
-.order-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-.order-form-grid label,.shopee-export-form>label{display:grid;gap:7px;color:var(--muted);font-size:12px;font-weight:600}
+.drawer-dialog.order-create-dialog{width:min(550px,calc(100vw - 24px))!important;max-width:550px!important}.shopee-export-dialog{width:min(620px,calc(100vw - 24px));max-width:620px}
+.order-create-dialog .drawer-header{padding:14px 18px}.order-create-dialog .drawer-header small{font-size:11px}
+.order-create-dialog .order-create-form{padding:0 18px 64px}.order-form-section{padding:12px 0;border-bottom:1px solid var(--line)}
+.order-form-section h4{margin:0 0 10px;font-size:13px;color:var(--text);letter-spacing:0}
+.order-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 10px}
+.order-form-grid label,.shopee-export-form>label{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:600}
 .order-form-grid input,.order-form-grid select,.order-form-grid textarea,.shopee-export-form input{width:100%;min-width:0}
-.order-form-grid .span-2{grid-column:1/-1}.order-form-grid textarea{min-height:92px;resize:vertical}
+.order-create-dialog .order-form-grid input,.order-create-dialog .order-form-grid select{min-height:36px;height:36px;padding-top:6px;padding-bottom:6px}.order-form-grid .span-2{grid-column:1/-1}.order-form-grid textarea{min-height:72px;resize:vertical}
 .order-form-grid .image-dropzone{min-height:112px}
-.order-form-actions{position:sticky;bottom:0;display:flex;justify-content:flex-end;gap:10px;padding:16px 0;background:linear-gradient(180deg,transparent 0,var(--surface, #111820) 24%);z-index:2}
+.order-form-details summary{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;font-size:13px;font-weight:700;list-style:none}.order-form-details summary::-webkit-details-marker{display:none}.order-form-details summary:after{content:"+";color:var(--muted);font-size:18px}.order-form-details[open] summary{margin-bottom:10px}.order-form-details[open] summary:after{content:"−"}.order-form-details summary small{margin-left:auto;color:var(--muted);font-size:10px;font-weight:500}
+.order-form-actions{position:sticky;bottom:0;display:flex;justify-content:flex-end;gap:10px;padding:12px 0;background:linear-gradient(180deg,transparent 0,var(--surface, #111820) 24%);z-index:2}
+.order-create-dialog .order-form-actions{position:static;background:var(--surface,#111820)}
 .shopee-export-form{padding:20px 24px 84px;display:grid;gap:20px}.workflow-callout{display:flex;gap:12px;padding:14px;border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line));background:color-mix(in srgb,var(--accent) 8%,transparent);border-radius:7px}.workflow-callout i{font-size:22px;color:var(--accent)}.workflow-callout div{display:grid;gap:4px}.workflow-callout small{color:var(--muted)}
 @media(max-width:680px){.orders-command-bar{align-items:flex-end}.orders-command-bar small{display:none}.order-form-grid{grid-template-columns:1fr}.order-form-grid .span-2{grid-column:auto}.order-create-form,.shopee-export-form{padding-left:16px;padding-right:16px}}

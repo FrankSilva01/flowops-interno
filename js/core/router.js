@@ -80,7 +80,7 @@ import {
   showCalculatorSuggestion, getSuggestionForListing, syncFeeCalculatorFull,
 } from "../features/marketplace-analytics.js";
 
-const APP_VERSION = "245";
+const APP_VERSION = "246";
 
 async function refreshAppShell() {
   showAppMessage("Atualizando sistema", "Limpando cache local e carregando a versão mais recente.", "info");

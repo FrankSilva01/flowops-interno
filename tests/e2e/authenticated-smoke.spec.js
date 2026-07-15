@@ -68,10 +68,11 @@ test.describe("sessao autenticada", () => {
     await expect(dialog.getByText("Produção e prazo", { exact: true })).toBeVisible();
     const layout = await dialog.evaluate((element) => {
       const rect = element.getBoundingClientRect();
-      return { rightGap: Math.abs(window.innerWidth - rect.right), overflow: element.scrollWidth > element.clientWidth + 1 };
+      return { rightGap: Math.abs(window.innerWidth - rect.right), overflow: element.scrollWidth > element.clientWidth + 1, verticalOverflow: element.scrollHeight > element.clientHeight + 1 };
     });
     expect(layout.rightGap).toBeLessThanOrEqual(1);
     expect(layout.overflow).toBe(false);
+    if ((page.viewportSize()?.height || 0) >= 800) expect(layout.verticalOverflow).toBe(false);
     if (process.env.FLOWOPS_CAPTURE_VISUALS) await page.screenshot({ path: `output/playwright/order-create-drawer-${testInfo.project.name}.png` });
   });
 
