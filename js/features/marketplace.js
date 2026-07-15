@@ -15,6 +15,7 @@ import { renderMarketplaceAnalyticsPanel, getListingAnalytics, computeIntentScor
 import { getProductForSale, renderProductionAssetShortcut } from "./product-assets.js";
 import { loadXlsx, parseCsv } from "../core/importer.js";
 import { MARKETPLACE_IMPORT_TEMPLATE, normalizeMarketplaceImportRows, runMarketplaceImportBatch } from "./marketplace-file-import.js";
+import { assertShopeeTemplate, buildShopeeTemplateRow, validateShopeeListing } from "./shopee-template-export.js";
 import {
   buildMarketplaceMigration,
   buildMarketplaceMigrationBatch,
@@ -754,10 +755,61 @@ function selectedMarketplaceListings() {
 
 function updateMarketplaceMigrationSelectionUi() {
   const button = byId("openBulkMarketplaceMigrationBtn");
-  if (!button) return;
   const count = selectedMarketplaceMigrations.size;
-  button.disabled = count === 0;
-  button.textContent = count ? `Replicar selecionados (${count})` : "Replicar selecionados";
+  if (button) {
+    button.disabled = count === 0;
+    button.textContent = count ? `Replicar selecionados (${count})` : "Replicar selecionados";
+  }
+  const shopeeButton = byId("exportShopeeTemplateBtn");
+  if (shopeeButton) {
+    shopeeButton.disabled = count === 0;
+    shopeeButton.innerHTML = `<i class="ti ti-file-spreadsheet" aria-hidden="true"></i> ${count ? `Exportar Shopee (${count})` : "Exportar Shopee"}`;
+  }
+}
+
+export function openShopeeTemplateExport() {
+  const listings = selectedMarketplaceListings();
+  if (!listings.length) return;
+  const invalid = listings.map((listing, index) => ({ listing, missing: validateShopeeListing(listing, index) })).filter((item) => item.missing.length);
+  const form = byId("shopeeTemplateExportForm");
+  form.reset();
+  byId("shopeeExportSelectionCount").textContent = `${listings.length} anúncio(s) selecionado(s)`;
+  byId("shopeeTemplateExportSummary").innerHTML = `<div class="drawer-field-row"><span>Prontos para exportar</span><strong>${listings.length - invalid.length}</strong></div><div class="drawer-field-row"><span>Com pendências</span><strong>${invalid.length}</strong></div>`;
+  byId("shopeeTemplateExportMessage").textContent = invalid.length ? `${invalid.length} anúncio(s) não serão exportados: complete título, preço e pelo menos 3 imagens.` : "";
+  byId("shopeeTemplateExportDialog").showModal();
+}
+
+export async function exportSelectedListingsToShopee(event) {
+  event.preventDefault();
+  if (!ensureCanAdmin()) return;
+  const listings = selectedMarketplaceListings().filter((listing) => validateShopeeListing(listing).length === 0);
+  const message = byId("shopeeTemplateExportMessage");
+  const file = event.currentTarget.elements.template.files?.[0];
+  if (!file || !listings.length) {
+    message.textContent = !listings.length ? "Nenhum anúncio selecionado atende aos requisitos." : "Selecione o modelo oficial da Shopee.";
+    return;
+  }
+  if (file.size > 3 * 1024 * 1024) {
+    message.textContent = "O modelo deve ter no máximo 3 MB.";
+    return;
+  }
+  try {
+    message.textContent = "Gerando planilha...";
+    await loadXlsx();
+    const workbook = window.XLSX.read(await file.arrayBuffer(), { type: "array", cellStyles: true });
+    const sheet = assertShopeeTemplate(workbook);
+    window.XLSX.utils.sheet_add_aoa(sheet, listings.map(buildShopeeTemplateRow), { origin: "A7" });
+    const output = window.XLSX.write(workbook, { bookType: "xlsx", type: "array", compression: true, cellStyles: true });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(new Blob([output], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
+    link.download = `FLOWOPS_SHOPEE_${listings.length}_ANUNCIOS.xlsx`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    byId("shopeeTemplateExportDialog").close();
+    flashActionMessage(`Planilha Shopee gerada com ${listings.length} anúncio(s).`);
+  } catch (error) {
+    message.textContent = `Não foi possível gerar a planilha: ${error.message}`;
+  }
 }
 
 export function toggleMarketplaceMigrationSelection(itemId, marketplace, selected) {

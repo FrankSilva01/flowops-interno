@@ -721,7 +721,16 @@ export async function saveOrder(event) {
   await recordAudit(previous ? "update" : "create", "order", item.id, item.orderCode, previous || null, item, "manual");
   resetOrderForm();
   saveData();
+  byId("orderCreateDialog")?.close();
   render();
+  flashActionMessage(previous ? "Encomenda atualizada." : "Encomenda criada.");
+}
+
+export function openOrderCreateDialog() {
+  resetOrderForm();
+  byId("orderCreateDialogTitle").textContent = "Nova encomenda";
+  byId("orderCreateDialog").showModal();
+  requestAnimationFrame(() => byId("orderForm").elements.description.focus());
 }
 
 export function openOrderEditDialog(id) {
@@ -868,12 +877,14 @@ export function startOrderEdit(id) {
   form.classList.add("editing");
   byId("orderSubmitBtn").textContent = "Atualizar encomenda";
   byId("cancelOrderEditBtn").hidden = false;
-  form.scrollIntoView({ behavior: "smooth", block: "start" });
+  byId("orderCreateDialogTitle").textContent = `Editar ${getOrderCode(item)}`;
+  byId("orderCreateDialog").showModal();
   form.elements.description.focus();
 }
 
 export function cancelOrderEdit() {
   resetOrderForm();
+  byId("orderCreateDialog")?.close();
 }
 
 export function resetOrderForm() {
@@ -889,7 +900,7 @@ export function resetOrderForm() {
   form.classList.remove("editing");
   state.editingOrderId = null;
   byId("orderSubmitBtn").textContent = "Salvar encomenda";
-  byId("cancelOrderEditBtn").hidden = true;
+  byId("cancelOrderEditBtn").hidden = false;
 }
 
 export function bindReferenceImageInput() {

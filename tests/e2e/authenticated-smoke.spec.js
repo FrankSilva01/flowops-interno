@@ -58,6 +58,35 @@ test.describe("sessao autenticada", () => {
     }
   });
 
+  test("abre nova encomenda em drawer organizado", async ({ page }, testInfo) => {
+    await page.goto("/#orders");
+    await expect(page.locator("#appView")).toBeVisible();
+    await page.locator("#openOrderCreateBtn").click();
+    const dialog = page.locator("#orderCreateDialog");
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByText("Dados principais", { exact: true })).toBeVisible();
+    await expect(dialog.getByText("Produção e prazo", { exact: true })).toBeVisible();
+    const layout = await dialog.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return { rightGap: Math.abs(window.innerWidth - rect.right), overflow: element.scrollWidth > element.clientWidth + 1 };
+    });
+    expect(layout.rightGap).toBeLessThanOrEqual(1);
+    expect(layout.overflow).toBe(false);
+    if (process.env.FLOWOPS_CAPTURE_VISUALS) await page.screenshot({ path: `output/playwright/order-create-drawer-${testInfo.project.name}.png` });
+  });
+
+  test("abre exportacao Shopee para selecao individual", async ({ page }) => {
+    await page.goto("/#marketplace");
+    await expect(page.locator("#appView")).toBeVisible();
+    const checkbox = page.locator('[data-action="marketplace-migrate-select"]').first();
+    test.skip(!(await checkbox.isVisible()), "Nenhum anúncio disponível para exportação.");
+    await checkbox.check();
+    await expect(page.locator("#exportShopeeTemplateBtn")).toBeEnabled();
+    await page.locator("#exportShopeeTemplateBtn").click();
+    await expect(page.locator("#shopeeTemplateExportDialog")).toBeVisible();
+    await expect(page.locator("#shopeeExportSelectionCount")).toContainText("1 anúncio");
+  });
+
   test("seleciona encomenda e disponibiliza exclusao administrativa", async ({ page }) => {
     test.skip((page.viewportSize()?.width || 0) < 720, "Barra de ações em lote validada no layout desktop.");
     await page.goto("/#orders");

@@ -14,7 +14,7 @@ import {
   duplicateOrder, removeReferenceImage, updateOrderInline, removeOrderTag, copyMarketplaceCode,
   syncOrderFilterControls, updateQuoteStage, convertQuoteToProduction, applyDeliveredPaymentDefault,
   appendHistory, syncOrderPaymentCash, renderOrders, deleteCustomTag,
-  setOrdersViewMode, openOrderDrawer, closeOrderDrawer, bindOrderDrawer, selectOrder,
+  setOrdersViewMode, openOrderDrawer, closeOrderDrawer, bindOrderDrawer, selectOrder, openOrderCreateDialog,
 } from "../features/orders.js";
 import { renderProduction } from "../features/production.js";
 import { renderCash, saveCash, startCashEdit, cancelCashEdit } from "../features/cash.js";
@@ -56,7 +56,7 @@ import {
   toggleMarketplaceMigrationSelection, toggleAllMarketplaceMigrationSelections,
   openMarketplaceFileImport, previewMarketplaceFileImport, saveMarketplaceFileImport,
   downloadMarketplaceImportTemplate,
-  bindMarketplaceFileImportDropzone,
+  bindMarketplaceFileImportDropzone, openShopeeTemplateExport, exportSelectedListingsToShopee,
 } from "../features/marketplace.js";
 import {
   runManualBackup, downloadBackupScope, simulateBackupRestore, restoreBackupFromFile,
@@ -80,7 +80,7 @@ import {
   showCalculatorSuggestion, getSuggestionForListing, syncFeeCalculatorFull,
 } from "../features/marketplace-analytics.js";
 
-const APP_VERSION = "231";
+const APP_VERSION = "244";
 
 async function refreshAppShell() {
   showAppMessage("Atualizando sistema", "Limpando cache local e carregando a versão mais recente.", "info");
@@ -417,6 +417,7 @@ export function bindEvents() {
   byId("newLeadBtn").addEventListener("click", () => openLeadDialog());
   byId("leadForm").addEventListener("submit", saveLead);
   byId("orderForm").addEventListener("submit", saveOrder);
+  byId("openOrderCreateBtn").addEventListener("click", openOrderCreateDialog);
   byId("orderEditDialogForm").addEventListener("submit", saveOrderFromDialog);
   byId("orderForm").elements.marketplaceTagToAdd.addEventListener("change", updateMarketplaceCodePlaceholder);
   byId("orderForm").elements.status.addEventListener("change", updateOrderFormStatusColor);
@@ -451,6 +452,7 @@ export function bindEvents() {
   byId("marketplaceBulkMigrationForm")?.addEventListener("submit", saveBulkMarketplaceMigration);
   byId("marketplaceBulkMigrationForm")?.addEventListener("input", refreshBulkMarketplaceMigrationPreview);
   byId("marketplaceFileImportForm")?.addEventListener("submit", saveMarketplaceFileImport);
+  byId("shopeeTemplateExportForm")?.addEventListener("submit", exportSelectedListingsToShopee);
   byId("marketplaceFileImportInput")?.addEventListener("change", previewMarketplaceFileImport);
   byId("marketplaceFileImportForm")?.elements.marketplace.addEventListener("change", previewMarketplaceFileImport);
   bindMarketplaceFileImportDropzone();
@@ -891,6 +893,11 @@ export function bindActions() {
       if (action === "marketplace-import-file") {
         if (!ensureCanAdmin()) return;
         openMarketplaceFileImport();
+        return;
+      }
+      if (action === "marketplace-export-shopee") {
+        if (!ensureCanAdmin()) return;
+        openShopeeTemplateExport();
         return;
       }
       if (action === "marketplace-import-template") {
