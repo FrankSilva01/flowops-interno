@@ -271,23 +271,17 @@ async function downloadMlDocument(
   };
 
   if (documentType === "declaration") {
-    const message = "Documento ainda nao disponivel pela API oficial do Mercado Livre para esta venda.";
-    await saveDocumentStatus("unavailable", { last_error: message });
-    await logSync("Mercado Livre", "document-declaration", "ignored", message, {
-      organizationId: account.organization_id,
-      externalOrderId: orderId,
-      internalOrderId: link.internal_order_id,
-      actorEmail,
-      rawPayload: { document_type: documentType },
-    });
-    return json({ ok: false, status: "unavailable", error: message }, { status: 409 });
+    return await downloadMlDce(orderId, account, actorEmail, link, saveDocumentStatus);
   }
 
-  const shippingId = String(
-    link.raw_payload.shipping.id ||
-      link.raw_payload.shipping_id ||
-      "",
-  );
+  let shippingId = String(link.raw_payload?.shipping?.id || link.raw_payload?.shipping_id || "");
+  if (!shippingId) {
+    const orderResponse = await fetch(`https://api.mercadolibre.com/orders/${encodeURIComponent(orderId)}`, {
+      headers: { Authorization: `Bearer ${account.access_token}` },
+    });
+    const liveOrder = await orderResponse.json();
+    if (orderResponse.ok) shippingId = String(liveOrder.shipping?.id || "");
+  }
   if (!shippingId) {
     const message = "Documento ainda nao disponivel: venda sem identificador de envio.";
     await saveDocumentStatus("unavailable", { last_error: message });
@@ -309,32 +303,15 @@ async function downloadMlDocument(
   });
   const shipment = await shipmentResponse.json();
   if (!shipmentResponse.ok) throw new Error(`Falha ao consultar envio ${shippingId}: ${JSON.stringify(shipment)}`);
-  const printable = shipment.status === "ready_to_ship" &&
-    ["ready_to_print", "printed"].includes(String(shipment.substatus || ""));
-  if (!printable) {
-    const message = `Documento ainda nao disponivel: envio ${shipment.status || "-"} / ${shipment.substatus || "-"}.`;
-    await saveDocumentStatus("unavailable", {
-      external_document_id: shippingId,
-      last_error: message,
-      raw_payload: shipment,
-    });
-    await logSync("Mercado Livre", "document-label", "ignored", message, {
-      organizationId: account.organization_id,
-      externalOrderId: orderId,
-      internalOrderId: link.internal_order_id,
-      actorEmail,
-      rawPayload: { shipping_id: shippingId, status: shipment.status, substatus: shipment.substatus },
-    });
-    return json({ ok: false, status: "unavailable", error: message }, { status: 409 });
-  }
-
   const labelResponse = await fetch(
-    `https://api.mercadolibre.com/shipment_labelsshipment_ids=${encodeURIComponent(shippingId)}&response_type=pdf`,
+    `https://api.mercadolibre.com/shipment_labels?shipment_ids=${encodeURIComponent(shippingId)}&response_type=pdf`,
     { headers: { Authorization: `Bearer ${account.access_token}` } },
   );
   if (!labelResponse.ok) {
     const detail = await labelResponse.text();
-    throw new Error(`Erro ao gerar etiqueta: ${detail}`);
+    const message = `Mercado Livre não liberou a etiqueta para o envio ${shippingId} (${shipment.status || "-"}/${shipment.substatus || "-"}): ${detail}`;
+    await saveDocumentStatus("unavailable", { external_document_id: shippingId, last_error: message, raw_payload: shipment });
+    return json({ ok: false, status: "unavailable", error: message }, { status: 409 });
   }
   const bytes = await labelResponse.arrayBuffer();
   const fileName = `etiqueta-mercado-livre-${orderId}.pdf`;
@@ -356,6 +333,67 @@ async function downloadMlDocument(
     headers: {
       ...corsHeaders,
       "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename="${fileName}"`,
+    },
+  });
+}
+
+async function downloadMlDce(
+  orderId: string,
+  account: Record<string, any>,
+  actorEmail: string,
+  link: Record<string, any>,
+  saveDocumentStatus: (status: string, extra?: Record<string, any>) => Promise<void>,
+) {
+  const infoResponse = await fetch(`https://api.mercadolibre.com/mlb/order/${encodeURIComponent(orderId)}/dce/info`, {
+    headers: { Authorization: `Bearer ${account.access_token}` },
+  });
+  const info = await infoResponse.json().catch(() => ({}));
+  if (!infoResponse.ok) {
+    const message = `Declaração oficial não disponível para esta venda: ${info.message || info.error || infoResponse.status}.`;
+    await saveDocumentStatus("unavailable", { last_error: message, raw_payload: info });
+    return json({ ok: false, status: "unavailable", error: message }, { status: 409 });
+  }
+  const documents = Array.isArray(info.documents) ? info.documents : [];
+  const document = documents.find((item: Record<string, any>) =>
+    item.dce_key && ["issued", "authorized"].includes(String(item.status || "").toLowerCase())
+  ) || documents.find((item: Record<string, any>) => item.dce_key);
+  if (!document?.dce_key) {
+    const message = `A DC-e ainda não possui arquivo para download (${info.status || "-"}/${info.sub_status || "-"}).`;
+    await saveDocumentStatus("pending", { last_error: message, raw_payload: info });
+    return json({ ok: false, status: "pending", error: message }, { status: 409 });
+  }
+  const dceKey = String(document.dce_key);
+  const fileResponse = await fetch(
+    `https://api.mercadolibre.com/mlb/order/${encodeURIComponent(orderId)}/dce/info/${encodeURIComponent(dceKey)}?doctype=pdf`,
+    { headers: { Authorization: `Bearer ${account.access_token}` } },
+  );
+  if (!fileResponse.ok) {
+    const detail = await fileResponse.text();
+    const message = `Falha ao baixar a declaração oficial: ${detail}`;
+    await saveDocumentStatus("unavailable", { external_document_id: dceKey, last_error: message, raw_payload: info });
+    return json({ ok: false, status: "unavailable", error: message }, { status: 409 });
+  }
+  const bytes = await fileResponse.arrayBuffer();
+  const fileName = `declaracao-mercado-livre-${orderId}.pdf`;
+  await saveDocumentStatus("available", {
+    external_document_id: dceKey,
+    mime_type: fileResponse.headers.get("Content-Type") || "application/pdf",
+    file_name: fileName,
+    last_error: null,
+    raw_payload: info,
+  });
+  await logSync("Mercado Livre", "document-declaration", "success", `Declaração baixada - venda ${orderId}`, {
+    organizationId: account.organization_id,
+    externalOrderId: orderId,
+    internalOrderId: link.internal_order_id,
+    actorEmail,
+    rawPayload: { dce_key: dceKey, file_name: fileName },
+  });
+  return new Response(bytes, {
+    headers: {
+      ...corsHeaders,
+      "Content-Type": fileResponse.headers.get("Content-Type") || "application/pdf",
       "Content-Disposition": `attachment; filename="${fileName}"`,
     },
   });

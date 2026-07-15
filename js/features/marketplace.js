@@ -1565,10 +1565,6 @@ export async function downloadMarketplaceDocument(externalOrderId, marketplace, 
     alert("Os documentos da Shopee serao liberados quando a conta estiver conectada ao Shopee Open Platform.");
     return;
   }
-  if (documentType === "declaration") {
-    downloadLocalMarketplaceDocument(externalOrderId, marketplace, documentType, printAfter);
-    return;
-  }
   const printWindow = printAfter ? window.open("", "_blank") : null;
   try {
     const { data } = await state.supabase.auth.getSession();
@@ -1579,6 +1575,7 @@ export async function downloadMarketplaceDocument(externalOrderId, marketplace, 
     url.searchParams.set("action", "document");
     url.searchParams.set("order_id", externalOrderId);
     url.searchParams.set("document_type", documentType);
+    if (state.organizationId) url.searchParams.set("organization_id", state.organizationId);
     const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
 
     // Handle document not available error
@@ -1591,7 +1588,7 @@ export async function downloadMarketplaceDocument(externalOrderId, marketplace, 
       const errorMsg = payload.error || "Erro ao gerar documento.";
       const sale = findMarketplaceSale(externalOrderId, marketplace);
       const saleStatus = String(sale?.raw_payload?.status || sale?.status || "").toLowerCase();
-      if (saleStatus === "delivered" || errorMsg.toLowerCase().includes("delivered") || response.status === 409) {
+      if (documentType === "label" && (saleStatus === "delivered" || errorMsg.toLowerCase().includes("delivered")) && response.status === 409) {
         if (printWindow) printWindow.close();
         downloadLocalMarketplaceDocument(externalOrderId, marketplace, "label-fallback", printAfter);
         await loadAndRenderMarketplaces();
@@ -1616,6 +1613,11 @@ export async function downloadMarketplaceDocument(externalOrderId, marketplace, 
       anchor.remove();
     }
     setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    showAppMessage(
+      documentType === "declaration" ? "Declaração oficial baixada" : "Etiqueta oficial baixada",
+      "Documento obtido diretamente do Mercado Livre.",
+      "success",
+    );
     await loadAndRenderMarketplaces();
   } catch (error) {
     if (printWindow) printWindow.close();
