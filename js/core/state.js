@@ -176,6 +176,7 @@ export const state = {
   marketplaceAccounts: [],
   marketplaceListings: [],
   marketplaceSales: [],
+  marketplaceDocuments: [],
   marketplaceLogs: [],
   marketplaceLogFilter: "all",
   marketplaceLogDateFrom: "",

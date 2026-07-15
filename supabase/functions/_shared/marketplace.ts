@@ -210,6 +210,9 @@ export async function importMlOrderWithRetry(
       const order = await fetchMlOrder(orderId, account);
       order.__organization_id = account.organization_id;
       const result = await upsertMlOrder(order);
+      await ensureMlFiscalAlerts(order, account, result.internalOrderId).catch((error) => {
+        console.warn("Falha ao verificar pendência fiscal do Mercado Livre", error);
+      });
       return { order, result, attempts: attempt };
     } catch (error) {
       lastError = error;
@@ -219,6 +222,69 @@ export async function importMlOrderWithRetry(
     }
   }
   throw lastError instanceof Error ? lastError : new Error(String(lastError || "Falha ao importar venda."));
+}
+
+export async function ensureMlFiscalAlerts(
+  order: Record<string, any>,
+  account: Record<string, any>,
+  internalOrderId: string,
+) {
+  const shippingId = String(order.shipping?.id || "");
+  if (!shippingId) return;
+  const response = await fetch(`https://api.mercadolibre.com/shipments/${encodeURIComponent(shippingId)}`, {
+    headers: {
+      Authorization: `Bearer ${account.access_token}`,
+      "x-format-new": "true",
+    },
+  });
+  if (!response.ok) return;
+  const shipment = await response.json();
+  const substatus = String(shipment.substatus || "").toLowerCase();
+  if (substatus !== "invoice_pending") return;
+
+  const supabase = adminClient();
+  const externalOrderId = String(order.id || "");
+  const createdAt = new Date(order.date_created || Date.now());
+  const deadline = new Date(createdAt.getTime() + 3 * 24 * 60 * 60 * 1000);
+  const daysRemaining = Math.ceil((deadline.getTime() - Date.now()) / (24 * 60 * 60 * 1000));
+  const deadlineText = deadline.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+  const relatedId = `ml-dce:${externalOrderId}:invoice_pending`;
+
+  await supabase.from("marketplace_documents").upsert({
+    organization_id: account.organization_id,
+    marketplace: "Mercado Livre",
+    external_order_id: externalOrderId,
+    internal_order_id: internalOrderId,
+    document_type: "declaration",
+    status: "pending",
+    source: "mercado-livre",
+    last_error: `DC-e pendente. Prazo operacional informado: ${deadlineText}.`,
+    raw_payload: { shipping_id: shippingId, status: shipment.status, substatus, deadline: deadline.toISOString() },
+    updated_at: new Date().toISOString(),
+  }, { onConflict: "organization_id,marketplace,external_order_id,document_type" });
+
+  const { data: existing } = await supabase.from("notifications")
+    .select("id")
+    .eq("organization_id", account.organization_id)
+    .eq("related_entity_id", relatedId)
+    .maybeSingle();
+  if (existing) return;
+  const urgency = daysRemaining < 0
+    ? "O prazo de 3 dias está vencido."
+    : daysRemaining === 0
+      ? "O prazo termina hoje."
+      : `Restam ${daysRemaining} dia${daysRemaining === 1 ? "" : "s"}.`;
+  await supabase.from("notifications").insert({
+    organization_id: account.organization_id,
+    role_target: "admin",
+    type: "fiscal",
+    title: "DC-e pendente no Mercado Livre",
+    message: `Pedido ${externalOrderId}: emita a declaração de conteúdo até ${deadlineText}. ${urgency}`,
+    related_entity: "marketplace_order",
+    related_entity_id: relatedId,
+    priority: daysRemaining <= 1 ? "high" : "normal",
+    metadata: { external_order_id: externalOrderId, internal_order_id: internalOrderId, shipping_id: shippingId, deadline: deadline.toISOString(), substatus },
+  });
 }
 
 export async function nextInternalOrderIds(organizationId: string) {

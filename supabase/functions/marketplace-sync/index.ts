@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
       const documentType = url.searchParams.get("document_type") || "label";
       activeOrderId = orderId;
       if (!orderId) return json({ ok: false, error: "order_id obrigatorio." }, { status: 400 });
-      if (!["label", "declaration"].includes(documentType)) {
+      if (!["label", "declaration", "declaration_xml"].includes(documentType)) {
         return json({ ok: false, error: "document_type invalido." }, { status: 400 });
       }
       return await downloadMlDocument(orderId, documentType, account, actorEmail);
@@ -261,6 +261,31 @@ async function downloadMlDocument(
   if (linkError) throw linkError;
   if (!link) throw new Error(`Venda ${orderId} nao encontrada no sistema.`);
 
+  const { data: cachedDocument } = await supabase
+    .from("marketplace_documents")
+    .select("storage_path,mime_type,file_name")
+    .eq("organization_id", account.organization_id)
+    .eq("marketplace", "Mercado Livre")
+    .eq("external_order_id", orderId)
+    .eq("document_type", documentType)
+    .eq("status", "available")
+    .maybeSingle();
+  if (cachedDocument?.storage_path) {
+    const { data: cachedFile, error: cachedError } = await supabase.storage
+      .from("marketplace-documents")
+      .download(cachedDocument.storage_path);
+    if (!cachedError && cachedFile) {
+      return new Response(await cachedFile.arrayBuffer(), {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": cachedDocument.mime_type || "application/octet-stream",
+          "Content-Disposition": `attachment; filename="${cachedDocument.file_name || `${documentType}-${orderId}`}"`,
+          "X-FlowOps-Document-Source": "private-cache",
+        },
+      });
+    }
+  }
+
   const saveDocumentStatus = async (
     status: string,
     extra: Record<string, any> = {},
@@ -277,8 +302,8 @@ async function downloadMlDocument(
     }, { onConflict: "organization_id,marketplace,external_order_id,document_type" });
   };
 
-  if (documentType === "declaration") {
-    return await downloadMlDce(orderId, account, actorEmail, link, saveDocumentStatus);
+  if (["declaration", "declaration_xml"].includes(documentType)) {
+    return await downloadMlDce(orderId, documentType, account, actorEmail, link, saveDocumentStatus);
   }
 
   let shippingId = String(link.raw_payload?.shipping?.id || link.raw_payload?.shipping_id || "");
@@ -323,10 +348,21 @@ async function downloadMlDocument(
   }
   const bytes = await labelResponse.arrayBuffer();
   const fileName = `etiqueta-mercado-livre-${orderId}.pdf`;
+  const storagePath = `${account.organization_id}/mercado-livre/${orderId}/${fileName}`;
+  const { error: storageError } = await supabase.storage.from("marketplace-documents").upload(
+    storagePath,
+    new Blob([bytes], { type: "application/pdf" }),
+    { contentType: "application/pdf", upsert: true },
+  );
+  if (storageError) throw new Error(`Falha ao arquivar etiqueta: ${storageError.message}`);
   await saveDocumentStatus("available", {
     external_document_id: shippingId,
     mime_type: "application/pdf",
     file_name: fileName,
+    storage_path: storagePath,
+    size_bytes: bytes.byteLength,
+    source: "mercado-livre",
+    downloaded_at: new Date().toISOString(),
     last_error: null,
     raw_payload: { shipping_id: shippingId, status: shipment.status, substatus: shipment.substatus },
   });
@@ -348,6 +384,7 @@ async function downloadMlDocument(
 
 async function downloadMlDce(
   orderId: string,
+  documentType: string,
   account: Record<string, any>,
   actorEmail: string,
   link: Record<string, any>,
@@ -372,7 +409,7 @@ async function downloadMlDce(
   }
   const dceKey = String(document.dce_key);
   const fileResponse = await fetch(
-    `https://api.mercadolibre.com/mlb/order/${encodeURIComponent(orderId)}/dce/info/${encodeURIComponent(dceKey)}?doctype=pdf`,
+    `https://api.mercadolibre.com/mlb/order/${encodeURIComponent(orderId)}/dce/info/${encodeURIComponent(dceKey)}?doctype=${documentType === "declaration_xml" ? "xml" : "pdf"}`,
     { headers: { Authorization: `Bearer ${account.access_token}` } },
   );
   if (!fileResponse.ok) {
@@ -382,11 +419,24 @@ async function downloadMlDce(
     return json({ ok: false, status: "unavailable", error: message }, { status: 409 });
   }
   const bytes = await fileResponse.arrayBuffer();
-  const fileName = `declaracao-mercado-livre-${orderId}.pdf`;
+  const extension = documentType === "declaration_xml" ? "xml" : "pdf";
+  const mimeType = fileResponse.headers.get("Content-Type") || (extension === "xml" ? "application/xml" : "application/pdf");
+  const fileName = `declaracao-mercado-livre-${orderId}.${extension}`;
+  const storagePath = `${account.organization_id}/mercado-livre/${orderId}/${fileName}`;
+  const { error: storageError } = await adminClient().storage.from("marketplace-documents").upload(
+    storagePath,
+    new Blob([bytes], { type: mimeType }),
+    { contentType: mimeType, upsert: true },
+  );
+  if (storageError) throw new Error(`Falha ao arquivar DC-e: ${storageError.message}`);
   await saveDocumentStatus("available", {
     external_document_id: dceKey,
-    mime_type: fileResponse.headers.get("Content-Type") || "application/pdf",
+    mime_type: mimeType,
     file_name: fileName,
+    storage_path: storagePath,
+    size_bytes: bytes.byteLength,
+    source: "mercado-livre",
+    downloaded_at: new Date().toISOString(),
     last_error: null,
     raw_payload: info,
   });
@@ -400,7 +450,7 @@ async function downloadMlDce(
   return new Response(bytes, {
     headers: {
       ...corsHeaders,
-      "Content-Type": fileResponse.headers.get("Content-Type") || "application/pdf",
+      "Content-Type": mimeType,
       "Content-Disposition": `attachment; filename="${fileName}"`,
     },
   });

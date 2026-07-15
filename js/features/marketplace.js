@@ -136,10 +136,56 @@ export function filterListingsForDisplay(listings) {
   });
 }
 
+function marketplaceDocumentForSale(sale, documentType) {
+  return state.marketplaceDocuments.find((item) =>
+    String(item.external_order_id || "") === String(sale.external_order_id || "")
+    && normalizeMarketplaceChannel(item.marketplace) === normalizeMarketplaceChannel(sale.marketplace)
+    && item.document_type === documentType
+  );
+}
+
+function documentStatusPresentation(status) {
+  return {
+    available: ["Disponível", "done"],
+    pending: ["Pendente", "queue"],
+    unavailable: ["Indisponível", "danger"],
+  }[status] || ["Não consultado", "neutral"];
+}
+
+function renderSaleDocumentStatus(sale, documentType, label) {
+  const document = marketplaceDocumentForSale(sale, documentType);
+  const [text, className] = documentStatusPresentation(document?.status);
+  const title = document?.last_error || (document?.downloaded_at ? `Arquivo seguro desde ${formatDateTime(document.downloaded_at)}` : text);
+  return `<span class="sale-document-status" title="${html(title)}"><span>${html(label)}</span><strong class="badge ${className}">${html(text)}</strong></span>`;
+}
+
+function renderSaleFiscalStatus(sale) {
+  const fiscalDocument = (state.fiscalDocuments || []).find((item) => String(item.order_id || "") === String(sale.internal_order_id || ""));
+  return `<span class="sale-document-status"><span>NF-e</span><strong class="badge ${fiscalDocument ? "done" : "neutral"}">${fiscalDocument ? "Arquivado" : "Sem arquivo"}</strong></span>`;
+}
+
+function renderMarketplaceDocumentsCenter(sales, documents) {
+  const available = documents.filter((item) => item.status === "available").length;
+  const pending = documents.filter((item) => item.status === "pending").length;
+  const unavailable = documents.filter((item) => item.status === "unavailable").length;
+  return `
+    <div class="marketplace-documents-heading">
+      <div><span class="section-eyebrow">Documentos oficiais</span><h3>Central fiscal e logística</h3></div>
+      <p>Etiqueta, DC-e e XML são obtidos do marketplace e mantidos em armazenamento privado para reimpressão.</p>
+    </div>
+    <div class="marketplace-document-summary">
+      <span><strong>${sales.length}</strong> pedidos</span>
+      <span class="done"><strong>${available}</strong> disponíveis</span>
+      <span class="queue"><strong>${pending}</strong> pendentes</span>
+      <span class="danger"><strong>${unavailable}</strong> indisponíveis</span>
+    </div>`;
+}
+
 export function renderMarketplaces() {
   const accountsTable = byId("marketplaceAccountsTable");
   const listingsGrid = byId("marketplaceListingsGrid");
   const salesGrid = byId("marketplaceSalesGrid");
+  const documentsCenter = byId("marketplaceDocumentsCenter");
   const logsSummary = byId("marketplaceLogsSummary");
   const apiLogsList = byId("marketplaceApiLogsList");
   const status = byId("marketplaceStatus");
@@ -158,6 +204,7 @@ export function renderMarketplaces() {
   const accounts = state.marketplaceAccounts.filter(matchesMarketplaceChannel);
   const listings = filterListingsForDisplay(state.marketplaceListings.filter(matchesMarketplaceChannel));
   const sales = state.marketplaceSales.filter(matchesMarketplaceChannel);
+  const documents = state.marketplaceDocuments.filter(matchesMarketplaceChannel);
   const logs = state.marketplaceLogs.filter(matchesMarketplaceChannel);
   renderOperationalSummary("marketplaceListingsView", "marketplacePageSummary", [
     ["Anúncios ativos", listings.filter((item) => item.status === "active").length, `${listings.length} sincronizados`, "green"],
@@ -171,6 +218,7 @@ export function renderMarketplaces() {
   renderCommercialIntelligence();
   renderMarketplaceAnalyticsPanel();
   if (channelCards) channelCards.innerHTML = renderMarketplaceChannelCards();
+  if (documentsCenter) documentsCenter.innerHTML = renderMarketplaceDocumentsCenter(sales, documents);
   status.innerHTML = state.marketplaceAccounts.length ?
      `<span class="badge done">Mercado Livre conectado</span><small>${state.marketplaceListings.length} anúncio${state.marketplaceListings.length === 1 ? "" : "s"} importado${state.marketplaceListings.length === 1 ? "" : "s"}</small>`
     : `<span class="badge neutral">Mercado Livre não conectado</span><small>Conecte a conta para importar anúncios e vendas.</small>`;
@@ -269,9 +317,15 @@ export function renderMarketplaces() {
             : `<button class="primary-btn" type="button" data-action="marketplace-create-order" data-id="${html(sale.external_order_id)}" data-marketplace="${html(sale.marketplace || "Mercado Livre")}">Criar encomenda</button>`}
           <span class="automation-badge" title="Novas vendas recebidas pelo webhook criam encomendas automaticamente">Integração automática</span>
         </div>
+        <div class="sale-document-statuses">
+          ${renderSaleDocumentStatus(sale, "label", "Etiqueta")}
+          ${renderSaleDocumentStatus(sale, "declaration", "DC-e")}
+          ${renderSaleFiscalStatus(sale)}
+        </div>
         <div class="sale-document-actions">
           <button class="secondary-btn" type="button" data-action="marketplace-document" data-document="label" data-id="${html(sale.external_order_id)}" data-marketplace="${html(sale.marketplace || "Mercado Livre")}">Baixar etiqueta</button>
           <button class="secondary-btn" type="button" data-action="marketplace-document" data-document="declaration" data-id="${html(sale.external_order_id)}" data-marketplace="${html(sale.marketplace || "Mercado Livre")}">Baixar declaração</button>
+          <button class="secondary-btn" type="button" data-action="marketplace-document" data-document="declaration_xml" data-id="${html(sale.external_order_id)}" data-marketplace="${html(sale.marketplace || "Mercado Livre")}">Baixar XML</button>
           <button class="secondary-btn" type="button" data-action="marketplace-print" data-id="${html(sale.external_order_id)}" data-marketplace="${html(sale.marketplace || "Mercado Livre")}">Imprimir</button>
         </div>
       </article>
@@ -437,24 +491,31 @@ export async function loadMarketplaces() {
     state.marketplaceAccounts = [];
     state.marketplaceListings = [];
     state.marketplaceSales = [];
+    state.marketplaceDocuments = [];
     state.marketplaceLogs = [];
     return;
   }
-  const [accounts, listings, sales, logs] = await Promise.all([
+  const [accounts, listings, sales, documents, fiscalDocuments, logs] = await Promise.all([
     state.supabase.from("marketplace_accounts").select("marketplace,seller_name,external_seller_id,token_expires_at,updated_at,raw_payload").eq("organization_id", state.organizationId).order("updated_at", { ascending: false }),
     state.supabase.from("marketplace_listings").select("marketplace,external_id,title,sku,price,status,permalink,thumbnail_url,raw_payload,updated_at").eq("organization_id", state.organizationId).order("updated_at", { ascending: false }).limit(100),
     state.supabase.from("marketplace_order_links").select("marketplace,external_order_id,internal_order_id,raw_payload,created_at,updated_at").eq("organization_id", state.organizationId).order("created_at", { ascending: false }).limit(100),
+    state.supabase.from("marketplace_documents").select("marketplace,external_order_id,internal_order_id,document_type,status,file_name,mime_type,storage_path,last_error,downloaded_at,updated_at").eq("organization_id", state.organizationId).order("updated_at", { ascending: false }).limit(300),
+    state.supabase.from("fiscal_documents").select("id,order_id,type,status,file_name,storage_path,updated_at").eq("organization_id", state.organizationId).order("updated_at", { ascending: false }).limit(300),
     state.supabase.from("marketplace_sync_log").select("id,organization_id,marketplace,kind,status,message,external_item_id,external_order_id,internal_order_id,actor_email,raw_payload,created_at").eq("organization_id", state.organizationId).order("created_at", { ascending: false }).limit(200)
   ]);
   const loadErrors = [
     ["marketplace_accounts", accounts.error],
     ["marketplace_listings", listings.error],
     ["marketplace_order_links", sales.error],
+    ["marketplace_documents", documents.error],
+    ["fiscal_documents", fiscalDocuments.error],
     ["marketplace_sync_log", logs.error]
   ].filter(([, error]) => error);
   state.marketplaceAccounts = accounts.error ? [] : accounts.data || [];
   state.marketplaceListings = listings.error ? [] : listings.data || [];
   state.marketplaceSales = sales.error ? [] : sales.data || [];
+  state.marketplaceDocuments = documents.error ? [] : documents.data || [];
+  state.fiscalDocuments = fiscalDocuments.error ? (state.fiscalDocuments || []) : fiscalDocuments.data || [];
   state.marketplaceLogs = [
     ...(logs.error ? [] : logs.data || []),
     ...loadErrors.map(([table, error]) => ({
@@ -1604,7 +1665,7 @@ export async function downloadMarketplaceDocument(externalOrderId, marketplace, 
     } else {
       const disposition = response.headers.get("Content-Disposition") || "";
       const fileName = disposition.match(/filename="?([^"]+)"?/i)?.[1] ||
-        `${documentType}-${externalOrderId}.pdf`;
+        `${documentType}-${externalOrderId}.${documentType === "declaration_xml" ? "xml" : "pdf"}`;
       const anchor = document.createElement("a");
       anchor.href = blobUrl;
       anchor.download = fileName;
@@ -1614,8 +1675,10 @@ export async function downloadMarketplaceDocument(externalOrderId, marketplace, 
     }
     setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
     showAppMessage(
-      documentType === "declaration" ? "Declaração oficial baixada" : "Etiqueta oficial baixada",
-      "Documento obtido diretamente do Mercado Livre.",
+      documentType === "label" ? "Etiqueta oficial baixada" : documentType === "declaration_xml" ? "XML oficial baixado" : "Declaração oficial baixada",
+      response.headers.get("X-FlowOps-Document-Source") === "private-cache"
+        ? "Documento recuperado do arquivo privado do FlowOps."
+        : "Documento obtido diretamente do Mercado Livre e arquivado com segurança.",
       "success",
     );
     await loadAndRenderMarketplaces();
