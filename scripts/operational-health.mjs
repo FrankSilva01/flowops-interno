@@ -35,4 +35,6 @@ if (expiring.length) throw new Error(`${expiring.length} integracao(oes) expiram
 const since = encodeURIComponent(new Date(Date.now() - 60 * 60_000).toISOString());
 const recentErrors = await rest(`marketplace_sync_log?select=marketplace,event,message,created_at&status=eq.error&created_at=gte.${since}&limit=20`);
 if (recentErrors.length >= 5) throw new Error(`${recentErrors.length} erros de integracao na ultima hora.`);
-console.log(`Saude operacional valida. Backup ha ${Math.round(ageHours)}h; ${activeAccounts.length} integracao(oes) ativa(s); ${recentErrors.length} erro(s) na ultima hora.`);
+const deadLetters = await rest("integration_jobs?select=id,marketplace,job_type,last_error,created_at&status=eq.dead_letter&limit=20");
+if (deadLetters.length) throw new Error(`${deadLetters.length} job(s) aguardam intervencao na fila de falhas.`);
+console.log(`Saude operacional valida. Backup ha ${Math.round(ageHours)}h; ${activeAccounts.length} integracao(oes) ativa(s); ${recentErrors.length} erro(s); fila sem dead letters.`);

@@ -1,4 +1,4 @@
-const CACHE_NAME = "flowops-v42";
+const CACHE_NAME = "flowops-v44";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -23,6 +23,7 @@ const STATIC_ASSETS = [
   "/css/15-linear-shopify-density.css",
   "/css/16-order-shopee-workflows.css",
   "/css/17-history-reports-refinement.css",
+  "/css/18-governance-resilience.css",
   "/assets/tabler-icons/tabler-icons.min.css",
   "/theme-init.js",
   "/supabase-config.js",

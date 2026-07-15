@@ -12,6 +12,17 @@ Use esta matriz como referencia para liberar usuarios em `organization_members.r
 | Responsavel | Sim | Sim | Nao | Nao | Nao |
 | Leitura | Sim | Nao | Nao | Nao | Nao |
 
+## Capacidades adicionais
+
+O campo `organization_members.permissions` permite excecoes controladas sem criar novos cargos:
+
+- `export_data`: exportar dados e relatorios.
+- `delete_records`: executar exclusoes autorizadas.
+- `manage_finance`: alterar configuracoes e registros financeiros.
+- `manage_marketplaces`: administrar contas e sincronizacoes.
+
+Administrador sempre possui todas as capacidades. Quando uma capacidade nao foi configurada, o frontend aplica o padrao conservador do perfil. As operacoes criticas no backend continuam exigindo validacao de membership/RLS.
+
 ## Regras de banco
 
 - `user_in_organization(organization_id)` permite leitura para membro ativo da empresa.

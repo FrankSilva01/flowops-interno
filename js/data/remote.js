@@ -19,7 +19,7 @@ export async function removeRemote(kind, id) {
 }
 
 export async function loadRemoteData() {
-  const [orders, cashEntries, materials, inventoryItems, leads, auditEvents, notifications, storefrontEvents, customTags, leadFiles, backupRuns, marketplaceReviews, subscription, organizationInfo, subscriptionPlans, subscriptionPayments, supportTickets, announcements, changelog, orderLogistics, logisticsEvents, products, productListings, financialSettings, commercialSuggestions] = await Promise.all([
+  const [orders, cashEntries, materials, inventoryItems, leads, auditEvents, notifications, storefrontEvents, customTags, leadFiles, backupRuns, marketplaceReviews, subscription, organizationInfo, subscriptionPlans, subscriptionPayments, supportTickets, announcements, changelog, orderLogistics, logisticsEvents, products, productListings, financialSettings, commercialSuggestions, privacyConsents, dataRequests, integrationJobs] = await Promise.all([
     state.supabase.from("orders").select("*").eq("organization_id", state.organizationId).order("id"),
     state.supabase.from("cash_entries").select("*").eq("organization_id", state.organizationId).order("date"),
     state.supabase.from("materials").select("*").eq("organization_id", state.organizationId).order("date"),
@@ -44,7 +44,10 @@ export async function loadRemoteData() {
     state.supabase.from("products").select("*").eq("organization_id", state.organizationId),
     state.supabase.from("product_listings").select("*").eq("organization_id", state.organizationId),
     state.supabase.from("financial_settings").select("*").eq("organization_id", state.organizationId).maybeSingle(),
-    state.supabase.from("commercial_suggestions").select("*").eq("organization_id", state.organizationId).order("created_at", { ascending: false }).limit(200)
+    state.supabase.from("commercial_suggestions").select("*").eq("organization_id", state.organizationId).order("created_at", { ascending: false }).limit(200),
+    state.supabase.from("privacy_consents").select("*").eq("organization_id", state.organizationId).eq("user_email", state.activeUserEmail).order("accepted_at", { ascending: false }).limit(20),
+    state.supabase.from("organization_data_requests").select("*").eq("organization_id", state.organizationId).order("created_at", { ascending: false }).limit(30),
+    state.supabase.from("integration_jobs").select("id,marketplace,job_type,status,attempts,max_attempts,last_error,correlation_id,created_at").eq("organization_id", state.organizationId).order("created_at", { ascending: false }).limit(50)
   ]);
 
   if (orders.error) throw orders.error;
@@ -82,6 +85,9 @@ export async function loadRemoteData() {
   state.productListings = productListings.error ? [] : productListings.data || [];
   state.financialSettings = financialSettings.error ? null : financialSettings.data || null;
   state.commercialSuggestions = commercialSuggestions.error ? [] : commercialSuggestions.data || [];
+  state.privacyConsents = privacyConsents.error ? [] : privacyConsents.data || [];
+  state.dataRequests = dataRequests.error ? [] : dataRequests.data || [];
+  state.integrationJobs = integrationJobs.error ? [] : integrationJobs.data || [];
 }
 
 // order-images e um bucket privado; o que fica salvo no pedido e so o caminho

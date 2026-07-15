@@ -4,7 +4,7 @@ import {
 } from "../core/state.js";
 import { byId, html, safeUrl, formatDate, formatDateTime, formatRelativeTime, flashActionMessage, nextId, number, renderOperationalSummary, filterRows } from "../core/dom.js";
 import { bindActions, render } from "../core/router.js";
-import { ensureCanAdmin, ensureCanEdit } from "../core/permissions.js";
+import { ensureCapability, ensureCanEdit } from "../core/permissions.js";
 import { persist, removeRemote, loadRemoteData } from "../data/remote.js";
 import { recordAudit } from "./logs.js";
 import { getResponsibleNames } from "./users.js";
@@ -248,7 +248,7 @@ function renderOrdersBulkToolbar(rows) {
 }
 
 export async function deleteSelectedOrders() {
-  if (!ensureCanAdmin()) return;
+  if (!ensureCapability("delete_records", "excluir registros")) return;
   const selected = state.data.orders.filter((item) => state.selectedOrderIds.includes(item.id));
   if (!selected.length || !confirm(`Excluir ${selected.length} encomenda(s) selecionada(s)? Esta ação também remove os vínculos de marketplace associados.`)) return;
   for (const item of selected) {

@@ -1,4 +1,4 @@
-import { adminClient, corsHeaders, ensureMlFiscalAlerts, getMlAccountByUserId, json, logSync } from "../_shared/marketplace.ts";
+import { adminClient, corsHeaders, ensureMlFiscalAlerts, getMlAccountByUserId, importMlOrderWithRetry, json, logSync } from "../_shared/marketplace.ts";
 import { dispatchPendingEmails } from "../_shared/email.ts";
 import { mercadoPagoRequest } from "../_shared/mercado-pago.ts";
 import { reconcileMercadoPagoSubscription } from "../_shared/subscription-billing.ts";
@@ -19,6 +19,9 @@ const BACKUP_TABLES = [
   "marketplace_document_versions",
   "marketplace_sync_log",
   "marketplace_reviews",
+  "integration_jobs",
+  "privacy_consents",
+  "organization_data_requests",
   "storefront_events",
   "audit_events",
   "notifications",
@@ -74,18 +77,60 @@ Deno.serve(async (req) => {
     const token = await maintainMlToken();
     const subscriptions = await maintainSubscriptions();
     const emails = await dispatchPendingEmails(adminClient());
+    const integrationJobs = await processIntegrationJobs();
     const logs = await cleanupOperationalLogs();
+    const governance = await cleanupGovernanceRecords();
     const marketplaceDocuments = await reconcileMarketplaceDocuments();
     const backup = await createBackup(actor, action === "manual");
-    return json({ ok: true, token, subscriptions, emails, logs, marketplace_documents: marketplaceDocuments, backup });
+    return json({ ok: true, token, subscriptions, emails, integration_jobs: integrationJobs, logs, governance, marketplace_documents: marketplaceDocuments, backup });
   } catch (error) {
     await createSystemNotification("Backup falhou", error.message || String(error), "high").catch(() => {});
     return json({ ok: false, error: error.message || String(error) }, { status: 500 });
   }
 });
 
+async function processIntegrationJobs() {
+  const supabase = adminClient();
+  const { data: jobs, error } = await supabase.from("integration_jobs")
+    .select("*").in("status", ["pending", "retry"]).lte("next_attempt_at", new Date().toISOString())
+    .order("next_attempt_at").limit(25);
+  if (error) throw error;
+  let completed = 0;
+  let retry = 0;
+  let deadLetter = 0;
+  for (const job of jobs || []) {
+    const attempt = Number(job.attempts || 0) + 1;
+    await supabase.from("integration_jobs").update({ status: "processing", attempts: attempt, locked_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("id", job.id);
+    try {
+      if (job.marketplace !== "Mercado Livre" || job.job_type !== "order_webhook") throw new Error("Tipo de job sem processador configurado.");
+      const orderId = String(job.payload?.resource || "").split("/").filter(Boolean).pop();
+      if (!orderId) throw new Error("Pedido ausente no payload do job.");
+      const account = await getMlAccountByUserId(undefined, job.organization_id);
+      await importMlOrderWithRetry(orderId, account);
+      await supabase.from("integration_jobs").update({ status: "completed", completed_at: new Date().toISOString(), last_error: null, updated_at: new Date().toISOString() }).eq("id", job.id);
+      completed += 1;
+    } catch (jobError) {
+      const terminal = attempt >= Number(job.max_attempts || 5);
+      await supabase.from("integration_jobs").update({
+        status: terminal ? "dead_letter" : "retry",
+        last_error: String(jobError.message || jobError).slice(0, 1000),
+        next_attempt_at: new Date(Date.now() + Math.min(3600, 30 * (2 ** attempt)) * 1000).toISOString(),
+        updated_at: new Date().toISOString(),
+      }).eq("id", job.id);
+      if (terminal) deadLetter += 1; else retry += 1;
+    }
+  }
+  return { processed: (jobs || []).length, completed, retry, dead_letter: deadLetter };
+}
+
 async function cleanupOperationalLogs() {
   const { data, error } = await adminClient().rpc("cleanup_sensitive_logs");
+  if (error) throw error;
+  return data || {};
+}
+
+async function cleanupGovernanceRecords() {
+  const { data, error } = await adminClient().rpc("cleanup_governance_records");
   if (error) throw error;
   return data || {};
 }

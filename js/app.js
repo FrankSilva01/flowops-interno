@@ -154,12 +154,14 @@ import { pushNotificationManager, pushNotificationsCSS } from "./features/push-n
 import { accountingIntegration, accountingIntegrationCSS } from "./features/accounting-integration.js";
 import { initGlobalSearch } from "./core/search.js";
 import { initOnboarding } from "./features/pwa-onboarding.js";
+import { bindGovernance } from "./features/governance.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
   const marketplaceStatus = getMarketplaceStatusFromHash();
   applyTheme(state.theme);
   applySidebarPreference();
   bindEvents();
+  bindGovernance();
   initDashboardDrag();
   initGlobalSearch();
   setView(state.view, true);

@@ -7,14 +7,24 @@ export async function submitSupportTicket(event) {
   if (!state.supabase || !state.organizationId) return;
   const form = event.currentTarget;
   const values = Object.fromEntries(new FormData(form).entries());
-  const { error } = await state.supabase.from("saas_support_tickets").insert({
+  const correlationId = crypto.randomUUID();
+  const { data: ticket, error } = await state.supabase.from("saas_support_tickets").insert({
     organization_id: state.organizationId,
     created_by: state.activeUserEmail,
     category: values.category,
     subject: String(values.subject || "").trim(),
     message: String(values.message || "").trim(),
     priority: values.priority || "Normal",
-  });
+    diagnostic_payload: {
+      correlation_id: correlationId,
+      app_version: "252",
+      view: state.view,
+      online: state.online,
+      marketplace_accounts: state.marketplaceAccounts.map((item) => ({ marketplace: item.marketplace, status: item.status })),
+      recent_integration_errors: state.marketplaceLogs.filter((item) => item.status === "error").slice(0, 5).map((item) => ({ event: item.event, created_at: item.created_at })),
+      user_agent: navigator.userAgent.slice(0, 240),
+    },
+  }).select("reference_code").single();
   if (error) {
     alert(`Não foi possível enviar o chamado: ${error.message}`);
     return;
@@ -22,7 +32,7 @@ export async function submitSupportTicket(event) {
   form.reset();
   await loadRemoteData();
   renderSupportPortal();
-  flashActionMessage("Chamado enviado para o suporte.");
+  flashActionMessage(`Chamado ${ticket?.reference_code || correlationId.slice(0, 8)} enviado para o suporte.`);
 }
 
 export function renderSupportPortal() {

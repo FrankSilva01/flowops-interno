@@ -216,14 +216,16 @@ async function requireAdmin(req: Request) {
   const requestedOrganization = new URL(req.url).searchParams.get("organization_id");
   let memberQuery = supabase
     .from("organization_members")
-    .select("organization_id,role,status")
+    .select("organization_id,role,status,permissions")
     .eq("user_email", email)
     .eq("status", "active")
     .limit(1);
   if (requestedOrganization) memberQuery = memberQuery.eq("organization_id", requestedOrganization);
   const { data: members } = await memberQuery;
   const membership = members?.[0];
-  if (!membership || !["administrador", "admin", "owner"].includes(String(membership.role || "").toLowerCase())) {
+  const isAdmin = ["administrador", "admin", "owner"].includes(String(membership?.role || "").toLowerCase());
+  const canManage = membership?.permissions?.manage_marketplaces === true;
+  if (!membership || (!isAdmin && !canManage)) {
     throw new Error("Apenas administrador pode gerenciar marketplaces.");
   }
   return { email, organizationId: membership.organization_id };

@@ -13,16 +13,16 @@ const ONBOARDING_STEP_KEY = "flowops-onboarding-step";
 export async function initOnboarding() {
   // Nao abre onboarding por cima da tela de login; ele bloqueia os cliques do
   // formulario quando ainda nao existe sessao autenticada.
-  if (byId("onlineLogin") || byId("appView")?.hidden || state.activeUserEmail) return;
+  if (byId("onlineLogin") || byId("appView")?.hidden || !state.activeUserEmail) return;
 
   // Verificar se já completou onboarding
-  const isComplete = localStorage.getItem(ONBOARDING_COMPLETE_KEY) === "true";
+  const isComplete = state.organizationSettings?.onboarding_completed === true || localStorage.getItem(ONBOARDING_COMPLETE_KEY) === "true";
   if (isComplete) return;
 
   if (document.querySelector(".onboarding-overlay, .onboarding-wizard")) return;
 
   // Mostrar wizard no primeiro login
-  const currentStep = parseInt(localStorage.getItem(ONBOARDING_STEP_KEY) || "1");
+  const currentStep = Number(state.organizationSettings?.onboarding_step || localStorage.getItem(ONBOARDING_STEP_KEY) || 1);
   showOnboardingWizard(currentStep);
 }
 
@@ -165,7 +165,8 @@ function showOnboardingWizard(startStep = 1) {
     wizard.remove();
   });
 
-  byId("nextStep").addEventListener("click", () => {
+  byId("nextStep").addEventListener("click", async () => {
+    if (!(await saveOnboardingStepData(startStep))) return;
     if (startStep === steps.length) {
       completeOnboarding();
       overlay.remove();
@@ -174,6 +175,7 @@ function showOnboardingWizard(startStep = 1) {
       overlay.remove();
       wizard.remove();
       localStorage.setItem(ONBOARDING_STEP_KEY, String(startStep + 1));
+      await persistOnboarding(startStep + 1, false);
       showOnboardingWizard(startStep + 1);
     }
   });
@@ -311,6 +313,7 @@ function renderOnboardingStep(step) {
               box-sizing: border-box;
             " />
           </div>
+          <label class="checkbox-row"><input type="checkbox" name="demo_order" /> Criar como pedido de demonstração claramente identificado</label>
         </form>
       `;
 
@@ -338,8 +341,48 @@ function renderOnboardingStep(step) {
   }
 }
 
+async function persistOnboarding(step, completed) {
+  if (!state.supabase || !state.online) return;
+  const { data } = await state.supabase.rpc("save_onboarding_progress", { candidate_step: step, candidate_completed: completed });
+  if (data) state.organizationSettings = data;
+}
+
+async function saveOnboardingStepData(step) {
+  const form = byId("onboarding-form");
+  if (!form || !state.supabase || !state.online) return true;
+  if (!form.reportValidity()) return false;
+  const values = Object.fromEntries(new FormData(form).entries());
+  try {
+    if (step === 2) {
+      const { data, error } = await state.supabase.rpc("save_onboarding_company", {
+        candidate_name: String(values.company_name || ""), candidate_cnpj: String(values.cnpj || ""), candidate_email: String(values.email || ""),
+      });
+      if (error) throw error;
+      state.organizationSettings = data || state.organizationSettings;
+    }
+    if (step === 3) {
+      const demo = values.demo_order === "on";
+      const { error } = await state.supabase.from("orders").insert({
+        id: `ONB-${Date.now()}`,
+        organization_id: state.organizationId,
+        client: String(values.client || "Cliente não informado"),
+        description: `${demo ? "[DEMO] " : ""}${String(values.description || "")}`,
+        status: "A preparar",
+        charged: Number(values.charged || 0), received: 0, quantity: 1,
+        notes: demo ? "Pedido demonstrativo criado no onboarding. Pode ser excluído a qualquer momento." : "Criado no onboarding.",
+      });
+      if (error) throw error;
+    }
+    return true;
+  } catch (error) {
+    showAppMessage("Onboarding", error.message || String(error), "error");
+    return false;
+  }
+}
+
 function completeOnboarding() {
   localStorage.setItem(ONBOARDING_COMPLETE_KEY, "true");
+  persistOnboarding(4, true).catch(() => {});
   flashActionMessage("✅ Onboarding concluído! Boas-vindas ao FlowOps!");
 }
 

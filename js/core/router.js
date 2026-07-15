@@ -1,6 +1,6 @@
 import { state, normalizeOrderStatus, saveData } from "./state.js";
 import { byId, flashActionMessage, showAppMessage, closeAppMessage } from "./dom.js";
-import { ensureCanEdit, ensureCanAdmin, updateEditAccess } from "./permissions.js";
+import { ensureCanEdit, ensureCanAdmin, ensureCapability, hasCapability, updateEditAccess } from "./permissions.js";
 import { logout, saveRecoveredPassword } from "./session.js";
 import { persist, removeRemote } from "../data/remote.js";
 import {
@@ -30,7 +30,7 @@ import {
   renderApprovals, renderActiveUsers, renderResponsibleOptions, loadAndRenderApprovals,
   loadAndRenderUsers, loadAndRenderResponsibles, createManualUserAccess, saveResponsible,
   approveAccess, rejectAccess, changeUserRole, removeUser, editResponsible, deleteResponsible,
-  renderResponsibles,
+  renderResponsibles, openMemberPermissions, saveMemberPermissions,
 } from "../features/users.js";
 import {
   renderNotifications, renderTrialBanner, clearVisibleNotifications, markAllNotificationsRead,
@@ -41,6 +41,7 @@ import {
   closePaymentMethodDialog,
 } from "../features/subscription.js";
 import { submitSupportTicket, renderSupportPortal, renderWhatsNew } from "../features/support.js";
+import { renderGovernance } from "../features/governance.js";
 import { renderFiscalDocs, renderDAS, renderPurchaseInvoices, renderSalesInvoices, renderFiscalTab } from "../features/fiscal.js";
 import { initGlobalSearch } from "./search.js";
 import { bindCalendarEvents, attachCalendarEventListeners, updateCalendarStats } from "../features/calendar-navigation.js";
@@ -81,7 +82,7 @@ import {
   showCalculatorSuggestion, getSuggestionForListing, syncFeeCalculatorFull,
 } from "../features/marketplace-analytics.js";
 
-const APP_VERSION = "246";
+const APP_VERSION = "252";
 
 async function refreshAppShell() {
   showAppMessage("Atualizando sistema", "Limpando cache local e carregando a versão mais recente.", "info");
@@ -417,6 +418,7 @@ export function bindEvents() {
     renderLeads();
   });
   byId("supportTicketForm").addEventListener("submit", submitSupportTicket);
+  byId("memberPermissionsForm").addEventListener("submit", saveMemberPermissions);
   byId("newLeadBtn").addEventListener("click", () => openLeadDialog());
   byId("leadForm").addEventListener("submit", saveLead);
   byId("orderForm").addEventListener("submit", saveOrder);
@@ -557,7 +559,7 @@ export function bindEvents() {
 }
 
 export function setView(view, replace = false) {
-  const allowed = ["dashboard", "orders", "production", "logistics", "cash", "materials", "reports", "leads", "subscription", "calendar", "notifications", "support", "whatsnew", "logs", "fiscal", ...(state.isAdmin ? ["marketplace", "approvals"] : [])];
+  const allowed = ["dashboard", "orders", "production", "logistics", "cash", "materials", "reports", "leads", "subscription", "calendar", "notifications", "support", "whatsnew", "logs", "fiscal", ...(hasCapability("manage_marketplaces") ? ["marketplace"] : []), ...(state.isAdmin ? ["approvals"] : [])];
   if (!allowed.includes(view)) view = "dashboard";
   state.view = view;
   localStorage.setItem("3daft-active-view", view);
@@ -642,6 +644,7 @@ export function render() {
       break;
     case "subscription":
       renderSubscriptionPortal();
+      renderGovernance();
       break;
     case "support":
       renderSupportPortal();
@@ -662,6 +665,7 @@ export function bindActions() {
     const handler = async () => {
       const { action, id } = button.dataset;
       if (action === "marketplace-export-csv") {
+        if (!ensureCapability("export_data", "exportar dados")) return;
         exportMarketplaceListings();
         return;
       }
@@ -760,7 +764,7 @@ export function bindActions() {
         return;
       }
       if (action === "open-financial-settings") {
-        if (!ensureCanEdit()) return;
+        if (!ensureCapability("manage_finance", "alterar configurações financeiras")) return;
         openFinancialSettingsDialog();
         return;
       }
@@ -779,7 +783,7 @@ export function bindActions() {
         return;
       }
       if (action === "sync-analytics-full") {
-        if (!ensureCanAdmin()) return;
+        if (!ensureCapability("manage_marketplaces", "gerenciar marketplaces")) return;
         // Clique manual e uma acao deliberada - ignora o cache (1h/6h) que
         // existe pra evitar sync automatico repetido, nao pra travar um
         // pedido explicito do usuario.
@@ -787,7 +791,7 @@ export function bindActions() {
         return;
       }
       if (action === "sync-fee-calculator") {
-        if (!ensureCanAdmin()) return;
+        if (!ensureCapability("manage_marketplaces", "gerenciar marketplaces")) return;
         await syncFeeCalculatorFull(true);
         return;
       }
@@ -873,12 +877,12 @@ export function bindActions() {
         return;
       }
       if (action === "marketplace-edit") {
-        if (!ensureCanAdmin()) return;
+        if (!ensureCapability("manage_marketplaces", "gerenciar marketplaces")) return;
         await openMarketplaceEdit(id, button.dataset.marketplace);
         return;
       }
       if (action === "marketplace-migrate") {
-        if (!ensureCanAdmin()) return;
+        if (!ensureCapability("manage_marketplaces", "gerenciar marketplaces")) return;
         openMarketplaceMigration(id, button.dataset.marketplace);
         return;
       }
@@ -891,17 +895,17 @@ export function bindActions() {
         return;
       }
       if (action === "marketplace-migrate-bulk") {
-        if (!ensureCanAdmin()) return;
+        if (!ensureCapability("manage_marketplaces", "gerenciar marketplaces")) return;
         openBulkMarketplaceMigration();
         return;
       }
       if (action === "marketplace-import-file") {
-        if (!ensureCanAdmin()) return;
+        if (!ensureCapability("manage_marketplaces", "gerenciar marketplaces")) return;
         openMarketplaceFileImport();
         return;
       }
       if (action === "marketplace-export-shopee") {
-        if (!ensureCanAdmin()) return;
+        if (!ensureCapability("manage_marketplaces", "gerenciar marketplaces")) return;
         openShopeeTemplateExport();
         return;
       }
@@ -922,7 +926,7 @@ export function bindActions() {
         return;
       }
       if (action === "marketplace-create-order") {
-        if (!ensureCanAdmin()) return;
+        if (!ensureCapability("manage_marketplaces", "gerenciar marketplaces")) return;
         await createMarketplaceOrder(id, button.dataset.marketplace);
         return;
       }
@@ -931,12 +935,12 @@ export function bindActions() {
         return;
       }
       if (action === "marketplace-reconnect-ml") {
-        if (!ensureCanAdmin()) return;
+        if (!ensureCapability("manage_marketplaces", "gerenciar marketplaces")) return;
         await connectMercadoLivre();
         return;
       }
       if (action === "marketplace-disconnect-ml") {
-        if (!ensureCanAdmin()) return;
+        if (!ensureCapability("manage_marketplaces", "gerenciar marketplaces")) return;
         await disconnectMercadoLivre();
         return;
       }
@@ -1000,6 +1004,10 @@ export function bindActions() {
       if (action === "change-user-role") {
         if (!ensureCanAdmin()) return;
         await changeUserRole(button.dataset.email, button.value);
+        return;
+      }
+      if (action === "member-permissions") {
+        openMemberPermissions(button.dataset.email);
         return;
       }
       if (action === "remove-user") {
@@ -1080,19 +1088,19 @@ export function bindActions() {
         await syncOrderPaymentCash(item, previousOrder);
       }
       if (action === "delete-order") {
-        if (!ensureCanAdmin() || !confirm("Excluir esta encomenda?")) return;
+        if (!ensureCapability("delete_records", "excluir registros") || !confirm("Excluir esta encomenda?")) return;
         const deleted = state.data.orders.find((item) => item.id === id);
         await recordAudit("delete", "order", id, deleted?.orderCode, deleted, null, "manual");
         await removeRemote("orders", id);
         state.data.orders = state.data.orders.filter((item) => item.id !== id);
       }
       if (action === "delete-cash") {
-        if (!ensureCanAdmin() || !confirm("Excluir este lançamento do fluxo de caixa?")) return;
+        if (!ensureCapability("delete_records", "excluir registros") || !confirm("Excluir este lançamento do fluxo de caixa?")) return;
         state.data.cash = state.data.cash.filter((item) => item.id !== id);
         await removeRemote("cash", id);
       }
       if (action === "delete-material") {
-        if (!ensureCanAdmin() || !confirm("Excluir este material e a saída vinculada no caixa?")) return;
+        if (!ensureCapability("delete_records", "excluir registros") || !confirm("Excluir este material e a saída vinculada no caixa?")) return;
         state.data.materials = state.data.materials.filter((item) => item.id !== id);
         const cashId = materialCashId(id);
         state.data.cash = state.data.cash.filter((item) => item.id !== cashId);
@@ -1105,7 +1113,7 @@ export function bindActions() {
         return;
       }
       if (action === "delete-inventory") {
-        if (!ensureCanAdmin() || !confirm("Excluir este item do estoque?")) return;
+        if (!ensureCapability("delete_records", "excluir registros") || !confirm("Excluir este item do estoque?")) return;
         const { error } = await state.supabase.from("inventory_items").delete().eq("id", id);
         if (error) {
           showAppMessage("Não foi possível excluir", error.message, "error");

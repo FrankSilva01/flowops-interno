@@ -1,0 +1,13 @@
+.governance-panel { display: grid; gap: 14px; }
+.governance-actions { flex-wrap: wrap; }
+.governance-request-list { display: grid; gap: 8px; }
+.governance-request-list .list-row { min-height: 64px; }
+.governance-retention-form { align-items: end; }
+.governance-retention-form label { display: grid; gap: 6px; color: var(--muted); font-size: 12px; }
+@media (max-width: 720px) {
+  .governance-actions { display: grid; grid-template-columns: 1fr; }
+  .governance-actions button { width: 100%; min-height: 44px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .governance-panel *, .onboarding-wizard * { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+}

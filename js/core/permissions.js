@@ -49,6 +49,24 @@ export function ensureCanAdmin() {
   return false;
 }
 
+export function hasCapability(capability) {
+  if (state.isAdmin) return true;
+  if (Object.prototype.hasOwnProperty.call(state.activePermissions || {}, capability)) return state.activePermissions[capability] === true;
+  const defaults = {
+    export_data: isSupervisorRole(state.activeUserRoleName),
+    delete_records: false,
+    manage_finance: isSupervisorRole(state.activeUserRoleName),
+    manage_marketplaces: isSupervisorRole(state.activeUserRoleName),
+  };
+  return defaults[capability] ?? state.canEdit;
+}
+
+export function ensureCapability(capability, label = "esta ação") {
+  if (hasCapability(capability)) return true;
+  alert(`Seu perfil não possui permissão para ${label}.`);
+  return false;
+}
+
 export function updateEditAccess() {
   ["orderForm", "cashForm", "materialForm", "inventoryForm", "leadForm"].forEach((formId) => {
     const form = byId(formId);

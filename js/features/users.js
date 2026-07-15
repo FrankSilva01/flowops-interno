@@ -32,6 +32,8 @@ export function renderApprovals() {
   bindActions();
 }
 
+let permissionsTargetEmail = "";
+
 export function renderActiveUsers() {
   const table = byId("activeUsersTable");
   if (!table) return;
@@ -70,6 +72,7 @@ export function renderActiveUsers() {
       </td>
       <td>${formatDateTime(user.approved_at)}</td>
       <td>
+        <button class="icon-btn" type="button" data-action="member-permissions" data-email="${html(user.email)}">Permissões</button>
         <button class="icon-btn danger" type="button" data-action="remove-user" data-email="${html(user.email)}" ${user.email === state.activeUserEmail ? "disabled" : ""}>Remover</button>
       </td>
     </tr>
@@ -132,7 +135,7 @@ export async function loadActiveUsers() {
       .order("approved_at", { ascending: false }),
     state.supabase
       .from("organization_members")
-      .select("user_email,role,updated_at,status")
+      .select("user_email,role,permissions,updated_at,status")
       .eq("organization_id", state.organizationId)
       .eq("status", "active"),
   ]);
@@ -143,7 +146,7 @@ export async function loadActiveUsers() {
   (members.data || []).forEach((row) => {
     const email = String(row.user_email || "").toLowerCase();
     if (!email || byEmail.has(email)) return;
-    byEmail.set(email, { email, role: row.role || "Leitura", approved_at: row.updated_at });
+    byEmail.set(email, { email, role: row.role || "Leitura", permissions: row.permissions || {}, approved_at: row.updated_at });
   });
   state.activeUsers = [...byEmail.values()];
 }
@@ -232,6 +235,30 @@ export async function changeUserRole(email, role) {
     .eq("organization_id", state.organizationId)
     .eq("user_email", email);
   await loadAndRenderUsers();
+}
+
+export function openMemberPermissions(email) {
+  if (!ensureCanAdmin()) return;
+  permissionsTargetEmail = email;
+  const user = state.activeUsers.find((item) => String(item.email).toLowerCase() === String(email).toLowerCase());
+  const form = byId("memberPermissionsForm");
+  byId("memberPermissionsEmail").textContent = email;
+  ["export_data", "delete_records", "manage_finance", "manage_marketplaces"].forEach((key) => {
+    form.elements[key].checked = user?.permissions?.[key] === true;
+  });
+  byId("memberPermissionsDialog").showModal();
+}
+
+export async function saveMemberPermissions(event) {
+  event.preventDefault();
+  if (!ensureCanAdmin() || !permissionsTargetEmail) return;
+  const form = event.currentTarget;
+  const candidatePermissions = Object.fromEntries(["export_data", "delete_records", "manage_finance", "manage_marketplaces"].map((key) => [key, form.elements[key].checked]));
+  const { error } = await state.supabase.rpc("set_member_permissions", { candidate_email: permissionsTargetEmail, candidate_permissions: candidatePermissions });
+  if (error) return showAppMessage("Permissões", error.message, "error");
+  byId("memberPermissionsDialog").close();
+  await loadAndRenderUsers();
+  showAppMessage("Permissões atualizadas", "As capacidades específicas foram salvas.", "success");
 }
 
 export async function removeUser(email) {

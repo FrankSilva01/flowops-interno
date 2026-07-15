@@ -1,6 +1,6 @@
 import { state } from "./state.js";
 import { byId, html } from "./dom.js";
-import { isAdminRole, isEditorRole, displayRole } from "./permissions.js";
+import { isAdminRole, isEditorRole, displayRole, hasCapability } from "./permissions.js";
 import { render } from "./router.js";
 import { loadResponsibles, loadAccessRequests, loadActiveUsers } from "../features/users.js";
 import { ensureOperationalNotifications } from "../features/notifications.js";
@@ -272,7 +272,7 @@ export async function enterOnlineApp(user) {
   }
   const { data: memberships } = await state.supabase
     .from("organization_members")
-    .select("organization_id,role,organizations(name,slug,settings)")
+    .select("organization_id,role,permissions,organizations(name,slug,settings)")
     .eq("user_email", state.activeUserEmail)
     .eq("status", "active");
   const membership = await chooseMembership(memberships || []);
@@ -288,6 +288,7 @@ export async function enterOnlineApp(user) {
   state.organizationSettings = membership.organizations?.settings || {};
   const approvedUser = await getApprovedUser(state.activeUserEmail);
   state.activeUserRoleName = state.isAdmin ? "Administrador" : (membership.role || approvedUser?.role || "Leitura");
+  state.activePermissions = membership.permissions || {};
   state.isAdmin = state.isAdmin || isAdminRole(state.activeUserRoleName);
   state.canEdit = state.isAdmin || isEditorRole(state.activeUserRoleName);
   const sidebarCompanyName = byId("sidebarCompanyName");
@@ -327,7 +328,7 @@ export async function enterOnlineApp(user) {
   if (overlay) overlay.remove();
   byId("appView").hidden = false;
   byId("approvalsTab").hidden = !state.isAdmin;
-  byId("marketplaceTab").hidden = !state.isAdmin;
+  byId("marketplaceTab").hidden = !hasCapability("manage_marketplaces");
   setSessionInfo(
     state.activeUserName || user.email || "Usuário online",
     state.supportMode ? "Suporte • somente leitura" : `${displayRole(state.activeUserRoleName)} • ${state.canEdit ? "edição liberada" : "somente leitura"}`,
