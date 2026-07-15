@@ -1051,8 +1051,8 @@ export function bindActions() {
         if (!ensureCanAdmin() || !confirm("Excluir esta encomenda?")) return;
         const deleted = state.data.orders.find((item) => item.id === id);
         await recordAudit("delete", "order", id, deleted?.orderCode, deleted, null, "manual");
-        state.data.orders = state.data.orders.filter((item) => item.id !== id);
         await removeRemote("orders", id);
+        state.data.orders = state.data.orders.filter((item) => item.id !== id);
       }
       if (action === "delete-cash") {
         if (!ensureCanAdmin() || !confirm("Excluir este lançamento do fluxo de caixa?")) return;

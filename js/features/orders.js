@@ -99,6 +99,7 @@ function renderOrderDetailPanel(item) {
         <button class="secondary-btn" type="button" data-action="edit-order-modal" data-id="${html(item.id)}">Editar</button>
         <button class="primary-btn" type="button" data-action="toggle-order" data-id="${html(item.id)}">${status === "Entregue" ? "Reabrir" : "Entregar"}</button>
         <button class="secondary-btn" type="button" data-action="history-order" data-id="${html(item.id)}">Histórico completo</button>
+        ${state.isAdmin ? `<button class="secondary-btn danger" type="button" data-action="delete-order" data-id="${html(item.id)}"><i class="ti ti-trash" aria-hidden="true"></i> Excluir</button>` : ""}
       </div>
     ` : ""}
   `;

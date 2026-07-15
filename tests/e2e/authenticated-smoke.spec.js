@@ -69,6 +69,20 @@ test.describe("sessao autenticada", () => {
     await expect(page.locator("#deleteOrdersSelectionBtn")).toBeEnabled();
   });
 
+  test("oferece exclusao individual sem remover ao cancelar", async ({ page }) => {
+    await page.goto("/#orders");
+    await expect(page.locator("#appView")).toBeVisible();
+    const cards = page.locator(".order-card");
+    test.skip((await cards.count()) === 0, "Nenhuma encomenda disponivel.");
+    await cards.first().click();
+    const deleteButton = page.locator('#orderDetailPanel [data-action="delete-order"]');
+    await expect(deleteButton).toBeVisible();
+    const countBefore = await cards.count();
+    page.once("dialog", (dialog) => dialog.dismiss());
+    await deleteButton.click();
+    await expect(cards).toHaveCount(countBefore);
+  });
+
   test("renderiza relatorio de marketplaces com classificacao normalizada", async ({ page }, testInfo) => {
     await page.goto("/#reports");
     await expect(page.locator("#appView")).toBeVisible();
