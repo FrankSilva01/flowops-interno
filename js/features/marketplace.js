@@ -836,7 +836,9 @@ export async function exportSelectedListingsToShopee(event) {
     if (!schema.categorySpecific) throw new Error("Use um modelo da Shopee gerado para a categoria dos produtos.");
     const data = new FormData(event.currentTarget);
     const attributes = Object.fromEntries([...data.entries()].filter(([key]) => key.startsWith("attribute__")).map(([key, value]) => [decodeURIComponent(key.slice(11)), String(value).trim()]));
-    const options = { categoryId: data.get("categoryId"), length: data.get("length"), width: data.get("width"), height: data.get("height"), preOrderDays: data.get("preOrderDays"), attributes };
+    const options = { categoryId: data.get("categoryId"), length: data.get("length"), width: data.get("width"), height: data.get("height"), preOrderDays: data.get("preOrderDays"), noGtin: data.get("noGtin") === "on", attributes };
+    if (!/^\d+$/.test(String(options.categoryId || ""))) throw new Error("Informe o código numérico da categoria Shopee.");
+    if ([options.length, options.width, options.height].some((value) => !(Number(value) > 0))) throw new Error("Preencha comprimento, largura e altura do pacote com valores maiores que zero.");
     const rows = applyShopeeTemplateRows(sheet, listings, schema, options, window.XLSX);
     const incomplete = rows.flatMap((row, index) => schema.requiredAttributes.filter(({ column }) => !String(row[column] || "").trim()).map(({ label }) => `${listings[index].title}: ${label}`));
     if (incomplete.length) throw new Error(`Ainda faltam atributos obrigatórios: ${incomplete.slice(0, 3).join("; ")}`);

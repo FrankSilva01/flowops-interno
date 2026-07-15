@@ -2315,11 +2315,12 @@
           <small>Baixe o modelo selecionando a categoria dos produtos. O modelo básico não contém os atributos necessários para publicar.</small>
         </label>
         <div class="order-form-grid">
-          <label class="span-2">Código da categoria Shopee<input name="categoryId" placeholder="Ex: 101944" required /></label>
+          <label class="span-2">Código da categoria Shopee<input name="categoryId" inputmode="numeric" pattern="[0-9]+" placeholder="Ex: 101944" required /><small>Exporte juntos somente produtos da mesma categoria.</small></label>
           <label>Comprimento (cm)<input name="length" type="number" min="1" step="0.1" value="15" required /></label>
           <label>Largura (cm)<input name="width" type="number" min="1" step="0.1" value="10" required /></label>
           <label>Altura (cm)<input name="height" type="number" min="1" step="0.1" value="10" required /></label>
           <label>Prazo de postagem (dias)<input name="preOrderDays" type="number" min="1" max="30" step="1" value="3" required /></label>
+          <label class="span-2 checkbox-field"><input name="noGtin" type="checkbox" checked required /> Confirmo que os produtos deste lote não possuem GTIN (EAN)</label>
         </div>
         <section id="shopeeRequiredAttributes" class="order-form-section" hidden><h4>Atributos obrigatórios da categoria</h4><div id="shopeeRequiredAttributeFields" class="order-form-grid"></div></section>
         <div id="shopeeTemplateExportSummary" class="drawer-field-list"></div>

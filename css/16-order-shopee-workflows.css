@@ -13,4 +13,5 @@
 .order-form-actions{position:sticky;bottom:0;display:flex;justify-content:flex-end;gap:10px;padding:12px 0;background:linear-gradient(180deg,transparent 0,var(--surface, #111820) 24%);z-index:2}
 .order-create-dialog .order-form-actions{position:static;background:var(--surface,#111820)}
 .shopee-export-form{padding:20px 24px 84px;display:grid;gap:20px}.workflow-callout{display:flex;gap:12px;padding:14px;border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line));background:color-mix(in srgb,var(--accent) 8%,transparent);border-radius:7px}.workflow-callout i{font-size:22px;color:var(--accent)}.workflow-callout div{display:grid;gap:4px}.workflow-callout small{color:var(--muted)}
+.shopee-export-form .checkbox-field{display:flex;align-items:center;gap:8px}.shopee-export-form .checkbox-field input{width:auto}
 @media(max-width:680px){.orders-command-bar{align-items:flex-end}.orders-command-bar small{display:none}.order-form-grid{grid-template-columns:1fr}.order-form-grid .span-2{grid-column:auto}.order-create-form,.shopee-export-form{padding-left:16px;padding-right:16px}}
