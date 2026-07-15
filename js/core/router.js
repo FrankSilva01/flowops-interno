@@ -220,22 +220,26 @@ export function bindEvents() {
     button.addEventListener("click", () => {
       state.reportTab = button.dataset.reportTab;
       state.reportTablePage = 1;
+      if (byId("reportMoreSelect")) byId("reportMoreSelect").value = "";
       document.querySelectorAll("[data-report-tab]").forEach((item) => item.classList.toggle("active", item === button));
       renderReports();
     });
   });
+  byId("reportMoreSelect")?.addEventListener("change", (event) => {
+    if (!event.target.value) return;
+    state.reportTab = event.target.value;
+    state.reportTablePage = 1;
+    document.querySelectorAll("[data-report-tab]").forEach((item) => item.classList.remove("active"));
+    renderReports();
+  });
   byId("reportPeriodFilter")?.addEventListener("change", (event) => {
     state.reportPeriod = event.target.value;
-  });
-  byId("reportCompareFilter")?.addEventListener("change", (event) => {
-    state.reportCompare = event.target.value;
   });
   byId("reportGroupFilter")?.addEventListener("change", (event) => {
     state.reportGroup = event.target.value;
   });
   byId("applyReportFiltersBtn")?.addEventListener("click", () => {
     state.reportPeriod = byId("reportPeriodFilter")?.value || "30";
-    state.reportCompare = byId("reportCompareFilter")?.value || "previous";
     state.reportGroup = byId("reportGroupFilter")?.value || "day";
     state.reportTablePage = 1;
     renderReports();
@@ -243,11 +247,9 @@ export function bindEvents() {
   });
   byId("clearReportFiltersBtn")?.addEventListener("click", () => {
     state.reportPeriod = "30";
-    state.reportCompare = "previous";
     state.reportGroup = "day";
     state.reportTablePage = 1;
     byId("reportPeriodFilter").value = state.reportPeriod;
-    byId("reportCompareFilter").value = state.reportCompare;
     byId("reportGroupFilter").value = state.reportGroup;
     renderReports();
   });
@@ -841,7 +843,8 @@ export function bindActions() {
       }
       if (action === "open-data-quality") {
         state.reportTab = "quality";
-        document.querySelectorAll("[data-report-tab]").forEach((item) => item.classList.toggle("active", item.dataset.reportTab === "quality"));
+        document.querySelectorAll("[data-report-tab]").forEach((item) => item.classList.remove("active"));
+        if (byId("reportMoreSelect")) byId("reportMoreSelect").value = "quality";
         setView("reports");
         return;
       }

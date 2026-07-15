@@ -30,8 +30,9 @@
     <link rel="stylesheet" href="./css/14-commercial-polish.css?v=240" />
     <link rel="stylesheet" href="./css/15-linear-shopify-density.css?v=243" />
     <link rel="stylesheet" href="./css/16-order-shopee-workflows.css?v=246" />
+    <link rel="stylesheet" href="./css/17-history-reports-refinement.css?v=247" />
     <script src="./supabase-config.js?v=200" defer></script>
-    <script type="module" src="./js/app.js?v=246"></script>
+    <script type="module" src="./js/app.js?v=247"></script>
   </head>
   <body>
     <main id="appView" class="app-shell" hidden>
@@ -360,15 +361,20 @@
             <button class="active" type="button" data-report-tab="overview">Visão geral</button>
             <button type="button" data-report-tab="financial">Financeiro</button>
             <button type="button" data-report-tab="production">Produção</button>
-            <button type="button" data-report-tab="logistics">Logística</button>
-            <button type="button" data-report-tab="pricing">Inteligência Comercial</button>
             <button type="button" data-report-tab="commercial">Comercial</button>
             <button type="button" data-report-tab="marketplaces">Marketplaces</button>
-            <button type="button" data-report-tab="products">Produtos</button>
-            <button type="button" data-report-tab="materials">Materiais</button>
-            <button type="button" data-report-tab="clients">Clientes</button>
-            <button type="button" data-report-tab="stock">Estoque</button>
-            <button type="button" data-report-tab="quality">Qualidade dos dados</button>
+            <label class="report-more-label">Mais relatórios
+              <select id="reportMoreSelect" aria-label="Abrir outro relatório">
+                <option value="">Selecionar</option>
+                <option value="logistics">Logística</option>
+                <option value="pricing">Inteligência comercial</option>
+                <option value="products">Produtos</option>
+                <option value="materials">Materiais</option>
+                <option value="clients">Clientes</option>
+                <option value="stock">Estoque</option>
+                <option value="quality">Qualidade dos dados</option>
+              </select>
+            </label>
           </div>
           <section class="panel report-filter-panel">
             <label>Período
@@ -377,12 +383,6 @@
                 <option value="90">Últimos 90 dias</option>
                 <option value="365">Ano</option>
                 <option value="all">Todos</option>
-              </select>
-            </label>
-            <label>Comparar com
-              <select id="reportCompareFilter">
-                <option value="previous">Período anterior</option>
-                <option value="none">Não comparar</option>
               </select>
             </label>
             <label>Grupo
@@ -1740,13 +1740,13 @@
                 <option value="all">Todos</option>
                 <option value="orders">Encomendas</option>
                 <option value="access">Acessos</option>
-                <option value="audit">Auditoria completa</option>
+                <option value="audit">Sistema e integrações</option>
               </select>
             </label>
             <label>De<input id="historyDateFrom" type="datetime-local" /></label>
             <label>Até<input id="historyDateTo" type="datetime-local" /></label>
             <button id="applyHistoryRangeBtn" class="secondary-btn" type="button">Aplicar período</button>
-            <button id="clearHistoryViewBtn" class="secondary-btn" type="button">Limpar tela</button>
+            <button id="clearHistoryViewBtn" class="secondary-btn" type="button">Limpar visualização</button>
           </div>
           <div class="panel">
             <div class="panel-head"><h3>Histórico de alterações</h3></div>
@@ -1940,7 +1940,6 @@
           <summary>Opções avançadas do Mercado Livre</summary>
           <label>Atributos ML em JSON<textarea name="attributesJson" rows="6" placeholder='[{"id":"BRAND","value_name":"3D.AFT"}]'></textarea></label>
         </details>
-        <p class="muted">Categoria é exibida como referência: o Mercado Livre normalmente não permite alterar a categoria de um anúncio já publicado. Imagens também devem ser alteradas pelo fluxo de cadastrar/republicar produto quando necessário.</p>
         <p class="form-error" id="marketplaceEditMessage"></p>
         <button class="primary-btn" type="submit">Salvar no marketplace</button>
       </form>

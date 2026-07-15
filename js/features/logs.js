@@ -16,6 +16,7 @@ const AUDIT_VERBS = {
   lead_file_delete: "excluiu um arquivo de",
   payment_sync: "atualizou o pagamento de",
   marketplace_sync: "sincronizou",
+  marketplace_import: "importou",
   subscription_plan_change_requested: "solicitou mudança de plano para",
 };
 
@@ -85,6 +86,7 @@ export function renderLogs() {
       by: entry.by,
       title: `${entry.by || "Usuário"} alterou ${orderItem.orderCode || orderItem.id}`,
       detail: entry.changes.map((change) => `${change.field}: ${change.from} → ${change.to}`).join("\n"),
+      changes: entry.changes.map((change) => ({ label: translateFieldLabel(change.field), from: change.from, to: change.to })),
       rawDetail: "",
     })));
   const accessLogs = state.accessRequests
@@ -101,13 +103,15 @@ export function renderLogs() {
     const actor = event.actor_email || event.source || "Sistema";
     const verb = AUDIT_VERBS[event.action] || event.action || "alterou";
     const subject = event.order_code || event.entity_id || translateEntityType(event.entity_type);
+    const displayActor = actor === "marketplace" ? marketplaceActor(event) : actor;
     return {
       type: "audit",
       action: event.action,
       at: event.created_at,
-      by: actor,
-      title: `${actor} ${verb} ${subject}`,
+      by: displayActor,
+      title: `${displayActor} ${verb} ${subject}`,
       detail: auditDiffText(event.old_value, event.new_value, { humanized: true }),
+      changes: auditDiffEntries(event.old_value, event.new_value, { humanized: true }),
       rawDetail: auditDiffText(event.old_value, event.new_value, { humanized: false }),
     };
   });
@@ -122,12 +126,15 @@ export function renderLogs() {
     .slice(0, state.historyLimit);
   target.innerHTML = !state.historyCleared && rows.length ? rows.map((entry) => `
     <div class="list-row history-row">
-      <i class="ti ${logIcon(entry)} history-row-icon" aria-hidden="true"></i>
+      <span class="history-row-icon"><i class="ti ${logIcon(entry)}" aria-hidden="true"></i></span>
       <div class="history-row-body">
-        <strong>${html(entry.title)}</strong>
-        <span class="history-row-time" title="${formatDateTime(entry.at)}">${formatRelativeTime(entry.at)}</span>
-        <div class="history-row-detail">${html(entry.detail).replace(/\n/g, "<br>")}</div>
-        ${entry.rawDetail ? `<details class="history-tech-details"><summary>Ver detalhes técnicos</summary><pre>${html(entry.rawDetail)}</pre></details>` : ""}
+        <div class="history-row-head">
+          <strong>${html(entry.title)}</strong>
+          <span class="history-row-time" title="${formatDateTime(entry.at)}">${formatRelativeTime(entry.at)}</span>
+        </div>
+        <div class="history-row-meta"><span>${html(historyTypeLabel(entry))}</span><span>${html(formatDateTime(entry.at))}</span></div>
+        ${renderHistoryChanges(entry.changes, entry.detail)}
+        ${entry.rawDetail ? `<details class="history-tech-details"><summary><i class="ti ti-code" aria-hidden="true"></i> Dados técnicos</summary><pre>${html(entry.rawDetail)}</pre></details>` : ""}
       </div>
     </div>
   `).join("") : `<div class="empty-chart">${state.historyCleared ? "Histórico limpo da tela. Use os filtros ou carregue mais para exibir novamente." : "Sem histórico registrado para os filtros selecionados."}</div>`;
@@ -178,6 +185,46 @@ export function auditDiffText(oldValue, newValue, { humanized = true } = {}) {
   return visibleKeys
     .map((key) => `${humanized ? translateFieldLabel(key) : key}: ${formatAuditValue(oldValue?.[key])} -> ${formatAuditValue(newValue?.[key])}`)
     .join("\n");
+}
+
+export function auditDiffEntries(oldValue, newValue, { humanized = true } = {}) {
+  if (!oldValue && !newValue) return [];
+  const keys = [...new Set([...Object.keys(oldValue || {}), ...Object.keys(newValue || {})])];
+  return (humanized ? keys.filter((key) => !TECHNICAL_FIELDS.has(key)) : keys)
+    .map((key) => ({
+      label: humanized ? translateFieldLabel(key) : key,
+      from: formatAuditValue(oldValue?.[key]),
+      to: formatAuditValue(newValue?.[key]),
+    }))
+    .filter((change) => change.from !== change.to);
+}
+
+function renderHistoryChanges(changes, fallback) {
+  const source = Array.isArray(changes) ? changes : [];
+  const visible = source.slice(0, 6);
+  if (!visible.length) return `<p class="history-row-empty">${html(fallback || "Ação registrada sem alteração de campos.")}</p>`;
+  return `
+    <div class="history-change-grid">
+      ${visible.map((change) => `
+        <div class="history-change">
+          <span>${html(change.label)}</span>
+          <div><del>${html(change.from)}</del><i class="ti ti-arrow-right" aria-hidden="true"></i><ins>${html(change.to)}</ins></div>
+        </div>
+      `).join("")}
+    </div>
+    ${source.length > visible.length ? `<small class="history-change-count">Mais ${source.length - visible.length} alteração(ões) nos dados técnicos.</small>` : ""}
+  `;
+}
+
+function marketplaceActor(event) {
+  const channel = event.new_value?.marketplace || event.metadata?.marketplace || event.metadata?.channel;
+  return channel ? String(channel) : "Marketplace";
+}
+
+function historyTypeLabel(entry) {
+  if (entry.type === "access") return "Acesso";
+  if (entry.type === "orders") return "Encomenda";
+  return auditActionLabel(entry.action);
 }
 
 export function formatAuditValue(value) {

@@ -13,6 +13,9 @@ export { marketplaceSalesForReport, reportMarketplaceRows } from "./report-marke
 export function renderReports() {
   const content = byId("reportsContent");
   if (!content) return;
+  const primaryTabs = new Set(["overview", "financial", "production", "commercial", "marketplaces"]);
+  document.querySelectorAll("[data-report-tab]").forEach((item) => item.classList.toggle("active", item.dataset.reportTab === state.reportTab));
+  if (byId("reportMoreSelect")) byId("reportMoreSelect").value = primaryTabs.has(state.reportTab) ? "" : state.reportTab;
   const filterPanel = document.querySelector(".report-filter-panel");
   if (filterPanel) filterPanel.hidden = state.reportTab === "quality";
   const rows = getReportRows();
@@ -35,12 +38,12 @@ export function renderReports() {
   ).length;
   content.innerHTML = `
     <div class="report-kpi-grid">
-      ${reportKpi("Receita líquida", money.format(financial.revenue), "+18% vs período anterior", "teal")}
-      ${reportKpi("Custos", money.format(financial.costs), "-8% vs período anterior", "red")}
-      ${reportKpi("Lucro líquido", money.format(financial.profit), "+24% vs período anterior", "blue")}
-      ${reportKpi("Ticket médio", money.format(ticket), "+12% vs período anterior", "purple")}
+      ${reportKpi("Receita líquida", money.format(financial.revenue), "Valores recebidos no período", "teal")}
+      ${reportKpi("Custos", money.format(financial.costs), "Saídas registradas no período", "red")}
+      ${reportKpi("Lucro líquido", money.format(financial.profit), "Receita menos custos", "blue")}
+      ${reportKpi("Ticket médio", money.format(ticket), "Receita média por pedido", "purple")}
       ${reportKpi("A receber", money.format(financial.receivable), `${rows.orders.filter((item) => Number(item.charged || 0) > Number(item.received || 0)).length} títulos pendentes`, "amber")}
-      ${reportKpi("Pedidos", totalOrders, "+10% vs período anterior", "green")}
+      ${reportKpi("Pedidos", totalOrders, "Encomendas no período", "green")}
     </div>
     <div class="report-main-grid">
       <section class="panel report-chart-card">
