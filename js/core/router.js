@@ -56,7 +56,7 @@ import {
   toggleMarketplaceMigrationSelection, toggleAllMarketplaceMigrationSelections,
   openMarketplaceFileImport, previewMarketplaceFileImport, saveMarketplaceFileImport,
   downloadMarketplaceImportTemplate,
-  bindMarketplaceFileImportDropzone, openShopeeTemplateExport, exportSelectedListingsToShopee,
+  bindMarketplaceFileImportDropzone, openShopeeTemplateExport, exportSelectedListingsToShopee, previewShopeeTemplate,
 } from "../features/marketplace.js";
 import {
   runManualBackup, downloadBackupScope, simulateBackupRestore, restoreBackupFromFile,
@@ -80,7 +80,7 @@ import {
   showCalculatorSuggestion, getSuggestionForListing, syncFeeCalculatorFull,
 } from "../features/marketplace-analytics.js";
 
-const APP_VERSION = "244";
+const APP_VERSION = "245";
 
 async function refreshAppShell() {
   showAppMessage("Atualizando sistema", "Limpando cache local e carregando a versão mais recente.", "info");
@@ -453,6 +453,7 @@ export function bindEvents() {
   byId("marketplaceBulkMigrationForm")?.addEventListener("input", refreshBulkMarketplaceMigrationPreview);
   byId("marketplaceFileImportForm")?.addEventListener("submit", saveMarketplaceFileImport);
   byId("shopeeTemplateExportForm")?.addEventListener("submit", exportSelectedListingsToShopee);
+  byId("shopeeTemplateExportForm")?.elements.template.addEventListener("change", previewShopeeTemplate);
   byId("marketplaceFileImportInput")?.addEventListener("change", previewMarketplaceFileImport);
   byId("marketplaceFileImportForm")?.elements.marketplace.addEventListener("change", previewMarketplaceFileImport);
   bindMarketplaceFileImportDropzone();

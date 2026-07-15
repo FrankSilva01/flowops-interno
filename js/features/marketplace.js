@@ -15,7 +15,7 @@ import { renderMarketplaceAnalyticsPanel, getListingAnalytics, computeIntentScor
 import { getProductForSale, renderProductionAssetShortcut } from "./product-assets.js";
 import { loadXlsx, parseCsv } from "../core/importer.js";
 import { MARKETPLACE_IMPORT_TEMPLATE, normalizeMarketplaceImportRows, runMarketplaceImportBatch } from "./marketplace-file-import.js";
-import { assertShopeeTemplate, buildShopeeTemplateRow, validateShopeeListing } from "./shopee-template-export.js";
+import { applyShopeeTemplateRows, assertShopeeTemplate, listingAttributeValue, readShopeeTemplateSchema, validateShopeeListing } from "./shopee-template-export.js";
 import {
   buildMarketplaceMigration,
   buildMarketplaceMigrationBatch,
@@ -24,6 +24,7 @@ import {
 
 const selectedMarketplaceMigrations = new Set();
 let marketplaceFileImportRows = [];
+let shopeeTemplateSchema = null;
 
 const MARKETPLACE_CHANNELS = [
   { id: "mercado-livre", label: "Mercado Livre" },
@@ -773,10 +774,43 @@ export function openShopeeTemplateExport() {
   const invalid = listings.map((listing, index) => ({ listing, missing: validateShopeeListing(listing, index) })).filter((item) => item.missing.length);
   const form = byId("shopeeTemplateExportForm");
   form.reset();
+  shopeeTemplateSchema = null;
+  byId("shopeeRequiredAttributes").hidden = true;
+  byId("shopeeRequiredAttributeFields").innerHTML = "";
+  byId("shopeeTemplateExportSubmit").disabled = true;
   byId("shopeeExportSelectionCount").textContent = `${listings.length} anúncio(s) selecionado(s)`;
   byId("shopeeTemplateExportSummary").innerHTML = `<div class="drawer-field-row"><span>Prontos para exportar</span><strong>${listings.length - invalid.length}</strong></div><div class="drawer-field-row"><span>Com pendências</span><strong>${invalid.length}</strong></div>`;
   byId("shopeeTemplateExportMessage").textContent = invalid.length ? `${invalid.length} anúncio(s) não serão exportados: complete título, preço e pelo menos 3 imagens.` : "";
   byId("shopeeTemplateExportDialog").showModal();
+}
+
+export async function previewShopeeTemplate() {
+  const form = byId("shopeeTemplateExportForm");
+  const file = form.elements.template.files?.[0];
+  const message = byId("shopeeTemplateExportMessage");
+  shopeeTemplateSchema = null;
+  byId("shopeeTemplateExportSubmit").disabled = true;
+  if (!file) return;
+  try {
+    await loadXlsx();
+    const workbook = window.XLSX.read(await file.arrayBuffer(), { type: "array", cellStyles: true });
+    const sheet = assertShopeeTemplate(workbook);
+    const schema = readShopeeTemplateSchema(sheet, window.XLSX);
+    if (!schema.categorySpecific) throw new Error("Este é o modelo básico. Baixe na Shopee um modelo selecionando a categoria para incluir os atributos obrigatórios.");
+    shopeeTemplateSchema = schema;
+    const listings = selectedMarketplaceListings();
+    byId("shopeeRequiredAttributeFields").innerHTML = schema.requiredAttributes.map((attribute) => {
+      const values = [...new Set(listings.map((listing) => listingAttributeValue(listing, attribute.label)).filter(Boolean))];
+      const suggested = values.length === 1 ? values[0] : "";
+      return `<label>${html(attribute.label)}<input name="attribute__${encodeURIComponent(attribute.marker)}" value="${html(suggested)}" placeholder="Valor padrão para o lote" required /></label>`;
+    }).join("");
+    byId("shopeeRequiredAttributes").hidden = false;
+    byId("shopeeTemplateExportSubmit").disabled = false;
+    message.textContent = `${schema.requiredAttributes.length} atributo(s) obrigatório(s) detectado(s). Revise os valores antes de gerar.`;
+  } catch (error) {
+    byId("shopeeRequiredAttributes").hidden = true;
+    message.textContent = error.message;
+  }
 }
 
 export async function exportSelectedListingsToShopee(event) {
@@ -798,7 +832,14 @@ export async function exportSelectedListingsToShopee(event) {
     await loadXlsx();
     const workbook = window.XLSX.read(await file.arrayBuffer(), { type: "array", cellStyles: true });
     const sheet = assertShopeeTemplate(workbook);
-    window.XLSX.utils.sheet_add_aoa(sheet, listings.map(buildShopeeTemplateRow), { origin: "A7" });
+    const schema = readShopeeTemplateSchema(sheet, window.XLSX);
+    if (!schema.categorySpecific) throw new Error("Use um modelo da Shopee gerado para a categoria dos produtos.");
+    const data = new FormData(event.currentTarget);
+    const attributes = Object.fromEntries([...data.entries()].filter(([key]) => key.startsWith("attribute__")).map(([key, value]) => [decodeURIComponent(key.slice(11)), String(value).trim()]));
+    const options = { categoryId: data.get("categoryId"), length: data.get("length"), width: data.get("width"), height: data.get("height"), preOrderDays: data.get("preOrderDays"), attributes };
+    const rows = applyShopeeTemplateRows(sheet, listings, schema, options, window.XLSX);
+    const incomplete = rows.flatMap((row, index) => schema.requiredAttributes.filter(({ column }) => !String(row[column] || "").trim()).map(({ label }) => `${listings[index].title}: ${label}`));
+    if (incomplete.length) throw new Error(`Ainda faltam atributos obrigatórios: ${incomplete.slice(0, 3).join("; ")}`);
     const output = window.XLSX.write(workbook, { bookType: "xlsx", type: "array", compression: true, cellStyles: true });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(new Blob([output], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));

@@ -85,6 +85,7 @@ test.describe("sessao autenticada", () => {
     await page.locator("#exportShopeeTemplateBtn").click();
     await expect(page.locator("#shopeeTemplateExportDialog")).toBeVisible();
     await expect(page.locator("#shopeeExportSelectionCount")).toContainText("1 anúncio");
+    await expect(page.locator("#shopeeTemplateExportSubmit")).toBeDisabled();
   });
 
   test("seleciona encomenda e disponibiliza exclusao administrativa", async ({ page }) => {

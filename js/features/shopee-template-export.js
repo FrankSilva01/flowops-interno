@@ -43,6 +43,62 @@ export function buildShopeeTemplateRow(listing, index = 0) {
   return row;
 }
 
+function normalize(value) {
+  return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+const CORE_MARKERS = new Set([
+  "ps_category", "ps_product_name", "ps_product_description", "ps_sku_parent_short", "ps_price", "ps_stock",
+  "ps_sku_short", "ps_item_cover_image", "ps_weight", "ps_length", "ps_width", "ps_height", "ps_product_pre_order_dts",
+]);
+
+const BASE_MARKER_INDEX = new Map([
+  ["ps_product_name", 1], ["ps_product_description", 2], ["ps_sku_parent_short", 3], ["ps_price", 10],
+  ["ps_stock", 11], ["ps_sku_short", 12], ["ps_item_cover_image", 17], ["ps_weight", 26],
+  ...Array.from({ length: 8 }, (_, index) => [`ps_item_image_${index + 1}`, 18 + index]),
+]);
+
+export function readShopeeTemplateSchema(sheet, xlsx) {
+  const range = xlsx.utils.decode_range(sheet["!ref"] || "A1:AY6");
+  const columns = [];
+  for (let column = range.s.c; column <= range.e.c; column += 1) {
+    const markerParts = String(sheet[xlsx.utils.encode_cell({ r: 0, c: column })]?.v || "").split("|");
+    const marker = markerParts[0];
+    const label = String(sheet[xlsx.utils.encode_cell({ r: 2, c: column })]?.v || marker);
+    const requirement = normalize(sheet[xlsx.utils.encode_cell({ r: 3, c: column })]?.v);
+    if (marker) columns.push({ column, marker, label, required: requirement === "obrigatorio" || markerParts[1] === "1" });
+  }
+  const requiredAttributes = columns.filter((item) => item.required && !CORE_MARKERS.has(item.marker));
+  return { columns, requiredAttributes, categorySpecific: requiredAttributes.length > 0 };
+}
+
+export function listingAttributeValue(listing, label) {
+  const expected = normalize(label);
+  const attributes = Array.isArray(listing?.raw_payload?.attributes) ? listing.raw_payload.attributes : [];
+  const match = attributes.find((item) => [item?.name, item?.id].some((value) => normalize(value) === expected));
+  return text(match?.value_name || match?.value_struct?.name || match?.value_id, 200);
+}
+
+export function applyShopeeTemplateRows(sheet, listings, schema, options, xlsx) {
+  const rows = listings.map((listing, index) => {
+    const base = buildShopeeTemplateRow(listing, index);
+    const row = Array(Math.max(51, ...schema.columns.map(({ column }) => column + 1))).fill("");
+    schema.columns.forEach(({ column, marker, label }) => {
+      if (BASE_MARKER_INDEX.has(marker)) row[column] = base[BASE_MARKER_INDEX.get(marker)];
+      else if (marker === "ps_category") row[column] = String(options.categoryId || "").trim();
+      else if (marker === "ps_length") row[column] = Number(options.length);
+      else if (marker === "ps_width") row[column] = Number(options.width);
+      else if (marker === "ps_height") row[column] = Number(options.height);
+      else if (marker === "ps_product_pre_order_dts") row[column] = Number(options.preOrderDays);
+      else if (marker.startsWith("channel_id.")) row[column] = "Ligado";
+      else if (!CORE_MARKERS.has(marker)) row[column] = listingAttributeValue(listing, label) || options.attributes?.[marker] || "";
+    });
+    return row;
+  });
+  xlsx.utils.sheet_add_aoa(sheet, rows, { origin: "A7" });
+  return rows;
+}
+
 export function assertShopeeTemplate(workbook) {
   const sheetName = workbook.SheetNames.find((name) => String(name).toLowerCase() === "modelo") || workbook.SheetNames[0];
   const sheet = workbook.Sheets[sheetName];

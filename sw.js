@@ -1,4 +1,4 @@
-const CACHE_NAME = "flowops-v35";
+const CACHE_NAME = "flowops-v36";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -19,6 +19,7 @@ const STATIC_ASSETS = [
   "/css/11-fiscal-forms.css",
   "/css/12-global-search.css",
   "/css/13-data-quality.css",
+  "/css/16-order-shopee-workflows.css",
   "/assets/tabler-icons/tabler-icons.min.css",
   "/theme-init.js",
   "/supabase-config.js",
@@ -26,6 +27,7 @@ const STATIC_ASSETS = [
   "/js/core/state.js",
   "/js/core/dom.js",
   "/js/core/router.js",
+  "/js/features/shopee-template-export.js",
 ];
 
 // Install: cache static assets
