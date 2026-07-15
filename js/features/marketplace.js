@@ -16,6 +16,7 @@ import { getProductForSale, renderProductionAssetShortcut } from "./product-asse
 import { loadXlsx, parseCsv } from "../core/importer.js";
 import { MARKETPLACE_IMPORT_TEMPLATE, normalizeMarketplaceImportRows, runMarketplaceImportBatch } from "./marketplace-file-import.js";
 import { applyShopeeTemplateRows, assertShopeeTemplate, listingAttributeValue, readShopeeTemplateSchema, validateShopeeListing } from "./shopee-template-export.js";
+import { groupShopeeCategorySuggestions } from "./shopee-category-mapping.js";
 import {
   buildMarketplaceMigration,
   buildMarketplaceMigrationBatch,
@@ -772,6 +773,7 @@ export function openShopeeTemplateExport() {
   const listings = selectedMarketplaceListings();
   if (!listings.length) return;
   const invalid = listings.map((listing, index) => ({ listing, missing: validateShopeeListing(listing, index) })).filter((item) => item.missing.length);
+  const categoryGroups = groupShopeeCategorySuggestions(listings);
   const form = byId("shopeeTemplateExportForm");
   form.reset();
   shopeeTemplateSchema = null;
@@ -781,6 +783,10 @@ export function openShopeeTemplateExport() {
   byId("shopeeExportSelectionCount").textContent = `${listings.length} anúncio(s) selecionado(s)`;
   byId("shopeeTemplateExportSummary").innerHTML = `<div class="drawer-field-row"><span>Prontos para exportar</span><strong>${listings.length - invalid.length}</strong></div><div class="drawer-field-row"><span>Com pendências</span><strong>${invalid.length}</strong></div>`;
   byId("shopeeTemplateExportMessage").textContent = invalid.length ? `${invalid.length} anúncio(s) não serão exportados: complete título, preço e pelo menos 3 imagens.` : "";
+  byId("shopeeTemplateExportSummary").insertAdjacentHTML("beforeend", categoryGroups.map((group) => `<div class="drawer-field-row"><span>${html(group.path)}</span><strong>${group.count}</strong></div>`).join(""));
+  if (categoryGroups.length > 1) {
+    byId("shopeeTemplateExportMessage").textContent += ` A seleção possui ${categoryGroups.length} categorias sugeridas; gere uma planilha por categoria usando o modelo correspondente da Shopee.`;
+  }
   byId("shopeeTemplateExportDialog").showModal();
 }
 
@@ -838,9 +844,12 @@ export async function exportSelectedListingsToShopee(event) {
     const attributes = Object.fromEntries([...data.entries()].filter(([key]) => key.startsWith("attribute__")).map(([key, value]) => [decodeURIComponent(key.slice(11)), String(value).trim()]));
     const options = { categoryId: data.get("categoryId"), length: data.get("length"), width: data.get("width"), height: data.get("height"), preOrderDays: data.get("preOrderDays"), noGtin: data.get("noGtin") === "on", attributes };
     if (!/^\d+$/.test(String(options.categoryId || ""))) throw new Error("Informe o código numérico da categoria Shopee.");
-    if ([options.length, options.width, options.height].some((value) => !(Number(value) > 0))) throw new Error("Preencha comprimento, largura e altura do pacote com valores maiores que zero.");
     const rows = applyShopeeTemplateRows(sheet, listings, schema, options, window.XLSX);
-    const incomplete = rows.flatMap((row, index) => schema.requiredAttributes.filter(({ column }) => !String(row[column] || "").trim()).map(({ label }) => `${listings[index].title}: ${label}`));
+    const shippingColumns = schema.columns.filter(({ marker }) => ["ps_weight", "ps_length", "ps_width", "ps_height"].includes(marker));
+    const incomplete = rows.flatMap((row, index) => [
+      ...schema.requiredAttributes.filter(({ column }) => !String(row[column] || "").trim()).map(({ label }) => `${listings[index].title}: ${label}`),
+      ...shippingColumns.filter(({ column }) => !(Number(row[column]) > 0)).map(({ label }) => `${listings[index].title}: ${label}`),
+    ]);
     if (incomplete.length) throw new Error(`Ainda faltam atributos obrigatórios: ${incomplete.slice(0, 3).join("; ")}`);
     const output = window.XLSX.write(workbook, { bookType: "xlsx", type: "array", compression: true, cellStyles: true });
     const link = document.createElement("a");
@@ -1095,6 +1104,10 @@ function marketplaceMigrationDraftPayload(listing, migration) {
       shopee: {
         category_id: migration.shopee.categoryId,
         weight: migration.shopee.weight,
+        length: migration.shopee.length,
+        width: migration.shopee.width,
+        height: migration.shopee.height,
+        brand: migration.shopee.brand,
         days_to_ship: migration.shopee.daysToShip,
         sku: migration.sku,
         attributes: migration.shopee.attributes,

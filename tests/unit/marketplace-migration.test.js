@@ -39,6 +39,26 @@ test("preserva dados comuns e exige campos especificos da Shopee", () => {
   assert.deepEqual(migration.missing, ["Categoria Shopee", "Peso"]);
 });
 
+test("leva medidas, peso e marca do ML para o rascunho Shopee", () => {
+  const migration = buildMarketplaceMigration({
+    ...mlListing,
+    raw_payload: {
+      ...mlListing.raw_payload,
+      attributes: [
+        { id: "SELLER_PACKAGE_LENGTH", value_name: "10 cm" },
+        { id: "SELLER_PACKAGE_WIDTH", value_name: "17 cm" },
+        { id: "SELLER_PACKAGE_HEIGHT", value_name: "21 cm" },
+        { id: "SELLER_PACKAGE_WEIGHT", value_name: "356 g" },
+      ],
+    },
+  }, "shopee");
+  assert.equal(migration.shopee.weight, 0.356);
+  assert.equal(migration.shopee.length, 10);
+  assert.equal(migration.shopee.width, 17);
+  assert.equal(migration.shopee.height, 21);
+  assert.equal(migration.shopee.brand, "Sem marca");
+});
+
 test("exige categoria ML ao replicar um anuncio Shopee", () => {
   const migration = buildMarketplaceMigration({
     marketplace: "Shopee",

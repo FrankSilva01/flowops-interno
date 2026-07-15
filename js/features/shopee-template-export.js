@@ -10,6 +10,34 @@ function imageUrls(listing) {
     .filter((url) => /^https:\/\//i.test(String(url || ""))))].slice(0, 9);
 }
 
+function mlAttribute(listing, ids = []) {
+  const attributes = Array.isArray(listing?.raw_payload?.attributes) ? listing.raw_payload.attributes : [];
+  const expected = ids.map((id) => normalize(id));
+  return attributes.find((item) => expected.includes(normalize(item?.id)) || expected.includes(normalize(item?.name)));
+}
+
+function measurementNumber(attribute, targetUnit) {
+  if (!attribute) return 0;
+  const structuredNumber = Number(attribute?.value_struct?.number);
+  const raw = Number.isFinite(structuredNumber) ? structuredNumber : Number(String(attribute?.value_name || attribute?.value_id || "").replace(",", ".").match(/[\d.]+/)?.[0]);
+  if (!(raw > 0)) return 0;
+  const unit = normalize(attribute?.value_struct?.unit || attribute?.value_name || "");
+  if (targetUnit === "kg") return unit.includes("kg") ? raw : unit.includes("g") ? raw / 1000 : raw;
+  if (unit.includes("mm")) return raw / 10;
+  if (/\bm\b/.test(String(attribute?.value_struct?.unit || attribute?.value_name || "").toLowerCase())) return raw * 100;
+  return raw;
+}
+
+export function marketplacePackageData(listing) {
+  return {
+    weight: measurementNumber(mlAttribute(listing, ["SELLER_PACKAGE_WEIGHT", "PACKAGE_WEIGHT", "WEIGHT", "Peso"]), "kg"),
+    length: measurementNumber(mlAttribute(listing, ["SELLER_PACKAGE_LENGTH", "PACKAGE_LENGTH", "LENGTH", "Comprimento"]), "cm"),
+    width: measurementNumber(mlAttribute(listing, ["SELLER_PACKAGE_WIDTH", "PACKAGE_WIDTH", "WIDTH", "Largura"]), "cm"),
+    height: measurementNumber(mlAttribute(listing, ["SELLER_PACKAGE_HEIGHT", "PACKAGE_HEIGHT", "HEIGHT", "Altura"]), "cm"),
+    brand: "Sem marca",
+  };
+}
+
 export function shopeeSku(listing, index = 0) {
   const existing = text(listing?.sku || listing?.raw_payload?.seller_custom_field, 40);
   if (existing) return existing;
@@ -38,7 +66,7 @@ export function buildShopeeTemplateRow(listing, index = 0) {
   row[12] = sku;
   row[17] = images[0] || "";
   images.slice(1).forEach((url, imageIndex) => { row[18 + imageIndex] = url; });
-  row[26] = Number(listing?.raw_payload?.shopee?.weight || listing?.raw_payload?.weight || 0.25);
+  row[26] = Number(listing?.raw_payload?.shopee?.weight || listing?.raw_payload?.weight || marketplacePackageData(listing).weight || 0.25);
   row[30] = "Ligado";
   return row;
 }
@@ -74,6 +102,7 @@ export function readShopeeTemplateSchema(sheet, xlsx) {
 
 export function listingAttributeValue(listing, label) {
   const expected = normalize(label);
+  if (expected === "marca" || expected.startsWith("marca")) return "Sem marca";
   const attributes = Array.isArray(listing?.raw_payload?.attributes) ? listing.raw_payload.attributes : [];
   const match = attributes.find((item) => [item?.name, item?.id].some((value) => normalize(value) === expected));
   return text(match?.value_name || match?.value_struct?.name || match?.value_id, 200);
@@ -82,13 +111,14 @@ export function listingAttributeValue(listing, label) {
 export function applyShopeeTemplateRows(sheet, listings, schema, options, xlsx) {
   const rows = listings.map((listing, index) => {
     const base = buildShopeeTemplateRow(listing, index);
+    const packageData = marketplacePackageData(listing);
     const row = Array(Math.max(51, ...schema.columns.map(({ column }) => column + 1))).fill("");
     schema.columns.forEach(({ column, marker, label }) => {
       if (BASE_MARKER_INDEX.has(marker)) row[column] = base[BASE_MARKER_INDEX.get(marker)];
       else if (marker === "ps_category") row[column] = String(options.categoryId || "").trim();
-      else if (marker === "ps_length") row[column] = Number(options.length);
-      else if (marker === "ps_width") row[column] = Number(options.width);
-      else if (marker === "ps_height") row[column] = Number(options.height);
+      else if (marker === "ps_length") row[column] = packageData.length || Number(options.length);
+      else if (marker === "ps_width") row[column] = packageData.width || Number(options.width);
+      else if (marker === "ps_height") row[column] = packageData.height || Number(options.height);
       else if (marker === "ps_product_pre_order_dts") row[column] = Number(options.preOrderDays);
       else if (marker.startsWith("channel_id.")) row[column] = "Ligado";
       else if (!CORE_MARKERS.has(marker)) row[column] = listingAttributeValue(listing, label) || options.attributes?.[marker] || "";

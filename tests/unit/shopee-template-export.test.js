@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { applyShopeeTemplateRows, buildShopeeTemplateRow, listingAttributeValue, readShopeeTemplateSchema, shopeeSku, validateShopeeListing } from "../../js/features/shopee-template-export.js";
+import { applyShopeeTemplateRows, buildShopeeTemplateRow, listingAttributeValue, marketplacePackageData, readShopeeTemplateSchema, shopeeSku, validateShopeeListing } from "../../js/features/shopee-template-export.js";
 
 const listing = {
   external_id: "MLB1234567890",
@@ -57,4 +57,23 @@ test("detecta atributo obrigatório de modelo específico e aproveita valor do M
   const rows = applyShopeeTemplateRows(sheet, [enriched], schema, { categoryId: "101944", length: 15, width: 10, height: 10, preOrderDays: 3, attributes: {} }, xlsx);
   assert.equal(rows[0][0], "101944");
   assert.equal(rows[0][51], "Resina");
+});
+
+test("coleta dimensões e peso da embalagem do Mercado Livre", () => {
+  const measured = {
+    ...listing,
+    raw_payload: {
+      ...listing.raw_payload,
+      attributes: [
+        { id: "SELLER_PACKAGE_LENGTH", value_name: "9 cm" },
+        { id: "SELLER_PACKAGE_WIDTH", value_name: "17 cm" },
+        { id: "SELLER_PACKAGE_HEIGHT", value_name: "27 cm" },
+        { id: "SELLER_PACKAGE_WEIGHT", value_name: "2179 g" },
+        { id: "BRAND", name: "Marca", value_name: "3DAFT" },
+      ],
+    },
+  };
+  assert.deepEqual(marketplacePackageData(measured), { weight: 2.179, length: 9, width: 17, height: 27, brand: "Sem marca" });
+  assert.equal(buildShopeeTemplateRow(measured)[26], 2.179);
+  assert.equal(listingAttributeValue(measured, "Marca"), "Sem marca");
 });

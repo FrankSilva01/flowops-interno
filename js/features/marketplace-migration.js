@@ -26,6 +26,24 @@ function generatedSku(listing) {
   return `${prefix}-${source || "NOVO"}`;
 }
 
+function normalize(value) {
+  return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function attributeMeasurement(payload, ids, targetUnit = "cm") {
+  const expected = ids.map(normalize);
+  const attribute = (Array.isArray(payload.attributes) ? payload.attributes : []).find((item) => expected.includes(normalize(item?.id)) || expected.includes(normalize(item?.name)));
+  if (!attribute) return 0;
+  const structured = Number(attribute?.value_struct?.number);
+  const amount = Number.isFinite(structured) ? structured : Number(String(attribute.value_name || attribute.value_id || "").replace(",", ".").match(/[\d.]+/)?.[0]);
+  if (!(amount > 0)) return 0;
+  const unit = normalize(attribute?.value_struct?.unit || attribute?.value_name || "");
+  if (targetUnit === "kg") return unit.includes("kg") ? amount : unit.includes("g") ? amount / 1000 : amount;
+  if (unit.includes("mm")) return amount / 10;
+  if (/\bm\b/.test(String(attribute?.value_struct?.unit || attribute?.value_name || "").toLowerCase())) return amount * 100;
+  return amount;
+}
+
 export function migrationTargetFor(sourceMarketplace) {
   return channel(sourceMarketplace) === "shopee" ? "mercado-livre" : "shopee";
 }
@@ -60,7 +78,11 @@ export function buildMarketplaceMigration(listing, targetMarketplace = migration
     },
     shopee: {
       categoryId: String(shopee.category_id || (source === "shopee" ? payload.category_id || "" : "")),
-      weight: Number(shopee.weight || payload.weight || 0),
+      weight: Number(shopee.weight || payload.weight || attributeMeasurement(payload, ["SELLER_PACKAGE_WEIGHT", "PACKAGE_WEIGHT", "WEIGHT", "Peso"], "kg") || 0),
+      length: Number(shopee.length || attributeMeasurement(payload, ["SELLER_PACKAGE_LENGTH", "PACKAGE_LENGTH", "LENGTH", "Comprimento"]) || 0),
+      width: Number(shopee.width || attributeMeasurement(payload, ["SELLER_PACKAGE_WIDTH", "PACKAGE_WIDTH", "WIDTH", "Largura"]) || 0),
+      height: Number(shopee.height || attributeMeasurement(payload, ["SELLER_PACKAGE_HEIGHT", "PACKAGE_HEIGHT", "HEIGHT", "Altura"]) || 0),
+      brand: "Sem marca",
       daysToShip: Math.min(15, Math.max(3, Number(shopee.days_to_ship || 15))),
       attributes: Array.isArray(shopee.attributes) ? shopee.attributes : [],
     },
