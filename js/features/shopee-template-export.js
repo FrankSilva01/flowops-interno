@@ -29,11 +29,14 @@ function measurementNumber(attribute, targetUnit) {
 }
 
 export function marketplacePackageData(listing) {
+  const payload = listing?.raw_payload || {};
+  const channelData = payload.shopee || payload.shipping_dimensions || payload.package_dimensions || payload.dimensions || {};
+  const direct = (names) => names.map((name) => Number(channelData?.[name] ?? payload?.[name])).find((value) => value > 0) || 0;
   return {
-    weight: measurementNumber(mlAttribute(listing, ["SELLER_PACKAGE_WEIGHT", "PACKAGE_WEIGHT", "WEIGHT", "Peso"]), "kg"),
-    length: measurementNumber(mlAttribute(listing, ["SELLER_PACKAGE_LENGTH", "PACKAGE_LENGTH", "LENGTH", "Comprimento"]), "cm"),
-    width: measurementNumber(mlAttribute(listing, ["SELLER_PACKAGE_WIDTH", "PACKAGE_WIDTH", "WIDTH", "Largura"]), "cm"),
-    height: measurementNumber(mlAttribute(listing, ["SELLER_PACKAGE_HEIGHT", "PACKAGE_HEIGHT", "HEIGHT", "Altura"]), "cm"),
+    weight: direct(["weight", "package_weight"]) || measurementNumber(mlAttribute(listing, ["SELLER_PACKAGE_WEIGHT", "PACKAGE_WEIGHT", "WEIGHT", "Peso"]), "kg"),
+    length: direct(["length", "depth", "package_length", "package_depth"]) || measurementNumber(mlAttribute(listing, ["SELLER_PACKAGE_LENGTH", "SELLER_PACKAGE_DEPTH", "PACKAGE_LENGTH", "PACKAGE_DEPTH", "LENGTH", "DEPTH", "Comprimento", "Profundidade"]), "cm"),
+    width: direct(["width", "package_width"]) || measurementNumber(mlAttribute(listing, ["SELLER_PACKAGE_WIDTH", "PACKAGE_WIDTH", "WIDTH", "Largura"]), "cm"),
+    height: direct(["height", "package_height"]) || measurementNumber(mlAttribute(listing, ["SELLER_PACKAGE_HEIGHT", "PACKAGE_HEIGHT", "HEIGHT", "Altura"]), "cm"),
     brand: "Sem marca",
   };
 }
@@ -66,7 +69,7 @@ export function buildShopeeTemplateRow(listing, index = 0) {
   row[12] = sku;
   row[17] = images[0] || "";
   images.slice(1).forEach((url, imageIndex) => { row[18 + imageIndex] = url; });
-  row[26] = Number(listing?.raw_payload?.shopee?.weight || listing?.raw_payload?.weight || marketplacePackageData(listing).weight || 0.25);
+  row[26] = Number(listing?.raw_payload?.shopee?.weight || listing?.raw_payload?.weight || marketplacePackageData(listing).weight || 0);
   row[30] = "Ligado";
   return row;
 }
@@ -114,7 +117,8 @@ export function applyShopeeTemplateRows(sheet, listings, schema, options, xlsx) 
     const packageData = marketplacePackageData(listing);
     const row = Array(Math.max(51, ...schema.columns.map(({ column }) => column + 1))).fill("");
     schema.columns.forEach(({ column, marker, label }) => {
-      if (BASE_MARKER_INDEX.has(marker)) row[column] = base[BASE_MARKER_INDEX.get(marker)];
+      if (marker === "ps_weight") row[column] = packageData.weight || Number(options.weight);
+      else if (BASE_MARKER_INDEX.has(marker)) row[column] = base[BASE_MARKER_INDEX.get(marker)];
       else if (marker === "ps_category") row[column] = String(options.categoryId || "").trim();
       else if (marker === "ps_length") row[column] = packageData.length || Number(options.length);
       else if (marker === "ps_width") row[column] = packageData.width || Number(options.width);

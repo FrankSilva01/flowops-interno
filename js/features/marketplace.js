@@ -15,7 +15,7 @@ import { renderMarketplaceAnalyticsPanel, getListingAnalytics, computeIntentScor
 import { getProductForSale, renderProductionAssetShortcut } from "./product-assets.js";
 import { loadXlsx, parseCsv } from "../core/importer.js";
 import { MARKETPLACE_IMPORT_TEMPLATE, normalizeMarketplaceImportRows, runMarketplaceImportBatch } from "./marketplace-file-import.js";
-import { applyShopeeTemplateRows, assertShopeeTemplate, listingAttributeValue, readShopeeTemplateSchema, validateShopeeListing } from "./shopee-template-export.js";
+import { applyShopeeTemplateRows, assertShopeeTemplate, listingAttributeValue, marketplacePackageData, readShopeeTemplateSchema, validateShopeeListing } from "./shopee-template-export.js";
 import { groupShopeeCategorySuggestions } from "./shopee-category-mapping.js";
 import {
   buildMarketplaceMigration,
@@ -718,6 +718,15 @@ export function fillStorefrontFormFromListing(item) {
   form.elements.ml_manufacturing_time.value = payload.sale_terms?.find?.((term) => term.id === "MANUFACTURING_TIME")?.value_name || "";
   form.elements.sku.value = item.sku || payload.seller_custom_field || "";
   form.elements.ml_attributes_json.value = JSON.stringify(payload.attributes || [], null, 2);
+  const packageData = marketplacePackageData(item);
+  form.elements.shopee_category_id.value = payload.shopee?.category_id || "";
+  form.elements.shopee_weight.value = packageData.weight || "";
+  form.elements.shopee_length.value = packageData.length || "";
+  form.elements.shopee_width.value = packageData.width || "";
+  form.elements.shopee_height.value = packageData.height || "";
+  form.elements.shopee_days_to_ship.value = payload.shopee?.days_to_ship || 3;
+  form.elements.shopee_sku.value = payload.shopee?.sku || item.sku || payload.seller_custom_field || "";
+  form.elements.shopee_attributes_json.value = JSON.stringify(payload.shopee?.attributes || [], null, 2);
   form.elements.featured.checked = true;
   storefrontUploadedImages = [];
   updateStorefrontTargetFields();
@@ -800,6 +809,10 @@ export async function saveStorefrontProduct(event) {
       shopee: {
         category_id: data.get("shopee_category_id"),
         weight: Number(data.get("shopee_weight") || 0),
+        length: Number(data.get("shopee_length") || 0),
+        width: Number(data.get("shopee_width") || 0),
+        height: Number(data.get("shopee_height") || 0),
+        brand: "Sem marca",
         days_to_ship: Number(data.get("shopee_days_to_ship") || 20),
         sku: data.get("shopee_sku"),
         attributes: parseJsonSafe(data.get("shopee_attributes_json"), []),
@@ -887,8 +900,13 @@ export function openShopeeTemplateExport() {
   if (!listings.length) return;
   const invalid = listings.map((listing, index) => ({ listing, missing: validateShopeeListing(listing, index) })).filter((item) => item.missing.length);
   const categoryGroups = groupShopeeCategorySuggestions(listings);
+  const missingPackageData = listings.filter((listing) => {
+    const data = marketplacePackageData(listing);
+    return !(data.weight > 0 && data.length > 0 && data.width > 0 && data.height > 0);
+  });
   const form = byId("shopeeTemplateExportForm");
   form.reset();
+  if (categoryGroups.length === 1 && categoryGroups[0].id) form.elements.categoryId.value = categoryGroups[0].id;
   shopeeTemplateSchema = null;
   byId("shopeeRequiredAttributes").hidden = true;
   byId("shopeeRequiredAttributeFields").innerHTML = "";
@@ -896,7 +914,7 @@ export function openShopeeTemplateExport() {
   byId("shopeeExportSelectionCount").textContent = `${listings.length} anúncio(s) selecionado(s)`;
   byId("shopeeTemplateExportSummary").innerHTML = `<div class="drawer-field-row"><span>Prontos para exportar</span><strong>${listings.length - invalid.length}</strong></div><div class="drawer-field-row"><span>Com pendências</span><strong>${invalid.length}</strong></div>`;
   byId("shopeeTemplateExportMessage").textContent = invalid.length ? `${invalid.length} anúncio(s) não serão exportados: complete título, preço e pelo menos 3 imagens.` : "";
-  byId("shopeeTemplateExportSummary").insertAdjacentHTML("beforeend", categoryGroups.map((group) => `<div class="drawer-field-row"><span>${html(group.path)}</span><strong>${group.count}</strong></div>`).join(""));
+  byId("shopeeTemplateExportSummary").insertAdjacentHTML("beforeend", `<div class="drawer-field-row"><span>Sem peso ou medidas completas</span><strong>${missingPackageData.length}</strong></div>${categoryGroups.map((group) => `<div class="drawer-field-row"><span>${html(group.path)}</span><strong>${group.count}</strong></div>`).join("")}`);
   if (categoryGroups.length > 1) {
     byId("shopeeTemplateExportMessage").textContent += ` A seleção possui ${categoryGroups.length} categorias sugeridas; gere uma planilha por categoria usando o modelo correspondente da Shopee.`;
   }
@@ -915,6 +933,8 @@ export async function previewShopeeTemplate() {
     const workbook = window.XLSX.read(await file.arrayBuffer(), { type: "array", cellStyles: true });
     const sheet = assertShopeeTemplate(workbook);
     const schema = readShopeeTemplateSchema(sheet, window.XLSX);
+    const categoryGroups = groupShopeeCategorySuggestions(selectedMarketplaceListings());
+    if (categoryGroups.length > 1) throw new Error("A seleção mistura categorias. Exporte separadamente cada categoria com o modelo correspondente da Shopee.");
     if (!schema.categorySpecific) throw new Error("Este é o modelo básico. Baixe na Shopee um modelo selecionando a categoria para incluir os atributos obrigatórios.");
     shopeeTemplateSchema = schema;
     const listings = selectedMarketplaceListings();
@@ -947,6 +967,8 @@ export async function exportSelectedListingsToShopee(event) {
     return;
   }
   try {
+    const categoryGroups = groupShopeeCategorySuggestions(listings);
+    if (categoryGroups.length > 1) throw new Error("A seleção mistura categorias. Gere uma planilha por categoria.");
     message.textContent = "Gerando planilha...";
     await loadXlsx();
     const workbook = window.XLSX.read(await file.arrayBuffer(), { type: "array", cellStyles: true });
@@ -955,7 +977,7 @@ export async function exportSelectedListingsToShopee(event) {
     if (!schema.categorySpecific) throw new Error("Use um modelo da Shopee gerado para a categoria dos produtos.");
     const data = new FormData(event.currentTarget);
     const attributes = Object.fromEntries([...data.entries()].filter(([key]) => key.startsWith("attribute__")).map(([key, value]) => [decodeURIComponent(key.slice(11)), String(value).trim()]));
-    const options = { categoryId: data.get("categoryId"), length: data.get("length"), width: data.get("width"), height: data.get("height"), preOrderDays: data.get("preOrderDays"), noGtin: data.get("noGtin") === "on", attributes };
+    const options = { categoryId: data.get("categoryId"), weight: data.get("weight"), length: data.get("length"), width: data.get("width"), height: data.get("height"), preOrderDays: data.get("preOrderDays"), noGtin: data.get("noGtin") === "on", attributes };
     if (!/^\d+$/.test(String(options.categoryId || ""))) throw new Error("Informe o código numérico da categoria Shopee.");
     const rows = applyShopeeTemplateRows(sheet, listings, schema, options, window.XLSX);
     const shippingColumns = schema.columns.filter(({ marker }) => ["ps_weight", "ps_length", "ps_width", "ps_height"].includes(marker));
@@ -1333,6 +1355,9 @@ export function prepareMarketplaceMigration(event) {
   productForm.elements.shopee_sku.value = migration.sku;
   productForm.elements.shopee_category_id.value = migration.shopee.categoryId;
   productForm.elements.shopee_weight.value = migration.shopee.weight || "";
+  productForm.elements.shopee_length.value = migration.shopee.length || "";
+  productForm.elements.shopee_width.value = migration.shopee.width || "";
+  productForm.elements.shopee_height.value = migration.shopee.height || "";
   productForm.elements.shopee_days_to_ship.value = migration.shopee.daysToShip;
   productForm.elements.shopee_attributes_json.value = JSON.stringify(migration.shopee.attributes, null, 2);
   if (migration.target === "mercado-livre") productForm.elements.ml_category_id.value = migration.ml.categoryId;

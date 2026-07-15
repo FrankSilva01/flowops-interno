@@ -21,7 +21,7 @@ test("preenche as colunas validadas do modelo oficial Shopee", () => {
   assert.equal(row[10], 94.9);
   assert.equal(row[11], 4);
   assert.equal(row[17], "https://img.example/1.jpg");
-  assert.equal(row[26], 0.25);
+  assert.equal(row[26], 0);
   assert.equal(row[30], "Ligado");
   assert.equal(row[3], row[12]);
 });
@@ -76,4 +76,44 @@ test("coleta dimensões e peso da embalagem do Mercado Livre", () => {
   assert.deepEqual(marketplacePackageData(measured), { weight: 2.179, length: 9, width: 17, height: 27, brand: "Sem marca" });
   assert.equal(buildShopeeTemplateRow(measured)[26], 2.179);
   assert.equal(listingAttributeValue(measured, "Marca"), "Sem marca");
+});
+
+test("aceita profundidade e dimensões de outros marketplaces", () => {
+  const data = marketplacePackageData({ raw_payload: { package_dimensions: { depth: 12, width: 8, height: 6 }, package_weight: 0.4 } });
+  assert.deepEqual(data, { weight: 0.4, length: 12, width: 8, height: 6, brand: "Sem marca" });
+});
+
+test("não inventa peso quando o marketplace não possui medida", () => {
+  assert.equal(buildShopeeTemplateRow({ ...listing, raw_payload: { ...listing.raw_payload, attributes: [] } })[26], 0);
+});
+
+test("preenche categoria, marca, peso e todas as dimensões no arquivo Shopee", () => {
+  const measured = {
+    ...listing,
+    raw_payload: {
+      ...listing.raw_payload,
+      attributes: [
+        { id: "SELLER_PACKAGE_WEIGHT", value_name: "356 g" },
+        { id: "SELLER_PACKAGE_DEPTH", value_name: "10 cm" },
+        { id: "SELLER_PACKAGE_WIDTH", value_name: "17 cm" },
+        { id: "SELLER_PACKAGE_HEIGHT", value_name: "21 cm" },
+      ],
+    },
+  };
+  const schema = { columns: [
+    { column: 0, marker: "ps_category", label: "Categoria" },
+    { column: 26, marker: "ps_weight", label: "Peso" },
+    { column: 27, marker: "ps_length", label: "Comprimento" },
+    { column: 28, marker: "ps_width", label: "Largura" },
+    { column: 29, marker: "ps_height", label: "Altura" },
+    { column: 51, marker: "ps_attribute_brand", label: "Marca" },
+  ] };
+  const xlsx = { utils: { sheet_add_aoa: (sheet, rows) => { sheet.rows = rows; } } };
+  const [row] = applyShopeeTemplateRows({}, [measured], schema, { categoryId: "101386", attributes: {} }, xlsx);
+  assert.equal(row[0], "101386");
+  assert.equal(row[26], 0.356);
+  assert.equal(row[27], 10);
+  assert.equal(row[28], 17);
+  assert.equal(row[29], 21);
+  assert.equal(row[51], "Sem marca");
 });

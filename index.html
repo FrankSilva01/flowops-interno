@@ -1182,7 +1182,10 @@
                   <div class="form-section-title">Campos Shopee</div>
                   <p class="hint-box">Shopee Open Platform - API pronta para integração quando credenciais forem aprovadas.</p>
                   <label>Categoria Shopee<input name="shopee_category_id" placeholder="ID da categoria no Shopee" /></label>
-                  <label>Peso (g)<input name="shopee_weight" type="number" min="0" step="0.1" placeholder="500" /></label>
+                  <label>Peso (kg)<input name="shopee_weight" type="number" min="0" step="0.001" placeholder="0,5" /></label>
+                  <label>Comprimento/profundidade (cm)<input name="shopee_length" type="number" min="0" step="0.1" /></label>
+                  <label>Largura (cm)<input name="shopee_width" type="number" min="0" step="0.1" /></label>
+                  <label>Altura (cm)<input name="shopee_height" type="number" min="0" step="0.1" /></label>
                   <label>Prazo de envio (dias)<input name="shopee_days_to_ship" type="number" min="1" step="1" placeholder="20" /></label>
                   <label>SKU Shopee<input name="shopee_sku" placeholder="SKU único da Shopee" /></label>
                   <label class="wide">Atributos Shopee em JSON<textarea name="shopee_attributes_json" rows="3" placeholder='[{"attribute_id":1,"attribute_value_id":1}]'></textarea></label>
@@ -2334,6 +2337,7 @@
         </label>
         <div class="order-form-grid">
           <label class="span-2">Código da categoria Shopee<input name="categoryId" inputmode="numeric" pattern="[0-9]+" placeholder="Ex: 101944" required /><small>Exporte juntos somente produtos da mesma categoria.</small></label>
+          <label>Peso padrão (kg)<input name="weight" type="number" min="0.01" step="0.001" placeholder="Fallback para item sem peso" /></label>
           <label>Comprimento padrão (cm)<input name="length" type="number" min="0.1" step="0.1" placeholder="Fallback para item sem medida" /></label>
           <label>Largura padrão (cm)<input name="width" type="number" min="0.1" step="0.1" placeholder="Fallback para item sem medida" /></label>
           <label>Altura padrão (cm)<input name="height" type="number" min="0.1" step="0.1" placeholder="Fallback para item sem medida" /></label>

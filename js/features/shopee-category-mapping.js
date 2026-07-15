@@ -1,7 +1,7 @@
 const CATEGORIES = {
-  rpgMiniature: "Hobbies e Coleções > Itens Colecionáveis > Estátuas e Esculturas",
-  actionFigure: "Hobbies e Coleções > Itens Colecionáveis > Figuras de Ação",
-  makeupOrganizer: "Beleza > Utensílios de Beleza > Acessórios de Maquiagem",
+  rpgMiniature: { id: "101386", path: "Hobbies e Coleções > Itens Colecionáveis > Estátuas e Esculturas" },
+  actionFigure: { id: "101385", path: "Hobbies e Coleções > Itens Colecionáveis > Figuras de Ação" },
+  makeupOrganizer: { id: "101650", path: "Beleza > Utensílios de Beleza > Acessórios de Maquiagem > Bolsas e Organizadores de Maquiagem" },
   bathroom: "Casa e Decoração > Banheiros",
   homeOrganizer: "Casa e Decoração > Organizadores para Casa",
   phoneHolder: "Celulares e Dispositivos > Acessórios > Suportes para Celular",
@@ -18,13 +18,13 @@ export function suggestShopeeCategory(listing) {
   const sku = normalized(listing?.sku);
 
   if (/\b(min|miniatura|rpg|goblin|orc|mago|esqueleto|morto.?vivo|necromante|vampiro|fenrir|dragao)\b/.test(value) || sku.startsWith("min-")) {
-    return { key: "rpgMiniature", path: CATEGORIES.rpgMiniature, confidence: "alta" };
+    return { key: "rpgMiniature", ...CATEGORIES.rpgMiniature, confidence: "alta" };
   }
   if (/\b(action figure|figure|pokemon|mewtwo|umbreon|dragonite|street fighter|deadpool|garage kit)\b/.test(value) || sku.startsWith("dec-")) {
-    return { key: "actionFigure", path: CATEGORIES.actionFigure, confidence: "alta" };
+    return { key: "actionFigure", ...CATEGORIES.actionFigure, confidence: "alta" };
   }
   if (/\b(pincel|pinceis|paleta|maquiagem|algodao|cotonete)\b/.test(value)) {
-    return { key: "makeupOrganizer", path: CATEGORIES.makeupOrganizer, confidence: "alta" };
+    return { key: "makeupOrganizer", ...CATEGORIES.makeupOrganizer, confidence: "alta" };
   }
   if (/\b(banheiro|toalha)\b/.test(value)) {
     return { key: "bathroom", path: CATEGORIES.bathroom, confidence: "alta" };
