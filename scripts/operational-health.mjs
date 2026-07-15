@@ -11,8 +11,11 @@ for (const name of ["marketplace-sync", "get-real-shipping-cost", "nfe-sync", "s
 }
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!serviceKey) {
-  console.warn("SUPABASE_SERVICE_ROLE_KEY ausente; checagens privadas foram ignoradas.");
-  process.exit(0);
+  if (process.env.FLOWOPS_ALLOW_PUBLIC_HEALTH === "true") {
+    console.warn("SUPABASE_SERVICE_ROLE_KEY ausente; somente checagens publicas foram executadas.");
+    process.exit(0);
+  }
+  throw new Error("SUPABASE_SERVICE_ROLE_KEY ausente; a saude privada nao pode ser validada.");
 }
 async function rest(path) {
   const response = await fetch(`${supabaseUrl}/rest/v1/${path}`, { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } });
@@ -25,4 +28,11 @@ if (!latestBackup) throw new Error("Nenhuma execucao de backup encontrada.");
 if (latestBackup.status !== "success") throw new Error(`Ultimo backup esta em ${latestBackup.status}: ${latestBackup.error_message || "sem detalhe"}`);
 const ageHours = (Date.now() - new Date(latestBackup.finished_at || latestBackup.started_at).getTime()) / 3_600_000;
 if (ageHours > 192) throw new Error(`Ultimo backup tem ${Math.round(ageHours)} horas.`);
-console.log(`Saude operacional valida. Backup mais recente ha ${Math.round(ageHours)} hora(s).`);
+const accounts = await rest("marketplace_accounts?select=marketplace,status,expires_at,last_sync_at");
+const activeAccounts = accounts.filter((item) => item.status === "connected" || item.status === "active");
+const expiring = activeAccounts.filter((item) => item.expires_at && new Date(item.expires_at).getTime() < Date.now() + 24 * 3_600_000);
+if (expiring.length) throw new Error(`${expiring.length} integracao(oes) expiram em menos de 24 horas.`);
+const since = encodeURIComponent(new Date(Date.now() - 60 * 60_000).toISOString());
+const recentErrors = await rest(`marketplace_sync_log?select=marketplace,event,message,created_at&status=eq.error&created_at=gte.${since}&limit=20`);
+if (recentErrors.length >= 5) throw new Error(`${recentErrors.length} erros de integracao na ultima hora.`);
+console.log(`Saude operacional valida. Backup ha ${Math.round(ageHours)}h; ${activeAccounts.length} integracao(oes) ativa(s); ${recentErrors.length} erro(s) na ultima hora.`);

@@ -19,6 +19,11 @@ jobs:
       FLOWOPS_ALLOW_STAGING_RESTORE: ${{ github.event_name == 'workflow_dispatch' && inputs.apply_restore && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@v4
+      - name: Validate staging credentials
+        run: |
+          test -n "$FLOWOPS_STAGING_ANON_KEY" || (echo "FLOWOPS_STAGING_ANON_KEY ausente" && exit 1)
+          test -n "$FLOWOPS_STAGING_ADMIN_EMAIL" || (echo "FLOWOPS_STAGING_ADMIN_EMAIL ausente" && exit 1)
+          test -n "$FLOWOPS_STAGING_ADMIN_PASSWORD" || (echo "FLOWOPS_STAGING_ADMIN_PASSWORD ausente" && exit 1)
       - uses: actions/setup-node@v4
         with:
           node-version: 22

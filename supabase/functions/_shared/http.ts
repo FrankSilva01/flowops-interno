@@ -25,7 +25,7 @@ export function corsHeadersFor(req: Request, methods = "GET, POST, OPTIONS") {
     "Vary": "Origin",
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-signature, x-request-id",
     "Access-Control-Allow-Methods": methods,
-    "Access-Control-Expose-Headers": "Content-Disposition, Content-Type",
+    "Access-Control-Expose-Headers": "Content-Disposition, Content-Type, X-FlowOps-Document-Count, X-FlowOps-Document-Source",
   };
 }
 

@@ -1760,10 +1760,37 @@ export async function downloadSelectedMarketplaceDocuments() {
     showAppMessage("Documentos", "Nenhum documento disponível foi encontrado nos pedidos selecionados.", "warning");
     return;
   }
-  for (const item of available) {
-    await downloadMarketplaceDocument(item.external_order_id, item.marketplace, item.document_type, false, { skipReload: true });
+  try {
+    const { data } = await state.supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) throw new Error("Sessao expirada. Entre novamente.");
+    const url = new URL(supabaseFunctionUrl("marketplace-sync"));
+    url.searchParams.set("marketplace", "ml");
+    url.searchParams.set("action", "document-bundle");
+    if (state.organizationId) url.searchParams.set("organization_id", state.organizationId);
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ order_ids: [...selected] }),
+    });
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      throw new Error(payload.error || "Nao foi possivel montar o pacote de documentos.");
+    }
+    const blobUrl = URL.createObjectURL(await response.blob());
+    const disposition = response.headers.get("Content-Disposition") || "";
+    const anchor = document.createElement("a");
+    anchor.href = blobUrl;
+    anchor.download = disposition.match(/filename="?([^";]+)"?/i)?.[1] || `documentos-marketplace-${new Date().toISOString().slice(0, 10)}.zip`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    showAppMessage("Pacote preparado", `${response.headers.get("X-FlowOps-Document-Count") || available.length} documento(s) reunidos em um unico ZIP.`, "success");
+    await loadAndRenderMarketplaces();
+  } catch (error) {
+    showAppMessage("Falha no pacote", error.message || String(error), "error");
   }
-  await loadAndRenderMarketplaces();
 }
 
 export async function saveMarketplaceFiscalProfile() {

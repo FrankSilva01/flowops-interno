@@ -6,7 +6,7 @@ export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Expose-Headers": "Content-Disposition, Content-Type",
+  "Access-Control-Expose-Headers": "Content-Disposition, Content-Type, X-FlowOps-Document-Count, X-FlowOps-Document-Source",
 };
 
 export function applyCors(req: Request) {

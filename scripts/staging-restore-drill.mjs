@@ -20,7 +20,13 @@ async function maintenance(body) {
 const exported = await maintenance({ action: "export", scope: "database" });
 const simulation = await maintenance({ action: "simulate-restore", snapshot: exported.snapshot });
 if (!simulation.can_restore) throw new Error(`Snapshot nao restauravel: ${JSON.stringify(simulation.totals || simulation)}`);
-console.log(`Simulacao valida: ${simulation.totals?.rows || 0} registros.`);
+const requiredTables = ["organizations", "organization_members", "orders", "cash_entries", "materials", "marketplace_accounts"];
+const snapshotTables = Object.keys(exported.snapshot?.tables || exported.snapshot || {});
+const missingTables = requiredTables.filter((table) => !snapshotTables.includes(table));
+if (missingTables.length) throw new Error(`Snapshot incompleto; tabelas ausentes: ${missingTables.join(", ")}`);
+const encoded = new TextEncoder().encode(JSON.stringify(exported.snapshot));
+const digest = [...new Uint8Array(await crypto.subtle.digest("SHA-256", encoded))].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+console.log(`Simulacao valida: ${simulation.totals?.rows || 0} registros, ${snapshotTables.length} tabelas, SHA-256 ${digest.slice(0, 16)}...`);
 if (process.env.FLOWOPS_ALLOW_STAGING_RESTORE === "true") {
   const restored = await maintenance({ action: "restore", snapshot: exported.snapshot });
   console.log(`Restore concluido: ${restored.restored_rows} registros em ${restored.restored_tables} tabelas.`);

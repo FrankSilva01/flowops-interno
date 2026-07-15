@@ -8,6 +8,7 @@ import {
   logSync,
 } from "../_shared/marketplace.ts";
 import { adoptCachedMarketplaceDocument, archiveMarketplaceDocument, recordMarketplaceDocumentDownload, verifyMarketplaceDocument } from "../_shared/marketplace-documents.ts";
+import { createZip } from "../_shared/zip.mjs";
 
 Deno.serve(async (req) => {
   applyCors(req);
@@ -47,6 +48,14 @@ Deno.serve(async (req) => {
         return json({ ok: false, error: "document_type invalido." }, { status: 400 });
       }
       return await downloadMlDocument(orderId, documentType, account, actorEmail);
+    }
+
+    if (action === "document-bundle") {
+      if (req.method !== "POST") return json({ ok: false, error: "Use POST para baixar o pacote." }, { status: 405 });
+      const body = await req.json().catch(() => ({}));
+      const orderIds = [...new Set((Array.isArray(body.order_ids) ? body.order_ids : []).map(String).filter(Boolean))].slice(0, 50);
+      if (!orderIds.length) return json({ ok: false, error: "Selecione ao menos uma venda." }, { status: 400 });
+      return await downloadDocumentBundle(orderIds, account, actorEmail);
     }
 
     if (action === "stats") {
@@ -243,6 +252,56 @@ async function getMlItemStats(itemId: string, account: Record<string, any>) {
     last_updated: item.last_updated,
     permalink: item.permalink,
   };
+}
+
+async function downloadDocumentBundle(orderIds: string[], account: Record<string, any>, actorEmail: string) {
+  const supabase = adminClient();
+  const { data: documents, error } = await supabase
+    .from("marketplace_documents")
+    .select("external_order_id,internal_order_id,document_type,storage_path,mime_type,file_name,checksum_sha256")
+    .eq("organization_id", account.organization_id)
+    .eq("marketplace", "Mercado Livre")
+    .eq("status", "available")
+    .in("external_order_id", orderIds)
+    .in("document_type", ["label", "declaration", "declaration_xml"]);
+  if (error) throw error;
+
+  const entries: Array<{ name: string; bytes: Uint8Array }> = [];
+  for (const document of documents || []) {
+    if (!document.storage_path) continue;
+    const { data: file, error: downloadError } = await supabase.storage.from("marketplace-documents").download(document.storage_path);
+    if (downloadError || !file) continue;
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    if (document.checksum_sha256 && !(await verifyMarketplaceDocument(bytes, document.checksum_sha256))) continue;
+    const safeOrder = String(document.external_order_id).replace(/[^a-zA-Z0-9_-]/g, "-");
+    const safeName = String(document.file_name || `${document.document_type}-${safeOrder}`).replace(/[^a-zA-Z0-9._-]/g, "-");
+    entries.push({ name: `${safeOrder}/${safeName}`, bytes });
+    await recordMarketplaceDocumentDownload({
+      organizationId: account.organization_id,
+      actorEmail,
+      externalOrderId: document.external_order_id,
+      internalOrderId: document.internal_order_id,
+      documentType: document.document_type,
+      source: "private-cache-bundle",
+      checksum: document.checksum_sha256,
+    });
+  }
+  if (!entries.length) return json({ ok: false, error: "Nenhum documento arquivado e integro foi encontrado." }, { status: 404 });
+  const bytes = createZip(entries);
+  const date = new Date().toISOString().slice(0, 10);
+  await logSync("Mercado Livre", "document-bundle", "success", `Pacote com ${entries.length} documento(s) baixado`, {
+    organizationId: account.organization_id,
+    actorEmail,
+    rawPayload: { order_ids: orderIds, document_count: entries.length },
+  });
+  return new Response(bytes, {
+    headers: {
+      ...corsHeaders,
+      "Content-Type": "application/zip",
+      "Content-Disposition": `attachment; filename="documentos-marketplace-${date}.zip"`,
+      "X-FlowOps-Document-Count": String(entries.length),
+    },
+  });
 }
 
 async function downloadMlDocument(
