@@ -156,7 +156,7 @@ function renderSaleDocumentStatus(sale, documentType, label) {
   const document = marketplaceDocumentForSale(sale, documentType);
   const [text, className] = documentStatusPresentation(document?.status);
   const title = document?.last_error || (document?.downloaded_at ? `Arquivo seguro desde ${formatDateTime(document.downloaded_at)}` : text);
-  return `<span class="sale-document-status" title="${html(title)}"><span>${html(label)}</span><strong class="badge ${className}">${html(text)}</strong></span>`;
+  return `<span class="sale-document-status" title="${html(title)}"><span>${html(label)}</span><strong class="badge ${className}">${html(text)}${document?.version ? ` · v${Number(document.version)}` : ""}</strong></span>`;
 }
 
 function renderSaleFiscalStatus(sale) {
@@ -168,6 +168,8 @@ function renderMarketplaceDocumentsCenter(sales, documents) {
   const available = documents.filter((item) => item.status === "available").length;
   const pending = documents.filter((item) => item.status === "pending").length;
   const unavailable = documents.filter((item) => item.status === "unavailable").length;
+  const fiscalProfile = state.organizationSettings?.fiscal_profile || "unknown";
+  const selected = state.marketplaceSelectedSales.length;
   return `
     <div class="marketplace-documents-heading">
       <div><span class="section-eyebrow">Documentos oficiais</span><h3>Central fiscal e logística</h3></div>
@@ -178,7 +180,43 @@ function renderMarketplaceDocumentsCenter(sales, documents) {
       <span class="done"><strong>${available}</strong> disponíveis</span>
       <span class="queue"><strong>${pending}</strong> pendentes</span>
       <span class="danger"><strong>${unavailable}</strong> indisponíveis</span>
+    </div>
+    <div class="marketplace-document-toolbar">
+      <input id="marketplaceDocumentSearch" type="search" value="${html(state.marketplaceDocumentSearch)}" placeholder="Buscar pedido ou produto" aria-label="Buscar documentos" />
+      <select id="marketplaceDocumentFilter" aria-label="Filtrar situação documental">
+        <option value="all" ${state.marketplaceDocumentFilter === "all" ? "selected" : ""}>Todos os status</option>
+        <option value="available" ${state.marketplaceDocumentFilter === "available" ? "selected" : ""}>Com documento disponível</option>
+        <option value="pending" ${state.marketplaceDocumentFilter === "pending" ? "selected" : ""}>Com pendência</option>
+        <option value="unavailable" ${state.marketplaceDocumentFilter === "unavailable" ? "selected" : ""}>Indisponíveis</option>
+        <option value="missing" ${state.marketplaceDocumentFilter === "missing" ? "selected" : ""}>Não consultados</option>
+      </select>
+      <button class="secondary-btn" type="button" data-action="marketplace-documents-refresh">Consultar marketplace</button>
+      <button class="secondary-btn" type="button" data-action="marketplace-documents-download" ${selected ? "" : "disabled"}>Baixar selecionados (${selected})</button>
+      <button class="secondary-btn" type="button" data-action="marketplace-documents-export">Exportar controle fiscal</button>
+    </div>
+    <div class="marketplace-fiscal-profile ${fiscalProfile === "contributor" ? "warning" : ""}">
+      <label for="marketplaceFiscalProfile">Perfil fiscal da empresa</label>
+      <select id="marketplaceFiscalProfile">
+        <option value="unknown" ${fiscalProfile === "unknown" ? "selected" : ""}>Não configurado</option>
+        <option value="non_contributor" ${fiscalProfile === "non_contributor" ? "selected" : ""}>Não contribuinte do ICMS</option>
+        <option value="contributor" ${fiscalProfile === "contributor" ? "selected" : ""}>Contribuinte do ICMS</option>
+      </select>
+      <button class="secondary-btn" type="button" data-action="marketplace-fiscal-profile-save">Salvar perfil</button>
+      <span>${fiscalProfile === "contributor" ? "Operações comerciais recorrentes normalmente exigem documento fiscal; revise o uso de DC-e com o contador." : fiscalProfile === "unknown" ? "Configure para receber alertas fiscais mais precisos." : "DC-e só deve ser usada quando não houver obrigação de documento fiscal."}</span>
     </div>`;
+}
+
+function filterMarketplaceDocumentSales(sales) {
+  const search = state.marketplaceDocumentSearch.trim().toLowerCase();
+  return sales.filter((sale) => {
+    const payload = sale.raw_payload || {};
+    const text = `${sale.external_order_id || ""} ${sale.internal_order_id || ""} ${payload.order_items?.[0]?.item?.title || ""}`.toLowerCase();
+    if (search && !text.includes(search)) return false;
+    if (state.marketplaceDocumentFilter === "all") return true;
+    const related = state.marketplaceDocuments.filter((item) => String(item.external_order_id) === String(sale.external_order_id));
+    if (state.marketplaceDocumentFilter === "missing") return related.length === 0;
+    return related.some((item) => item.status === state.marketplaceDocumentFilter);
+  });
 }
 
 export function renderMarketplaces() {
@@ -203,7 +241,8 @@ export function renderMarketplaces() {
   }
   const accounts = state.marketplaceAccounts.filter(matchesMarketplaceChannel);
   const listings = filterListingsForDisplay(state.marketplaceListings.filter(matchesMarketplaceChannel));
-  const sales = state.marketplaceSales.filter(matchesMarketplaceChannel);
+  const channelSales = state.marketplaceSales.filter(matchesMarketplaceChannel);
+  const sales = filterMarketplaceDocumentSales(channelSales);
   const documents = state.marketplaceDocuments.filter(matchesMarketplaceChannel);
   const logs = state.marketplaceLogs.filter(matchesMarketplaceChannel);
   renderOperationalSummary("marketplaceListingsView", "marketplacePageSummary", [
@@ -218,7 +257,7 @@ export function renderMarketplaces() {
   renderCommercialIntelligence();
   renderMarketplaceAnalyticsPanel();
   if (channelCards) channelCards.innerHTML = renderMarketplaceChannelCards();
-  if (documentsCenter) documentsCenter.innerHTML = renderMarketplaceDocumentsCenter(sales, documents);
+  if (documentsCenter) documentsCenter.innerHTML = renderMarketplaceDocumentsCenter(channelSales, documents);
   status.innerHTML = state.marketplaceAccounts.length ?
      `<span class="badge done">Mercado Livre conectado</span><small>${state.marketplaceListings.length} anúncio${state.marketplaceListings.length === 1 ? "" : "s"} importado${state.marketplaceListings.length === 1 ? "" : "s"}</small>`
     : `<span class="badge neutral">Mercado Livre não conectado</span><small>Conecte a conta para importar anúncios e vendas.</small>`;
@@ -295,6 +334,7 @@ export function renderMarketplaces() {
     return `
       <article class="marketplace-sale-card">
         <div class="marketplace-sale-head">
+          <input type="checkbox" data-action="marketplace-document-select" data-id="${html(sale.external_order_id)}" ${state.marketplaceSelectedSales.includes(String(sale.external_order_id)) ? "checked" : ""} aria-label="Selecionar documentos do pedido ${html(sale.external_order_id)}" />
           <div>
             <strong class="marketplace-sale-order">${html(internalCode || sale.external_order_id || "Venda")}</strong>
             <span class="marketplace-brand">Venda ${html(marketplaceDisplayName(sale.marketplace))}</span>
@@ -347,6 +387,14 @@ export function renderMarketplaces() {
   });
   document.querySelectorAll('[data-action="marketplace-channel-filter"]').forEach((button) => {
     button.classList.toggle("active", button.dataset.channel === state.marketplaceChannelFilter);
+  });
+  byId("marketplaceDocumentSearch")?.addEventListener("change", (event) => {
+    state.marketplaceDocumentSearch = event.target.value;
+    renderMarketplaces();
+  });
+  byId("marketplaceDocumentFilter")?.addEventListener("change", (event) => {
+    state.marketplaceDocumentFilter = event.target.value;
+    renderMarketplaces();
   });
 
   bindActions();
@@ -492,14 +540,16 @@ export async function loadMarketplaces() {
     state.marketplaceListings = [];
     state.marketplaceSales = [];
     state.marketplaceDocuments = [];
+    state.marketplaceDocumentVersions = [];
     state.marketplaceLogs = [];
     return;
   }
-  const [accounts, listings, sales, documents, fiscalDocuments, logs] = await Promise.all([
+  const [accounts, listings, sales, documents, documentVersions, fiscalDocuments, logs] = await Promise.all([
     state.supabase.from("marketplace_accounts").select("marketplace,seller_name,external_seller_id,token_expires_at,updated_at,raw_payload").eq("organization_id", state.organizationId).order("updated_at", { ascending: false }),
     state.supabase.from("marketplace_listings").select("marketplace,external_id,title,sku,price,status,permalink,thumbnail_url,raw_payload,updated_at").eq("organization_id", state.organizationId).order("updated_at", { ascending: false }).limit(100),
     state.supabase.from("marketplace_order_links").select("marketplace,external_order_id,internal_order_id,raw_payload,created_at,updated_at").eq("organization_id", state.organizationId).order("created_at", { ascending: false }).limit(100),
-    state.supabase.from("marketplace_documents").select("marketplace,external_order_id,internal_order_id,document_type,status,file_name,mime_type,storage_path,last_error,downloaded_at,updated_at").eq("organization_id", state.organizationId).order("updated_at", { ascending: false }).limit(300),
+    state.supabase.from("marketplace_documents").select("marketplace,external_order_id,internal_order_id,document_type,status,file_name,mime_type,storage_path,last_error,downloaded_at,checksum_sha256,version,verified_at,updated_at").eq("organization_id", state.organizationId).order("updated_at", { ascending: false }).limit(300),
+    state.supabase.from("marketplace_document_versions").select("marketplace,external_order_id,document_type,version,file_name,checksum_sha256,created_at").eq("organization_id", state.organizationId).order("created_at", { ascending: false }).limit(500),
     state.supabase.from("fiscal_documents").select("id,order_id,type,status,file_name,storage_path,updated_at").eq("organization_id", state.organizationId).order("updated_at", { ascending: false }).limit(300),
     state.supabase.from("marketplace_sync_log").select("id,organization_id,marketplace,kind,status,message,external_item_id,external_order_id,internal_order_id,actor_email,raw_payload,created_at").eq("organization_id", state.organizationId).order("created_at", { ascending: false }).limit(200)
   ]);
@@ -508,6 +558,7 @@ export async function loadMarketplaces() {
     ["marketplace_listings", listings.error],
     ["marketplace_order_links", sales.error],
     ["marketplace_documents", documents.error],
+    ["marketplace_document_versions", documentVersions.error],
     ["fiscal_documents", fiscalDocuments.error],
     ["marketplace_sync_log", logs.error]
   ].filter(([, error]) => error);
@@ -515,6 +566,7 @@ export async function loadMarketplaces() {
   state.marketplaceListings = listings.error ? [] : listings.data || [];
   state.marketplaceSales = sales.error ? [] : sales.data || [];
   state.marketplaceDocuments = documents.error ? [] : documents.data || [];
+  state.marketplaceDocumentVersions = documentVersions.error ? [] : documentVersions.data || [];
   state.fiscalDocuments = fiscalDocuments.error ? (state.fiscalDocuments || []) : fiscalDocuments.data || [];
   state.marketplaceLogs = [
     ...(logs.error ? [] : logs.data || []),
@@ -1621,7 +1673,7 @@ export async function marketplaceRequest(url, options = {}) {
   return payload;
 }
 
-export async function downloadMarketplaceDocument(externalOrderId, marketplace, documentType, printAfter = false) {
+export async function downloadMarketplaceDocument(externalOrderId, marketplace, documentType, printAfter = false, options = {}) {
   if (normalizeMarketplaceChannel(marketplace) === "shopee") {
     alert("Os documentos da Shopee serao liberados quando a conta estiver conectada ao Shopee Open Platform.");
     return;
@@ -1681,12 +1733,80 @@ export async function downloadMarketplaceDocument(externalOrderId, marketplace, 
         : "Documento obtido diretamente do Mercado Livre e arquivado com segurança.",
       "success",
     );
-    await loadAndRenderMarketplaces();
+    if (!options.skipReload) await loadAndRenderMarketplaces();
   } catch (error) {
     if (printWindow) printWindow.close();
     alert(error.message || "Erro ao gerar documento.");
-    await loadAndRenderMarketplaces();
+    if (!options.skipReload) await loadAndRenderMarketplaces();
   }
+}
+
+export function toggleMarketplaceDocumentSelection(externalOrderId, selected) {
+  const id = String(externalOrderId || "");
+  const values = new Set(state.marketplaceSelectedSales.map(String));
+  if (selected) values.add(id); else values.delete(id);
+  state.marketplaceSelectedSales = [...values];
+  renderMarketplaces();
+}
+
+export async function downloadSelectedMarketplaceDocuments() {
+  const selected = new Set(state.marketplaceSelectedSales.map(String));
+  const available = state.marketplaceDocuments.filter((item) =>
+    selected.has(String(item.external_order_id))
+    && item.status === "available"
+    && ["label", "declaration", "declaration_xml"].includes(item.document_type)
+  );
+  if (!available.length) {
+    showAppMessage("Documentos", "Nenhum documento disponível foi encontrado nos pedidos selecionados.", "warning");
+    return;
+  }
+  for (const item of available) {
+    await downloadMarketplaceDocument(item.external_order_id, item.marketplace, item.document_type, false, { skipReload: true });
+  }
+  await loadAndRenderMarketplaces();
+}
+
+export async function saveMarketplaceFiscalProfile() {
+  if (!ensureCanAdmin()) return;
+  const fiscalProfile = byId("marketplaceFiscalProfile")?.value || "unknown";
+  const { data: settings, error } = await state.supabase.rpc("update_organization_fiscal_profile", { candidate_profile: fiscalProfile });
+  if (error) {
+    showAppMessage("Perfil fiscal", error.message, "error");
+    return;
+  }
+  state.organizationSettings = settings || { ...(state.organizationSettings || {}), fiscal_profile: fiscalProfile };
+  showAppMessage("Perfil fiscal salvo", "Os alertas documentais usarão esta configuração.", "success");
+  renderMarketplaces();
+}
+
+export function exportMarketplaceDocumentReport() {
+  const rows = state.marketplaceSales.map((sale) => {
+    const docs = state.marketplaceDocuments.filter((item) => String(item.external_order_id) === String(sale.external_order_id));
+    const fiscal = (state.fiscalDocuments || []).find((item) => String(item.order_id || "") === String(sale.internal_order_id || ""));
+    const status = (type) => docs.find((item) => item.document_type === type)?.status || "não consultado";
+    return [
+      sale.external_order_id,
+      sale.internal_order_id || "",
+      sale.marketplace || "",
+      sale.raw_payload?.date_created || sale.created_at || "",
+      Number(sale.raw_payload?.total_amount || 0).toFixed(2),
+      status("label"),
+      status("declaration"),
+      status("declaration_xml"),
+      fiscal?.status || "sem NF-e vinculada",
+    ];
+  });
+  const header = ["Pedido marketplace", "Encomenda", "Marketplace", "Data", "Valor", "Etiqueta", "DC-e", "XML", "NF-e"];
+  const csv = [header, ...rows].map((row) => row.map((value) => `"${String(value ?? "").replaceAll('"', '""')}"`).join(";")).join("\r\n");
+  const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `controle-fiscal-marketplaces-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
 }
 
 function findMarketplaceSale(externalOrderId, marketplace) {

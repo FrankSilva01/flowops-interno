@@ -244,6 +244,8 @@ export async function ensureMlFiscalAlerts(
 
   const supabase = adminClient();
   const externalOrderId = String(order.id || "");
+  const { data: organization } = await supabase.from("organizations").select("settings").eq("id", account.organization_id).maybeSingle();
+  const fiscalProfile = String(organization?.settings?.fiscal_profile || "unknown");
   const createdAt = new Date(order.date_created || Date.now());
   const deadline = new Date(createdAt.getTime() + 3 * 24 * 60 * 60 * 1000);
   const daysRemaining = Math.ceil((deadline.getTime() - Date.now()) / (24 * 60 * 60 * 1000));
@@ -258,7 +260,9 @@ export async function ensureMlFiscalAlerts(
     document_type: "declaration",
     status: "pending",
     source: "mercado-livre",
-    last_error: `DC-e pendente. Prazo operacional informado: ${deadlineText}.`,
+    last_error: fiscalProfile === "contributor"
+      ? `Documento fiscal pendente. Empresa configurada como contribuinte do ICMS; revise a emissão de NF-e até ${deadlineText}.`
+      : `DC-e pendente. Prazo operacional informado: ${deadlineText}.`,
     raw_payload: { shipping_id: shippingId, status: shipment.status, substatus, deadline: deadline.toISOString() },
     updated_at: new Date().toISOString(),
   }, { onConflict: "organization_id,marketplace,external_order_id,document_type" });
@@ -278,12 +282,14 @@ export async function ensureMlFiscalAlerts(
     organization_id: account.organization_id,
     role_target: "admin",
     type: "fiscal",
-    title: "DC-e pendente no Mercado Livre",
-    message: `Pedido ${externalOrderId}: emita a declaração de conteúdo até ${deadlineText}. ${urgency}`,
+    title: fiscalProfile === "contributor" ? "Documento fiscal pendente no Mercado Livre" : "DC-e pendente no Mercado Livre",
+    message: fiscalProfile === "contributor"
+      ? `Pedido ${externalOrderId}: a empresa está configurada como contribuinte do ICMS. Revise a emissão de NF-e até ${deadlineText}. ${urgency}`
+      : `Pedido ${externalOrderId}: emita a declaração de conteúdo até ${deadlineText}. ${urgency}`,
     related_entity: "marketplace_order",
     related_entity_id: relatedId,
     priority: daysRemaining <= 1 ? "high" : "normal",
-    metadata: { external_order_id: externalOrderId, internal_order_id: internalOrderId, shipping_id: shippingId, deadline: deadline.toISOString(), substatus },
+    metadata: { external_order_id: externalOrderId, internal_order_id: internalOrderId, shipping_id: shippingId, deadline: deadline.toISOString(), substatus, fiscal_profile: fiscalProfile },
   });
 }
 

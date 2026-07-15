@@ -1089,6 +1089,47 @@ code {
   font-size: 15px;
 }
 
+.marketplace-document-toolbar,
+.marketplace-fiscal-profile {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(210px, 1fr) minmax(170px, 220px) repeat(3, auto);
+  gap: 8px;
+  align-items: center;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.marketplace-document-toolbar input,
+.marketplace-document-toolbar select,
+.marketplace-fiscal-profile select {
+  width: 100%;
+  min-height: 38px;
+}
+
+.marketplace-fiscal-profile {
+  grid-template-columns: auto minmax(180px, 240px) auto minmax(260px, 1fr);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.marketplace-fiscal-profile.warning {
+  color: var(--amber, #b7791f);
+}
+
+@media (max-width: 900px) {
+  .marketplace-documents-center,
+  .marketplace-document-toolbar,
+  .marketplace-fiscal-profile {
+    grid-template-columns: 1fr;
+  }
+
+  .marketplace-document-toolbar,
+  .marketplace-fiscal-profile {
+    grid-column: auto;
+  }
+}
+
 .marketplace-sale-card {
   display: grid;
   align-content: start;

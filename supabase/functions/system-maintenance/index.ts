@@ -1,4 +1,4 @@
-import { adminClient, corsHeaders, getMlAccountByUserId, json, logSync } from "../_shared/marketplace.ts";
+import { adminClient, corsHeaders, ensureMlFiscalAlerts, getMlAccountByUserId, json, logSync } from "../_shared/marketplace.ts";
 import { dispatchPendingEmails } from "../_shared/email.ts";
 import { mercadoPagoRequest } from "../_shared/mercado-pago.ts";
 import { reconcileMercadoPagoSubscription } from "../_shared/subscription-billing.ts";
@@ -16,6 +16,7 @@ const BACKUP_TABLES = [
   "marketplace_listings",
   "marketplace_order_links",
   "marketplace_documents",
+  "marketplace_document_versions",
   "marketplace_sync_log",
   "marketplace_reviews",
   "storefront_events",
@@ -74,8 +75,9 @@ Deno.serve(async (req) => {
     const subscriptions = await maintainSubscriptions();
     const emails = await dispatchPendingEmails(adminClient());
     const logs = await cleanupOperationalLogs();
+    const marketplaceDocuments = await reconcileMarketplaceDocuments();
     const backup = await createBackup(actor, action === "manual");
-    return json({ ok: true, token, subscriptions, emails, logs, backup });
+    return json({ ok: true, token, subscriptions, emails, logs, marketplace_documents: marketplaceDocuments, backup });
   } catch (error) {
     await createSystemNotification("Backup falhou", error.message || String(error), "high").catch(() => {});
     return json({ ok: false, error: error.message || String(error) }, { status: 500 });
@@ -86,6 +88,43 @@ async function cleanupOperationalLogs() {
   const { data, error } = await adminClient().rpc("cleanup_sensitive_logs");
   if (error) throw error;
   return data || {};
+}
+
+async function reconcileMarketplaceDocuments() {
+  const supabase = adminClient();
+  const { data: organizations, error } = await supabase.from("marketplace_accounts")
+    .select("organization_id")
+    .eq("marketplace", "Mercado Livre");
+  if (error) throw error;
+  const organizationIds = [...new Set((organizations || []).map((item) => item.organization_id).filter(Boolean))];
+  let checked = 0;
+  let errors = 0;
+  for (const organizationId of organizationIds) {
+    try {
+      const account = await getMlAccountByUserId(undefined, organizationId);
+      const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+      const { data: links, error: linksError } = await supabase.from("marketplace_order_links")
+        .select("external_order_id,internal_order_id,raw_payload")
+        .eq("organization_id", organizationId)
+        .eq("marketplace", "Mercado Livre")
+        .gte("created_at", since)
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (linksError) throw linksError;
+      for (const link of links || []) {
+        const order = { ...(link.raw_payload || {}), id: link.external_order_id };
+        await ensureMlFiscalAlerts(order, account, link.internal_order_id).catch(() => { errors += 1; });
+        checked += 1;
+      }
+    } catch (organizationError) {
+      errors += 1;
+      await logSync("Mercado Livre", "document-reconciliation", "error", organizationError.message || String(organizationError), {
+        organizationId,
+        actorEmail: "Sistema",
+      }).catch(() => {});
+    }
+  }
+  return { organizations: organizationIds.length, checked, errors };
 }
 
 async function maintainMlToken() {

@@ -272,7 +272,7 @@ export async function enterOnlineApp(user) {
   }
   const { data: memberships } = await state.supabase
     .from("organization_members")
-    .select("organization_id,role,organizations(name,slug)")
+    .select("organization_id,role,organizations(name,slug,settings)")
     .eq("user_email", state.activeUserEmail)
     .eq("status", "active");
   const membership = await chooseMembership(memberships || []);
@@ -285,6 +285,7 @@ export async function enterOnlineApp(user) {
   state.organizationId = membership.organization_id;
   state.organizationSlug = membership.organizations?.slug || "";
   state.organizationName = membership.organizations?.name || state.organizationName;
+  state.organizationSettings = membership.organizations?.settings || {};
   const approvedUser = await getApprovedUser(state.activeUserEmail);
   state.activeUserRoleName = state.isAdmin ? "Administrador" : (membership.role || approvedUser?.role || "Leitura");
   state.isAdmin = state.isAdmin || isAdminRole(state.activeUserRoleName);
@@ -300,12 +301,13 @@ export async function enterOnlineApp(user) {
     }
     const { data: supportOrganization, error: supportError } = await state.supabase
       .from("organizations")
-      .select("id,name,slug")
+      .select("id,name,slug,settings")
       .eq("id", supportOrganizationId)
       .single();
     if (supportError) throw supportError;
     state.organizationId = supportOrganization.id;
     state.organizationSlug = supportOrganization.slug || "";
+    state.organizationSettings = supportOrganization.settings || {};
     state.supportMode = true;
     state.isAdmin = false;
     state.canEdit = false;

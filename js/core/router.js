@@ -57,6 +57,7 @@ import {
   openMarketplaceFileImport, previewMarketplaceFileImport, saveMarketplaceFileImport,
   downloadMarketplaceImportTemplate,
   bindMarketplaceFileImportDropzone, openShopeeTemplateExport, exportSelectedListingsToShopee, previewShopeeTemplate,
+  toggleMarketplaceDocumentSelection, downloadSelectedMarketplaceDocuments, saveMarketplaceFiscalProfile, exportMarketplaceDocumentReport,
 } from "../features/marketplace.js";
 import {
   runManualBackup, downloadBackupScope, simulateBackupRestore, restoreBackupFromFile,
@@ -953,6 +954,26 @@ export function bindActions() {
       }
       if (action === "marketplace-document") {
         await downloadMarketplaceDocument(id, button.dataset.marketplace, button.dataset.document || "label");
+        return;
+      }
+      if (action === "marketplace-document-select") {
+        toggleMarketplaceDocumentSelection(id, button.checked);
+        return;
+      }
+      if (action === "marketplace-documents-download") {
+        await downloadSelectedMarketplaceDocuments();
+        return;
+      }
+      if (action === "marketplace-documents-refresh") {
+        await syncMercadoLivre();
+        return;
+      }
+      if (action === "marketplace-documents-export") {
+        exportMarketplaceDocumentReport();
+        return;
+      }
+      if (action === "marketplace-fiscal-profile-save") {
+        await saveMarketplaceFiscalProfile();
         return;
       }
       if (action === "marketplace-print") {

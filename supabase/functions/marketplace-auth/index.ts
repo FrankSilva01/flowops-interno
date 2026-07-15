@@ -7,6 +7,7 @@ import {
   json,
   logSync,
 } from "../_shared/marketplace.ts";
+import { adoptCachedMarketplaceDocument, archiveMarketplaceDocument, recordMarketplaceDocumentDownload, verifyMarketplaceDocument } from "../_shared/marketplace-documents.ts";
 
 Deno.serve(async (req) => {
   applyCors(req);
@@ -256,7 +257,7 @@ async function downloadMlDocument(
 
   const { data: cachedDocument } = await supabase
     .from("marketplace_documents")
-    .select("storage_path,mime_type,file_name")
+    .select("storage_path,mime_type,file_name,checksum_sha256,version")
     .eq("organization_id", account.organization_id)
     .eq("marketplace", "Mercado Livre")
     .eq("external_order_id", orderId)
@@ -268,7 +269,20 @@ async function downloadMlDocument(
       .from("marketplace-documents")
       .download(cachedDocument.storage_path);
     if (!cachedError && cachedFile) {
-      return new Response(await cachedFile.arrayBuffer(), {
+      const cachedBytes = await cachedFile.arrayBuffer();
+      if (!cachedDocument.checksum_sha256) cachedDocument.checksum_sha256 = await adoptCachedMarketplaceDocument({ organizationId: account.organization_id, marketplace: "Mercado Livre", externalOrderId: orderId, internalOrderId: link.internal_order_id, documentType, storagePath: cachedDocument.storage_path, fileName: cachedDocument.file_name || `${documentType}-${orderId}`, mimeType: cachedDocument.mime_type, version: cachedDocument.version, bytes: cachedBytes });
+      if (!(await verifyMarketplaceDocument(cachedBytes, cachedDocument.checksum_sha256))) {
+        await supabase.from("marketplace_documents").update({ status: "unavailable", last_error: "Falha de integridade no arquivo privado." }).eq("organization_id", account.organization_id).eq("marketplace", "Mercado Livre").eq("external_order_id", orderId).eq("document_type", documentType);
+      } else {
+      await recordMarketplaceDocumentDownload({
+        organizationId: account.organization_id,
+        actorEmail,
+        externalOrderId: orderId,
+        internalOrderId: link.internal_order_id,
+        documentType,
+        source: "private-cache", checksum: cachedDocument.checksum_sha256,
+      });
+      return new Response(cachedBytes, {
         headers: {
           ...corsHeaders,
           "Content-Type": cachedDocument.mime_type || "application/octet-stream",
@@ -276,6 +290,7 @@ async function downloadMlDocument(
           "X-FlowOps-Document-Source": "private-cache",
         },
       });
+      }
     }
   }
 
@@ -340,19 +355,12 @@ async function downloadMlDocument(
   }
   const bytes = await labelResponse.arrayBuffer();
   const fileName = `etiqueta-mercado-livre-${orderId}.pdf`;
-  const storagePath = `${account.organization_id}/mercado-livre/${orderId}/${fileName}`;
-  const { error: storageError } = await supabase.storage.from("marketplace-documents").upload(
-    storagePath,
-    new Blob([bytes], { type: "application/pdf" }),
-    { contentType: "application/pdf", upsert: true },
-  );
-  if (storageError) throw new Error(`Falha ao arquivar etiqueta: ${storageError.message}`);
+  const archive = await archiveMarketplaceDocument({ organizationId: account.organization_id, marketplace: "Mercado Livre", externalOrderId: orderId, internalOrderId: link.internal_order_id, documentType, externalDocumentId: shippingId, fileName, mimeType: "application/pdf", bytes, rawPayload: shipment });
   await saveDocumentStatus("available", {
     external_document_id: shippingId,
     mime_type: "application/pdf",
     file_name: fileName,
-    storage_path: storagePath,
-    size_bytes: bytes.byteLength,
+    ...archive,
     source: "mercado-livre",
     downloaded_at: new Date().toISOString(),
     last_error: null,
@@ -385,6 +393,7 @@ async function downloadMlDce(
   const infoResponse = await fetch(`https://api.mercadolibre.com/mlb/order/${encodeURIComponent(orderId)}/dce/info`, {
     headers: { Authorization: `Bearer ${account.access_token}` },
   });
+  await recordMarketplaceDocumentDownload({ organizationId: account.organization_id, actorEmail, externalOrderId: orderId, internalOrderId: link.internal_order_id, documentType, source: "marketplace", checksum: archive.checksum_sha256 });
   const info = await infoResponse.json().catch(() => ({}));
   if (!infoResponse.ok) {
     const message = `Declaração oficial não disponível para esta venda: ${info.message || info.error || infoResponse.status}.`;
@@ -415,24 +424,18 @@ async function downloadMlDce(
   const extension = documentType === "declaration_xml" ? "xml" : "pdf";
   const mimeType = fileResponse.headers.get("Content-Type") || (extension === "xml" ? "application/xml" : "application/pdf");
   const fileName = `declaracao-mercado-livre-${orderId}.${extension}`;
-  const storagePath = `${account.organization_id}/mercado-livre/${orderId}/${fileName}`;
-  const { error: storageError } = await adminClient().storage.from("marketplace-documents").upload(
-    storagePath,
-    new Blob([bytes], { type: mimeType }),
-    { contentType: mimeType, upsert: true },
-  );
-  if (storageError) throw new Error(`Falha ao arquivar DC-e: ${storageError.message}`);
+  const archive = await archiveMarketplaceDocument({ organizationId: account.organization_id, marketplace: "Mercado Livre", externalOrderId: orderId, internalOrderId: link.internal_order_id, documentType, externalDocumentId: dceKey, fileName, mimeType, bytes, rawPayload: info });
   await saveDocumentStatus("available", {
     external_document_id: dceKey,
     mime_type: mimeType,
     file_name: fileName,
-    storage_path: storagePath,
-    size_bytes: bytes.byteLength,
+    ...archive,
     source: "mercado-livre",
     downloaded_at: new Date().toISOString(),
     last_error: null,
     raw_payload: info,
   });
+  await recordMarketplaceDocumentDownload({ organizationId: account.organization_id, actorEmail, externalOrderId: orderId, internalOrderId: link.internal_order_id, documentType, source: "marketplace", checksum: archive.checksum_sha256 });
   await logSync("Mercado Livre", "document-declaration", "success", `Declaração baixada - venda ${orderId}`, {
     organizationId: account.organization_id,
     externalOrderId: orderId,
