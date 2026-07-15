@@ -6,6 +6,9 @@ import { normalizeMarketplaceChannel } from "./marketplace.js";
 import { normalizeText } from "../core/importer.js";
 import { reportPricingDefinition } from "./pricing.js";
 import { renderDataQualityReport } from "./data-quality.js";
+import { marketplaceSalesForReport, reportMarketplaceRows } from "./report-marketplace-data.js";
+
+export { marketplaceSalesForReport, reportMarketplaceRows } from "./report-marketplace-data.js";
 
 export function renderReports() {
   const content = byId("reportsContent");
@@ -16,7 +19,7 @@ export function renderReports() {
   const financial = getReportFinancial(rows.cash, rows.orders);
   const totalOrders = rows.orders.length;
   const ticket = totalOrders ? financial.revenue / totalOrders : 0;
-  const marketplaceItems = reportMarketplaceRows([], rows.sales);
+  const marketplaceItems = reportMarketplaceRows([], marketplaceSalesForReport(rows.sales, rows.orders));
   const materialItems = countBy(rows.orders, (item) => item.material || "Não informado").slice(0, 6);
   const dailyRows = reportDailyRows(rows.cash, rows.orders);
   const statusRows = countBy(rows.orders, (item) => item.status || "Sem status");
@@ -107,6 +110,8 @@ export function renderReportTabContent(content, tab, rows, financial, dailyRows)
     renderDataQualityReport(content);
     return;
   }
+  const marketplaceSales = marketplaceSalesForReport(rows.sales, rows.orders);
+  const marketplaceRevenue = reportMarketplaceRows([], marketplaceSales);
   const definitions = {
     financial: {
       title: "Financeiro",
@@ -158,16 +163,16 @@ export function renderReportTabContent(content, tab, rows, financial, dailyRows)
     marketplaces: {
       title: "Marketplaces",
       kpis: [
-        ["Vendas importadas", rows.sales.length, "No período selecionado", "teal"],
-        ["Receita", money.format(reportMarketplaceRows([], rows.sales).reduce((sumValue, item) => sumValue + Number(item.value || 0), 0)), "Somente vendas importadas", "green"],
-        ["Mercado Livre", rows.sales.filter((item) => normalizeMarketplaceChannel(item.marketplace) === "mercado_livre").length, "Vendas importadas", "blue"],
-        ["Outros marketplaces", rows.sales.filter((item) => normalizeMarketplaceChannel(item.marketplace) !== "mercado_livre").length, "Shopee, Amazon e futuros canais", "amber"],
+        ["Vendas importadas", marketplaceSales.length, "Pedidos externos únicos", "teal"],
+        ["Receita", money.format(marketplaceRevenue.reduce((sumValue, item) => sumValue + Number(item.value || 0), 0)), "Total informado pelo canal", "green"],
+        ["Mercado Livre", marketplaceSales.filter((item) => normalizeMarketplaceChannel(item.marketplace) === "mercado-livre").length, "Pedidos externos únicos", "blue"],
+        ["Outros marketplaces", marketplaceSales.filter((item) => normalizeMarketplaceChannel(item.marketplace) !== "mercado-livre").length, "Shopee, Amazon e futuros canais", "amber"],
       ],
       chartTitle: "Receita por marketplace",
-      chartRows: reportMarketplaceRows([], rows.sales),
+      chartRows: marketplaceRevenue,
       headers: ["Canal", "Código", "Item", "Valor", "Data", "Status"],
-      body: rows.sales.map((item) => [
-        item.marketplace || "-", item.external_order_id || item.order_id || "-", item.title || item.item_title || item.description || "-", money.format(Number(item.total || item.amount || 0)), item.date || item.created_at ? formatDate(item.date || item.created_at) : "-", item.status || "-",
+      body: marketplaceSales.map((item) => [
+        item.marketplace || "-", item.external_order_id || item.order_id || "-", item.title || "-", money.format(item.report_amount), item.date || item.created_at ? formatDate(item.date || item.created_at) : "-", item.status || "-",
       ]),
     },
     products: reportProductDefinition(rows),
@@ -626,37 +631,6 @@ export function openReportPrintView(headers, body) {
     <footer class="footer">Relatório gerado pelo FlowOps. Os valores refletem os registros disponíveis no período selecionado.</footer></main>
     <script>window.addEventListener('load',()=>{window.print();});<\/script></body></html>`);
   reportWindow.document.close();
-}
-
-export function reportMarketplaceRows(orderRows, salesRows) {
-  const map = new Map();
-  const add = (label, value) => {
-    const amount = Number(value || 0);
-    if (amount > 0) {
-      map.set(label, (map.get(label) || 0) + amount);
-    }
-  };
-
-  // Add from orders (internal sales)
-  orderRows.forEach((item) => {
-    const channel = item.source || item.marketplace || "Venda direta";
-    add(channel, item.charged || item.received || 0);
-  });
-
-  // Add from marketplace sales (Mercado Livre, etc)
-  if (salesRows && salesRows.length > 0) {
-    salesRows.forEach((item) => {
-      const channel = item.marketplace || item.channel || "Mercado Livre";
-      const amount = item.price || item.total || item.amount || 0;
-      add(channel, amount);
-    });
-  }
-
-  return [...map.entries()]
-    .map(([label, value]) => ({ label, value }))
-    .filter(item => item.value > 0)
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 6);
 }
 
 // Coluna "Itens" na tela: mostra o texto truncado (4 itens + "+N") mas com

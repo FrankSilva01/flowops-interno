@@ -1092,7 +1092,8 @@ export function bindActions() {
 }
 
 export function applySidebarPreference() {
-  const collapsed = localStorage.getItem("flowops-sidebar-collapsed") === "true";
+  const preference = localStorage.getItem("flowops-sidebar-collapsed");
+  const collapsed = preference == null ? true : preference === "true";
   byId("appView")?.classList.toggle("sidebar-collapsed", collapsed);
   updateSidebarToggle(collapsed);
 }

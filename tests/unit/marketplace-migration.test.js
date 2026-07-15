@@ -72,10 +72,11 @@ test("rejeita lote com origens misturadas", () => {
   );
 });
 
-test("mantem pendencias que nao podem ser preenchidas pelos valores comuns", () => {
+test("gera SKU e mantem apenas pendencias que nao podem ser preenchidas pelos valores comuns", () => {
   const migration = buildMarketplaceMigration({ ...mlListing, sku: "", raw_payload: {} }, "shopee");
   const updated = applyMarketplaceMigrationDefaults(migration, { shopeeCategoryId: "SHP-1", shopeeWeight: 1 });
-  assert.deepEqual(updated.missing, ["SKU", "Imagens (1/3)"]);
+  assert.match(updated.sku, /^[A-Z]{3}-/);
+  assert.deepEqual(updated.missing, ["Imagens (1/3)"]);
 });
 
 test("normaliza planilha exportada da Shopee sem API", () => {

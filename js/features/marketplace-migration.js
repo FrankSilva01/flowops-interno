@@ -15,6 +15,17 @@ function imageUrls(listing) {
   ].filter(Boolean).map((url) => String(url).replace(/^http:/, "https:")))];
 }
 
+function generatedSku(listing) {
+  const title = String(listing?.title || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const prefix = /miniatura|rpg|goblin|orc|esqueleto|mago|resina/.test(title)
+    ? "MIN"
+    : /organizador|porta |gaveta/.test(title)
+      ? "ORG"
+      : /suporte/.test(title) ? "SUP" : "PRD";
+  const source = String(listing?.external_id || listing?.id || Date.now()).replace(/[^a-z0-9]/gi, "").slice(-10).toUpperCase();
+  return `${prefix}-${source || "NOVO"}`;
+}
+
 export function migrationTargetFor(sourceMarketplace) {
   return channel(sourceMarketplace) === "shopee" ? "mercado-livre" : "shopee";
 }
@@ -27,8 +38,11 @@ export function buildMarketplaceMigration(listing, targetMarketplace = migration
   }
   const payload = listing?.raw_payload || {};
   const shopee = payload.shopee || {};
-  const images = imageUrls(listing);
-  const sku = listing?.sku || payload.seller_custom_field || shopee.sku || "";
+  const allImages = imageUrls(listing);
+  const images = target === "shopee"
+    ? allImages.filter((url) => /\.(?:jpe?g|png)(?:\?|$)/i.test(url))
+    : allImages;
+  const sku = listing?.sku || payload.seller_custom_field || shopee.sku || generatedSku(listing);
   const draft = {
     source,
     target,
@@ -47,7 +61,7 @@ export function buildMarketplaceMigration(listing, targetMarketplace = migration
     shopee: {
       categoryId: String(shopee.category_id || (source === "shopee" ? payload.category_id || "" : "")),
       weight: Number(shopee.weight || payload.weight || 0),
-      daysToShip: Number(shopee.days_to_ship || 20),
+      daysToShip: Math.min(15, Math.max(3, Number(shopee.days_to_ship || 15))),
       attributes: Array.isArray(shopee.attributes) ? shopee.attributes : [],
     },
   };

@@ -28,6 +28,7 @@
     <link rel="stylesheet" href="./css/12-global-search.css?v=228" />
     <link rel="stylesheet" href="./css/13-data-quality.css?v=231" />
     <link rel="stylesheet" href="./css/14-commercial-polish.css?v=240" />
+    <link rel="stylesheet" href="./css/15-linear-shopify-density.css?v=242" />
     <script src="./supabase-config.js?v=200" defer></script>
     <script type="module" src="./js/app.js?v=231"></script>
   </head>
@@ -36,8 +37,9 @@
       <aside class="sidebar">
         <div class="sidebar-head">
           <div class="brand">
-            <div class="brand-mark">AFT</div>
+            <div class="brand-mark">FO</div>
             <div>
+              <span class="flowops-brand-name">FlowOps</span>
               <strong id="sidebarCompanyName">3D.AFT</strong>
               <span id="sidebarPlan">Plano</span>
               <span id="syncMode" hidden>Modo teste local</span>
@@ -561,6 +563,7 @@
             <select id="ordersBulkValue" aria-label="Novo valor" disabled><option value="">Selecione o campo primeiro</option></select>
             <button id="applyOrdersBulkBtn" class="primary-btn compact" type="button">Aplicar</button>
             <button id="clearOrdersSelectionBtn" class="secondary-btn compact" type="button">Limpar seleção</button>
+            <button id="deleteOrdersSelectionBtn" class="secondary-btn compact danger" type="button"><i class="ti ti-trash" aria-hidden="true"></i> Excluir</button>
           </div>
           <div id="ordersGrid" class="orders-grid">
             <div id="ordersCardList" class="orders-card-list"></div>
@@ -2018,10 +2021,14 @@
         <button class="primary-btn" type="submit">Criar rascunhos prontos</button>
       </form>
     </dialog>
-    <dialog id="productDialog" class="history-dialog marketplace-dialog product-steps-dialog">
-      <div class="panel-head">
-        <h3 id="productDialogTitle">Cadastrar produto</h3>
-        <button class="icon-btn" type="button" data-close-dialog="productDialog">Fechar</button>
+    <dialog id="productDialog" class="history-dialog marketplace-dialog drawer-dialog product-steps-dialog">
+      <div class="drawer-header">
+        <div>
+          <span class="order-code">Catálogo e marketplace</span>
+          <h3 id="productDialogTitle">Cadastrar produto</h3>
+          <small>Preencha os dados essenciais e revise antes de publicar.</small>
+        </div>
+        <button class="icon-btn" type="button" data-close-dialog="productDialog" aria-label="Fechar">×</button>
       </div>
 
       <!-- Progress bar -->
@@ -2032,7 +2039,7 @@
         <div class="step-indicator" data-step="4">4. Resumo</div>
       </div>
 
-      <form id="productForm" class="login-form">
+      <form id="productForm" class="login-form drawer-body">
         <input name="id" type="hidden" />
         <input name="listingLink" type="hidden" />
 

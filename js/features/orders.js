@@ -4,7 +4,7 @@ import {
 } from "../core/state.js";
 import { byId, html, safeUrl, formatDate, formatDateTime, formatRelativeTime, flashActionMessage, nextId, number, renderOperationalSummary, filterRows } from "../core/dom.js";
 import { bindActions, render } from "../core/router.js";
-import { ensureCanEdit } from "../core/permissions.js";
+import { ensureCanAdmin, ensureCanEdit } from "../core/permissions.js";
 import { persist, removeRemote, loadRemoteData } from "../data/remote.js";
 import { recordAudit } from "./logs.js";
 import { getResponsibleNames } from "./users.js";
@@ -209,6 +209,7 @@ function renderOrdersBulkToolbar(rows) {
   byId("ordersBulkCount").textContent = `${selected.length} selecionada${selected.length === 1 ? "" : "s"}`;
   byId("applyOrdersBulkBtn").disabled = selected.length === 0;
   byId("clearOrdersSelectionBtn").disabled = selected.length === 0;
+  byId("deleteOrdersSelectionBtn").disabled = selected.length === 0;
   const visibleIds = rows.map((item) => item.id);
   const selectAll = byId("ordersSelectAll");
   selectAll.checked = visibleIds.length > 0 && visibleIds.every((id) => selected.includes(id));
@@ -233,6 +234,7 @@ function renderOrdersBulkToolbar(rows) {
     state.selectedOrderIds = [];
     renderOrders();
   };
+  byId("deleteOrdersSelectionBtn").onclick = deleteSelectedOrders;
   byId("applyOrdersBulkBtn").onclick = async () => {
     const field = byId("ordersBulkField").value;
     const value = byId("ordersBulkValue").value;
@@ -242,6 +244,28 @@ function renderOrdersBulkToolbar(rows) {
     }
     await applyOrdersBulkUpdate(field, value);
   };
+}
+
+export async function deleteSelectedOrders() {
+  if (!ensureCanAdmin()) return;
+  const selected = state.data.orders.filter((item) => state.selectedOrderIds.includes(item.id));
+  if (!selected.length || !confirm(`Excluir ${selected.length} encomenda(s) selecionada(s)? Esta ação também remove os vínculos de marketplace associados.`)) return;
+  for (const item of selected) {
+    try {
+      await recordAudit("delete", "order", item.id, getOrderCode(item), item, null, "bulk");
+      await removeRemote("orders", item.id);
+      state.data.orders = state.data.orders.filter((order) => order.id !== item.id);
+    } catch (error) {
+      flashActionMessage(`Não foi possível excluir ${getOrderCode(item)}: ${error.message}`);
+      render();
+      return;
+    }
+  }
+  state.selectedOrderIds = [];
+  state.selectedOrderId = state.data.orders[0]?.id || null;
+  saveData();
+  flashActionMessage(`${selected.length} encomenda(s) excluída(s).`);
+  render();
 }
 
 function renderOrdersBulkValueOptions(field) {

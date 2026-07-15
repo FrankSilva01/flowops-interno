@@ -6,6 +6,7 @@ const tenantName = process.env.FLOWOPS_E2E_TENANT_NAME;
 const forbiddenText = process.env.FLOWOPS_E2E_FORBIDDEN_TEXT;
 
 test.describe("sessao autenticada", () => {
+  test.describe.configure({ mode: "serial", timeout: 60_000 });
   test.skip(!email || !password, "Defina FLOWOPS_E2E_EMAIL e FLOWOPS_E2E_PASSWORD.");
 
   test.beforeEach(async ({ page }) => {
@@ -14,9 +15,13 @@ test.describe("sessao autenticada", () => {
     await page.locator("#onlinePassword").fill(password || "");
     await page.locator("#onlineLoginForm").getByRole("button", { name: "Entrar" }).click();
     await expect(page.locator("#appView")).toBeVisible({ timeout: 20_000 });
+    await page.waitForTimeout(1_500);
   });
 
-  test("navega pelos modulos sem vazamento ou rolagem lateral", async ({ page }) => {
+  test("navega pelos modulos sem vazamento ou rolagem lateral", async ({ page }, testInfo) => {
+    if (process.env.FLOWOPS_CAPTURE_VISUALS) {
+      await page.screenshot({ path: `output/playwright/dashboard-${testInfo.project.name}.png`, fullPage: true });
+    }
     for (const view of ["dashboard", "orders", "production", "logistics", "leads", "cash", "materials", "reports"]) {
       const button = page.locator(`[data-view="${view}"]`).first();
       if (await button.isVisible()) {
@@ -27,5 +32,51 @@ test.describe("sessao autenticada", () => {
     }
     if (tenantName) await expect(page.locator("body")).toContainText(tenantName);
     if (forbiddenText) await expect(page.locator("body")).not.toContainText(forbiddenText);
+  });
+
+  test("abre cadastro de produto como drawer lateral responsivo", async ({ page }, testInfo) => {
+    const marketplaceTab = page.locator('[data-view="marketplace"]');
+    test.skip(!(await marketplaceTab.isVisible()), "Marketplace indisponivel para este perfil.");
+    await marketplaceTab.click();
+    await page.locator('[data-action="open-product-dialog"]').click();
+    const dialog = page.locator("#productDialog");
+    await expect(dialog).toBeVisible();
+    const layout = await dialog.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return {
+        rightGap: Math.abs(window.innerWidth - rect.right),
+        heightGap: Math.abs(window.innerHeight - rect.height),
+        overflow: element.scrollWidth > element.clientWidth + 1,
+      };
+    });
+    expect(layout.rightGap).toBeLessThanOrEqual(1);
+    expect(layout.heightGap).toBeLessThanOrEqual(1);
+    expect(layout.overflow).toBe(false);
+    await expect(dialog.getByRole("button", { name: "Próximo →" })).toBeVisible();
+    if (process.env.FLOWOPS_CAPTURE_VISUALS) {
+      await page.screenshot({ path: `output/playwright/product-drawer-${testInfo.project.name}.png`, fullPage: false });
+    }
+  });
+
+  test("seleciona encomenda e disponibiliza exclusao administrativa", async ({ page }) => {
+    test.skip((page.viewportSize()?.width || 0) < 720, "Barra de ações em lote validada no layout desktop.");
+    await page.goto("/#orders");
+    await expect(page.locator("#appView")).toBeVisible();
+    const checkbox = page.locator(".order-select-checkbox").first();
+    test.skip(!(await checkbox.isVisible()), "Nenhuma encomenda disponivel para validar a selecao.");
+    await checkbox.click({ force: true, noWaitAfter: true });
+    await expect(page.locator("#ordersBulkCount")).toContainText("1 selecionada");
+    await expect(page.locator("#deleteOrdersSelectionBtn")).toBeEnabled();
+  });
+
+  test("renderiza relatorio de marketplaces com classificacao normalizada", async ({ page }, testInfo) => {
+    await page.goto("/#reports");
+    await expect(page.locator("#appView")).toBeVisible();
+    await page.locator('[data-report-tab="marketplaces"]').click();
+    await expect(page.locator("#reportsContent")).toContainText("Pedidos externos únicos");
+    await expect(page.locator("#reportsContent")).toContainText("Mercado Livre");
+    if (process.env.FLOWOPS_CAPTURE_VISUALS) {
+      await page.screenshot({ path: `output/playwright/report-marketplaces-${testInfo.project.name}.png`, fullPage: true });
+    }
   });
 });
