@@ -40,6 +40,12 @@ test("menu lateral alterna entre compacto e expandido", async ({ page }, testInf
   await expect(app).not.toHaveClass(/sidebar-collapsed/);
   await expect(sidebar).toHaveCSS("width", "220px");
   await expect(page.locator(".sidebar .nav-label").first()).toBeVisible();
+  const toggleAppearance = await page.locator("#sidebarToggle").evaluate((button) => ({
+    icon: getComputedStyle(button, "::before").content,
+    legacyIcon: getComputedStyle(button.firstElementChild).display,
+  }));
+  expect(toggleAppearance.icon).toContain("‹");
+  expect(toggleAppearance.legacyIcon).toBe("none");
 });
 
 test("seletor da encomenda permanece dentro do card", async ({ page }) => {
