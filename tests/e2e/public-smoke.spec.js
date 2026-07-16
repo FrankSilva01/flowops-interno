@@ -23,6 +23,46 @@ test("login nao cria rolagem horizontal", async ({ page }) => {
   expect(overflow).toBe(false);
 });
 
+test("menu lateral alterna entre compacto e expandido", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === "mobile", "No mobile o menu lateral vira navegacao inferior.");
+  await page.goto("/");
+  await page.evaluate(() => {
+    document.querySelector("#onlineLogin").hidden = true;
+    const app = document.querySelector("#appView");
+    app.hidden = false;
+    app.classList.add("sidebar-collapsed");
+  });
+
+  const app = page.locator("#appView");
+  const sidebar = page.locator(".sidebar");
+  await expect(sidebar).toHaveCSS("width", "56px");
+  await page.locator("#sidebarToggle").click();
+  await expect(app).not.toHaveClass(/sidebar-collapsed/);
+  await expect(sidebar).toHaveCSS("width", "220px");
+  await expect(page.locator(".sidebar .nav-label").first()).toBeVisible();
+});
+
+test("seletor da encomenda permanece dentro do card", async ({ page }) => {
+  await page.goto("/");
+  const bounds = await page.evaluate(() => {
+    const card = document.createElement("article");
+    card.className = "order-card";
+    card.style.cssText = "width:320px;height:180px;margin:80px";
+    card.innerHTML = '<label class="order-card-select"><input type="checkbox"></label>';
+    document.body.append(card);
+    const cardRect = card.getBoundingClientRect();
+    const selectorRect = card.querySelector(".order-card-select").getBoundingClientRect();
+    return {
+      card: { left: cardRect.left, top: cardRect.top, right: cardRect.right, bottom: cardRect.bottom },
+      selector: { left: selectorRect.left, top: selectorRect.top, right: selectorRect.right, bottom: selectorRect.bottom },
+    };
+  });
+  expect(bounds.selector.left).toBeGreaterThanOrEqual(bounds.card.left);
+  expect(bounds.selector.top).toBeGreaterThanOrEqual(bounds.card.top);
+  expect(bounds.selector.right).toBeLessThanOrEqual(bounds.card.right);
+  expect(bounds.selector.bottom).toBeLessThanOrEqual(bounds.card.bottom);
+});
+
 test("dialogos de confirmacao e texto respeitam contexto e acessibilidade", async ({ page }) => {
   await page.goto("/");
   await page.evaluate(async () => {

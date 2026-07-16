@@ -31,6 +31,7 @@ strong, b, h1, h2, h3, h4, h5, h6 { font-weight: 500 !important; letter-spacing:
 /* Compact shell */
 .app-shell,
 .app-shell.sidebar-collapsed { grid-template-columns: var(--fo-sidebar) minmax(0, 1fr) !important; }
+.app-shell:not(.sidebar-collapsed) { grid-template-columns: 220px minmax(0, 1fr) !important; }
 .sidebar {
   width: var(--fo-sidebar) !important;
   padding: 8px 6px !important;
@@ -41,13 +42,29 @@ strong, b, h1, h2, h3, h4, h5, h6 { font-weight: 500 !important; letter-spacing:
   border-right: 1px solid var(--fo-border) !important;
 }
 .sidebar::-webkit-scrollbar { display: none; }
-.sidebar-head { min-height: 40px; justify-content: center !important; padding: 0 !important; }
+.sidebar-head { position: relative; min-height: 40px; justify-content: center !important; padding: 0 !important; }
 .sidebar .brand { display: block !important; min-width: 0; }
 .sidebar .brand > div:not(.brand-mark),
-.sidebar-toggle,
 .company-status-card,
 .session-card,
 .theme-switch-track { display: none !important; }
+.sidebar-toggle {
+  display: block !important;
+  position: absolute !important;
+  z-index: 4;
+  top: 4px;
+  left: 50%;
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  opacity: 1;
+  background: transparent !important;
+  transform: translateX(-50%);
+  cursor: pointer;
+}
+.app-shell.sidebar-collapsed .sidebar-toggle > * { opacity: 0; }
 .sidebar-group-label {
   display: block !important;
   flex: 0 0 1px;
@@ -72,6 +89,21 @@ strong, b, h1, h2, h3, h4, h5, h6 { font-weight: 500 !important; letter-spacing:
   background: transparent !important;
 }
 .brand-mark img { display: block; width: 32px; height: 32px; }
+
+.app-shell:not(.sidebar-collapsed) .sidebar { width: 220px !important; padding: 8px 10px !important; }
+.app-shell:not(.sidebar-collapsed) .sidebar-head { justify-content: flex-start !important; }
+.app-shell:not(.sidebar-collapsed) .sidebar .brand { display: flex !important; align-items: center; gap: 9px; min-width: 0; }
+.app-shell:not(.sidebar-collapsed) .sidebar .brand > div:not(.brand-mark) { display: grid !important; min-width: 0; }
+.app-shell:not(.sidebar-collapsed) .sidebar .brand strong { overflow: hidden; color: var(--fo-text); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.app-shell:not(.sidebar-collapsed) .sidebar .brand span { color: var(--fo-muted); font-size: 9px; }
+.app-shell:not(.sidebar-collapsed) .sidebar-toggle { left: auto; right: 0; transform: none; }
+.app-shell:not(.sidebar-collapsed) .sidebar-toggle > * { opacity: 1; }
+.app-shell:not(.sidebar-collapsed) .sidebar .tabs { align-items: stretch; }
+.app-shell:not(.sidebar-collapsed) .sidebar .tab { width: 100% !important; justify-content: flex-start !important; padding: 0 8px !important; gap: 8px; }
+.app-shell:not(.sidebar-collapsed) .sidebar .nav-label { display: inline !important; overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.app-shell:not(.sidebar-collapsed) .sidebar .tab::after { display: none; }
+.app-shell:not(.sidebar-collapsed) .sidebar-group-label { width: auto; height: auto; margin: 8px 8px 3px !important; border: 0; color: var(--fo-muted) !important; font-size: 8px !important; text-transform: uppercase; }
+.app-shell:not(.sidebar-collapsed) .company-status-card { display: grid !important; padding: 8px !important; font-size: 9px; }
 
 .sidebar .tabs { display: flex; flex-direction: column; align-items: center; gap: 3px; overflow: visible !important; }
 .sidebar .tab,
@@ -213,6 +245,7 @@ button, input, select, textarea { border-radius: 6px !important; }
 .badge, .tag, [class*="status-badge"] { padding: 2px 6px !important; border-radius: 10px !important; font-size: 9px !important; font-weight: 500 !important; }
 
 table { width: 100%; table-layout: auto; }
+.order-card { position: relative; }
 th { color: var(--fo-muted) !important; font-size: 9px !important; font-weight: 500 !important; text-transform: none !important; }
 td { font-size: 11px !important; }
 th, td { padding: 7px 8px !important; border-color: var(--fo-border) !important; }
