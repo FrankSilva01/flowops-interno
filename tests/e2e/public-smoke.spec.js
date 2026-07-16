@@ -45,3 +45,16 @@ test("dialogos de confirmacao e texto respeitam contexto e acessibilidade", asyn
   await expect(promptDialog.getByText("Preencha este campo para continuar.")).toBeVisible();
   await promptDialog.getByRole("button", { name: "Cancelar" }).click();
 });
+
+test("controles estaticos possuem nome acessivel", async ({ page }) => {
+  await page.goto("/");
+  const unnamed = await page.evaluate(() => {
+    const controls = [...document.querySelectorAll('input:not([type="hidden"]), select, textarea, button')];
+    return controls.filter((control) => {
+      const linkedLabel = control.id && document.querySelector(`label[for="${CSS.escape(control.id)}"]`);
+      const text = control.tagName === "BUTTON" ? control.textContent.trim() : "";
+      return !text && !control.getAttribute("aria-label") && !control.getAttribute("aria-labelledby") && !control.title && !linkedLabel && !control.closest("label");
+    }).map((control) => control.id || control.getAttribute("name") || control.outerHTML.slice(0, 80));
+  });
+  expect(unnamed).toEqual([]);
+});

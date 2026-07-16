@@ -7,7 +7,7 @@ import {
 import {
   byId, filterRows, countBy, flashActionMessage, uniqueValues, today, safeUrl, formatDateTime,
   nextId, sum, number, formatDate, formatDateShort, html, sanitizeRichHtml, showAppMessage,
-  showAppConfirm, closeAppMessage, renderOperationalSummary,
+  showAppConfirm, closeAppMessage, renderOperationalSummary, applyAccessibleNames,
 } from "./core/dom.js";
 import { renderBarChart, renderLineChart } from "./core/charts.js";
 import { isAdminRole, isEditorRole, displayRole, ensureCanEdit, ensureCanAdmin, updateEditAccess } from "./core/permissions.js";
@@ -157,6 +157,7 @@ import { initOnboarding } from "./features/pwa-onboarding.js";
 import { bindGovernance } from "./features/governance.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
+  applyAccessibleNames();
   const marketplaceStatus = getMarketplaceStatusFromHash();
   applyTheme(state.theme);
   applySidebarPreference();

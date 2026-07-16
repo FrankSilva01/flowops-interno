@@ -106,19 +106,19 @@ function renderCalendarWithEvents(year, month) {
     <div class="calendar-modern">
       <!-- Navigation -->
       <div class="calendar-header">
-        <button class="calendar-nav-btn cal-prev-btn"><i class="ti ti-chevron-left"></i></button>
+        <button class="calendar-nav-btn cal-prev-btn" type="button" aria-label="Mês anterior" title="Mês anterior"><i class="ti ti-chevron-left" aria-hidden="true"></i></button>
 
         <div class="calendar-month-year-selector">
-          <select id="calendarMonth" class="calendar-selector" style="cursor: pointer;">
+          <select id="calendarMonth" class="calendar-selector" style="cursor: pointer;" aria-label="Mês do calendário">
             ${monthNames.map((m, i) => `<option value="${i}" ${i === month ? 'selected' : ''}>${m}</option>`).join('')}
           </select>
-          <select id="calendarYear" class="calendar-selector" style="cursor: pointer;">
+          <select id="calendarYear" class="calendar-selector" style="cursor: pointer;" aria-label="Ano do calendário">
             ${[2024, 2025, 2026, 2027, 2028, 2029, 2030].map(y => `<option value="${y}" ${y === year ? 'selected' : ''}>${y}</option>`).join('')}
           </select>
           <button id="calendarToday" class="calendar-nav-btn" title="Ir para hoje"><i class="ti ti-calendar-check"></i></button>
         </div>
 
-        <button class="calendar-nav-btn cal-next-btn"><i class="ti ti-chevron-right"></i></button>
+        <button class="calendar-nav-btn cal-next-btn" type="button" aria-label="Próximo mês" title="Próximo mês"><i class="ti ti-chevron-right" aria-hidden="true"></i></button>
       </div>
 
       <!-- Calendar Grid -->

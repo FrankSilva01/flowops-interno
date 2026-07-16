@@ -1,5 +1,5 @@
 import { state, normalizeOrderStatus, saveData } from "./state.js";
-import { byId, flashActionMessage, showAppMessage, closeAppMessage } from "./dom.js";
+import { byId, flashActionMessage, showAppMessage, closeAppMessage, applyAccessibleNames } from "./dom.js";
 import { ensureCanEdit, ensureCanAdmin, ensureCapability, hasCapability, updateEditAccess } from "./permissions.js";
 import { logout, saveRecoveredPassword } from "./session.js";
 import { persist, removeRemote } from "../data/remote.js";
@@ -82,7 +82,7 @@ import {
   showCalculatorSuggestion, getSuggestionForListing, syncFeeCalculatorFull,
 } from "../features/marketplace-analytics.js";
 
-const APP_VERSION = "254";
+const APP_VERSION = "255";
 
 async function refreshAppShell() {
   showAppMessage("Atualizando sistema", "Limpando cache local e carregando a versão mais recente.", "info");
@@ -658,6 +658,7 @@ export function render() {
     default:
       renderDashboard();
   }
+  applyAccessibleNames();
 }
 
 export function bindActions() {

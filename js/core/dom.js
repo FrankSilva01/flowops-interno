@@ -4,6 +4,36 @@ export function byId(id) {
   return document.getElementById(id);
 }
 
+export function applyAccessibleNames(root = document) {
+  const labels = {
+    date: "Data", type: "Tipo", category: "Categoria", description: "Descrição", amount: "Valor",
+    method: "Forma de pagamento", supplier: "Fornecedor", spec: "Cor ou especificação", quantity: "Quantidade",
+    unitCost: "Custo unitário", unit_cost: "Custo unitário", unit: "Unidade", minimum_quantity: "Estoque mínimo",
+    notes: "Observação", subject: "Assunto", priority: "Prioridade", message: "Mensagem", name: "Nome",
+    email: "E-mail", password: "Senha", role: "Perfil de acesso", goal: "Meta de lucro", number: "Número",
+    status: "Status", value: "Valor", due_date: "Vencimento", payment_method: "Forma de pagamento",
+    issuer: "Emissor", order_id: "Encomenda", product_id: "Produto", fiscal_file: "Arquivo fiscal",
+    eventStatus: "Status do evento", eventMessage: "Observação do evento", listing: "Anúncio",
+    referenceImageFile: "Imagem de referência",
+  };
+  const hasName = (control) => control.hasAttribute("aria-label") || control.hasAttribute("aria-labelledby")
+    || (control.id && root.querySelector(`label[for="${CSS.escape(control.id)}"]`)) || control.closest("label");
+  root.querySelectorAll('input:not([type="hidden"]), select, textarea').forEach((control) => {
+    if (hasName(control)) return;
+    const fallback = control.placeholder || labels[control.name] || labels[control.id] || (control.type === "file" ? "Selecionar arquivo" : "Campo");
+    control.setAttribute("aria-label", fallback);
+  });
+  const buttonLabels = {
+    clearDashboardNotificationsBtn: "Limpar notificações do dashboard",
+    openAllNotificationsBtn: "Abrir todas as notificações",
+  };
+  root.querySelectorAll("button").forEach((button, index) => {
+    if (button.textContent.trim() || button.hasAttribute("aria-label") || button.title) return;
+    const label = buttonLabels[button.id] || (button.dataset.goTo ? `Ir para a etapa ${button.dataset.goTo}` : `Ação ${index + 1}`);
+    button.setAttribute("aria-label", label);
+  });
+}
+
 export function filterRows(rows, fields) {
   if (!state.query) return rows;
   return rows.filter((item) => fields.some((field) => {
