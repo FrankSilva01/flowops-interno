@@ -34,7 +34,7 @@ for (const user of users) {
 }
 if (users[0].organizationId === users[1].organizationId) throw new Error("Os dois usuários de auditoria pertencem à mesma empresa.");
 
-const tables = ["orders", "cash_entries", "materials", "marketplace_listings", "marketplace_orders", "fiscal_documents", "purchase_invoices", "sales_invoices", "integration_jobs"];
+const tables = ["orders", "cash_entries", "materials", "marketplace_listings", "marketplace_order_links", "fiscal_documents", "purchase_invoices", "sales_invoices", "integration_jobs"];
 for (const user of users) {
   const foreignOrg = users.find((candidate) => candidate !== user).organizationId;
   for (const table of tables) {

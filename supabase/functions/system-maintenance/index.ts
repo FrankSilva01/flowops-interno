@@ -189,7 +189,7 @@ async function maintainSubscriptions() {
   const scheduled = await applyScheduledPlanChanges(supabase);
   const { data: subscriptions, error } = await supabase
     .from("organization_subscriptions")
-    .select("*,organizations(name,owner_email),subscription_plans(name,price_monthly)")
+    .select("*,organizations(name,owner_email),subscription_plans!organization_subscriptions_plan_code_fkey(name,price_monthly)")
     .in("status", ["trial", "active", "past_due", "pending"]);
   if (error) throw error;
   let trialAlerts = 0;

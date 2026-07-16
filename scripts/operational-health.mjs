@@ -74,16 +74,16 @@ if (!serviceKey) {
   }, "Executar system-maintenance?action=backup e revisar a tabela backup_runs.");
 
   await check("marketplace:connections", async () => {
-    const accounts = await rest("marketplace_accounts?select=marketplace,status,expires_at,last_sync_at");
-    const active = accounts.filter((item) => ["connected", "active"].includes(item.status));
-    const expiring = active.filter((item) => item.expires_at && new Date(item.expires_at).getTime() < Date.now() + 24 * 3_600_000);
+    const accounts = await rest("marketplace_accounts?select=marketplace,connection_status,token_expires_at,updated_at");
+    const active = accounts.filter((item) => ["connected", "active"].includes(item.connection_status));
+    const expiring = active.filter((item) => item.token_expires_at && new Date(item.token_expires_at).getTime() < Date.now() + 24 * 3_600_000);
     if (expiring.length) throw new Error(`${expiring.length} integração(ões) expiram em menos de 24 horas`);
     return `${active.length} integração(ões) ativa(s)`;
   }, "Renovar os tokens na tela Marketplace > Integrações.");
 
   await check("marketplace:error-rate", async () => {
     const since = encodeURIComponent(new Date(Date.now() - 60 * 60_000).toISOString());
-    const errors = await rest(`marketplace_sync_log?select=marketplace,event,message,created_at&status=eq.error&created_at=gte.${since}&limit=20`);
+    const errors = await rest(`marketplace_sync_log?select=marketplace,kind,message,created_at&status=eq.error&created_at=gte.${since}&limit=20`);
     if (errors.length >= 5) throw new Error(`${errors.length} erros na última hora`);
     return `${errors.length} erro(s) na última hora`;
   }, "Revisar Marketplace > Logs e os logs da função marketplace-sync.");
