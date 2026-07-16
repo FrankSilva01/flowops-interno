@@ -1,5 +1,5 @@
 import { state } from "../core/state.js";
-import { byId, showAppMessage } from "../core/dom.js";
+import { byId, showAppConfirm, showAppMessage } from "../core/dom.js";
 
 // Feriados e datas importantes - Ano inteiro
 const FERIADOS = {
@@ -739,11 +739,9 @@ function showEventDetailsModal(dateStr, event) {
       editCustomEvent(dateStr, event.customIndex);
     });
 
-    deleteBtn.addEventListener("click", () => {
-      if (confirm("Tem certeza que deseja excluir este evento?")) {
-        closeModal();
-        deleteCustomEvent(dateStr, event.customIndex);
-      }
+    deleteBtn.addEventListener("click", async () => {
+      const deleted = await deleteCustomEvent(dateStr, event.customIndex);
+      if (deleted) closeModal();
     });
 
     editBtn.addEventListener("mouseover", () => {
@@ -890,11 +888,9 @@ function showCustomEventModal(dateStr, event) {
     editCustomEvent(dateStr, event.customIndex);
   });
 
-  deleteBtn.addEventListener("click", () => {
-    if (confirm("Tem certeza que deseja excluir este evento?")) {
-      closeModal();
-      deleteCustomEvent(dateStr, event.customIndex);
-    }
+  deleteBtn.addEventListener("click", async () => {
+    const deleted = await deleteCustomEvent(dateStr, event.customIndex);
+    if (deleted) closeModal();
   });
 
   closeBtn.addEventListener("click", closeModal);
@@ -1173,8 +1169,12 @@ function editCustomEvent(dateStr, index) {
   });
 }
 
-function deleteCustomEvent(dateStr, index) {
-  if (confirm("Tem certeza que deseja deletar este evento?")) {
+async function deleteCustomEvent(dateStr, index) {
+  const confirmed = await showAppConfirm("Excluir evento", "Tem certeza que deseja excluir este evento?", {
+    confirmLabel: "Excluir",
+    danger: true,
+  });
+  if (confirmed) {
     if (window.calendarEvents && window.calendarEvents[dateStr]) {
       window.calendarEvents[dateStr].splice(index, 1);
       if (window.calendarEvents[dateStr].length === 0) {
@@ -1192,7 +1192,9 @@ function deleteCustomEvent(dateStr, index) {
         updateCalendarStats(window.calendarDate.getFullYear(), window.calendarDate.getMonth());
       }
     }
+    return true;
   }
+  return false;
 }
 
 function openEventForm() {

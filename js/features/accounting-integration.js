@@ -60,8 +60,6 @@ export class AccountingIntegration {
       if (this.config.provider === "manual") {
         this.exportToCSV("vendas", orders);
         this.exportToCSV("produtos", products);
-      } else {
-        console.log(`Sincronizando com ${this.config.provider}...`);
       }
 
       this.config.lastSync = new Date().toISOString();

@@ -1,5 +1,5 @@
 import { state, money } from "../core/state.js";
-import { byId, html, formatDateTime, renderOperationalSummary } from "../core/dom.js";
+import { byId, html, formatDateTime, renderOperationalSummary, showAppConfirm } from "../core/dom.js";
 import { bindActions, setView, render } from "../core/router.js";
 import { ensureCanEdit } from "../core/permissions.js";
 import { loadRemoteData } from "../data/remote.js";
@@ -237,7 +237,9 @@ export async function openLeadFile(id) {
 
 export async function deleteLeadFile(id) {
   const file = state.leadFiles.find((item) => item.id === id);
-  if (!file || !confirm(`Excluir ${file.file_name}?`)) return;
+  if (!file) return;
+  const confirmed = await showAppConfirm(`Excluir ${file.file_name}?`, "O arquivo será removido permanentemente deste cliente.", { confirmLabel: "Excluir arquivo", danger: true });
+  if (!confirmed) return;
   await state.supabase.storage.from("lead-files").remove([file.storage_path]);
   const { error } = await state.supabase.from("lead_files").delete().eq("id", id);
   if (error) throw error;

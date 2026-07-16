@@ -8,9 +8,16 @@ import { recordAudit } from "./logs.js";
 import { getOrderMarketplaceChannel } from "./orders.js";
 import { syncFeeCalculatorFull } from "./marketplace-analytics.js";
 import {
-  normalizeMarketplaceChannel, marketplaceDisplayName, renderMarketplaces, loadMarketplaces,
-  marketplaceRequest, resizeImageFileForStorefront,
+  renderMarketplaces, loadMarketplaces, marketplaceRequest, resizeImageFileForStorefront,
 } from "./marketplace.js";
+import { normalizeMarketplaceChannel, marketplaceDisplayName } from "./marketplace-channel.js";
+import {
+  calculatePriceSuggestion,
+  classifyProfitability,
+  computeMarginBreakdown as computeMarginBreakdownValue,
+} from "./pricing-math.js";
+
+export { calculatePriceSuggestion } from "./pricing-math.js";
 
 const CREATABLE_MARKETPLACES = ["mercado-livre", "shopee", "amazon", "tiktok-shop"];
 const ML_FEE_PREVIEW_URL = `${supabaseFunctionUrl("marketplace-sync")}?marketplace=ml&action=fee-preview`;
@@ -91,11 +98,7 @@ export function hasCommercialIntelligenceAccess() {
 
 export function getProfitabilityLevel(marginPct) {
   const thresholds = getFinancialSettings().profitability_thresholds;
-  if (marginPct < thresholds.critical) return { key: "loss", label: "Prejuízo", className: "danger-badge" };
-  if (marginPct < thresholds.attention) return { key: "critical", label: "Crítico", className: "danger-badge" };
-  if (marginPct < thresholds.healthy) return { key: "attention", label: "Atenção", className: "queue" };
-  if (marginPct < thresholds.excellent) return { key: "healthy", label: "Saudável", className: "done" };
-  return { key: "excellent", label: "Excelente", className: "done" };
+  return classifyProfitability(marginPct, thresholds);
 }
 
 // --- Catalogo de produtos + SKU automatico ---
@@ -901,29 +904,10 @@ export function resolveListingFeeInfo(listing) {
 // Matematica de margem compartilhada entre anuncios, vendas reais e a previa do cadastro de produto.
 // fixedFee: taxa fixa (R$) de itens de baixo valor, somada a comissao % (resolveFixedFee).
 export function computeMarginBreakdown({ cost, revenue, feePct = 0, taxPct = 0, shipping = 0, packaging = 0, fixedFee = 0 }) {
-  const normalizedCost = Number(cost || 0);
-  const normalizedRevenue = Number(revenue || 0);
-  const normalizedFixedFee = Number(fixedFee || 0);
-  // CRÍTICO: NULL = frete não calculado, 0 = cliente paga tudo, >0 = custo real
-  const normalizedShipping = shipping !== null && shipping !== undefined ? Number(shipping || 0) : null;
-  const normalizedPackaging = Number(packaging || 0);
-
-  if (normalizedRevenue <= 0) {
-    return {
-      revenue: 0, cost: normalizedCost, feePct, feeAmount: 0, fixedFee: normalizedFixedFee, taxPct, taxAmount: 0, shipping: normalizedShipping, packaging: normalizedPackaging,
-      netProfit: -normalizedCost - normalizedFixedFee, marginPct: 0, level: getProfitabilityLevel(0),
-    };
-  }
-  const feeAmount = normalizedRevenue * (feePct / 100);
-  const taxAmount = normalizedRevenue * (taxPct / 100);
-  // Se frete for null (não calculado), não subtrai do lucro - usa como 0 para cálculo mas mantém null na resposta
-  const shippingForCalc = normalizedShipping !== null ? normalizedShipping : 0;
-  const netProfit = normalizedRevenue - normalizedCost - feeAmount - normalizedFixedFee - taxAmount - shippingForCalc - normalizedPackaging;
-  const marginPct = (netProfit / normalizedRevenue) * 100;
-  return {
-    revenue: normalizedRevenue, cost: normalizedCost, feePct, feeAmount, fixedFee: normalizedFixedFee, taxPct, taxAmount, shipping: normalizedShipping, packaging: normalizedPackaging,
-    netProfit, marginPct, level: getProfitabilityLevel(marginPct),
-  };
+  return computeMarginBreakdownValue(
+    { cost, revenue, feePct, taxPct, shipping, packaging, fixedFee },
+    getFinancialSettings().profitability_thresholds,
+  );
 }
 
 export function resolveOrderFeeInfo(order) {
@@ -1070,17 +1054,6 @@ export function getPortfolioTotals() {
 // calculo e feito em duas passagens (o preco sugerido e o que decide se a
 // taxa fixa se aplica, entao nao da pra saber de antemao sem calcular 1x sem
 // ela primeiro).
-export function calculatePriceSuggestion({ cost, feePct = 0, taxPct = 0, shipping = 0, packaging = 0, fixedFee = 0, fixedFeeThreshold = 0, targetMarginPct }) {
-  const denominator = 1 - (feePct / 100) - (taxPct / 100) - (targetMarginPct / 100);
-  if (denominator <= 0) return null;
-  const base = Number(cost || 0) + Number(shipping || 0) + Number(packaging || 0);
-  let price = base / denominator;
-  if (fixedFeeThreshold > 0 && fixedFee > 0 && price < fixedFeeThreshold) {
-    price = (base + Number(fixedFee)) / denominator;
-  }
-  return Math.round(price * 100) / 100;
-}
-
 export function buildPriceCalculatorResult(inputs) {
   const thresholds = getFinancialSettings().profitability_thresholds;
   return {

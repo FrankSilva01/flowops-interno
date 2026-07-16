@@ -1,6 +1,6 @@
 import { state } from "../core/state.js";
 import { supabaseFunctionUrl } from "../core/config.js";
-import { byId, html, formatDateTime, flashActionMessage } from "../core/dom.js";
+import { byId, html, formatDateTime, flashActionMessage, showAppConfirm, showAppMessage } from "../core/dom.js";
 import { ensureCanAdmin } from "../core/permissions.js";
 import { bindActions, render } from "../core/router.js";
 import { loadRemoteData } from "../data/remote.js";
@@ -65,7 +65,7 @@ export async function runManualBackup() {
     renderSettingsData();
     flashActionMessage("Backup concluido.");
   } catch (error) {
-    alert(`Backup falhou: ${error.message}`);
+    showAppMessage("Falha no backup", error.message, "error");
   } finally {
     button.disabled = false;
     button.textContent = "Executar agora";
@@ -107,7 +107,7 @@ export async function downloadBackupScope(scope) {
     downloadJsonFile(data.snapshot, `3daft-backup-${labels[scope]}-${new Date().toISOString().slice(0, 10)}.json`);
     flashActionMessage("Backup baixado.");
   } catch (error) {
-    alert(`Nao foi possivel baixar o backup: ${error.message}`);
+    showAppMessage("Falha ao baixar backup", error.message, "error");
   } finally {
     button.disabled = false;
     button.textContent = previous;
@@ -125,7 +125,7 @@ export async function downloadSavedBackup(id) {
     anchor.click();
     anchor.remove();
   } catch (error) {
-    alert(`Nao foi possivel baixar o backup: ${error.message}`);
+    showAppMessage("Falha ao baixar backup", error.message, "error");
   }
 }
 
@@ -139,7 +139,8 @@ export async function restoreBackupFromFile() {
     message.textContent = "Selecione um arquivo de backup.";
     return;
   }
-  if (!confirm("Restaurar este backup Registros com o mesmo identificador serao atualizados no Supabase.")) return;
+  const confirmed = await showAppConfirm("Restaurar este backup?", "Registros com o mesmo identificador serão atualizados no Supabase.", { confirmLabel: "Restaurar backup", danger: true });
+  if (!confirmed) return;
   button.disabled = true;
   button.textContent = "Restaurando...";
   message.textContent = "Validando arquivo...";

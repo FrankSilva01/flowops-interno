@@ -1,5 +1,5 @@
 import { state } from "../core/state.js";
-import { byId, html, formatDateTime, formatRelativeTime, flashActionMessage } from "../core/dom.js";
+import { byId, html, formatDateTime, formatRelativeTime, flashActionMessage, showAppMessage } from "../core/dom.js";
 import { bindActions, setView } from "../core/router.js";
 import { getLeadFollowUp, openLeadDialog } from "./customers.js";
 import { formatInventoryNumber, startInventoryEdit } from "./materials.js";
@@ -228,7 +228,7 @@ export async function clearReadNotifications() {
   const dismissedAt = new Date().toISOString();
   const { error } = await state.supabase.from("notifications").update({ dismissed_at: dismissedAt }).in("id", ids);
   if (error) {
-    alert(`Não foi possível limpar as notificações: ${error.message}`);
+    showAppMessage("Falha ao limpar notificações", error.message, "error");
     return;
   }
   state.notifications.forEach((item) => {
@@ -253,7 +253,7 @@ export async function clearVisibleNotifications() {
     read_at: dismissedAt,
   }).in("id", ids);
   if (error) {
-    alert(`Não foi possível limpar as notificações: ${error.message}`);
+    showAppMessage("Falha ao limpar notificações", error.message, "error");
     return;
   }
   state.notifications.forEach((item) => {

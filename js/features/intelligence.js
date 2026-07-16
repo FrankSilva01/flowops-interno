@@ -1,6 +1,6 @@
 import { state, money } from "../core/state.js";
 import { supabaseFunctionUrl } from "../core/config.js";
-import { byId, html, showAppMessage, flashActionMessage } from "../core/dom.js";
+import { byId, html, showAppMessage, showAppConfirm, flashActionMessage } from "../core/dom.js";
 import { getListingProfitability } from "./pricing.js";
 import { getListingAnalytics } from "./marketplace-analytics.js";
 import { normalizeMarketplaceChannel, marketplaceDisplayName, marketplaceRequest, openMarketplaceEdit } from "./marketplace.js";
@@ -605,7 +605,7 @@ async function handleXRayAction(action, listing) {
       await openMarketplaceEdit(listing.external_id || listing.id, listing.marketplace || "Mercado Livre");
       break;
     case "pause":
-      if (!confirm(`Pausar o anúncio ${listing.title || listing.external_id || "selecionado"}?`)) return;
+      if (!await showAppConfirm(`Pausar ${listing.title || listing.external_id || "anúncio selecionado"}?`, "O anúncio deixará de receber novas vendas até ser reativado.", { confirmLabel: "Pausar anúncio", danger: true })) return;
       try {
         const itemId = listing.external_id || listing.id;
         await marketplaceRequest(`${supabaseFunctionUrl("marketplace-sync")}?marketplace=ml&action=edit&item_id=${encodeURIComponent(itemId)}`, {

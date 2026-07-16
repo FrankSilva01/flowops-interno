@@ -200,7 +200,7 @@ export function openLogisticsDialog(orderId) {
   // Auto-sync if order has marketplace code and is not delivered
   const marketplaceCode = order.marketplaceOrderCode || order.marketplaceCode;
   if (marketplaceCode && logistics?.status !== "Entregue" && order.status !== "Entregue") {
-    syncLogisticsFromMarketplaceQuiet(orderId).catch(e => console.log("Auto-sync skipped:", e.message));
+    syncLogisticsFromMarketplaceQuiet(orderId).catch(() => {});
   }
 }
 

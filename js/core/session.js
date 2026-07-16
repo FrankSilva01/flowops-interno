@@ -1,5 +1,5 @@
 import { state } from "./state.js";
-import { byId, html } from "./dom.js";
+import { byId, html, showAppMessage } from "./dom.js";
 import { isAdminRole, isEditorRole, displayRole, hasCapability } from "./permissions.js";
 import { render } from "./router.js";
 import { loadResponsibles, loadAccessRequests, loadActiveUsers } from "../features/users.js";
@@ -353,7 +353,7 @@ export async function enterOnlineApp(user) {
     }
     render();
   } catch (error) {
-    alert(`Login feito, mas não consegui carregar o banco: ${error.message}`);
+    showAppMessage("Falha ao carregar sua empresa", error.message, "error");
     throw error;
   }
 }

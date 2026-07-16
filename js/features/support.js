@@ -1,5 +1,5 @@
 import { state } from "../core/state.js";
-import { byId, html, formatDateTime, flashActionMessage } from "../core/dom.js";
+import { byId, html, formatDateTime, flashActionMessage, showAppMessage } from "../core/dom.js";
 import { loadRemoteData } from "../data/remote.js";
 
 export async function submitSupportTicket(event) {
@@ -26,7 +26,7 @@ export async function submitSupportTicket(event) {
     },
   }).select("reference_code").single();
   if (error) {
-    alert(`Não foi possível enviar o chamado: ${error.message}`);
+    showAppMessage("Falha ao enviar chamado", error.message, "error");
     return;
   }
   form.reset();

@@ -1,5 +1,5 @@
 import { state, money } from "../core/state.js";
-import { byId, html, formatDate, showAppMessage, renderPagination, countBy } from "../core/dom.js";
+import { byId, html, formatDate, showAppConfirm, showAppMessage, renderPagination, countBy } from "../core/dom.js";
 import {
   saveFiscalDocument, loadFiscalDocuments, deleteFiscalDocument,
   saveDASPayment, loadDASPayments,
@@ -83,11 +83,14 @@ export async function renderFiscalDocs() {
   // Bind delete buttons
   document.querySelectorAll('[data-fiscal-delete]').forEach(btn => {
     btn.addEventListener("click", async () => {
-      if (confirm("Tem certeza que deseja deletar este documento?")) {
-        const docId = btn.dataset.fiscalDelete;
-        await deleteFiscalDocument(docId);
-        await renderFiscalDocs();
-      }
+      const confirmed = await showAppConfirm("Excluir documento fiscal", "Tem certeza que deseja excluir este documento?", {
+        confirmLabel: "Excluir",
+        danger: true,
+      });
+      if (!confirmed) return;
+      const docId = btn.dataset.fiscalDelete;
+      await deleteFiscalDocument(docId);
+      await renderFiscalDocs();
     });
   });
   document.querySelectorAll('[data-fiscal-download]').forEach(btn => {
@@ -286,10 +289,13 @@ export async function renderPurchaseInvoices() {
   // Bind delete buttons
   document.querySelectorAll('[data-purchase-delete]').forEach(btn => {
     btn.addEventListener("click", async () => {
-      if (confirm("Tem certeza que deseja deletar esta nota?")) {
-        const success = await deletePurchaseInvoice(btn.dataset.purchaseDelete);
-        if (success) await renderPurchaseInvoices();
-      }
+      const confirmed = await showAppConfirm("Excluir nota de compra", "Tem certeza que deseja excluir esta nota de compra?", {
+        confirmLabel: "Excluir",
+        danger: true,
+      });
+      if (!confirmed) return;
+      const success = await deletePurchaseInvoice(btn.dataset.purchaseDelete);
+      if (success) await renderPurchaseInvoices();
     });
   });
 }
@@ -430,10 +436,13 @@ export async function renderSalesInvoices() {
   // Bind delete buttons
   document.querySelectorAll('[data-sales-delete]').forEach(btn => {
     btn.addEventListener("click", async () => {
-      if (confirm("Tem certeza que deseja deletar esta nota?")) {
-        const success = await deleteSalesInvoice(btn.dataset.salesDelete);
-        if (success) await renderSalesInvoices();
-      }
+      const confirmed = await showAppConfirm("Excluir nota de venda", "Tem certeza que deseja excluir esta nota de venda?", {
+        confirmLabel: "Excluir",
+        danger: true,
+      });
+      if (!confirmed) return;
+      const success = await deleteSalesInvoice(btn.dataset.salesDelete);
+      if (success) await renderSalesInvoices();
     });
   });
 }

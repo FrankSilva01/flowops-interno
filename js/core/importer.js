@@ -1,6 +1,6 @@
 import { state, saveData, normalizeOrderStatus, order } from "./state.js";
 import { render } from "./router.js";
-import { nextId, today } from "./dom.js";
+import { nextId, today, showAppMessage } from "./dom.js";
 import { ensureCanEdit } from "./permissions.js";
 import { persist } from "../data/remote.js";
 import { recordAudit } from "../features/logs.js";
@@ -37,15 +37,15 @@ export async function importFile(event) {
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       await importRows(XLSX.utils.sheet_to_json(sheet, { defval: "" }));
     } else {
-      alert("Formato não suportado. Use JSON, CSV ou XLSX.");
+      showAppMessage("Formato não suportado", "Use um arquivo JSON, CSV, XLSX ou XLS.", "warning");
       return;
     }
     saveData();
     render();
     imported = true;
-    alert("Importação concluída.");
+    showAppMessage("Importação concluída", "Os dados foram processados com sucesso.", "success");
   } catch (error) {
-    alert(`Não foi possível importar: ${error.message}`);
+    showAppMessage("Falha na importação", error.message, "error");
   } finally {
     if (imported) await recordAudit("import", "system", file.name, "", null, { file: file.name, size: file.size }, "manual");
     event.target.value = "";

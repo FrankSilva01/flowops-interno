@@ -1,5 +1,5 @@
 import { state } from "./state.js";
-import { byId } from "./dom.js";
+import { byId, showAppMessage } from "./dom.js";
 
 export function normalizeRole(role) {
   return String(role || "")
@@ -39,13 +39,13 @@ export function displayRole(role) {
 
 export function ensureCanEdit() {
   if (state.canEdit) return true;
-  alert("Seu usuário está com permissão somente leitura.");
+  showAppMessage("Acesso somente leitura", "Seu usuário não possui permissão para alterar registros.", "warning");
   return false;
 }
 
 export function ensureCanAdmin() {
   if (state.isAdmin) return true;
-  alert("Apenas administrador pode executar esta ação.");
+  showAppMessage("Acesso restrito", "Apenas administradores podem executar esta ação.", "warning");
   return false;
 }
 
@@ -63,7 +63,7 @@ export function hasCapability(capability) {
 
 export function ensureCapability(capability, label = "esta ação") {
   if (hasCapability(capability)) return true;
-  alert(`Seu perfil não possui permissão para ${label}.`);
+  showAppMessage("Permissão necessária", `Seu perfil não possui permissão para ${label}.`, "warning");
   return false;
 }
 

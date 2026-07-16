@@ -36,18 +36,23 @@ test("public tracking page uses a same-origin external script", async () => {
   assert.deepEqual(inlineScripts, []);
 });
 
-test("critical operational modules avoid native blocking dialogs", async () => {
-  const files = [
-    "js/core/router.js",
-    "js/features/orders.js",
-    "js/features/logistics.js",
-    "js/features/marketplace.js",
-    "js/features/pricing.js",
-  ];
+test("active modules avoid native blocking dialogs", async () => {
+  const files = (await filesUnder("js", [".js"]))
+    .filter((file) => path.normalize(file) !== path.normalize("js/core/dom.js"));
   const violations = [];
   for (const file of files) {
     const source = await readFile(file, "utf8");
     if (/\b(?:window\.)?(?:alert|confirm|prompt)\s*\(/.test(source)) violations.push(file);
+  }
+  assert.deepEqual(violations, []);
+});
+
+test("accessible confirmations receive a title and message", async () => {
+  const files = await filesUnder("js", [".js"]);
+  const violations = [];
+  for (const file of files) {
+    const source = await readFile(file, "utf8");
+    if (/showAppConfirm\(\s*[^,]+,\s*\{/.test(source)) violations.push(file);
   }
   assert.deepEqual(violations, []);
 });

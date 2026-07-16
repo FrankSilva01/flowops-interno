@@ -234,24 +234,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     accountingIntegration?.openSettingsDialog?.();
   };
 
-  // Bind button event listeners (CSP-compliant) - Temporarily disabled
-  /*
-  const iaPricingBtn = byId("iaaPricingBtn");
-  if (iaPricingBtn) {
-    iaPricingBtn.addEventListener("click", () => {
-      console.log("IA Pricing button clicked");
-      openMLPricingDialog();
-    });
-  }
-
-  const accountingBtn = byId("accountingBtn");
-  if (accountingBtn) {
-    accountingBtn.addEventListener("click", () => {
-      console.log("Accounting button clicked");
-      accountingIntegration?.openSettingsDialog?.();
-    });
-  }
-  */
   window.syncAllAccountingData = () => accountingIntegration?.syncAllData?.();
 
   // Register Service Worker for PWA
