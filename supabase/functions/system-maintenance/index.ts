@@ -630,6 +630,11 @@ function restoreRowKey(table: string, row: Record<string, unknown>) {
     const email = String(row.email || "").trim().toLowerCase();
     return email ? `email:${email}` : "";
   }
+  if (table === "organization_members") {
+    const organizationId = String(row.organization_id || "").trim();
+    const email = String(row.user_email || "").trim().toLowerCase();
+    return organizationId && email ? `member:${organizationId}:${email}` : "";
+  }
   const id = String(row.id || "").trim();
   return id ? `id:${id}` : "";
 }
