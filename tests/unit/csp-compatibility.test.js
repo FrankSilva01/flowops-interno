@@ -30,5 +30,8 @@ test("active UI contains no inline event handlers blocked by CSP", async () => {
 test("public tracking page uses a same-origin external script", async () => {
   const source = await readFile("tracking.html", "utf8");
   assert.match(source, /<script src="\/js\/tracking\.js" defer><\/script>/);
-  assert.doesNotMatch(source, /<script(?:\s[^>]*)?>[\s\S]*?\S[\s\S]*?<\/script>/i);
+  const inlineScripts = [...source.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)]
+    .map((match) => match[1].trim())
+    .filter(Boolean);
+  assert.deepEqual(inlineScripts, []);
 });

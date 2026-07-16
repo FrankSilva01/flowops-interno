@@ -193,6 +193,8 @@ export function fromRemoteOrder(item) {
     material: item.material || "",
     createdAt: item.created_at || item.order_date || item.updated_at || "",
     updatedAt: item.updated_at || "",
+    public_tracking_token: item.public_tracking_token || "",
+    public_tracking_enabled: item.public_tracking_enabled !== false,
     deliveryDate: item.delivery_date || "",
     status: normalizeOrderStatus(item.status),
     quantity: Math.max(Number(item.quantity || 1), 1),

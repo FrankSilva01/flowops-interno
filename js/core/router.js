@@ -66,7 +66,7 @@ import {
 } from "../features/backup.js";
 import { exportJson, importFile } from "./importer.js";
 import {
-  renderLogistics, openLogisticsDialog, saveLogisticsInfo, addLogisticsEvent, syncLogisticsFromMarketplace, syncAllMarketplaceLogistics,
+  renderLogistics, openLogisticsDialog, copyPublicTrackingLink, saveLogisticsInfo, addLogisticsEvent, syncLogisticsFromMarketplace, syncAllMarketplaceLogistics,
 } from "../features/logistics.js";
 import {
   openProductQuickDialog, saveProduct, deleteProduct, bindProductFormAutoSku,
@@ -82,7 +82,7 @@ import {
   showCalculatorSuggestion, getSuggestionForListing, syncFeeCalculatorFull,
 } from "../features/marketplace-analytics.js";
 
-const APP_VERSION = "256";
+const APP_VERSION = "257";
 
 async function refreshAppShell() {
   showAppMessage("Atualizando sistema", "Limpando cache local e carregando a versão mais recente.", "info");
@@ -732,6 +732,10 @@ export function bindActions() {
       }
       if (action === "open-logistics") {
         openLogisticsDialog(id);
+        return;
+      }
+      if (action === "copy-public-tracking") {
+        await copyPublicTrackingLink(id);
         return;
       }
       if (action === "sync-ml-shipment") {

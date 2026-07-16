@@ -85,6 +85,12 @@
       font-weight: 600;
     }
 
+    .tracking-product { margin-bottom: 18px; font-size: 18px; }
+    .tracking-details { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .tracking-details > div { display: grid; gap: 5px; padding: 14px; border: 1px solid #e3e8ef; border-radius: 8px; }
+    .tracking-details span { overflow-wrap: anywhere; color: #4b5563; }
+    .timeline-heading { display: block; margin-bottom: 15px; }
+
     .status-processing { background: #FFF3CD; color: #856404; }
     .status-shipped { background: #D4EDDA; color: #155724; }
     .status-delivered { background: #D1ECF1; color: #0C5460; }
@@ -155,6 +161,7 @@
       .header { padding: 20px 15px; }
       .order-header { flex-direction: column; align-items: flex-start; }
       .order-status { margin-top: 10px; }
+      .tracking-details { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -169,7 +176,7 @@
       <input
         type="text"
         id="orderInput"
-        placeholder="Digite o código do seu pedido..."
+        placeholder="Cole seu codigo seguro de rastreamento..."
         autocomplete="off"
       />
       <button class="search-btn" id="searchOrderBtn" type="button">Rastrear</button>
@@ -183,6 +190,7 @@
     </div>
   </div>
 
+  <script src="/supabase-config.js"></script>
   <script src="/js/tracking.js" defer></script>
 </body>
 </html>

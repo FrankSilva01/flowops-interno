@@ -60,7 +60,7 @@ test("controles estaticos possuem nome acessivel", async ({ page }) => {
 });
 
 test("rastreamento publico funciona sob CSP e escapa dados externos", async ({ page }) => {
-  await page.route("**/api/tracking?**", (route) => route.fulfill({
+  await page.route("**/functions/v1/public-tracking?**", (route) => route.fulfill({
     status: 200,
     contentType: "application/json",
     body: JSON.stringify({
@@ -68,12 +68,11 @@ test("rastreamento publico funciona sob CSP e escapa dados externos", async ({ p
       status: "Em transporte",
       created_at: "2026-07-16T10:00:00Z",
       description: '<img src=x onerror="window.__trackingXss=true">',
-      address_city: "Sao Paulo",
-      address_state: "SP",
-      logistics: [{ created_at: "2026-07-16T10:00:00Z", title: "Postado", description: "Objeto recebido" }],
+      logistics: { carrier: "Correios", tracking_code: "BR123", status: "Em transporte" },
+      events: [{ occurred_at: "2026-07-16T10:00:00Z", status: "Postado", message: "Objeto recebido" }],
     }),
   }));
-  await page.goto("/tracking.html?order=PED-TESTE&key=teste");
+  await page.goto("/tracking.html?token=00000000-0000-4000-8000-000000000001");
   await expect(page.getByText("Pedido #PED-TESTE")).toBeVisible();
   await expect(page.getByText('<img src=x onerror="window.__trackingXss=true">')).toBeVisible();
   expect(await page.evaluate(() => window.__trackingXss === true)).toBe(false);

@@ -188,6 +188,12 @@ export function openLogisticsDialog(orderId) {
   form.elements.estimatedDeliveryDate.value = logistics?.estimated_delivery_date || "";
   byId("logisticsEventForm").elements.orderId.value = orderId;
   byId("logisticsSyncMlButton").dataset.id = orderId;
+  const publicLinkButton = byId("copyPublicTrackingLinkButton");
+  publicLinkButton.dataset.id = orderId;
+  publicLinkButton.disabled = !order.public_tracking_token || order.public_tracking_enabled === false;
+  publicLinkButton.title = publicLinkButton.disabled
+    ? "Recarregue os dados para disponibilizar o link seguro."
+    : "Copia um link seguro que pode ser enviado ao cliente.";
   byId("logisticsDialogTitle").textContent = `Rastreio - ${getOrderCode(order)}`;
   renderLogisticsTimeline(orderId);
   byId("logisticsDialog").showModal();
@@ -195,6 +201,22 @@ export function openLogisticsDialog(orderId) {
   const marketplaceCode = order.marketplaceOrderCode || order.marketplaceCode;
   if (marketplaceCode && logistics?.status !== "Entregue" && order.status !== "Entregue") {
     syncLogisticsFromMarketplaceQuiet(orderId).catch(e => console.log("Auto-sync skipped:", e.message));
+  }
+}
+
+export async function copyPublicTrackingLink(orderId) {
+  const order = state.data.orders.find((item) => item.id === orderId);
+  if (!order?.public_tracking_token || order.public_tracking_enabled === false) {
+    flashActionMessage("Link seguro indisponivel. Recarregue os dados e tente novamente.");
+    return;
+  }
+  const url = new URL("/tracking.html", window.location.origin);
+  url.searchParams.set("token", order.public_tracking_token);
+  try {
+    await navigator.clipboard.writeText(url.toString());
+    flashActionMessage("Link seguro de rastreamento copiado.");
+  } catch {
+    window.prompt("Copie o link seguro de rastreamento:", url.toString());
   }
 }
 

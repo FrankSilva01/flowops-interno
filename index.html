@@ -33,7 +33,7 @@
     <link rel="stylesheet" href="./css/17-history-reports-refinement.css?v=247" />
     <link rel="stylesheet" href="./css/18-governance-resilience.css?v=254" />
     <script src="./supabase-config.js?v=200" defer></script>
-    <script type="module" src="./js/app.js?v=256"></script>
+    <script type="module" src="./js/app.js?v=257"></script>
   </head>
   <body>
     <main id="appView" class="app-shell" hidden>
@@ -2264,6 +2264,7 @@
         <label>Previsão de entrega<input name="estimatedDeliveryDate" type="date" /></label>
         <button class="primary-btn" type="submit">Salvar rastreio</button>
         <button class="secondary-btn" type="button" id="logisticsSyncMlButton" data-action="sync-ml-shipment">Buscar status no Mercado Livre</button>
+        <button class="secondary-btn" type="button" id="copyPublicTrackingLinkButton" data-action="copy-public-tracking">Copiar link para o cliente</button>
       </form>
       <div class="panel-head subhead"><h3>Adicionar evento na timeline</h3></div>
       <form id="logisticsEventForm" class="compact-form drawer-body">
