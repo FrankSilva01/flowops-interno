@@ -5,6 +5,9 @@
   "version": "1.0.0",
   "scripts": {
     "check": "node scripts/check-js.mjs",
+    "health": "node scripts/operational-health.mjs",
+    "audit:rls": "node scripts/rls-isolation-audit.mjs",
+    "release:readiness": "node scripts/release-readiness.mjs",
     "test:unit": "node --test tests/unit/*.test.js",
     "test:e2e": "playwright test",
     "test": "npm run check && npm run test:unit && npm run test:e2e"

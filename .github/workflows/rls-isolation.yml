@@ -1,0 +1,21 @@
+name: RLS tenant isolation
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "41 11 * * 2,4"
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    env:
+      FLOWOPS_SUPABASE_ANON_KEY: ${{ secrets.FLOWOPS_SUPABASE_ANON_KEY }}
+      FLOWOPS_RLS_USER_1_EMAIL: ${{ secrets.FLOWOPS_RLS_USER_1_EMAIL }}
+      FLOWOPS_RLS_USER_1_PASSWORD: ${{ secrets.FLOWOPS_RLS_USER_1_PASSWORD }}
+      FLOWOPS_RLS_USER_2_EMAIL: ${{ secrets.FLOWOPS_RLS_USER_2_EMAIL }}
+      FLOWOPS_RLS_USER_2_PASSWORD: ${{ secrets.FLOWOPS_RLS_USER_2_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Audit isolation between two organizations
+        run: node scripts/rls-isolation-audit.mjs

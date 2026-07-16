@@ -11,7 +11,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Validate private health credential
+        env:
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: test -n "$SUPABASE_SERVICE_ROLE_KEY" || (echo "Cadastre SUPABASE_SERVICE_ROLE_KEY em Settings > Secrets > Actions" && exit 1)
       - name: Verify application, functions and latest backup
         env:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: node scripts/operational-health.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: operational-health-report
+          path: output/operational-health.json
+          retention-days: 30
