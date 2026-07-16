@@ -4,6 +4,8 @@ import { mercadoPagoRequest } from "../_shared/mercado-pago.ts";
 import { reconcileMercadoPagoSubscription } from "../_shared/subscription-billing.ts";
 
 const BACKUP_TABLES = [
+  "organizations",
+  "organization_members",
   "orders",
   "cash_entries",
   "materials",
