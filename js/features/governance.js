@@ -14,6 +14,8 @@ export function bindGovernance() {
     if (action === "request-correction") await requestDataAction("correction");
     if (action === "request-deletion") await requestDataAction("deletion");
     if (action === "save-retention") await saveRetention();
+    if (action === "retry-integration-job") await manageIntegrationJob(button.dataset.jobId, "retry");
+    if (action === "cancel-integration-job") await manageIntegrationJob(button.dataset.jobId, "cancel");
   });
 }
 
@@ -30,6 +32,33 @@ export function renderGovernance() {
   const retention = state.organizationSettings?.data_retention || {};
   if (byId("integrationRetentionDays")) byId("integrationRetentionDays").value = String(retention.integration_job_days || 90);
   if (byId("supportRetentionDays")) byId("supportRetentionDays").value = String(retention.support_diagnostic_days || 90);
+  renderIntegrationRecovery();
+}
+
+function renderIntegrationRecovery() {
+  const section = byId("integrationRecoverySection");
+  const list = byId("integrationRecoveryList");
+  const count = byId("integrationRecoveryCount");
+  if (!section || !list || !count) return;
+  const failed = state.isAdmin ? state.integrationJobs.filter((item) => item.status === "dead_letter") : [];
+  section.hidden = !failed.length;
+  count.textContent = String(failed.length);
+  list.innerHTML = failed.map((item) => `
+    <article class="list-row">
+      <div><strong>${html(item.marketplace)} · ${html(item.job_type)}</strong><span>${item.attempts}/${item.max_attempts} tentativas · ${formatDateTime(item.created_at)}</span><p>${html(item.last_error || "Falha sem detalhe registrado.")}</p></div>
+      <div class="inline-actions"><button class="secondary-btn" type="button" data-governance-action="retry-integration-job" data-job-id="${html(item.id)}">Tentar novamente</button><button class="danger-btn" type="button" data-governance-action="cancel-integration-job" data-job-id="${html(item.id)}">Cancelar</button></div>
+    </article>
+  `).join("");
+}
+
+async function manageIntegrationJob(jobId, action) {
+  const label = action === "retry" ? "tentar novamente" : "cancelar";
+  const confirmed = await showAppConfirm(`${label[0].toUpperCase()}${label.slice(1)} esta integração?`, action === "retry" ? "O job voltará para a fila e será processado no próximo ciclo de manutenção." : "O job será encerrado e não voltará para a fila.", { confirmLabel: action === "retry" ? "Reprocessar" : "Cancelar job", danger: action !== "retry" });
+  if (!confirmed) return;
+  const { error } = await state.supabase.rpc("manage_integration_job", { candidate_job_id: jobId, candidate_action: action });
+  if (error) return showAppMessage("Integrações", error.message, "error");
+  await refresh();
+  showAppMessage("Fila atualizada", action === "retry" ? "O job foi devolvido à fila." : "O job foi cancelado.", "success");
 }
 
 async function saveRetention() {

@@ -19,6 +19,10 @@ async function check(name, action, remediation) {
 async function persistReport() {
   await mkdir(reportPath.replace(/[\\/][^\\/]+$/, "") || ".", { recursive: true });
   await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`);
+  if (process.env.GITHUB_STEP_SUMMARY) {
+    const rows = report.checks.map((item) => `| ${item.status === "pass" ? "OK" : item.status === "skip" ? "Ignorado" : "Falha"} | ${item.name} | ${String(item.detail || item.error || "").replace(/\|/g, "\\|")} | ${String(item.remediation || "-").replace(/\|/g, "\\|")} |`).join("\n");
+    await writeFile(process.env.GITHUB_STEP_SUMMARY, `## Saúde operacional FlowOps\n\n**Estado:** ${report.status === "healthy" ? "Saudável" : "Requer atenção"}  \n**Verificado em:** ${report.checkedAt}\n\n| Estado | Verificação | Resultado | Ação recomendada |\n| --- | --- | --- | --- |\n${rows}\n`, { flag: "a" });
+  }
 }
 
 for (const [path, marker] of [["/", "FlowOps"], ["/termos.html", "Termos de Uso"], ["/privacidade.html", "Política de Privacidade"]]) {
@@ -74,11 +78,12 @@ if (!serviceKey) {
   }, "Executar system-maintenance?action=backup e revisar a tabela backup_runs.");
 
   await check("marketplace:connections", async () => {
-    const accounts = await rest("marketplace_accounts?select=marketplace,connection_status,token_expires_at,updated_at");
+    const accounts = await rest("marketplace_accounts?select=marketplace,connection_status,token_expires_at,refresh_token,updated_at");
     const active = accounts.filter((item) => ["connected", "active"].includes(item.connection_status));
     const expiring = active.filter((item) => item.token_expires_at && new Date(item.token_expires_at).getTime() < Date.now() + 30 * 60_000);
-    if (expiring.length) throw new Error(`${expiring.length} integração(ões) expiram em menos de 30 minutos`);
-    return `${active.length} integração(ões) ativa(s)`;
+    const blocked = expiring.filter((item) => !item.refresh_token);
+    if (blocked.length) throw new Error(`${blocked.length} integração(ões) expiram sem token de renovação`);
+    return `${active.length} integração(ões) ativa(s); ${expiring.length} com renovação automática próxima`;
   }, "Renovar os tokens na tela Marketplace > Integrações.");
 
   await check("marketplace:error-rate", async () => {

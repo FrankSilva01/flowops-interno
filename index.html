@@ -31,9 +31,9 @@
     <link rel="stylesheet" href="./css/15-linear-shopify-density.css?v=243" />
     <link rel="stylesheet" href="./css/16-order-shopee-workflows.css?v=246" />
     <link rel="stylesheet" href="./css/17-history-reports-refinement.css?v=247" />
-    <link rel="stylesheet" href="./css/18-governance-resilience.css?v=252" />
+    <link rel="stylesheet" href="./css/18-governance-resilience.css?v=253" />
     <script src="./supabase-config.js?v=200" defer></script>
-    <script type="module" src="./js/app.js?v=252"></script>
+    <script type="module" src="./js/app.js?v=253"></script>
   </head>
   <body>
     <main id="appView" class="app-shell" hidden>
@@ -872,6 +872,13 @@
               <button class="danger-btn" type="button" data-governance-action="request-deletion">Solicitar exclusão</button>
             </div>
             <div id="dataRequestsList" class="stack-list governance-request-list"></div>
+            <section id="integrationRecoverySection" class="governance-recovery" hidden>
+              <div class="section-heading compact-heading">
+                <div><span class="eyebrow">Integrações</span><h3>Falhas que precisam de ação</h3></div>
+                <span id="integrationRecoveryCount" class="badge danger-badge">0</span>
+              </div>
+              <div id="integrationRecoveryList" class="stack-list governance-request-list"></div>
+            </section>
             <div class="compact-form governance-retention-form">
               <label>Jobs de integração<select id="integrationRetentionDays"><option value="30">30 dias</option><option value="90">90 dias</option><option value="180">180 dias</option><option value="365">365 dias</option></select></label>
               <label>Diagnósticos de suporte<select id="supportRetentionDays"><option value="30">30 dias</option><option value="90">90 dias</option><option value="180">180 dias</option><option value="365">365 dias</option></select></label>
