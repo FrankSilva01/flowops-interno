@@ -24,6 +24,9 @@ const requiredTables = ["organizations", "organization_members", "orders", "cash
 const snapshotTables = Object.keys(exported.snapshot?.tables || exported.snapshot || {});
 const missingTables = requiredTables.filter((table) => !snapshotTables.includes(table));
 if (missingTables.length) throw new Error(`Snapshot incompleto; tabelas ausentes: ${missingTables.join(", ")}`);
+if (exported.snapshot?.unavailable_tables?.length) {
+  console.warn(`Tabelas opcionais indisponíveis no staging: ${exported.snapshot.unavailable_tables.join(", ")}`);
+}
 const encoded = new TextEncoder().encode(JSON.stringify(exported.snapshot));
 const digest = [...new Uint8Array(await crypto.subtle.digest("SHA-256", encoded))].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 console.log(`Simulacao valida: ${simulation.totals?.rows || 0} registros, ${snapshotTables.length} tabelas, SHA-256 ${digest.slice(0, 16)}...`);

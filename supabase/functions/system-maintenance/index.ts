@@ -463,9 +463,14 @@ async function createSnapshot(
     project: "3D.AFT",
     scope,
     tables: {},
+    unavailable_tables: [],
   };
   for (const table of tables) {
     const { data, error } = await supabase.from(table).select("*");
+    if (error && ["PGRST200", "PGRST205"].includes(String(error.code || ""))) {
+      snapshot.unavailable_tables.push(table);
+      continue;
+    }
     if (error) throw new Error(`${table}: ${error.message}`);
     snapshot.tables[table] = data || [];
   }
