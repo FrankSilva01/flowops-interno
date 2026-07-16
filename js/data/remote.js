@@ -15,7 +15,7 @@ export async function persist(kind, item) {
 
 export async function removeRemote(kind, id) {
   if (!state.online || !state.supabase) return;
-  const { error } = await state.supabase.from(tableName(kind)).delete().eq("id", id);
+  const { error } = await state.supabase.from(tableName(kind)).delete().eq("id", id).eq("organization_id", state.organizationId);
   if (error) throw error;
 }
 

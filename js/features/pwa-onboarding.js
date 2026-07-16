@@ -411,23 +411,22 @@ export async function setupMFA() {
 }
 
 function showMFAQRCode(enrollData) {
-  const dialog = document.createElement("div");
+  const dialog = document.createElement("dialog");
+  dialog.className = "app-message-dialog mfa-dialog";
+  dialog.setAttribute("aria-labelledby", "mfa-enroll-title");
   dialog.style.cssText = `
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
     background: var(--panel);
     padding: 32px;
     border-radius: 12px;
     box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-    z-index: 10000;
-    min-width: 400px;
-    max-width: 90vw;
+    width: min(420px, calc(100vw - 32px));
+    min-width: 0;
+    max-width: none;
+    box-sizing: border-box;
   `;
 
   dialog.innerHTML = `
-    <h2 style="margin: 0 0 12px 0; font-size: 18px; font-weight: 700; color: var(--ink);">
+    <h2 id="mfa-enroll-title" style="margin: 0 0 12px 0; font-size: 18px; font-weight: 700; color: var(--ink);">
       Configurar Autenticação de Dois Fatores
     </h2>
     <p style="margin: 0 0 24px 0; font-size: 13px; color: var(--muted); line-height: 1.6;">
@@ -476,56 +475,53 @@ function showMFAQRCode(enrollData) {
     </div>
   `;
 
-  const overlay = document.createElement("div");
-  overlay.style.cssText = `
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.4);
-    z-index: 9999;
-  `;
-
-  document.body.appendChild(overlay);
   document.body.appendChild(dialog);
 
-  byId("cancelMFA").addEventListener("click", async () => {
+  const cancelEnrollment = async () => {
     await state.supabase.auth.mfa.unenroll({ factorId: enrollData.id }).catch(() => null);
-    overlay.remove();
+    if (dialog.open) dialog.close();
     dialog.remove();
+  };
+  byId("cancelMFA").addEventListener("click", cancelEnrollment);
+  dialog.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    cancelEnrollment();
   });
 
   byId("verifyMFA").addEventListener("click", () => {
     // Próximo passo: verificar código
-    overlay.remove();
+    dialog.close();
     dialog.remove();
     showMFAVerification(enrollData.id);
   });
+  dialog.showModal();
 }
 
 function showMFAVerification(factorId) {
-  const dialog = document.createElement("div");
+  const dialog = document.createElement("dialog");
+  dialog.className = "app-message-dialog mfa-dialog";
+  dialog.setAttribute("aria-labelledby", "mfa-verify-title");
   dialog.style.cssText = `
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
     background: var(--panel);
     padding: 32px;
     border-radius: 12px;
     box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-    z-index: 10000;
-    min-width: 400px;
-    max-width: 90vw;
+    width: min(420px, calc(100vw - 32px));
+    min-width: 0;
+    max-width: none;
+    box-sizing: border-box;
   `;
 
   dialog.innerHTML = `
-    <h2 style="margin: 0 0 12px 0; font-size: 18px; font-weight: 700; color: var(--ink);">
+    <h2 id="mfa-verify-title" style="margin: 0 0 12px 0; font-size: 18px; font-weight: 700; color: var(--ink);">
       Verificar Código
     </h2>
     <p style="margin: 0 0 24px 0; font-size: 13px; color: var(--muted); line-height: 1.6;">
       Digite o código de 6 dígitos exibido no seu app autenticador.
     </p>
 
-    <input type="text" id="mfa-code" maxlength="6" placeholder="000000" style="
+    <label for="mfa-code" class="sr-only">Código de autenticação com 6 dígitos</label>
+    <input type="text" id="mfa-code" maxlength="6" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" aria-describedby="mfa-code-help" placeholder="000000" style="
       width: 100%;
       padding: 12px;
       border: 1px solid var(--line);
@@ -539,6 +535,7 @@ function showMFAVerification(factorId) {
       font-weight: 600;
       margin-bottom: 24px;
     " />
+    <span id="mfa-code-help" class="sr-only">Informe somente os seis números exibidos no aplicativo autenticador.</span>
 
     <div style="display: flex; gap: 12px; justify-content: flex-end;">
       <button class="secondary-btn" type="button" id="cancelMFA2" style="
@@ -562,25 +559,17 @@ function showMFAVerification(factorId) {
     </div>
   `;
 
-  const overlay = document.createElement("div");
-  overlay.style.cssText = `
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.4);
-    z-index: 9999;
-  `;
-
-  document.body.appendChild(overlay);
   document.body.appendChild(dialog);
 
   byId("cancelMFA2").addEventListener("click", () => {
-    overlay.remove();
+    dialog.close();
     dialog.remove();
   });
+  dialog.addEventListener("cancel", () => dialog.remove());
 
   byId("submitMFACode").addEventListener("click", async () => {
     const code = byId("mfa-code").value;
-    if (code.length !== 6) {
+    if (!/^\d{6}$/.test(code)) {
       showAppMessage("Código incompleto", "Digite os 6 dígitos exibidos no aplicativo autenticador.", "warning");
       return;
     }
@@ -598,12 +587,14 @@ function showMFAVerification(factorId) {
       }
 
       flashActionMessage("✅ MFA ativado com sucesso!");
-      overlay.remove();
+      dialog.close();
       dialog.remove();
     } catch (err) {
       showAppMessage("Falha ao verificar código", err.message || "Tente novamente.", "error");
     }
   });
+  dialog.showModal();
+  byId("mfa-code").focus();
 }
 
 export async function disableMFA() {

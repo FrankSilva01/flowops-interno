@@ -211,12 +211,18 @@ export async function rejectAccess(email) {
       decided_at: decidedAt,
       decided_by: state.activeUserEmail
     })
-    .eq("email", email);
+    .eq("email", email)
+    .eq("organization_id", state.organizationId);
   if (error) {
-    await state.supabase
+    const fallback = await state.supabase
       .from("access_requests")
       .update({ status: "rejected", requested_at: decidedAt })
-      .eq("email", email);
+      .eq("email", email)
+      .eq("organization_id", state.organizationId);
+    if (fallback.error) {
+      showAppMessage("Falha ao rejeitar acesso", fallback.error.message, "error");
+      return;
+    }
   }
   state.accessRequests = state.accessRequests.map((item) => item.email === email ? { ...item, status: "rejected", decided_at: decidedAt, decided_by: state.activeUserEmail } : item);
   await loadAndRenderApprovals();
@@ -224,16 +230,18 @@ export async function rejectAccess(email) {
 }
 
 export async function changeUserRole(email, role) {
-  await state.supabase
+  const { error: approvedError } = await state.supabase
     .from("approved_users")
     .update({ role })
     .eq("email", email)
     .eq("organization_id", state.organizationId);
-  await state.supabase
+  if (approvedError) return showAppMessage("Falha ao alterar o perfil", approvedError.message, "error");
+  const { error: memberError } = await state.supabase
     .from("organization_members")
     .update({ role, updated_at: new Date().toISOString() })
     .eq("organization_id", state.organizationId)
     .eq("user_email", email);
+  if (memberError) return showAppMessage("Falha ao alterar o perfil", memberError.message, "error");
   await loadAndRenderUsers();
 }
 
@@ -267,16 +275,18 @@ export async function removeUser(email) {
     confirmLabel: "Remover acesso",
   });
   if (!confirmed) return;
-  await state.supabase
+  const { error: approvedError } = await state.supabase
     .from("approved_users")
     .delete()
     .eq("email", email)
     .eq("organization_id", state.organizationId);
-  await state.supabase
+  if (approvedError) return showAppMessage("Falha ao remover o acesso", approvedError.message, "error");
+  const { error: memberError } = await state.supabase
     .from("organization_members")
     .update({ status: "inactive", updated_at: new Date().toISOString() })
     .eq("organization_id", state.organizationId)
     .eq("user_email", email);
+  if (memberError) return showAppMessage("Falha ao remover o acesso", memberError.message, "error");
   await loadAndRenderUsers();
 }
 

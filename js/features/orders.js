@@ -1384,7 +1384,7 @@ export async function deleteCustomTag(id) {
   if (!tag) return;
   const confirmed = await showAppConfirm(`Excluir a tag ${tag.name}?`, "A tag deixará de estar disponível para novas encomendas.", { confirmLabel: "Excluir tag", danger: true });
   if (!confirmed) return;
-  const { error } = await state.supabase.from("custom_tags").delete().eq("id", id);
+  const { error } = await state.supabase.from("custom_tags").delete().eq("id", id).eq("organization_id", state.organizationId);
   if (error) throw error;
   await loadRemoteData();
   renderSettingsData();

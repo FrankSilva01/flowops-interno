@@ -116,10 +116,12 @@ export async function replaceCalendarEvent(record, { date, title, recurring }) {
     createdBy: state.activeUserEmail,
   })).select("id");
   if (replacement.error) throw replacement.error;
-  const { error: deleteError } = await state.supabase.from("calendar_events").delete().in("id", ids);
+  const { error: deleteError } = await state.supabase.from("calendar_events").delete().in("id", ids).eq("organization_id", state.organizationId);
   if (deleteError) {
     const replacementIds = (replacement.data || []).map((item) => item.id);
-    if (replacementIds.length) await state.supabase.from("calendar_events").delete().in("id", replacementIds);
+    if (replacementIds.length) {
+      await state.supabase.from("calendar_events").delete().in("id", replacementIds).eq("organization_id", state.organizationId);
+    }
     throw deleteError;
   }
   await loadCalendarEvents();

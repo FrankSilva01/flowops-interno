@@ -199,7 +199,11 @@ export async function markNotificationRead(id, isRead) {
   const item = state.notifications.find((notification) => notification.id === id);
   if (!item || item.is_read === isRead) return;
   const readAt = isRead ? new Date().toISOString() : null;
-  await state.supabase.from("notifications").update({ is_read: isRead, read_at: readAt }).eq("id", id);
+  const { error } = await state.supabase.from("notifications").update({ is_read: isRead, read_at: readAt }).eq("id", id).eq("organization_id", state.organizationId);
+  if (error) {
+    showAppMessage("Falha ao atualizar notificação", error.message, "error");
+    return;
+  }
   item.is_read = isRead;
   item.read_at = readAt;
   renderNotifications();
@@ -209,7 +213,11 @@ export async function markAllNotificationsRead() {
   const ids = state.notifications.filter(notificationAllowed).filter((item) => !item.dismissed_at && !item.is_read).map((item) => item.id);
   if (!ids.length) return;
   const readAt = new Date().toISOString();
-  await state.supabase.from("notifications").update({ is_read: true, read_at: readAt }).in("id", ids);
+  const { error } = await state.supabase.from("notifications").update({ is_read: true, read_at: readAt }).in("id", ids).eq("organization_id", state.organizationId);
+  if (error) {
+    showAppMessage("Falha ao atualizar notificações", error.message, "error");
+    return;
+  }
   state.notifications.forEach((item) => {
     if (ids.includes(item.id)) {
       item.is_read = true;
@@ -226,7 +234,7 @@ export async function clearReadNotifications() {
     return;
   }
   const dismissedAt = new Date().toISOString();
-  const { error } = await state.supabase.from("notifications").update({ dismissed_at: dismissedAt }).in("id", ids);
+  const { error } = await state.supabase.from("notifications").update({ dismissed_at: dismissedAt }).in("id", ids).eq("organization_id", state.organizationId);
   if (error) {
     showAppMessage("Falha ao limpar notificações", error.message, "error");
     return;
@@ -251,7 +259,7 @@ export async function clearVisibleNotifications() {
     dismissed_at: dismissedAt,
     is_read: true,
     read_at: dismissedAt,
-  }).in("id", ids);
+  }).in("id", ids).eq("organization_id", state.organizationId);
   if (error) {
     showAppMessage("Falha ao limpar notificações", error.message, "error");
     return;

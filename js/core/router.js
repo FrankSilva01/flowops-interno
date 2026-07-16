@@ -1122,7 +1122,7 @@ export function bindActions() {
       if (action === "delete-inventory") {
         if (!ensureCapability("delete_records", "excluir registros")) return;
         if (!await showAppConfirm("Excluir item do estoque?", "Esta ação não pode ser desfeita.", { confirmLabel: "Excluir", danger: true })) return;
-        const { error } = await state.supabase.from("inventory_items").delete().eq("id", id);
+        const { error } = await state.supabase.from("inventory_items").delete().eq("id", id).eq("organization_id", state.organizationId);
         if (error) {
           showAppMessage("Não foi possível excluir", error.message, "error");
           return;

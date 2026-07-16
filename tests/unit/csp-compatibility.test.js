@@ -98,6 +98,31 @@ test("calendar cache is scoped by organization and cleared at logout", async () 
   assert.match(session, /startsWith\("calendarCustomEvents:"\)/);
 });
 
+test("critical client mutations keep an explicit organization scope", async () => {
+  const expectations = new Map([
+    ["js/data/remote.js", [/delete\(\)\.eq\("id", id\)\.eq\("organization_id", state\.organizationId\)/]],
+    ["js/core/router.js", [/from\("inventory_items"\)\.delete\(\).*eq\("organization_id", state\.organizationId\)/]],
+    ["js/features/customers.js", [/from\("lead_files"\)\.delete\(\).*eq\("organization_id", state\.organizationId\)/]],
+    ["js/features/orders.js", [/from\("custom_tags"\)\.delete\(\).*eq\("organization_id", state\.organizationId\)/]],
+    ["js/features/pricing.js", [/from\("products"\)\.delete\(\).*eq\("organization_id", state\.organizationId\)/]],
+    ["js/features/notifications.js", [/from\("notifications"\)\.update\([^\n]+\.eq\("organization_id", state\.organizationId\)/]],
+  ]);
+  for (const [file, patterns] of expectations) {
+    const source = await readFile(file, "utf8");
+    patterns.forEach((pattern) => assert.match(source, pattern, file));
+  }
+});
+
+test("MFA uses native accessible dialogs and numeric one-time codes", async () => {
+  const source = await readFile("js/features/pwa-onboarding.js", "utf8");
+  assert.equal((source.match(/createElement\("dialog"\)/g) || []).length >= 2, true);
+  assert.match(source, /aria-labelledby", "mfa-enroll-title"/);
+  assert.doesNotMatch(source, /min-width:\s*400px/);
+  assert.match(source, /width:\s*min\(420px, calc\(100vw - 32px\)\)/);
+  assert.match(source, /autocomplete="one-time-code"/);
+  assert.match(source, /\/\^\\d\{6\}\$\//);
+});
+
 test("marketplace export is bound only by the central router", async () => {
   const appSource = await readFile("js/app.js", "utf8");
   assert.doesNotMatch(appSource, /exportListingsBtn/);

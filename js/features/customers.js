@@ -240,9 +240,10 @@ export async function deleteLeadFile(id) {
   if (!file) return;
   const confirmed = await showAppConfirm(`Excluir ${file.file_name}?`, "O arquivo será removido permanentemente deste cliente.", { confirmLabel: "Excluir arquivo", danger: true });
   if (!confirmed) return;
-  await state.supabase.storage.from("lead-files").remove([file.storage_path]);
-  const { error } = await state.supabase.from("lead_files").delete().eq("id", id);
+  const { error } = await state.supabase.from("lead_files").delete().eq("id", id).eq("organization_id", state.organizationId);
   if (error) throw error;
+  const { error: storageError } = await state.supabase.storage.from("lead-files").remove([file.storage_path]);
+  if (storageError) console.warn("Lead file storage cleanup failed:", storageError);
   await recordAudit("lead_file_delete", "lead", file.lead_id, "", file, null, "manual");
   await loadRemoteData();
   renderLeadFiles(state.leads.find((item) => item.id === file.lead_id));

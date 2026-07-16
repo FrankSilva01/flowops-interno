@@ -773,7 +773,8 @@ export async function saveProduct(event) {
 async function syncProductListingLink(productId, listingValue) {
   const existing = state.productListings.find((item) => item.product_id === productId);
   if (existing) {
-    await state.supabase.from("product_listings").delete().eq("id", existing.id);
+    const { error } = await state.supabase.from("product_listings").delete().eq("id", existing.id).eq("organization_id", state.organizationId);
+    if (error) throw error;
     state.productListings = state.productListings.filter((item) => item.id !== existing.id);
   }
   if (!listingValue) return;
@@ -808,7 +809,7 @@ export async function deleteProduct(id) {
   if (!product) return;
   const confirmed = await showAppConfirm(`Excluir ${product.name}?`, "O produto será removido do catálogo interno e seus vínculos locais serão desassociados.", { confirmLabel: "Excluir produto", danger: true });
   if (!confirmed) return;
-  const { error } = await state.supabase.from("products").delete().eq("id", id);
+  const { error } = await state.supabase.from("products").delete().eq("id", id).eq("organization_id", state.organizationId);
   if (error) {
     showAppMessage("Falha ao excluir produto", error.message, "error");
     return;
@@ -1352,7 +1353,7 @@ export function renderSuggestions() {
 
 async function updateSuggestionStatus(id, status) {
   if (!ensureCanEdit()) return;
-  const { error } = await state.supabase.from("commercial_suggestions").update({ status, updated_at: new Date().toISOString() }).eq("id", id);
+  const { error } = await state.supabase.from("commercial_suggestions").update({ status, updated_at: new Date().toISOString() }).eq("id", id).eq("organization_id", state.organizationId);
   if (error) {
     showAppMessage("Falha ao atualizar sugestão", error.message, "error");
     return;
