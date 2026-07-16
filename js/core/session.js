@@ -429,6 +429,7 @@ export async function logout() {
   if (state.supabase) await state.supabase.auth.signOut();
   localStorage.removeItem("printflow-direct-data");
   localStorage.removeItem("calendarCustomEvents");
+  Object.keys(localStorage).filter((key) => key.startsWith("calendarCustomEvents:")).forEach((key) => localStorage.removeItem(key));
   localStorage.removeItem("accountingIntegrationConfig");
   localStorage.removeItem("accountingSyncHistory");
   window.location.reload();

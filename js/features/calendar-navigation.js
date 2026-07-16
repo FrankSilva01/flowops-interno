@@ -1,6 +1,10 @@
 import { state } from "../core/state.js";
 import { byId, showAppConfirm, showAppMessage } from "../core/dom.js";
 import { CALENDAR_HOLIDAYS as FERIADOS } from "./calendar-holidays.js";
+import {
+  RECURRING_SUFFIX, calendarRecord, createCalendarEvent, loadCalendarEvents,
+  removeCalendarEvent, replaceCalendarEvent,
+} from "./calendar-persistence.js";
 
 // Feriados e datas importantes - Ano inteiro
 
@@ -31,14 +35,8 @@ const EVENT_LABELS = {
   custom: "Evento",
 };
 
-function bindCalendarEvents() {
-  try {
-    const stored = JSON.parse(localStorage.getItem("calendarCustomEvents") || "{}");
-    window.calendarEvents = stored && typeof stored === "object" && !Array.isArray(stored) ? stored : {};
-  } catch {
-    localStorage.removeItem("calendarCustomEvents");
-    window.calendarEvents = {};
-  }
+async function bindCalendarEvents() {
+  await loadCalendarEvents();
   if (!window.calendarDate) {
     window.calendarDate = new Date();
   }
@@ -170,7 +168,7 @@ function renderCalendarWithEvents(year, month) {
 
       <!-- Action Button -->
       <div class="calendar-action-bar">
-        <button class="calendar-add-event-btn cal-mark-event-btn">
+        <button class="calendar-add-event-btn cal-mark-event-btn" ${state.canEdit ? "" : "disabled"} title="${state.canEdit ? "Marcar evento" : "Acesso somente leitura"}">
           <i class="ti ti-plus"></i>
           Marcar evento
         </button>
@@ -989,11 +987,16 @@ function showCustomEventMenu(dayEl, event, allEvents) {
 }
 
 function editCustomEvent(dateStr, index) {
+  if (!state.canEdit) {
+    showAppMessage("Acesso somente leitura", "Você não possui permissão para alterar eventos desta empresa.", "info");
+    return;
+  }
   if (!window.calendarEvents || !window.calendarEvents[dateStr]) return;
 
   let currentEvent = window.calendarEvents[dateStr][index];
-  const isRecurring = currentEvent?.includes(" |RECURRING_MONTHLY");
-  const displayEvent = currentEvent?.replace(" |RECURRING_MONTHLY", "") || "";
+  const isRecurring = currentEvent?.includes(RECURRING_SUFFIX);
+  const displayEvent = currentEvent?.replace(RECURRING_SUFFIX, "") || "";
+  const remoteRecord = calendarRecord(dateStr, index);
 
   const dialog = document.createElement("div");
   dialog.style.cssText = `
@@ -1067,7 +1070,7 @@ function editCustomEvent(dateStr, index) {
   cancelBtn.addEventListener("click", closeDialog);
   overlay.addEventListener("click", closeDialog);
 
-  saveBtn.addEventListener("click", () => {
+  saveBtn.addEventListener("click", async () => {
     const newDate = document.getElementById("eventDate").value;
     const newText = document.getElementById("eventText").value.trim();
     const isRecurring = document.getElementById("eventRecurringMonthly").checked;
@@ -1077,7 +1080,19 @@ function editCustomEvent(dateStr, index) {
       return;
     }
 
-    const eventValue = isRecurring ? `${newText} |RECURRING_MONTHLY` : newText;
+    const eventValue = isRecurring ? `${newText}${RECURRING_SUFFIX}` : newText;
+
+    try {
+      if (await replaceCalendarEvent(remoteRecord, { date: newDate, title: newText, recurring: isRecurring })) {
+        showAppMessage("Evento atualizado", `O evento ${isRecurring ? "recorrente " : ""}foi atualizado.`, "success");
+        closeDialog();
+        refreshVisibleCalendar();
+        return;
+      }
+    } catch (error) {
+      showAppMessage("Falha ao atualizar evento", error.message, "error");
+      return;
+    }
 
     // Remover do local antigo
     if (newDate !== dateStr) {
@@ -1116,22 +1131,31 @@ function editCustomEvent(dateStr, index) {
     closeDialog();
 
     // Refresh
-    const container = byId("calendarWidget");
-    if (container) {
-      if (!window.calendarDate) window.calendarDate = new Date();
-      container.innerHTML = renderCalendarWithEvents(window.calendarDate.getFullYear(), window.calendarDate.getMonth());
-      attachCalendarEventListeners();
-      updateCalendarStats(window.calendarDate.getFullYear(), window.calendarDate.getMonth());
-    }
+    refreshVisibleCalendar();
   });
 }
 
 async function deleteCustomEvent(dateStr, index) {
+  if (!state.canEdit) {
+    showAppMessage("Acesso somente leitura", "Você não possui permissão para excluir eventos desta empresa.", "info");
+    return false;
+  }
   const confirmed = await showAppConfirm("Excluir evento", "Tem certeza que deseja excluir este evento?", {
     confirmLabel: "Excluir",
     danger: true,
   });
   if (confirmed) {
+    try {
+      const remoteRecord = calendarRecord(dateStr, index);
+      if (await removeCalendarEvent(remoteRecord)) {
+        showAppMessage("Evento excluído", "O evento foi removido do calendário.", "success");
+        refreshVisibleCalendar();
+        return true;
+      }
+    } catch (error) {
+      showAppMessage("Falha ao excluir evento", error.message, "error");
+      return false;
+    }
     if (window.calendarEvents && window.calendarEvents[dateStr]) {
       window.calendarEvents[dateStr].splice(index, 1);
       if (window.calendarEvents[dateStr].length === 0) {
@@ -1141,13 +1165,7 @@ async function deleteCustomEvent(dateStr, index) {
       showAppMessage("Evento excluído", "O evento foi removido do calendário.", "success");
 
       // Refresh
-      const container = byId("calendarWidget");
-      if (container) {
-        if (!window.calendarDate) window.calendarDate = new Date();
-        container.innerHTML = renderCalendarWithEvents(window.calendarDate.getFullYear(), window.calendarDate.getMonth());
-        attachCalendarEventListeners();
-        updateCalendarStats(window.calendarDate.getFullYear(), window.calendarDate.getMonth());
-      }
+      refreshVisibleCalendar();
     }
     return true;
   }
@@ -1155,6 +1173,10 @@ async function deleteCustomEvent(dateStr, index) {
 }
 
 function openEventForm() {
+  if (!state.canEdit) {
+    showAppMessage("Acesso somente leitura", "Você não possui permissão para criar eventos nesta empresa.", "info");
+    return;
+  }
   const dialog = document.createElement("div");
   dialog.style.cssText = `
     position: fixed;
@@ -1229,7 +1251,7 @@ function openEventForm() {
   cancelBtn.addEventListener("click", closeDialog);
   overlay.addEventListener("click", closeDialog);
 
-  saveBtn.addEventListener("click", () => {
+  saveBtn.addEventListener("click", async () => {
     const dateInput = document.getElementById("eventDate");
     const textInput = document.getElementById("eventText");
     const isRecurring = document.getElementById("eventRecurringMonthly").checked;
@@ -1239,13 +1261,27 @@ function openEventForm() {
       return;
     }
 
-    if (!window.calendarEvents) window.calendarEvents = {};
     const dateStr = dateInput.value;
+    const eventTitle = textInput.value.trim();
+
+    try {
+      if (await createCalendarEvent({ date: dateStr, title: eventTitle, recurring: isRecurring })) {
+        showAppMessage("Evento criado", `O evento ${isRecurring ? "recorrente " : ""}foi adicionado ao calendário.`, "success");
+        closeDialog();
+        refreshVisibleCalendar();
+        return;
+      }
+    } catch (error) {
+      showAppMessage("Falha ao criar evento", error.message, "error");
+      return;
+    }
+
+    if (!window.calendarEvents) window.calendarEvents = {};
     if (!window.calendarEvents[dateStr]) {
       window.calendarEvents[dateStr] = [];
     }
 
-    const eventValue = isRecurring ? `${textInput.value.trim()} |RECURRING_MONTHLY` : textInput.value.trim();
+    const eventValue = isRecurring ? `${eventTitle}${RECURRING_SUFFIX}` : eventTitle;
     window.calendarEvents[dateStr].push(eventValue);
 
     // Se recorrente, adicionar nos próximos 11 meses
@@ -1268,14 +1304,17 @@ function openEventForm() {
     closeDialog();
 
     // Refresh calendar
-    const container = byId("calendarWidget");
-    if (container) {
-      if (!window.calendarDate) window.calendarDate = new Date();
-      container.innerHTML = renderCalendarWithEvents(window.calendarDate.getFullYear(), window.calendarDate.getMonth());
-      attachCalendarEventListeners();
-      updateCalendarStats(window.calendarDate.getFullYear(), window.calendarDate.getMonth());
-    }
+    refreshVisibleCalendar();
   });
+}
+
+function refreshVisibleCalendar() {
+  const container = byId("calendarWidget");
+  if (!container) return;
+  if (!window.calendarDate) window.calendarDate = new Date();
+  container.innerHTML = renderCalendarWithEvents(window.calendarDate.getFullYear(), window.calendarDate.getMonth());
+  attachCalendarEventListeners();
+  updateCalendarStats(window.calendarDate.getFullYear(), window.calendarDate.getMonth());
 }
 
 function updateCalendarStats(year, month) {

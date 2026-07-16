@@ -182,7 +182,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Initialize calendar
   try {
     const now = new Date();
-    bindCalendarEvents();
+    await bindCalendarEvents();
     const calendarContainer = byId("calendarWidget");
     if (calendarContainer) {
       calendarContainer.innerHTML = renderCalendarWithEvents(now.getFullYear(), now.getMonth());

@@ -80,14 +80,22 @@ test("realtime subscriptions are tenant-scoped and debounced", async () => {
   assert.match(source, /filter:\s*`organization_id=eq\.\$\{state\.organizationId\}`/);
   assert.doesNotMatch(source, /\.on\([^\n]+,\s*refreshRemote\)/);
   assert.match(source, /setTimeout\(\(\) => refreshRemote\(\)/);
+  assert.match(source, /ownOrganizationChanges\("calendar_events"\)/);
 });
 
 test("local user preferences recover from malformed JSON", async () => {
-  for (const file of ["js/features/calendar-navigation.js", "js/features/push-notifications.js", "js/features/accounting-integration.js"]) {
+  for (const file of ["js/features/calendar-persistence.js", "js/features/push-notifications.js", "js/features/accounting-integration.js"]) {
     const source = await readFile(file, "utf8");
     assert.match(source, /JSON\.parse/);
     assert.match(source, /catch\s*\{/);
   }
+});
+
+test("calendar cache is scoped by organization and cleared at logout", async () => {
+  const persistence = await readFile("js/features/calendar-persistence.js", "utf8");
+  const session = await readFile("js/core/session.js", "utf8");
+  assert.match(persistence, /\$\{LEGACY_STORAGE_KEY\}:\$\{state\.organizationId\}/);
+  assert.match(session, /startsWith\("calendarCustomEvents:"\)/);
 });
 
 test("marketplace export is bound only by the central router", async () => {

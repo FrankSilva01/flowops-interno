@@ -1,6 +1,7 @@
 import { state, saveData, normalizeOrderStatus } from "../core/state.js";
 import { render } from "../core/router.js";
 import { subscriptionFallbackFromOrganization } from "../features/subscription.js";
+import { loadCalendarEvents } from "../features/calendar-persistence.js";
 import {
   parseOrderMeta, serializeOrderMeta, deriveOrderCode, normalizeReferenceImageValue,
   isOwnReferenceImagePath,
@@ -128,10 +129,12 @@ export function subscribeRemote() {
     .on("postgres_changes", ownOrganizationChanges("product_listings"), scheduleRemoteRefresh)
     .on("postgres_changes", ownOrganizationChanges("financial_settings"), scheduleRemoteRefresh)
     .on("postgres_changes", ownOrganizationChanges("commercial_suggestions"), scheduleRemoteRefresh)
+    .on("postgres_changes", ownOrganizationChanges("calendar_events"), scheduleCalendarRefresh)
     .subscribe();
 }
 
 let refreshTimer = null;
+let calendarRefreshTimer = null;
 let refreshInFlight = false;
 let refreshQueued = false;
 
@@ -139,6 +142,13 @@ export function scheduleRemoteRefresh() {
   clearTimeout(refreshTimer);
   refreshTimer = setTimeout(() => refreshRemote().catch((error) => {
     console.error("Realtime refresh failed:", error);
+  }), 180);
+}
+
+function scheduleCalendarRefresh() {
+  clearTimeout(calendarRefreshTimer);
+  calendarRefreshTimer = setTimeout(() => loadCalendarEvents().then(render).catch((error) => {
+    console.error("Calendar realtime refresh failed:", error);
   }), 180);
 }
 
