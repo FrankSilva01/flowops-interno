@@ -22,3 +22,26 @@ test("login nao cria rolagem horizontal", async ({ page }) => {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
   expect(overflow).toBe(false);
 });
+
+test("dialogos de confirmacao e texto respeitam contexto e acessibilidade", async ({ page }) => {
+  await page.goto("/");
+  await page.evaluate(async () => {
+    const { showAppConfirm } = await import("/js/core/dom.js");
+    window.__confirmResult = showAppConfirm("Excluir registro", "Esta ação não pode ser desfeita.", { confirmLabel: "Excluir", danger: true });
+  });
+  const confirmDialog = page.getByRole("dialog", { name: "Excluir registro" });
+  await expect(confirmDialog).toBeVisible();
+  await expect(confirmDialog.getByRole("button", { name: "Excluir" })).toHaveClass(/danger-btn/);
+  await confirmDialog.getByRole("button", { name: "Cancelar" }).click();
+  await expect(confirmDialog).toBeHidden();
+
+  await page.evaluate(async () => {
+    const { showAppPrompt } = await import("/js/core/dom.js");
+    window.__promptResult = showAppPrompt("Motivo", "Descreva a solicitação.", { label: "Detalhes", confirmLabel: "Enviar" });
+  });
+  const promptDialog = page.getByRole("dialog", { name: "Motivo" });
+  await expect(promptDialog.getByLabel("Detalhes")).toBeFocused();
+  await promptDialog.getByRole("button", { name: "Enviar" }).click();
+  await expect(promptDialog.getByText("Preencha este campo para continuar.")).toBeVisible();
+  await promptDialog.getByRole("button", { name: "Cancelar" }).click();
+});

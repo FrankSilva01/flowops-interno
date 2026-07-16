@@ -15,4 +15,16 @@ jobs:
       - run: npm ci
       - run: npm run release:readiness
       - run: npx playwright install --with-deps chromium
-      - run: npm test
+      - name: Start current commit locally
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/flowops-http.log 2>&1 &
+          for attempt in {1..20}; do
+            curl --fail --silent http://127.0.0.1:4173/ > /dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/flowops-http.log
+          exit 1
+      - name: Test current commit
+        env:
+          FLOWOPS_BASE_URL: http://127.0.0.1:4173
+        run: npm test

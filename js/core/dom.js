@@ -170,23 +170,29 @@ export function showAppMessage(title, message, tone = "info") {
   if (!dialog.open) dialog.showModal();
 }
 
-export function showAppConfirm(title, message) {
+export function showAppConfirm(title, message, options = {}) {
   return new Promise((resolve) => {
     const dialog = document.createElement("dialog");
     dialog.className = "app-message-dialog";
+    dialog.dataset.tone = options.danger ? "error" : options.tone || "info";
+    const titleId = `confirm-title-${Date.now()}`;
+    dialog.setAttribute("aria-labelledby", titleId);
     dialog.innerHTML = `
       <div class="app-message-content">
         <div class="dialog-head">
-          <div><p class="eyebrow">FlowOps</p><h3>${html(title)}</h3></div>
+          <div><p class="eyebrow">FlowOps</p><h3 id="${titleId}">${html(title)}</h3></div>
           <button class="icon-btn" type="button" data-confirm-value="false" aria-label="Fechar">×</button>
         </div>
         <p>${html(message)}</p>
         <div class="dialog-actions">
-          <button class="secondary-btn" type="button" data-confirm-value="false">Cancelar</button>
-          <button class="primary-btn" type="button" data-confirm-value="true">Continuar</button>
+          <button class="secondary-btn" type="button" data-confirm-value="false">${html(options.cancelLabel || "Cancelar")}</button>
+          <button class="${options.danger ? "danger-btn" : "primary-btn"}" type="button" data-confirm-value="true">${html(options.confirmLabel || "Continuar")}</button>
         </div>
       </div>`;
+    let settled = false;
     const finish = (value) => {
+      if (settled) return;
+      settled = true;
       if (dialog.open) dialog.close();
       dialog.remove();
       resolve(value);
@@ -201,6 +207,42 @@ export function showAppConfirm(title, message) {
     });
     document.body.appendChild(dialog);
     dialog.showModal();
+  });
+}
+
+export function showAppPrompt(title, message, options = {}) {
+  return new Promise((resolve) => {
+    const dialog = document.createElement("dialog");
+    dialog.className = "app-message-dialog";
+    dialog.dataset.tone = options.danger ? "error" : "info";
+    const stamp = Date.now();
+    const titleId = `prompt-title-${stamp}`;
+    const fieldId = `prompt-field-${stamp}`;
+    dialog.setAttribute("aria-labelledby", titleId);
+    dialog.innerHTML = `
+      <form method="dialog" class="app-message-content app-prompt-content" novalidate>
+        <div class="dialog-head"><div><p class="eyebrow">FlowOps</p><h3 id="${titleId}">${html(title)}</h3></div><button class="icon-btn" type="button" data-prompt-cancel aria-label="Fechar">×</button></div>
+        <p>${html(message)}</p>
+        <label for="${fieldId}">${html(options.label || "Detalhes")}</label>
+        <textarea id="${fieldId}" rows="4" maxlength="${Number(options.maxLength || 1000)}" placeholder="${html(options.placeholder || "")}" aria-describedby="${fieldId}-error" required>${html(options.value || "")}</textarea>
+        <span id="${fieldId}-error" class="form-message" data-prompt-error hidden>Preencha este campo para continuar.</span>
+        <div class="dialog-actions"><button class="secondary-btn" type="button" data-prompt-cancel>${html(options.cancelLabel || "Cancelar")}</button><button class="${options.danger ? "danger-btn" : "primary-btn"}" type="submit">${html(options.confirmLabel || "Continuar")}</button></div>
+      </form>`;
+    const field = dialog.querySelector("textarea");
+    let settled = false;
+    const finish = (value) => { if (settled) return; settled = true; if (dialog.open) dialog.close(); dialog.remove(); resolve(value); };
+    dialog.querySelectorAll("[data-prompt-cancel]").forEach((button) => button.addEventListener("click", () => finish(null)));
+    dialog.addEventListener("cancel", (event) => { event.preventDefault(); finish(null); });
+    dialog.querySelector("form").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const value = field.value.trim();
+      if (!value) { dialog.querySelector("[data-prompt-error]").hidden = false; field.setAttribute("aria-invalid", "true"); field.focus(); return; }
+      finish(value);
+    });
+    field.addEventListener("input", () => { if (field.value.trim()) { dialog.querySelector("[data-prompt-error]").hidden = true; field.removeAttribute("aria-invalid"); } });
+    document.body.appendChild(dialog);
+    dialog.showModal();
+    field.focus();
   });
 }
 

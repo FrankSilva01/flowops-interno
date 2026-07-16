@@ -1,5 +1,5 @@
 import { state } from "../core/state.js";
-import { byId, html, formatDateTime, showAppMessage, showAppConfirm } from "../core/dom.js";
+import { byId, html, formatDateTime, showAppMessage, showAppConfirm, showAppPrompt } from "../core/dom.js";
 import { loadRemoteData } from "../data/remote.js";
 
 const POLICY_VERSION = "2026-07-15";
@@ -92,7 +92,11 @@ async function requestDataAction(requestType) {
     const confirmed = await showAppConfirm("Solicitar exclusão dos dados?", "A solicitação será analisada antes de qualquer remoção. Documentos sujeitos a retenção fiscal ou legal serão preservados.", { confirmLabel: "Solicitar análise", danger: true });
     if (!confirmed) return;
   }
-  const reason = requestType === "correction" ? prompt("Descreva quais dados precisam ser corrigidos:") : destructive ? prompt("Informe o motivo da solicitação:") : "";
+  const reason = requestType === "correction"
+    ? await showAppPrompt("Corrigir dados pessoais", "Descreva o dado incorreto e qual deve ser o valor correto.", { label: "Correção solicitada", placeholder: "Ex.: alterar o telefone de ... para ...", confirmLabel: "Enviar solicitação" })
+    : destructive
+      ? await showAppPrompt("Motivo da exclusão", "Explique brevemente o motivo. Registros sujeitos a obrigação fiscal ou legal poderão ser preservados.", { label: "Motivo", placeholder: "Informe o motivo da solicitação", confirmLabel: "Solicitar exclusão", danger: true })
+      : "";
   if ((requestType === "correction" || destructive) && !String(reason || "").trim()) return;
   const { error } = await state.supabase.from("organization_data_requests").insert({
     organization_id: state.organizationId,
