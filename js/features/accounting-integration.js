@@ -3,10 +3,10 @@ import { showAppMessage } from "../core/dom.js";
 import { recordAudit } from "./logs.js";
 
 export const ACCOUNTING_PROVIDERS = {
-  omie: { name: "OMIE", icon: "📊", description: "NF-e e Contabilidade" },
-  sirius: { name: "Sirius", icon: "💼", description: "Sistema Sirius" },
-  hubsoft: { name: "Hubsoft", icon: "🔗", description: "ERP Hubsoft" },
-  manual: { name: "Manual", icon: "📝", description: "Exportar CSV" },
+  omie: { name: "OMIE", icon: "📊", description: "NF-e e Contabilidade", available: false },
+  sirius: { name: "Sirius", icon: "💼", description: "Sistema Sirius", available: false },
+  hubsoft: { name: "Hubsoft", icon: "🔗", description: "ERP Hubsoft", available: false },
+  manual: { name: "Manual", icon: "📝", description: "Exportar CSV", available: true },
 };
 
 export class AccountingIntegration {
@@ -17,12 +17,19 @@ export class AccountingIntegration {
 
   loadConfig() {
     const stored = localStorage.getItem("accountingIntegrationConfig");
-    return stored ? JSON.parse(stored) : {
+    const fallback = {
       provider: null,
       apiKey: null,
       enabled: false,
       lastSync: null,
     };
+    if (!stored) return fallback;
+    try {
+      return { ...fallback, ...JSON.parse(stored) };
+    } catch {
+      localStorage.removeItem("accountingIntegrationConfig");
+      return fallback;
+    }
   }
 
   saveConfig(config) {
@@ -32,7 +39,14 @@ export class AccountingIntegration {
 
   loadSyncHistory() {
     const stored = localStorage.getItem("accountingSyncHistory");
-    return stored ? JSON.parse(stored) : [];
+    if (!stored) return [];
+    try {
+      const history = JSON.parse(stored);
+      return Array.isArray(history) ? history : [];
+    } catch {
+      localStorage.removeItem("accountingSyncHistory");
+      return [];
+    }
   }
 
   addSyncRecord(record) {
@@ -47,12 +61,16 @@ export class AccountingIntegration {
 
   async syncAllData() {
     if (!this.config.enabled || !this.config.provider) {
-      showAppMessage("⚠️ Configure uma integração contábil primeiro", "warning");
+      showAppMessage("Integração contábil", "Configure uma forma de exportação primeiro.", "warning");
+      return;
+    }
+    if (!ACCOUNTING_PROVIDERS[this.config.provider]?.available) {
+      showAppMessage("Integração ainda indisponível", "Este provedor ainda não possui sincronização externa. Use a exportação manual por enquanto.", "info");
       return;
     }
 
     try {
-      showAppMessage("📤 Sincronizando dados...", "info");
+      showAppMessage("Preparando exportação", "Organizando vendas e produtos em arquivos CSV.", "info");
 
       const orders = state.data?.orders || [];
       const products = state.data?.products || [];
@@ -71,10 +89,10 @@ export class AccountingIntegration {
       });
 
       recordAudit("accounting", this.config.provider, "sync_completed", orders.length, products.length);
-      showAppMessage("✅ Sincronização concluída!", "success");
+      showAppMessage("Exportação concluída", "Os arquivos contábeis foram preparados.", "success");
     } catch (err) {
       console.error("Sync error:", err);
-      showAppMessage(`❌ Erro na sincronização: ${err.message}`, "error");
+      showAppMessage("Erro na exportação", err.message, "error");
     }
   }
 
@@ -82,15 +100,15 @@ export class AccountingIntegration {
     if (!data || data.length === 0) return;
 
     const headers = Object.keys(data[0]);
-    const rows = data.map(item =>
-      headers.map(h => {
-        const value = item[h];
-        return typeof value === "string" && value.includes(",") ? `"${value}"` : value;
-      })
-    );
+    const csvCell = (value) => {
+      if (value === null || value === undefined) return "";
+      const normalized = typeof value === "object" ? JSON.stringify(value) : String(value);
+      return `"${normalized.replaceAll('"', '""')}"`;
+    };
+    const rows = data.map((item) => headers.map((header) => csvCell(item[header])));
 
-    const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
+    const csv = [headers.map(csvCell).join(";"), ...rows.map((row) => row.join(";"))].join("\r\n");
+    const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -122,8 +140,8 @@ export class AccountingIntegration {
                   <small style="color: #999; font-size: 11px;">${provider.description}</small>
                 </div>
               </div>
-              <button class="primary-btn" data-accounting-provider="${key}" type="button" style="padding: 6px 14px; font-size: 12px;">
-                ${this.config.provider === key ? "✓ Ativo" : "Ativar"}
+              <button class="primary-btn" data-accounting-provider="${key}" type="button" style="padding: 6px 14px; font-size: 12px;" ${provider.available ? "" : "disabled"}>
+                ${provider.available ? (this.config.provider === key ? "✓ Ativo" : "Ativar") : "Em breve"}
               </button>
             </div>
           `).join("")}
@@ -167,11 +185,15 @@ export const accountingIntegration = new AccountingIntegration();
 
 // Global function for provider activation
 window.activateAccountingProvider = (provider) => {
+  if (!ACCOUNTING_PROVIDERS[provider]?.available) {
+    showAppMessage("Integração ainda indisponível", "Este provedor será liberado após a implementação da API oficial.", "info");
+    return;
+  }
   accountingIntegration.config.provider = provider;
   accountingIntegration.config.enabled = true;
   accountingIntegration.saveConfig(accountingIntegration.config);
   recordAudit("accounting", provider, "provider_activated");
-  showAppMessage(`✅ ${ACCOUNTING_PROVIDERS[provider].name} ativado!`, "success");
+  showAppMessage("Exportação ativada", `${ACCOUNTING_PROVIDERS[provider].name} foi definido como formato contábil.`, "success");
 
   // Close and reopen dialog to refresh
   const modal = document.querySelector(".modal");

@@ -175,7 +175,7 @@ export function openMLPricingDialog() {
 export function applyPriceRecommendation(productName, newPrice) {
   const order = state.data?.orders?.find(o => o.description === productName);
   if (!order) {
-    showAppMessage("Produto não encontrado", "error");
+    showAppMessage("Produto não encontrado", "Atualize os dados e tente novamente.", "error");
     return;
   }
 
@@ -184,7 +184,7 @@ export function applyPriceRecommendation(productName, newPrice) {
 
   recordAudit("order", order.id, "price_ml_recommendation", oldPrice, newPrice, "IA Pricing");
   saveData();
-  showAppMessage(`✅ Preço atualizado: ${money.format(oldPrice)} → ${money.format(newPrice)}`, "success");
+  showAppMessage("Preço atualizado", `${money.format(oldPrice)} → ${money.format(newPrice)}`, "success");
 
   const modal = document.querySelector(".modal");
   if (modal) modal.close();

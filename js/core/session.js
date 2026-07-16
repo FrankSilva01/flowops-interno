@@ -427,6 +427,10 @@ export async function getApprovedUser(email) {
 
 export async function logout() {
   if (state.supabase) await state.supabase.auth.signOut();
+  localStorage.removeItem("printflow-direct-data");
+  localStorage.removeItem("calendarCustomEvents");
+  localStorage.removeItem("accountingIntegrationConfig");
+  localStorage.removeItem("accountingSyncHistory");
   window.location.reload();
 }
 

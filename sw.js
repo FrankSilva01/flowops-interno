@@ -1,4 +1,4 @@
-const CACHE_NAME = "flowops-v55";
+const CACHE_NAME = "flowops-v56";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -54,21 +54,15 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return;
   const url = new URL(request.url);
 
-  // API calls: network-first
+  // Never cache API responses: authenticated payloads must not survive logout
+  // or be reused by another account on a shared browser.
   if (url.pathname.includes("/api") || url.pathname.includes("functions")) {
     event.respondWith(
       fetch(request)
-        .then((response) => {
-          if (response.ok) {
-            try {
-              caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone()));
-            } catch (e) {
-              console.warn("Cache put failed:", e);
-            }
-          }
-          return response;
-        })
-        .catch(() => caches.match(request))
+        .catch(() => new Response(JSON.stringify({ error: "Serviço indisponível sem conexão." }), {
+          status: 503,
+          headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+        }))
     );
     return;
   }

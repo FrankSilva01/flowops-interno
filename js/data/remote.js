@@ -108,27 +108,57 @@ async function signOrderReferenceImages(orders) {
 export function subscribeRemote() {
   if (state.subscribed || !state.supabase) return;
   state.subscribed = true;
+  const ownOrganizationChanges = (table) => ({
+    event: "*",
+    schema: "public",
+    table,
+    filter: `organization_id=eq.${state.organizationId}`,
+  });
   state.supabase
     .channel("printflow-3d-realtime")
-    .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, refreshRemote)
-    .on("postgres_changes", { event: "*", schema: "public", table: "cash_entries" }, refreshRemote)
-    .on("postgres_changes", { event: "*", schema: "public", table: "materials" }, refreshRemote)
-    .on("postgres_changes", { event: "*", schema: "public", table: "inventory_items" }, refreshRemote)
-    .on("postgres_changes", { event: "*", schema: "public", table: "crm_leads" }, refreshRemote)
-    .on("postgres_changes", { event: "*", schema: "public", table: "notifications" }, refreshRemote)
-    .on("postgres_changes", { event: "*", schema: "public", table: "order_logistics" }, refreshRemote)
-    .on("postgres_changes", { event: "*", schema: "public", table: "logistics_events" }, refreshRemote)
-    .on("postgres_changes", { event: "*", schema: "public", table: "products" }, refreshRemote)
-    .on("postgres_changes", { event: "*", schema: "public", table: "product_listings" }, refreshRemote)
-    .on("postgres_changes", { event: "*", schema: "public", table: "financial_settings" }, refreshRemote)
-    .on("postgres_changes", { event: "*", schema: "public", table: "commercial_suggestions" }, refreshRemote)
+    .on("postgres_changes", ownOrganizationChanges("orders"), scheduleRemoteRefresh)
+    .on("postgres_changes", ownOrganizationChanges("cash_entries"), scheduleRemoteRefresh)
+    .on("postgres_changes", ownOrganizationChanges("materials"), scheduleRemoteRefresh)
+    .on("postgres_changes", ownOrganizationChanges("inventory_items"), scheduleRemoteRefresh)
+    .on("postgres_changes", ownOrganizationChanges("crm_leads"), scheduleRemoteRefresh)
+    .on("postgres_changes", ownOrganizationChanges("notifications"), scheduleRemoteRefresh)
+    .on("postgres_changes", ownOrganizationChanges("order_logistics"), scheduleRemoteRefresh)
+    .on("postgres_changes", ownOrganizationChanges("logistics_events"), scheduleRemoteRefresh)
+    .on("postgres_changes", ownOrganizationChanges("products"), scheduleRemoteRefresh)
+    .on("postgres_changes", ownOrganizationChanges("product_listings"), scheduleRemoteRefresh)
+    .on("postgres_changes", ownOrganizationChanges("financial_settings"), scheduleRemoteRefresh)
+    .on("postgres_changes", ownOrganizationChanges("commercial_suggestions"), scheduleRemoteRefresh)
     .subscribe();
 }
 
+let refreshTimer = null;
+let refreshInFlight = false;
+let refreshQueued = false;
+
+export function scheduleRemoteRefresh() {
+  clearTimeout(refreshTimer);
+  refreshTimer = setTimeout(() => refreshRemote().catch((error) => {
+    console.error("Realtime refresh failed:", error);
+  }), 180);
+}
+
 export async function refreshRemote() {
-  await loadRemoteData();
-  saveData();
-  render();
+  if (refreshInFlight) {
+    refreshQueued = true;
+    return;
+  }
+  refreshInFlight = true;
+  try {
+    await loadRemoteData();
+    saveData();
+    render();
+  } finally {
+    refreshInFlight = false;
+    if (refreshQueued) {
+      refreshQueued = false;
+      scheduleRemoteRefresh();
+    }
+  }
 }
 
 export function tableName(kind) {

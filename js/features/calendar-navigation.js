@@ -1,57 +1,8 @@
 import { state } from "../core/state.js";
 import { byId, showAppConfirm, showAppMessage } from "../core/dom.js";
+import { CALENDAR_HOLIDAYS as FERIADOS } from "./calendar-holidays.js";
 
 // Feriados e datas importantes - Ano inteiro
-const FERIADOS = {
-  // 2025
-  "2025-01-01": "🎉 Ano Novo",
-  "2025-02-01": "✝️ Sexta-feira Santa",
-  "2025-02-04": "🎭 Carnaval",
-  "2025-04-21": "👨 Tiradentes",
-  "2025-05-01": "🏢 Dia do Trabalho",
-  "2025-05-11": "💐 Dia das Mães",
-  "2025-05-31": "📋 DASN-SIMEI (Declaração MEI)",
-  "2025-06-12": "🎪 Festa Junina",
-  "2025-10-12": "👑 N. Sra. Aparecida",
-  "2025-10-12": "🎈 Dia das Crianças",
-  "2025-09-07": "🌳 Independência",
-  "2025-11-02": "💀 Finados",
-  "2025-11-15": "🏛️ Proclamação da República",
-  "2025-11-20": "🖤 Consciência Negra",
-  "2025-12-25": "🎄 Natal",
-  // 2026
-  "2026-01-01": "🎉 Ano Novo",
-  "2026-02-13": "✝️ Sexta-feira Santa",
-  "2026-02-17": "🎭 Carnaval",
-  "2026-04-21": "👨 Tiradentes",
-  "2026-05-01": "🏢 Dia do Trabalho",
-  "2026-05-10": "💐 Dia das Mães",
-  "2026-05-31": "📋 DASN-SIMEI (Declaração MEI)",
-  "2026-06-13": "🎪 Festa Junina",
-  "2026-10-12": "👑 N. Sra. Aparecida",
-  "2026-10-12": "🎈 Dia das Crianças",
-  "2026-09-07": "🌳 Independência",
-  "2026-11-02": "💀 Finados",
-  "2026-11-15": "🏛️ Proclamação da República",
-  "2026-11-20": "🖤 Consciência Negra",
-  "2026-12-25": "🎄 Natal",
-  // 2027
-  "2027-01-01": "🎉 Ano Novo",
-  "2027-03-30": "✝️ Sexta-feira Santa",
-  "2027-03-02": "🎭 Carnaval",
-  "2027-04-21": "👨 Tiradentes",
-  "2027-05-01": "🏢 Dia do Trabalho",
-  "2027-05-09": "💐 Dia das Mães",
-  "2027-05-31": "📋 DASN-SIMEI (Declaração MEI)",
-  "2027-06-12": "🎪 Festa Junina",
-  "2027-10-12": "👑 N. Sra. Aparecida",
-  "2027-10-12": "🎈 Dia das Crianças",
-  "2027-09-07": "🌳 Independência",
-  "2027-11-02": "💀 Finados",
-  "2027-11-15": "🏛️ Proclamação da República",
-  "2027-11-20": "🖤 Consciência Negra",
-  "2027-12-25": "🎄 Natal",
-};
 
 const EVENT_COLORS = {
   sales: "#00D084",
@@ -81,7 +32,13 @@ const EVENT_LABELS = {
 };
 
 function bindCalendarEvents() {
-  window.calendarEvents = JSON.parse(localStorage.getItem("calendarCustomEvents") || "{}");
+  try {
+    const stored = JSON.parse(localStorage.getItem("calendarCustomEvents") || "{}");
+    window.calendarEvents = stored && typeof stored === "object" && !Array.isArray(stored) ? stored : {};
+  } catch {
+    localStorage.removeItem("calendarCustomEvents");
+    window.calendarEvents = {};
+  }
   if (!window.calendarDate) {
     window.calendarDate = new Date();
   }
@@ -1116,7 +1073,7 @@ function editCustomEvent(dateStr, index) {
     const isRecurring = document.getElementById("eventRecurringMonthly").checked;
 
     if (!newDate || !newText) {
-      showAppMessage("Preencha data e descrição", "warning");
+      showAppMessage("Evento incompleto", "Preencha a data e a descrição.", "warning");
       return;
     }
 
@@ -1155,7 +1112,7 @@ function editCustomEvent(dateStr, index) {
     }
 
     localStorage.setItem("calendarCustomEvents", JSON.stringify(window.calendarEvents));
-    showAppMessage("✅ Evento " + (isRecurring ? "recorrente " : "") + "atualizado!", "success");
+    showAppMessage("Evento atualizado", `O evento ${isRecurring ? "recorrente " : ""}foi atualizado.`, "success");
     closeDialog();
 
     // Refresh
@@ -1181,7 +1138,7 @@ async function deleteCustomEvent(dateStr, index) {
         delete window.calendarEvents[dateStr];
       }
       localStorage.setItem("calendarCustomEvents", JSON.stringify(window.calendarEvents));
-      showAppMessage("✅ Evento deletado!", "success");
+      showAppMessage("Evento excluído", "O evento foi removido do calendário.", "success");
 
       // Refresh
       const container = byId("calendarWidget");
@@ -1278,7 +1235,7 @@ function openEventForm() {
     const isRecurring = document.getElementById("eventRecurringMonthly").checked;
 
     if (!dateInput.value || !textInput.value.trim()) {
-      showAppMessage("Preencha data e descrição do evento", "warning");
+      showAppMessage("Evento incompleto", "Preencha a data e a descrição do evento.", "warning");
       return;
     }
 
@@ -1307,7 +1264,7 @@ function openEventForm() {
 
     localStorage.setItem("calendarCustomEvents", JSON.stringify(window.calendarEvents));
 
-    showAppMessage("✅ Evento " + (isRecurring ? "recorrente " : "") + "marcado com sucesso!", "success");
+    showAppMessage("Evento criado", `O evento ${isRecurring ? "recorrente " : ""}foi adicionado ao calendário.`, "success");
     closeDialog();
 
     // Refresh calendar

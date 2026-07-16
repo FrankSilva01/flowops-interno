@@ -1607,7 +1607,7 @@ export async function saveBulkCosts(input, dialog) {
   }
   const validRows = (Array.isArray(rows) ? rows : []).filter((row) => row.listing && Number(row.cost) > 0);
   if (!validRows.length) {
-    showAppMessage("Informe ao menos um custo maior que zero.", "warning");
+    showAppMessage("Custo necessário", "Informe ao menos um custo maior que zero.", "warning");
     return;
   }
 
@@ -1648,12 +1648,12 @@ export async function saveBulkCosts(input, dialog) {
       }
       savedCount += 1;
     }
-    showAppMessage(`${savedCount} custo${savedCount === 1 ? "" : "s"} salvo${savedCount === 1 ? "" : "s"}.`, "success");
+    showAppMessage("Custos salvos", `${savedCount} custo${savedCount === 1 ? " foi salvo" : "s foram salvos"}.`, "success");
     dialog?.remove();
     renderBulkCostRows();
     renderCommercialIntelligence();
   } catch (error) {
-    showAppMessage(`Nao foi possivel salvar os custos: ${error.message}`, "error");
+    showAppMessage("Falha ao salvar custos", error.message, "error");
   }
 }
 

@@ -819,10 +819,10 @@ function generateDASPIX(dasId, das = null) {
   modal.querySelector("[data-copy-pix]")?.addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText(pixCode);
-      showAppMessage("PIX copiado.", "success");
+      showAppMessage("PIX copiado", "O código foi copiado para a área de transferência.", "success");
       modal.remove();
     } catch {
-      showAppMessage("Nao foi possivel copiar o PIX automaticamente.", "error");
+      showAppMessage("Falha ao copiar PIX", "Não foi possível copiar o código automaticamente.", "error");
     }
   });
 }

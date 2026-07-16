@@ -397,7 +397,7 @@ export async function setupMFA() {
     });
 
     if (error) {
-      showAppMessage(`Erro ao configurar MFA: ${error.message}`, "error");
+      showAppMessage("Falha ao configurar MFA", error.message, "error");
       return false;
     }
 
@@ -405,7 +405,7 @@ export async function setupMFA() {
     showMFAQRCode(data);
     return true;
   } catch (err) {
-    showAppMessage(`Erro ao configurar MFA: ${err.message}`, "error");
+    showAppMessage("Falha ao configurar MFA", err.message, "error");
     return false;
   }
 }
@@ -487,7 +487,8 @@ function showMFAQRCode(enrollData) {
   document.body.appendChild(overlay);
   document.body.appendChild(dialog);
 
-  byId("cancelMFA").addEventListener("click", () => {
+  byId("cancelMFA").addEventListener("click", async () => {
+    await state.supabase.auth.mfa.unenroll({ factorId: enrollData.id }).catch(() => null);
     overlay.remove();
     dialog.remove();
   });
@@ -580,7 +581,7 @@ function showMFAVerification(factorId) {
   byId("submitMFACode").addEventListener("click", async () => {
     const code = byId("mfa-code").value;
     if (code.length !== 6) {
-      showAppMessage("Digite um código válido (6 dígitos)", "warning");
+      showAppMessage("Código incompleto", "Digite os 6 dígitos exibidos no aplicativo autenticador.", "warning");
       return;
     }
 
@@ -592,7 +593,7 @@ function showMFAVerification(factorId) {
       });
 
       if (error) {
-        showAppMessage("Código inválido", "error");
+        showAppMessage("Código inválido", error.message || "Confira o código e tente novamente.", "error");
         return;
       }
 
@@ -600,7 +601,7 @@ function showMFAVerification(factorId) {
       overlay.remove();
       dialog.remove();
     } catch (err) {
-      showAppMessage("Erro ao verificar código", "error");
+      showAppMessage("Falha ao verificar código", err.message || "Tente novamente.", "error");
     }
   });
 }
@@ -609,20 +610,25 @@ export async function disableMFA() {
   if (!state.supabase) return false;
 
   try {
-    // Supabase MFA unenroll
-    const { error } = await state.supabase.auth.mfa.unenroll({
-      factorId: state.user?.mfa_factor_id || ""
-    });
-
-    if (error) {
-      showAppMessage(`Erro ao desativar MFA: ${error.message}`, "error");
+    const { data, error: listError } = await state.supabase.auth.mfa.listFactors();
+    if (listError) {
+      showAppMessage("Falha ao consultar MFA", listError.message, "error");
       return false;
+    }
+    const factors = [...(data?.totp || []), ...(data?.phone || [])];
+    if (!factors.length) {
+      showAppMessage("MFA não configurado", "Nenhum autenticador está vinculado a esta conta.", "info");
+      return true;
+    }
+    for (const factor of factors) {
+      const { error } = await state.supabase.auth.mfa.unenroll({ factorId: factor.id });
+      if (error) throw error;
     }
 
     flashActionMessage("✅ MFA desativado");
     return true;
   } catch (err) {
-    showAppMessage(`Erro ao desativar MFA: ${err.message}`, "error");
+    showAppMessage("Falha ao desativar MFA", err.message, "error");
     return false;
   }
 }

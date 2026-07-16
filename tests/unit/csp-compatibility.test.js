@@ -57,6 +57,39 @@ test("accessible confirmations receive a title and message", async () => {
   assert.deepEqual(violations, []);
 });
 
+test("application messages do not pass a tone as the message body", async () => {
+  const files = await filesUnder("js", [".js"]);
+  const violations = [];
+  const invalidCall = /showAppMessage\(\s*(?:"[^"]*"|'[^']*'|`[^`]*`)\s*,\s*["'](?:info|success|warning|error)["']\s*\)/s;
+  for (const file of files) {
+    const source = await readFile(file, "utf8");
+    if (invalidCall.test(source)) violations.push(file);
+  }
+  assert.deepEqual(violations, []);
+});
+
+test("service worker never stores authenticated API responses", async () => {
+  const source = await readFile("sw.js", "utf8");
+  const apiBranch = source.slice(source.indexOf("if (url.pathname.includes(\"/api\")"), source.indexOf("request.mode === \"navigate\""));
+  assert.doesNotMatch(apiBranch, /cache\.put|caches\.match/);
+  assert.match(apiBranch, /Cache-Control.*no-store/);
+});
+
+test("realtime subscriptions are tenant-scoped and debounced", async () => {
+  const source = await readFile("js/data/remote.js", "utf8");
+  assert.match(source, /filter:\s*`organization_id=eq\.\$\{state\.organizationId\}`/);
+  assert.doesNotMatch(source, /\.on\([^\n]+,\s*refreshRemote\)/);
+  assert.match(source, /setTimeout\(\(\) => refreshRemote\(\)/);
+});
+
+test("local user preferences recover from malformed JSON", async () => {
+  for (const file of ["js/features/calendar-navigation.js", "js/features/push-notifications.js", "js/features/accounting-integration.js"]) {
+    const source = await readFile(file, "utf8");
+    assert.match(source, /JSON\.parse/);
+    assert.match(source, /catch\s*\{/);
+  }
+});
+
 test("marketplace export is bound only by the central router", async () => {
   const appSource = await readFile("js/app.js", "utf8");
   assert.doesNotMatch(appSource, /exportListingsBtn/);

@@ -625,7 +625,7 @@ async function handleXRayAction(action, listing) {
       }
       break;
     case "open-ml":
-      if (listing.permalink) window.open(listing.permalink, "_blank");
+      if (listing.permalink) window.open(listing.permalink, "_blank", "noopener");
       break;
   }
 }

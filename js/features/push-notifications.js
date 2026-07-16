@@ -19,12 +19,19 @@ export class PushNotificationManager {
 
   loadSettings() {
     const stored = localStorage.getItem("pushNotificationSettings");
-    return stored ? JSON.parse(stored) : {
+    const fallback = {
       enabled: true,
       sound: true,
       vibration: true,
       enabledTypes: Object.keys(NOTIFICATION_TYPES),
     };
+    if (!stored) return fallback;
+    try {
+      return { ...fallback, ...JSON.parse(stored) };
+    } catch {
+      localStorage.removeItem("pushNotificationSettings");
+      return fallback;
+    }
   }
 
   saveSettings(settings) {
@@ -150,7 +157,7 @@ export class PushNotificationManager {
       };
 
       this.saveSettings(newSettings);
-      showAppMessage("✅ Configurações salvas!", "success");
+      showAppMessage("Configurações salvas", "As preferências de notificação foram atualizadas.", "success");
       modal.close();
     });
 
