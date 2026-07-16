@@ -7,40 +7,23 @@
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
     <title>FlowOps</title>
-    <link rel="icon" type="image/png" href="./assets/logo-3daft-store.png" />
+    <link rel="icon" type="image/svg+xml" href="./assets/flowops-logo-mark.svg" />
     <link rel="preconnect" href="https://djvrhvzjvnyensbobtby.supabase.co" />
     <link rel="preconnect" href="https://unpkg.com" />
     <link rel="preconnect" href="https://sdk.mercadopago.com" />
     <link rel="preconnect" href="https://api.mercadopago.com" />
     <script src="./theme-init.js?v=200"></script>
     <link rel="stylesheet" href="./assets/tabler-icons/tabler-icons.min.css?v=200" />
-    <link rel="stylesheet" href="./css/00-base.css?v=202" />
-    <link rel="stylesheet" href="./css/01-settings-tags-leadfiles.css?v=254" />
-    <link rel="stylesheet" href="./css/02-nav-materials-dashboard-subscription.css?v=200" />
-    <link rel="stylesheet" href="./css/03-visual-refresh-v104.css?v=200" />
-    <link rel="stylesheet" href="./css/04-modern-shell-reports-v109.css?v=200" />
-    <link rel="stylesheet" href="./css/05-dense-dark-sidebar-v110.css?v=200" />
-    <link rel="stylesheet" href="./css/06-dense-operational-views.css?v=200" />
-    <link rel="stylesheet" href="./css/07-operational-polish-20260627.css?v=217" />
-    <link rel="stylesheet" href="./css/08-sora-redesign-20260706.css?v=200" />
-    <link rel="stylesheet" href="./css/10-modern-calendar.css?v=200" />
-    <link rel="stylesheet" href="./css/11-fiscal-forms.css?v=200" />
-    <link rel="stylesheet" href="./css/12-global-search.css?v=228" />
-    <link rel="stylesheet" href="./css/13-data-quality.css?v=231" />
-    <link rel="stylesheet" href="./css/14-commercial-polish.css?v=240" />
-    <link rel="stylesheet" href="./css/15-linear-shopify-density.css?v=243" />
-    <link rel="stylesheet" href="./css/16-order-shopee-workflows.css?v=246" />
-    <link rel="stylesheet" href="./css/17-history-reports-refinement.css?v=247" />
-    <link rel="stylesheet" href="./css/18-governance-resilience.css?v=254" />
+    <link rel="stylesheet" href="./css/flowops.css?v=258" />
     <script src="./supabase-config.js?v=200" defer></script>
-    <script type="module" src="./js/app.js?v=257"></script>
+    <script type="module" src="./js/app.js?v=258"></script>
   </head>
   <body>
     <main id="appView" class="app-shell" hidden>
       <aside class="sidebar">
         <div class="sidebar-head">
           <div class="brand">
-            <div class="brand-mark">AFT</div>
+            <div class="brand-mark"><img src="./assets/flowops-logo-mark.svg" alt="" /></div>
             <div>
               <strong id="sidebarCompanyName">3D.AFT</strong>
               <span id="sidebarPlan">Plano</span>
@@ -56,10 +39,10 @@
           <span class="sidebar-group-label">Operação</span>
           <button class="tab active" data-view="dashboard" title="Dashboard"><span class="nav-icon"><i class="ti ti-layout-dashboard" aria-hidden="true"></i></span><span class="nav-label">Dashboard</span></button>
           <button class="tab" data-view="orders" title="Encomendas"><span class="nav-icon"><i class="ti ti-package" aria-hidden="true"></i></span><span class="nav-label">Encomendas</span></button>
-          <button class="tab" data-view="production" title="Produção"><span class="nav-icon"><i class="ti ti-tool" aria-hidden="true"></i></span><span class="nav-label">Produção</span></button>
+          <button class="tab" data-view="production" title="Produção"><span class="nav-icon"><i class="ti ti-circles-relation" aria-hidden="true"></i></span><span class="nav-label">Produção</span></button>
           <button class="tab" data-view="logistics" title="Logística"><span class="nav-icon"><i class="ti ti-truck-delivery" aria-hidden="true"></i></span><span class="nav-label">Logística</span></button>
           <button class="tab" data-view="leads" title="Clientes e Leads"><span class="nav-icon"><i class="ti ti-users" aria-hidden="true"></i></span><span class="nav-label">Clientes e Leads</span></button>
-          <button class="tab" data-view="cash" title="Fluxo de caixa"><span class="nav-icon"><i class="ti ti-cash-banknote" aria-hidden="true"></i></span><span class="nav-label">Fluxo de caixa</span></button>
+          <button class="tab" data-view="cash" title="Fluxo de caixa"><span class="nav-icon"><i class="ti ti-wallet" aria-hidden="true"></i></span><span class="nav-label">Fluxo de caixa</span></button>
           <button class="tab" data-view="materials" title="Materiais"><span class="nav-icon"><i class="ti ti-cube" aria-hidden="true"></i></span><span class="nav-label">Materiais</span></button>
           <button class="tab" data-view="reports" title="Relatórios"><span class="nav-icon"><i class="ti ti-chart-bar" aria-hidden="true"></i></span><span class="nav-label">Relatórios</span></button>
           <button id="marketplaceTab" class="tab" data-view="marketplace" title="Marketplace" hidden><span class="nav-icon"><i class="ti ti-building-store" aria-hidden="true"></i></span><span class="nav-label">Marketplace</span></button>

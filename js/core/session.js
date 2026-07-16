@@ -82,6 +82,7 @@ export function showLoginOverlay() {
   overlay.innerHTML = `
     <section class="login-panel">
       <div>
+        <img class="login-flowops-logo" src="./assets/flowops-logo-full.svg" alt="FlowOps" />
         <p class="eyebrow">Gestão de operações sob demanda</p>
         <h1 id="loginCompanyName">FlowOps</h1>
         <p class="muted">Entre com seu e-mail e senha. Seu ambiente será identificado automaticamente.</p>
