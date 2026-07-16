@@ -389,6 +389,7 @@ async function applyScheduledPlanChanges(supabase: ReturnType<typeof adminClient
 
 async function createBackup(actor: string, force: boolean) {
   const supabase = adminClient();
+  const backupOwnerOrganizationId = "00000000-0000-0000-0000-000000000001";
   const { data: latest } = await supabase
     .from("backup_runs")
     .select("*")
@@ -402,13 +403,15 @@ async function createBackup(actor: string, force: boolean) {
 
   const runId = crypto.randomUUID();
   const startedAt = new Date().toISOString();
-  await supabase.from("backup_runs").insert({
+  const { error: runError } = await supabase.from("backup_runs").insert({
     id: runId,
+    organization_id: backupOwnerOrganizationId,
     status: "running",
     backup_type: force ? "manual" : "weekly",
     started_at: startedAt,
     created_by: actor,
   });
+  if (runError) throw runError;
   try {
     const snapshot = await createSnapshot(BACKUP_TABLES, actor, "database", startedAt);
     const counts = Object.fromEntries(
@@ -423,21 +426,23 @@ async function createBackup(actor: string, force: boolean) {
       .from("system-backups")
       .upload(path, compressed, { contentType: "application/gzip", upsert: false });
     if (uploadError) throw uploadError;
-    await supabase.from("backup_runs").update({
+    const { error: successError } = await supabase.from("backup_runs").update({
       status: "success",
       storage_path: path,
       size_bytes: compressed.byteLength,
       table_counts: counts,
       finished_at: new Date().toISOString(),
     }).eq("id", runId);
+    if (successError) throw successError;
     await createSystemNotification("Backup concluido", `Backup semanal salvo com ${compressed.byteLength} bytes.`, "normal");
     return { id: runId, status: "success", storage_path: path, size_bytes: compressed.byteLength, table_counts: counts };
   } catch (error) {
-    await supabase.from("backup_runs").update({
+    const { error: failureError } = await supabase.from("backup_runs").update({
       status: "error",
       error_message: error.message || String(error),
       finished_at: new Date().toISOString(),
     }).eq("id", runId);
+    if (failureError) console.error("Falha ao registrar erro do backup", failureError);
     throw error;
   }
 }

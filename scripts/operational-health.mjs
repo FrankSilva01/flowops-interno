@@ -76,8 +76,8 @@ if (!serviceKey) {
   await check("marketplace:connections", async () => {
     const accounts = await rest("marketplace_accounts?select=marketplace,connection_status,token_expires_at,updated_at");
     const active = accounts.filter((item) => ["connected", "active"].includes(item.connection_status));
-    const expiring = active.filter((item) => item.token_expires_at && new Date(item.token_expires_at).getTime() < Date.now() + 24 * 3_600_000);
-    if (expiring.length) throw new Error(`${expiring.length} integração(ões) expiram em menos de 24 horas`);
+    const expiring = active.filter((item) => item.token_expires_at && new Date(item.token_expires_at).getTime() < Date.now() + 30 * 60_000);
+    if (expiring.length) throw new Error(`${expiring.length} integração(ões) expiram em menos de 30 minutos`);
     return `${active.length} integração(ões) ativa(s)`;
   }, "Renovar os tokens na tela Marketplace > Integrações.");
 
