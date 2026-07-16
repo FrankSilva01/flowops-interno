@@ -111,7 +111,7 @@ export class AccountingIntegration {
       <div style="padding: 20px; max-width: 500px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
           <h2 style="margin: 0; font-size: 18px;">💼 Integração Contábil</h2>
-          <button onclick="this.closest('dialog').close()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #999;">✕</button>
+          <button data-accounting-close type="button" aria-label="Fechar" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #999;">✕</button>
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
@@ -124,10 +124,9 @@ export class AccountingIntegration {
                   <small style="color: #999; font-size: 11px;">${provider.description}</small>
                 </div>
               </div>
-              <button class="primary-btn" data-provider="${key}" onclick="this.parentElement.querySelector('[data-activate]').click()" style="padding: 6px 14px; font-size: 12px;">
+              <button class="primary-btn" data-accounting-provider="${key}" type="button" style="padding: 6px 14px; font-size: 12px;">
                 ${this.config.provider === key ? "✓ Ativo" : "Ativar"}
               </button>
-              <button data-activate data-provider="${key}" style="display: none;" onclick="window.activateAccountingProvider('${key}')"></button>
             </div>
           `).join("")}
         </div>
@@ -137,18 +136,25 @@ export class AccountingIntegration {
             <p style="margin: 0 0 8px 0; font-size: 12px; color: #999;">Último sincronismo:</p>
             <p style="margin: 0; font-size: 13px; color: #fff;">${this.config.lastSync ? new Date(this.config.lastSync).toLocaleString("pt-BR") : "Nunca"}</p>
           </div>
-          <button class="primary-btn" onclick="window.syncAllAccountingData()" style="width: 100%; padding: 8px; font-size: 13px; margin-bottom: 10px;">
+          <button class="primary-btn" data-accounting-sync type="button" style="width: 100%; padding: 8px; font-size: 13px; margin-bottom: 10px;">
             🔄 Sincronizar Agora
           </button>
         ` : ""}
 
-        <button class="secondary-btn" onclick="this.closest('dialog').close()" style="width: 100%; padding: 8px; font-size: 13px;">
+        <button class="secondary-btn" data-accounting-close type="button" style="width: 100%; padding: 8px; font-size: 13px;">
           Fechar
         </button>
       </div>
     `;
 
     document.body.appendChild(modal);
+    modal.querySelectorAll("[data-accounting-close]").forEach((button) => {
+      button.addEventListener("click", () => modal.close());
+    });
+    modal.querySelectorAll("[data-accounting-provider]").forEach((button) => {
+      button.addEventListener("click", () => window.activateAccountingProvider(button.dataset.accountingProvider));
+    });
+    modal.querySelector("[data-accounting-sync]")?.addEventListener("click", () => this.syncAllData());
     modal.showModal();
 
     modal.addEventListener("click", (e) => {

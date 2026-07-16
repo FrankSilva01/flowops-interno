@@ -58,3 +58,24 @@ test("controles estaticos possuem nome acessivel", async ({ page }) => {
   });
   expect(unnamed).toEqual([]);
 });
+
+test("rastreamento publico funciona sob CSP e escapa dados externos", async ({ page }) => {
+  await page.route("**/api/tracking?**", (route) => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify({
+      id: "PED-TESTE",
+      status: "Em transporte",
+      created_at: "2026-07-16T10:00:00Z",
+      description: '<img src=x onerror="window.__trackingXss=true">',
+      address_city: "Sao Paulo",
+      address_state: "SP",
+      logistics: [{ created_at: "2026-07-16T10:00:00Z", title: "Postado", description: "Objeto recebido" }],
+    }),
+  }));
+  await page.goto("/tracking.html?order=PED-TESTE&key=teste");
+  await expect(page.getByText("Pedido #PED-TESTE")).toBeVisible();
+  await expect(page.getByText('<img src=x onerror="window.__trackingXss=true">')).toBeVisible();
+  expect(await page.evaluate(() => window.__trackingXss === true)).toBe(false);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(false);
+});

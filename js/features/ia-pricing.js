@@ -96,7 +96,7 @@ export function openMLPricingDialog() {
     modal.innerHTML = `
       <div style="padding: 40px; text-align: center;">
         <p style="color: #999; margin-bottom: 20px;">Nenhuma recomendação de preço disponível. Adicione mais vendas para análise.</p>
-        <button class="primary-btn" onclick="this.closest('dialog').close()">Fechar</button>
+        <button class="primary-btn" data-pricing-close type="button">Fechar</button>
       </div>
     `;
   } else {
@@ -104,7 +104,7 @@ export function openMLPricingDialog() {
       <div style="padding: 20px; max-width: 600px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
           <h2 style="margin: 0; font-size: 18px;">🤖 IA de Precificação</h2>
-          <button onclick="this.closest('dialog').close()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #999;">✕</button>
+          <button data-pricing-close type="button" aria-label="Fechar" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #999;">✕</button>
         </div>
 
         <p style="color: #999; font-size: 12px; margin-bottom: 20px;">Análise de ${recommendations.length} produto(s) com oportunidades de otimização</p>
@@ -142,7 +142,7 @@ export function openMLPricingDialog() {
                 <div><strong style="color: #00D084; display: block;">${money.format(rec.potential_impact)}</strong>impacto</div>
               </div>
 
-              <button class="primary-btn" onclick="applyPriceRecommendation('${rec.id.replace(/'/g, "\\'")}', ${rec.recommended_price})" style="width: 100%; padding: 8px; font-size: 13px;">
+              <button class="primary-btn" data-pricing-product="${rec.id}" data-pricing-value="${rec.recommended_price}" type="button" style="width: 100%; padding: 8px; font-size: 13px;">
                 Aplicar
               </button>
             </div>
@@ -150,13 +150,19 @@ export function openMLPricingDialog() {
         </div>
 
         <div style="margin-top: 20px; display: flex; gap: 10px;">
-          <button class="secondary-btn" onclick="this.closest('dialog').close()" style="flex: 1; padding: 8px;">Fechar</button>
+          <button class="secondary-btn" data-pricing-close type="button" style="flex: 1; padding: 8px;">Fechar</button>
         </div>
       </div>
     `;
   }
 
   document.body.appendChild(modal);
+  modal.querySelectorAll("[data-pricing-close]").forEach((button) => {
+    button.addEventListener("click", () => modal.close());
+  });
+  modal.querySelectorAll("[data-pricing-product]").forEach((button) => {
+    button.addEventListener("click", () => applyPriceRecommendation(button.dataset.pricingProduct, Number(button.dataset.pricingValue)));
+  });
   modal.showModal();
 
   modal.addEventListener("click", (e) => {

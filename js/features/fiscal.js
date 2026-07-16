@@ -799,13 +799,23 @@ function generateDASPIX(dasId, das = null) {
       </div>
       <p style="font-size: 12px; color: #607181; margin: 16px 0;">Use o código acima para realizar o pagamento via PIX em qualquer banco.</p>
       <div style="display: flex; gap: 12px; margin-top: 20px;">
-        <button onclick="navigator.clipboard.writeText('${pixCode}'); alert('PIX copiado!'); this.closest('div').parentElement.remove();" class="primary-btn" type="button" style="flex: 1; cursor: pointer;">Copiar PIX</button>
-        <button onclick="this.closest('div').parentElement.remove();" class="secondary-btn" type="button" style="flex: 1; cursor: pointer;">Fechar</button>
+        <button data-copy-pix class="primary-btn" type="button" style="flex: 1; cursor: pointer;">Copiar PIX</button>
+        <button data-close-pix class="secondary-btn" type="button" style="flex: 1; cursor: pointer;">Fechar</button>
       </div>
     </div>
   `;
 
   document.body.appendChild(modal);
+  modal.querySelector("[data-close-pix]")?.addEventListener("click", () => modal.remove());
+  modal.querySelector("[data-copy-pix]")?.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(pixCode);
+      showAppMessage("PIX copiado.", "success");
+      modal.remove();
+    } catch {
+      showAppMessage("Nao foi possivel copiar o PIX automaticamente.", "error");
+    }
+  });
 }
 
 function bindPurchaseActions() {

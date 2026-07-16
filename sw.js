@@ -1,10 +1,11 @@
-const CACHE_NAME = "flowops-v48";
+const CACHE_NAME = "flowops-v49";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
   "/termos.html",
   "/privacidade.html",
   "/cancelamento.html",
+  "/tracking.html",
   "/css/00-base.css",
   "/css/legal.css",
   "/css/01-settings-tags-leadfiles.css",
@@ -28,6 +29,7 @@ const STATIC_ASSETS = [
   "/theme-init.js",
   "/supabase-config.js",
   "/js/app.js",
+  "/js/tracking.js",
   "/js/core/state.js",
   "/js/core/dom.js",
   "/js/core/router.js",

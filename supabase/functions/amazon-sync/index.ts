@@ -9,21 +9,26 @@ import {
   logSync,
   nextInternalOrderIds,
 } from "../_shared/marketplace.ts";
+import { requireOrgAdmin } from "../_shared/auth.ts";
 
 Deno.serve(async (req) => {
   applyCors(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   let actor = "Sistema";
+  let organizationId = "";
   try {
-    actor = await requireAdmin(req);
-    const account = await getAmazonAccount();
+    const access = await requireAdmin(req);
+    actor = access.email;
+    organizationId = access.organizationId;
+    const account = await getAmazonAccount(organizationId);
     const action = new URL(req.url).searchParams.get("action") || "sync";
     if (action === "sync") {
       const [listings, orders] = await Promise.all([
-        syncListings(account),
-        syncOrders(account),
+        syncListings(account, organizationId),
+        syncOrders(account, organizationId),
       ]);
       await logSync("Amazon", "manual-sync", "success", `${listings} anuncio(s) e ${orders.created} venda(s) importada(s)`, {
+        organizationId,
         actorEmail: actor,
         rawPayload: { listings, orders },
       });
@@ -31,7 +36,10 @@ Deno.serve(async (req) => {
     }
     return json({ ok: false, error: "Acao Amazon invalida." }, { status: 400 });
   } catch (error) {
-    await logSync("Amazon", "manual-sync", "error", error.message || String(error), { actorEmail: actor }).catch(() => {});
+    await logSync("Amazon", "manual-sync", "error", error.message || String(error), {
+      organizationId: organizationId || null,
+      actorEmail: actor,
+    }).catch(() => {});
     return json({ ok: false, error: error.message || String(error) }, { status: 500 });
   }
 });
@@ -48,7 +56,7 @@ async function spFetch(path: string, account: Record<string, any>) {
   return data;
 }
 
-async function syncListings(account: Record<string, any>) {
+async function syncListings(account: Record<string, any>, organizationId: string) {
   const marketplaceId = amazonMarketplaceId();
   const sellerId = account.external_seller_id;
   const data = await spFetch(
@@ -62,6 +70,7 @@ async function syncListings(account: Record<string, any>) {
     const attributes = item.attributes || {};
     const image = attributes.main_product_image_locator?.[0]?.media_location || "";
     await supabase.from("marketplace_listings").upsert({
+      organization_id: organizationId,
       marketplace: "Amazon",
       external_id: String(item.sku || ""),
       title: summary.itemName || item.sku || "Produto Amazon",
@@ -72,13 +81,13 @@ async function syncListings(account: Record<string, any>) {
       thumbnail_url: image || null,
       raw_payload: { ...item, asin: summary.asin, sold_quantity: 0 },
       updated_at: new Date().toISOString(),
-    }, { onConflict: "marketplace,external_id" });
+    }, { onConflict: "organization_id,marketplace,external_id" });
     count += 1;
   }
   return count;
 }
 
-async function syncOrders(account: Record<string, any>) {
+async function syncOrders(account: Record<string, any>, organizationId: string) {
   const createdAfter = new Date(Date.now() - 30 * 86400000).toISOString();
   const data = await spFetch(
     `/orders/v0/orders?MarketplaceIds=${amazonMarketplaceId()}&CreatedAfter=${encodeURIComponent(createdAfter)}&MaxResultsPerPage=50`,
@@ -90,12 +99,16 @@ async function syncOrders(account: Record<string, any>) {
   for (const order of data.payload?.Orders || []) {
     const externalId = String(order.AmazonOrderId || "");
     const { data: existing } = await supabase.from("marketplace_order_links")
-      .select("internal_order_id").eq("marketplace", "Amazon").eq("external_order_id", externalId).maybeSingle();
+      .select("internal_order_id")
+      .eq("organization_id", organizationId)
+      .eq("marketplace", "Amazon")
+      .eq("external_order_id", externalId)
+      .maybeSingle();
     if (existing) {
       ignored += 1;
       continue;
     }
-    const ids = await nextInternalOrderIds();
+    const ids = await nextInternalOrderIds(organizationId);
     const notes = {
       text: "Importado da Amazon",
       orderCode: ids.orderCode,
@@ -108,6 +121,7 @@ async function syncOrders(account: Record<string, any>) {
     const total = Number(order.OrderTotal?.Amount || 0);
     const internal = {
       id: ids.id,
+      organization_id: organizationId,
       client: order.BuyerInfo?.BuyerName || "",
       description: `Venda Amazon ${externalId}`,
       material: null,
@@ -123,12 +137,14 @@ async function syncOrders(account: Record<string, any>) {
     const { error } = await supabase.from("orders").insert(internal);
     if (error) throw error;
     await supabase.from("marketplace_order_links").insert({
+      organization_id: organizationId,
       marketplace: "Amazon",
       external_order_id: externalId,
       internal_order_id: ids.id,
       raw_payload: order,
     });
     await supabase.from("notifications").insert({
+      organization_id: organizationId,
       role_target: "editor",
       type: "marketplace",
       title: "Nova venda importada da Amazon",
@@ -142,13 +158,6 @@ async function syncOrders(account: Record<string, any>) {
 }
 
 async function requireAdmin(req: Request) {
-  const token = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
-  if (!token) throw new Error("Autenticacao obrigatoria.");
   const supabase = adminClient();
-  const { data, error } = await supabase.auth.getUser(token);
-  if (error || !data.user?.email) throw new Error("Sessao invalida.");
-  const email = data.user.email.toLowerCase();
-  const { data: approved } = await supabase.from("approved_users").select("role").eq("email", email).maybeSingle();
-  if (!["admin", "administrador"].includes(String(approved?.role || "").toLowerCase())) throw new Error("Apenas administrador.");
-  return email;
+  return await requireOrgAdmin(req, supabase);
 }

@@ -1577,7 +1577,7 @@ export async function openBulkCostDialog(coverage) {
       <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px; padding: 12px 0; border-bottom: 1px solid var(--line); align-items: center;">
         <input type="text" value="${html(row.name)}" disabled style="background: transparent; border: none; padding: 6px 0; color: var(--ink); font-size: 13px;">
         <div style="text-align: center; font-size: 12px; color: var(--muted);">R\$ ${row.price.toFixed(2)}</div>
-        <input type="number" step="0.01" min="0" value="${row.cost}" placeholder="Custo" style="padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 12px;" onchange="this.__rowIdx = ${idx}; this.__rows = arguments.callee.__rows;" onchange="window.__bulkCosts[${idx}] = parseFloat(this.value || 0);">
+        <input data-bulk-cost="${idx}" type="number" step="0.01" min="0" value="${row.cost}" placeholder="Custo" aria-label="Custo de ${html(row.name)}" style="padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 12px;">
       </div>
     `).join('');
 
@@ -1607,6 +1607,11 @@ export async function openBulkCostDialog(coverage) {
     `;
 
     dialog.querySelector("#closeBulkDialog")?.addEventListener("click", () => dialog.remove());
+    dialog.querySelectorAll("[data-bulk-cost]").forEach((input) => {
+      input.addEventListener("input", () => {
+        rows[Number(input.dataset.bulkCost)].cost = Number(input.value || 0);
+      });
+    });
     dialog.querySelector("#saveBulkCosts")?.addEventListener("click", () => saveBulkCosts(rows, dialog));
   };
 
@@ -1614,12 +1619,68 @@ export async function openBulkCostDialog(coverage) {
   document.body.appendChild(dialog);
 }
 
-export async function saveBulkCosts(rows, dialog) {
-  // Implementação para salvar custos em lote
-  // Por enquanto, apenas mostra mensagem
-  showAppMessage("✅ Custos cadastrados com sucesso!", "success");
-  dialog.remove();
-  renderCommercialIntelligence();
+export async function saveBulkCosts(input, dialog) {
+  if (!ensureCanEdit()) return;
+  let rows = input;
+  if (input instanceof Event) {
+    input.preventDefault();
+    rows = Array.from(input.currentTarget.querySelectorAll("[data-bulk-cost-row]")).map((row) => ({
+      listing: state.marketplaceListings.find((listing) =>
+        listing.marketplace === row.dataset.marketplace && listing.external_id === row.dataset.externalId
+      ),
+      cost: Number(row.querySelector('[name="cost"]')?.value || 0),
+    }));
+  }
+  const validRows = (Array.isArray(rows) ? rows : []).filter((row) => row.listing && Number(row.cost) > 0);
+  if (!validRows.length) {
+    showAppMessage("Informe ao menos um custo maior que zero.", "warning");
+    return;
+  }
+
+  let savedCount = 0;
+  try {
+    for (const row of validRows) {
+      let product = getProductForListing(row.listing.marketplace, row.listing.external_id);
+      if (product) {
+        const { data, error } = await state.supabase.from("products")
+          .update({ cost_price: Number(row.cost), updated_at: new Date().toISOString() })
+          .eq("organization_id", state.organizationId)
+          .eq("id", product.id)
+          .select()
+          .single();
+        if (error) throw error;
+        Object.assign(product, data);
+      } else {
+        const name = row.listing.title || row.listing.name || "Produto marketplace";
+        const { data, error } = await state.supabase.from("products").insert({
+          organization_id: state.organizationId,
+          sku: nextProductSku("Marketplace", name),
+          name,
+          category: "Marketplace",
+          cost_price: Number(row.cost),
+          updated_at: new Date().toISOString(),
+        }).select().single();
+        if (error) throw error;
+        product = data;
+        state.products.push(product);
+        const { data: link, error: linkError } = await state.supabase.from("product_listings").insert({
+          organization_id: state.organizationId,
+          product_id: product.id,
+          marketplace: row.listing.marketplace,
+          external_id: row.listing.external_id,
+        }).select().single();
+        if (linkError) throw linkError;
+        state.productListings.push(link);
+      }
+      savedCount += 1;
+    }
+    showAppMessage(`${savedCount} custo${savedCount === 1 ? "" : "s"} salvo${savedCount === 1 ? "" : "s"}.`, "success");
+    dialog?.remove();
+    renderBulkCostRows();
+    renderCommercialIntelligence();
+  } catch (error) {
+    showAppMessage(`Nao foi possivel salvar os custos: ${error.message}`, "error");
+  }
 }
 
 export function renderCommercialIntelligence() {

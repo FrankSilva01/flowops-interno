@@ -118,10 +118,10 @@ export function renderNFeActions(orderId) {
 
   return `
     <div class="nfe-actions">
-      <button class="icon-btn" onclick="downloadDANFE('${orderId}')" title="Baixar DANFE">
+      <button class="icon-btn" data-nfe-download="${html(orderId)}" type="button" title="Baixar DANFE">
         📄 DANFE
       </button>
-      <button class="icon-btn" onclick="viewNFeDetails('${orderId}')" title="Ver detalhes">
+      <button class="icon-btn" data-nfe-details="${html(orderId)}" type="button" title="Ver detalhes">
         ℹ️ Detalhes
       </button>
     </div>
@@ -172,10 +172,10 @@ export function viewNFeDetails(orderId) {
       </div>
 
       <div class="modal-actions">
-        <button class="primary-btn" onclick="downloadDANFE('${orderId}')">
+        <button class="primary-btn" data-nfe-download="${html(orderId)}" type="button">
           📄 Baixar DANFE
         </button>
-        <button class="secondary-btn" onclick="this.closest('.nfe-details-modal').remove()">
+        <button class="secondary-btn" data-nfe-close type="button">
           Fechar
         </button>
       </div>
@@ -186,4 +186,18 @@ export function viewNFeDetails(orderId) {
 
   modal.querySelector(".close-btn").addEventListener("click", () => modal.remove());
   modal.querySelector(".modal-overlay").addEventListener("click", () => modal.remove());
+  modal.querySelector("[data-nfe-close]")?.addEventListener("click", () => modal.remove());
+  modal.querySelector("[data-nfe-download]")?.addEventListener("click", () => downloadDANFE(orderId));
+}
+
+if (!window.__flowOpsNfeActionsBound) {
+  window.__flowOpsNfeActionsBound = true;
+  document.addEventListener("click", (event) => {
+    const detailsButton = event.target.closest("[data-nfe-details]");
+    if (detailsButton) viewNFeDetails(detailsButton.dataset.nfeDetails);
+    const downloadButton = event.target.closest("[data-nfe-download]");
+    if (downloadButton && !downloadButton.closest(".nfe-details-modal")) {
+      downloadDANFE(downloadButton.dataset.nfeDownload);
+    }
+  });
 }

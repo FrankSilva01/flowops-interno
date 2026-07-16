@@ -94,7 +94,7 @@ export class PushNotificationManager {
       <div class="modal-content">
         <div class="modal-header">
           <h2>🔔 Configurações de Notificações</h2>
-          <button onclick="this.closest('dialog').close()">✕</button>
+          <button data-push-close type="button" aria-label="Fechar">✕</button>
         </div>
 
         <div class="modal-body">
@@ -131,12 +131,15 @@ export class PushNotificationManager {
 
         <div class="modal-actions">
           <button class="primary-btn" id="savePushSettings">Salvar Configurações</button>
-          <button class="secondary-btn" onclick="this.closest('dialog').close()">Fechar</button>
+          <button class="secondary-btn" data-push-close type="button">Fechar</button>
         </div>
       </div>
     `;
 
     document.body.appendChild(modal);
+    modal.querySelectorAll("[data-push-close]").forEach((button) => {
+      button.addEventListener("click", () => modal.close());
+    });
     modal.querySelector("#savePushSettings").addEventListener("click", () => {
       const newSettings = {
         enabled: document.getElementById("pushEnabled").checked,

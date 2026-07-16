@@ -1,5 +1,5 @@
 import { state } from "../core/state.js";
-import { byId, html, formatDateTime, showAppMessage } from "../core/dom.js";
+import { byId, html, formatDateTime, showAppConfirm, showAppMessage, showAppPrompt } from "../core/dom.js";
 import { bindActions } from "../core/router.js";
 import { ensureCanAdmin, isAdminRole, isEditorRole } from "../core/permissions.js";
 import { userAccessRequest } from "../core/session.js";
@@ -262,7 +262,11 @@ export async function saveMemberPermissions(event) {
 }
 
 export async function removeUser(email) {
-  if (!confirm(`Remover acesso de ${email}?`)) return;
+  const confirmed = await showAppConfirm("Remover acesso", `Remover o acesso de ${email} a esta empresa?`, {
+    danger: true,
+    confirmLabel: "Remover acesso",
+  });
+  if (!confirmed) return;
   await state.supabase
     .from("approved_users")
     .delete()
@@ -347,7 +351,12 @@ export async function saveResponsible(event) {
 export async function editResponsible(id) {
   const item = state.responsibles.find((row) => row.id === id);
   if (!item) return;
-  const nextName = prompt("Novo nome do responsável:", item.name);
+  const nextName = await showAppPrompt("Editar responsável", "Informe o nome que será exibido nas encomendas.", {
+    label: "Nome",
+    value: item.name,
+    maxLength: 120,
+    confirmLabel: "Salvar",
+  });
   if (!nextName?.trim()) return;
   item.name = nextName.trim();
   if (state.supabase) await state.supabase.from("responsibles").upsert({ ...item, organization_id: state.organizationId });
@@ -357,7 +366,12 @@ export async function editResponsible(id) {
 
 export async function deleteResponsible(id) {
   const item = state.responsibles.find((row) => row.id === id);
-  if (!item || !confirm(`Excluir responsável ${item.name}?`)) return;
+  if (!item) return;
+  const confirmed = await showAppConfirm("Excluir responsável", `Excluir ${item.name} da lista de responsáveis?`, {
+    danger: true,
+    confirmLabel: "Excluir",
+  });
+  if (!confirmed) return;
   if (state.supabase) await state.supabase.from("responsibles").delete().eq("id", id).eq("organization_id", state.organizationId);
   state.responsibles = state.responsibles.filter((row) => row.id !== id);
   renderResponsibles();

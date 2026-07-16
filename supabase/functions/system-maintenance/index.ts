@@ -2,6 +2,7 @@ import { adminClient, corsHeaders, ensureMlFiscalAlerts, getMlAccountByUserId, i
 import { dispatchPendingEmails } from "../_shared/email.ts";
 import { mercadoPagoRequest } from "../_shared/mercado-pago.ts";
 import { reconcileMercadoPagoSubscription } from "../_shared/subscription-billing.ts";
+import { requireOrgAdmin, requirePlatformAdmin } from "../_shared/auth.ts";
 
 const BACKUP_TABLES = [
   "organizations",
@@ -61,21 +62,26 @@ Deno.serve(async (req) => {
         : scope === "storefront"
           ? STOREFRONT_TABLES
           : BACKUP_TABLES;
-      return json({ ok: true, snapshot: await createSnapshot(tables, actor, scope) });
+      return json({ ok: true, snapshot: await createSnapshot(tables, actor.email, scope, undefined, actor.organizationId) });
     }
     if (action === "download") {
-      await requireAdmin(req);
-      return json({ ok: true, ...await createBackupDownload(String(body.backup_id || "")) });
+      const actor = await requireAdmin(req);
+      return json({ ok: true, ...await createBackupDownload(String(body.backup_id || ""), actor.organizationId) });
     }
     if (action === "simulate-restore") {
-      await requireAdmin(req);
-      return json({ ok: true, ...await simulateRestore(body.snapshot) });
+      const actor = await requireAdmin(req);
+      return json({ ok: true, ...await simulateRestore(body.snapshot, actor.organizationId) });
     }
     if (action === "restore") {
       const actor = await requireAdmin(req);
-      return json({ ok: true, ...await restoreSnapshot(body.snapshot, actor) });
+      return json({ ok: true, ...await restoreSnapshot(body.snapshot, actor.email, actor.organizationId) });
     }
-    const actor = action === "manual" ? await requireAdmin(req) : "Sistema";
+    if (action === "manual") {
+      const actor = await requireAdmin(req);
+      return json({ ok: true, backup: await createBackup(actor.email, true, actor.organizationId) });
+    }
+    if (action !== "scheduled") return json({ ok: false, error: "Acao de manutencao invalida." }, { status: 400 });
+    await requireSystemOperator(req);
     const token = await maintainMlToken();
     const subscriptions = await maintainSubscriptions();
     const emails = await dispatchPendingEmails(adminClient());
@@ -83,7 +89,7 @@ Deno.serve(async (req) => {
     const logs = await cleanupOperationalLogs();
     const governance = await cleanupGovernanceRecords();
     const marketplaceDocuments = await reconcileMarketplaceDocuments();
-    const backup = await createBackup(actor, action === "manual");
+    const backup = await createBackup("Sistema", false);
     return json({ ok: true, token, subscriptions, emails, integration_jobs: integrationJobs, logs, governance, marketplace_documents: marketplaceDocuments, backup });
   } catch (error) {
     await createSystemNotification("Backup falhou", error.message || String(error), "high").catch(() => {});
@@ -389,12 +395,13 @@ async function applyScheduledPlanChanges(supabase: ReturnType<typeof adminClient
   return applied;
 }
 
-async function createBackup(actor: string, force: boolean) {
+async function createBackup(actor: string, force: boolean, organizationId = "") {
   const supabase = adminClient();
-  const backupOwnerOrganizationId = "00000000-0000-0000-0000-000000000001";
+  const backupOwnerOrganizationId = organizationId || "00000000-0000-0000-0000-000000000001";
   const { data: latest } = await supabase
     .from("backup_runs")
     .select("*")
+    .eq("organization_id", backupOwnerOrganizationId)
     .eq("status", "success")
     .order("started_at", { ascending: false })
     .limit(1)
@@ -415,7 +422,7 @@ async function createBackup(actor: string, force: boolean) {
   });
   if (runError) throw runError;
   try {
-    const snapshot = await createSnapshot(BACKUP_TABLES, actor, "database", startedAt);
+    const snapshot = await createSnapshot(BACKUP_TABLES, actor, organizationId ? "organization" : "database", startedAt, organizationId);
     const counts = Object.fromEntries(
       Object.entries(snapshot.tables).map(([table, rows]) => [table, Array.isArray(rows) ? rows.length : 0]),
     );
@@ -423,7 +430,7 @@ async function createBackup(actor: string, force: boolean) {
     const compressed = await new Response(
       new Blob([raw]).stream().pipeThrough(new CompressionStream("gzip")),
     ).arrayBuffer();
-    const path = `${startedAt.slice(0, 10)}/3daft-${runId}.json.gz`;
+    const path = `${backupOwnerOrganizationId}/${startedAt.slice(0, 10)}/flowops-${runId}.json.gz`;
     const { error: uploadError } = await supabase.storage
       .from("system-backups")
       .upload(path, compressed, { contentType: "application/gzip", upsert: false });
@@ -454,6 +461,7 @@ async function createSnapshot(
   actor: string,
   scope: string,
   createdAt = new Date().toISOString(),
+  organizationId = "",
 ) {
   const supabase = adminClient();
   const snapshot: Record<string, any> = {
@@ -462,11 +470,16 @@ async function createSnapshot(
     created_by: actor,
     project: "3D.AFT",
     scope,
+    organization_id: organizationId || null,
     tables: {},
     unavailable_tables: [],
   };
   for (const table of tables) {
-    const { data, error } = await supabase.from(table).select("*");
+    let query = supabase.from(table).select("*");
+    if (organizationId) {
+      query = table === "organizations" ? query.eq("id", organizationId) : query.eq("organization_id", organizationId);
+    }
+    const { data, error } = await query;
     if (error && ["PGRST200", "PGRST205"].includes(String(error.code || ""))) {
       snapshot.unavailable_tables.push(table);
       continue;
@@ -477,16 +490,20 @@ async function createSnapshot(
   return snapshot;
 }
 
-async function createBackupDownload(backupId: string) {
+async function createBackupDownload(backupId: string, organizationId: string) {
   if (!backupId) throw new Error("Backup nao informado.");
   const supabase = adminClient();
   const { data: run, error } = await supabase
     .from("backup_runs")
     .select("id,status,storage_path,started_at")
     .eq("id", backupId)
+    .eq("organization_id", organizationId)
     .maybeSingle();
   if (error || !run?.storage_path || run.status !== "success") {
     throw new Error("Arquivo de backup nao encontrado.");
+  }
+  if (!String(run.storage_path).startsWith(`${organizationId}/`)) {
+    throw new Error("Este backup de plataforma nao esta disponivel no painel da empresa.");
   }
   const { data, error: signedError } = await supabase.storage
     .from("system-backups")
@@ -498,7 +515,7 @@ async function createBackupDownload(backupId: string) {
   };
 }
 
-async function restoreSnapshot(snapshot: Record<string, any>, actor: string) {
+async function restoreSnapshot(snapshot: Record<string, any>, actor: string, organizationId: string) {
   if (!snapshot || typeof snapshot !== "object" || !snapshot.tables || typeof snapshot.tables !== "object") {
     throw new Error("Estrutura de backup invalida.");
   }
@@ -513,6 +530,8 @@ async function restoreSnapshot(snapshot: Record<string, any>, actor: string) {
     }
     if (!Array.isArray(rawRows) || !rawRows.length) continue;
     const rows = rawRows as Record<string, unknown>[];
+    const hasForeignRows = rows.some((row) => String(table === "organizations" ? row.id || "" : row.organization_id || "") !== organizationId);
+    if (hasForeignRows) throw new Error(`${table}: o arquivo contem dados de outra empresa.`);
     for (let offset = 0; offset < rows.length; offset += 250) {
       const { error } = await supabase.from(table).upsert(rows.slice(offset, offset + 250));
       if (error) throw new Error(`${table}: ${error.message}`);
@@ -521,6 +540,7 @@ async function restoreSnapshot(snapshot: Record<string, any>, actor: string) {
     restoredTables += 1;
   }
   await supabase.from("audit_events").insert({
+    organization_id: organizationId,
     actor_email: actor,
     action: "backup_restore",
     entity_type: "system",
@@ -537,6 +557,7 @@ async function restoreSnapshot(snapshot: Record<string, any>, actor: string) {
     "Backup restaurado",
     `${restoredRows} registros restaurados em ${restoredTables} tabelas.`,
     "high",
+    organizationId,
   );
   return {
     restored_rows: restoredRows,
@@ -545,7 +566,7 @@ async function restoreSnapshot(snapshot: Record<string, any>, actor: string) {
   };
 }
 
-async function simulateRestore(snapshot: Record<string, any>) {
+async function simulateRestore(snapshot: Record<string, any>, organizationId: string) {
   if (!snapshot || typeof snapshot !== "object" || !snapshot.tables || typeof snapshot.tables !== "object") {
     throw new Error("Estrutura de backup invalida.");
   }
@@ -585,7 +606,16 @@ async function simulateRestore(snapshot: Record<string, any>) {
       tables.push(result);
       continue;
     }
-    const { data: currentRows, error } = await supabase.from(table).select("*");
+    if (rows.some((row) => String(table === "organizations" ? row.id || "" : row.organization_id || "") !== organizationId)) {
+      result.invalid = rows.length || 1;
+      result.reason = "O arquivo contem dados de outra empresa.";
+      totals.invalid += result.invalid;
+      tables.push(result);
+      continue;
+    }
+    let query = supabase.from(table).select("*");
+    query = table === "organizations" ? query.eq("id", organizationId) : query.eq("organization_id", organizationId);
+    const { data: currentRows, error } = await query;
     if (error) throw new Error(`${table}: ${error.message}`);
     const currentByKey = new Map<string, Record<string, unknown>>();
     for (const row of currentRows || []) {
@@ -651,22 +681,26 @@ function stableJson(value: unknown): string {
 }
 
 async function requireAdmin(req: Request) {
-  const token = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
-  if (!token) throw new Error("Autenticacao obrigatoria.");
   const supabase = adminClient();
-  const { data, error } = await supabase.auth.getUser(token);
-  if (error || !data.user?.email) throw new Error("Sessao invalida.");
-  const email = data.user.email.toLowerCase();
-  const { data: approved } = await supabase.from("approved_users").select("role").eq("email", email).maybeSingle();
-  if (!["admin", "administrador"].includes(String(approved?.role || "").toLowerCase())) {
-    throw new Error("Apenas administrador pode executar backup manual.");
-  }
-  return email;
+  return await requireOrgAdmin(req, supabase);
 }
 
-async function createSystemNotification(title: string, message: string, priority: string) {
+async function requireSystemOperator(req: Request) {
+  const token = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
+  try {
+    const encoded = token.split(".")[1].replaceAll("-", "+").replaceAll("_", "/");
+    const payload = JSON.parse(atob(encoded.padEnd(Math.ceil(encoded.length / 4) * 4, "=")));
+    if (payload?.role === "service_role") return { email: "service_role", role: "service_role" };
+  } catch {
+    // O gateway verify_jwt ainda valida a assinatura; payload invalido segue para a checagem de plataforma.
+  }
+  return await requirePlatformAdmin(req, adminClient());
+}
+
+async function createSystemNotification(title: string, message: string, priority: string, organizationId = "") {
   const supabase = adminClient();
   await supabase.from("notifications").insert({
+    ...(organizationId ? { organization_id: organizationId } : {}),
     role_target: "admin",
     type: "backup",
     title,

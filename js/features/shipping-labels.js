@@ -258,8 +258,16 @@ export function showShippingLabelButton(order) {
   }
 
   return `
-    <button class="secondary-btn" onclick="generateShippingLabel('${order.id}')" title="Gerar etiqueta">
+    <button class="secondary-btn" data-shipping-label="${html(order.id)}" type="button" title="Gerar etiqueta">
       📦 Gerar Etiqueta
     </button>
   `;
+}
+
+if (!window.__flowOpsShippingActionsBound) {
+  window.__flowOpsShippingActionsBound = true;
+  document.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-shipping-label]");
+    if (button) generateShippingLabel(button.dataset.shippingLabel);
+  });
 }

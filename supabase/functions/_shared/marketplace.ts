@@ -173,16 +173,21 @@ export async function refreshAmazonToken(account: Record<string, any>) {
     updated_at: next.updated_at,
   }).eq("id", account.id);
   if (error) throw error;
-  await logSync("Amazon", "token-refresh", "success", "Token Amazon renovado", { actorEmail: "Sistema" });
+  await logSync("Amazon", "token-refresh", "success", "Token Amazon renovado", {
+    organizationId: account.organization_id,
+    actorEmail: "Sistema",
+  });
   return next;
 }
 
-export async function getAmazonAccount() {
+export async function getAmazonAccount(organizationId: string) {
+  if (!organizationId) throw new Error("Empresa obrigatoria para conectar a Amazon.");
   const supabase = adminClient();
   const { data, error } = await supabase
     .from("marketplace_accounts")
     .select("*")
     .eq("marketplace", "Amazon")
+    .eq("organization_id", organizationId)
     .order("updated_at", { ascending: false })
     .limit(1);
   if (error) throw error;
