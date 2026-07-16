@@ -35,3 +35,24 @@ test("public tracking page uses a same-origin external script", async () => {
     .filter(Boolean);
   assert.deepEqual(inlineScripts, []);
 });
+
+test("critical operational modules avoid native blocking dialogs", async () => {
+  const files = [
+    "js/core/router.js",
+    "js/features/orders.js",
+    "js/features/logistics.js",
+    "js/features/marketplace.js",
+    "js/features/pricing.js",
+  ];
+  const violations = [];
+  for (const file of files) {
+    const source = await readFile(file, "utf8");
+    if (/\b(?:window\.)?(?:alert|confirm|prompt)\s*\(/.test(source)) violations.push(file);
+  }
+  assert.deepEqual(violations, []);
+});
+
+test("marketplace export is bound only by the central router", async () => {
+  const appSource = await readFile("js/app.js", "utf8");
+  assert.doesNotMatch(appSource, /exportListingsBtn/);
+});

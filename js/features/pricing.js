@@ -1,6 +1,6 @@
 import { state, money } from "../core/state.js";
 import { supabaseFunctionUrl } from "../core/config.js";
-import { byId, html, flashActionMessage, number, showAppMessage, safeUrl } from "../core/dom.js";
+import { byId, html, flashActionMessage, number, showAppMessage, showAppConfirm, safeUrl } from "../core/dom.js";
 import { bindActions } from "../core/router.js";
 import { ensureCanEdit } from "../core/permissions.js";
 import { renderBarChart } from "../core/charts.js";
@@ -743,7 +743,6 @@ export async function saveProduct(event) {
         manufacturing_time: String(data.get("mlManufacturingTime") || "20 dias").trim() || "20 dias",
         attributes: buildMlProductAttributes(data, name),
       };
-      console.log("📤 Sending to ML API:", mlPayload);
       const created = await marketplaceRequest(`${supabaseFunctionUrl("marketplace-sync")}?marketplace=ml&action=create-listing`, {
         method: "POST",
         body: JSON.stringify(mlPayload),
@@ -803,10 +802,12 @@ async function updateLinkedMarketplaceListing(listingValue, { name, price, stock
 export async function deleteProduct(id) {
   if (!ensureCanEdit()) return;
   const product = state.products.find((item) => item.id === id);
-  if (!product || !confirm(`Excluir o produto ${product.name}?`)) return;
+  if (!product) return;
+  const confirmed = await showAppConfirm(`Excluir ${product.name}?`, "O produto será removido do catálogo interno e seus vínculos locais serão desassociados.", { confirmLabel: "Excluir produto", danger: true });
+  if (!confirmed) return;
   const { error } = await state.supabase.from("products").delete().eq("id", id);
   if (error) {
-    alert(`Não foi possível excluir: ${error.message}`);
+    showAppMessage("Falha ao excluir produto", error.message, "error");
     return;
   }
   state.products = state.products.filter((item) => item.id !== id);
@@ -1380,7 +1381,7 @@ async function updateSuggestionStatus(id, status) {
   if (!ensureCanEdit()) return;
   const { error } = await state.supabase.from("commercial_suggestions").update({ status, updated_at: new Date().toISOString() }).eq("id", id);
   if (error) {
-    alert(`Não foi possível atualizar a sugestão: ${error.message}`);
+    showAppMessage("Falha ao atualizar sugestão", error.message, "error");
     return;
   }
   const item = state.commercialSuggestions.find((row) => row.id === id);
@@ -2101,7 +2102,7 @@ export async function saveFinancialSettings(event) {
   };
   const { data: saved, error } = await state.supabase.from("financial_settings").upsert(payload).select().single();
   if (error) {
-    alert(`Não foi possível salvar as configurações: ${error.message}`);
+    showAppMessage("Falha ao salvar configurações", error.message, "error");
     return;
   }
   state.financialSettings = saved;

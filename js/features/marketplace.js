@@ -1,7 +1,7 @@
 import { state, money, saveData } from "../core/state.js";
 import { supabaseFunctionUrl } from "../core/config.js";
 import {
-  byId, html, number, formatDateTime, flashActionMessage, showAppMessage, sanitizeRichHtml,
+  byId, html, number, formatDateTime, flashActionMessage, showAppMessage, showAppConfirm, sanitizeRichHtml,
   renderOperationalSummary,
 } from "../core/dom.js";
 import { ensureCanAdmin, ensureCanEdit } from "../core/permissions.js";
@@ -1555,7 +1555,9 @@ export async function connectMercadoLivre() {
 }
 
 export async function disconnectMercadoLivre() {
-  if (!state.supabase || !confirm("Desconectar a conta Mercado Livre desta empresa?")) return;
+  if (!state.supabase) return;
+  const confirmed = await showAppConfirm("Desconectar Mercado Livre?", "A sincronização desta empresa será interrompida até uma nova conexão.", { confirmLabel: "Desconectar", danger: true });
+  if (!confirmed) return;
   try {
     const { data } = await state.supabase.auth.getSession();
     const token = data.session?.access_token;
@@ -1579,7 +1581,7 @@ export async function disconnectMercadoLivre() {
 }
 
 export function configureShopee() {
-  alert("A integracao da Shopee ainda precisa das credenciais do Shopee Open Platform: Partner ID, Partner Key, Shop ID e URL de retorno. O painel ja esta preparado para exibir anuncios, vendas, integracao e logs da Shopee.");
+  showAppMessage("Integração Shopee", "A conexão requer Partner ID, Partner Key, Shop ID e URL de retorno do Shopee Open Platform.", "info");
 }
 
 export function renderMarketplaceWritePermission(account) {
@@ -1650,7 +1652,7 @@ export function viewMarketplaceOrder(orderId) {
 
 export async function createMarketplaceOrder(externalOrderId, marketplace = "Mercado Livre") {
   if (normalizeMarketplaceChannel(marketplace) === "shopee") {
-    alert("A criacao automatica de encomendas da Shopee sera ativada quando a API da conta estiver conectada.");
+    showAppMessage("Shopee não conectada", "Conecte a API da conta antes de criar encomendas automaticamente.", "warning");
     return;
   }
   if (!ensureCanAdmin()) return;
@@ -1666,7 +1668,7 @@ export async function createMarketplaceOrder(externalOrderId, marketplace = "Mer
     setMarketplaceView("sales");
     flashActionMessage("Encomenda criada a partir da venda.");
   } catch (error) {
-    alert(`Não consegui criar a encomenda: ${error.message}`);
+    showAppMessage("Falha ao criar encomenda", error.message, "error");
   }
 }
 
@@ -1692,7 +1694,6 @@ export async function marketplaceRequest(url, options = {}) {
   });
   const payload = await response.json();
   if (!response.ok || !payload.ok) {
-    console.error("❌ API Error:", { status: response.status, payload });
     throw new Error(payload.error || `Falha na integracao (${response.status}).`);
   }
   return payload;
@@ -1700,7 +1701,7 @@ export async function marketplaceRequest(url, options = {}) {
 
 export async function downloadMarketplaceDocument(externalOrderId, marketplace, documentType, printAfter = false, options = {}) {
   if (normalizeMarketplaceChannel(marketplace) === "shopee") {
-    alert("Os documentos da Shopee serao liberados quando a conta estiver conectada ao Shopee Open Platform.");
+    showAppMessage("Documentos Shopee indisponíveis", "Conecte a conta ao Shopee Open Platform para baixar documentos oficiais.", "warning");
     return;
   }
   const printWindow = printAfter ? window.open("", "_blank") : null;
@@ -1761,7 +1762,7 @@ export async function downloadMarketplaceDocument(externalOrderId, marketplace, 
     if (!options.skipReload) await loadAndRenderMarketplaces();
   } catch (error) {
     if (printWindow) printWindow.close();
-    alert(error.message || "Erro ao gerar documento.");
+    showAppMessage("Falha ao gerar documento", error.message || "Erro ao gerar documento.", "error");
     if (!options.skipReload) await loadAndRenderMarketplaces();
   }
 }
@@ -1976,7 +1977,7 @@ export async function syncAmazon() {
     render();
     flashActionMessage(`${data.listing_count || 0} anuncio(s) Amazon e ${data.created || 0} venda(s) importada(s).`);
   } catch (error) {
-    alert(`Nao consegui sincronizar Amazon: ${error.message}`);
+    showAppMessage("Falha na sincronização Amazon", error.message, "error");
   }
 }
 
@@ -2034,7 +2035,7 @@ export async function showMarketplaceStats(itemId, marketplace = "Mercado Livre"
 export async function openMarketplaceEdit(itemId, marketplace = "Mercado Livre") {
   const channel = normalizeMarketplaceChannel(marketplace);
   if (channel === "shopee") {
-    alert("A edicao de anuncios da Shopee sera liberada depois que a conta estiver conectada ao Shopee Open Platform.");
+    showAppMessage("Edição Shopee indisponível", "Conecte a conta ao Shopee Open Platform para editar anúncios diretamente.", "warning");
     return;
   }
   const normalizedId = String(itemId || "");

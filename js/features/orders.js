@@ -2,7 +2,7 @@ import {
   state, money, PRODUCTION_STAGES, PRIORITY_OPTIONS, STATUS_OPTIONS,
   normalizeOrderStatus, normalizeStage, defaultChecklist, saveData,
 } from "../core/state.js";
-import { byId, html, safeUrl, formatDate, formatDateTime, formatRelativeTime, flashActionMessage, nextId, number, renderOperationalSummary, filterRows } from "../core/dom.js";
+import { byId, html, safeUrl, formatDate, formatDateTime, formatRelativeTime, flashActionMessage, nextId, number, renderOperationalSummary, filterRows, showAppConfirm, showAppMessage, showAppPrompt } from "../core/dom.js";
 import { bindActions, render } from "../core/router.js";
 import { ensureCapability, ensureCanEdit } from "../core/permissions.js";
 import { persist, removeRemote, loadRemoteData } from "../data/remote.js";
@@ -250,7 +250,13 @@ function renderOrdersBulkToolbar(rows) {
 export async function deleteSelectedOrders() {
   if (!ensureCapability("delete_records", "excluir registros")) return;
   const selected = state.data.orders.filter((item) => state.selectedOrderIds.includes(item.id));
-  if (!selected.length || !confirm(`Excluir ${selected.length} encomenda(s) selecionada(s)? Esta ação também remove os vínculos de marketplace associados.`)) return;
+  if (!selected.length) return;
+  const confirmed = await showAppConfirm(
+    `Excluir ${selected.length} encomenda(s)?`,
+    "Esta ação também remove os vínculos de marketplace associados e não pode ser desfeita.",
+    { confirmLabel: "Excluir encomendas", danger: true },
+  );
+  if (!confirmed) return;
   for (const item of selected) {
     try {
       await recordAudit("delete", "order", item.id, getOrderCode(item), item, null, "bulk");
@@ -547,7 +553,8 @@ export async function duplicateOrder(id) {
 export async function removeReferenceImage(id) {
   const item = state.data.orders.find((orderItem) => orderItem.id === id);
   if (!item || !item.referenceImageUrl) return;
-  if (!confirm("Remover a imagem de referência desta encomenda?")) return;
+  const confirmed = await showAppConfirm("Remover imagem de referência?", "A imagem deixará de aparecer nesta encomenda.", { confirmLabel: "Remover imagem", danger: true });
+  if (!confirmed) return;
   await removeStorageImage(item.referenceImageUrl);
   item.referenceImageUrl = "";
   item.history = appendHistory(item.history, [{ field: "Imagem de referência", from: "Cadastrada", to: "Removida" }]);
@@ -954,7 +961,7 @@ export function setPendingReferenceImage(file, message = "") {
   try {
     validateReferenceImage(file);
   } catch (error) {
-    alert(error.message);
+    showAppMessage("Imagem inválida", error.message, "error");
     return;
   }
   clearPendingReferenceImage();
@@ -1265,7 +1272,7 @@ export async function copyMarketplaceCode(id) {
     await navigator.clipboard.writeText(item.marketplaceOrderCode);
     flashActionMessage("Código copiado.");
   } catch {
-    prompt("Copie o código:", item.marketplaceOrderCode);
+    await showAppPrompt("Copiar código do marketplace", "A cópia automática foi bloqueada pelo navegador. Selecione o código abaixo e copie manualmente.", { label: "Código", value: item.marketplaceOrderCode, confirmLabel: "Fechar" });
   }
 }
 
@@ -1374,7 +1381,9 @@ export function customTagClass(color) {
 
 export async function deleteCustomTag(id) {
   const tag = state.customTags.find((item) => item.id === id);
-  if (!tag || !confirm(`Excluir a tag ${tag.name}?`)) return;
+  if (!tag) return;
+  const confirmed = await showAppConfirm(`Excluir a tag ${tag.name}?`, "A tag deixará de estar disponível para novas encomendas.", { confirmLabel: "Excluir tag", danger: true });
+  if (!confirmed) return;
   const { error } = await state.supabase.from("custom_tags").delete().eq("id", id);
   if (error) throw error;
   await loadRemoteData();

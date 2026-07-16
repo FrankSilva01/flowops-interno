@@ -109,8 +109,10 @@ test.describe("sessao autenticada", () => {
     const deleteButton = page.locator('#orderDetailPanel [data-action="delete-order"]');
     await expect(deleteButton).toBeVisible();
     const countBefore = await cards.count();
-    page.once("dialog", (dialog) => dialog.dismiss());
     await deleteButton.click();
+    const confirmDialog = page.getByRole("dialog", { name: "Excluir encomenda?" });
+    await expect(confirmDialog).toBeVisible();
+    await confirmDialog.getByRole("button", { name: "Cancelar" }).click();
     await expect(cards).toHaveCount(countBefore);
   });
 

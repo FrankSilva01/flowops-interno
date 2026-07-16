@@ -82,7 +82,7 @@ import {
   showCalculatorSuggestion, getSuggestionForListing, syncFeeCalculatorFull,
 } from "../features/marketplace-analytics.js";
 
-const APP_VERSION = "260";
+const APP_VERSION = "261";
 
 async function refreshAppShell() {
   showAppMessage("Atualizando sistema", "Limpando cache local e carregando a versão mais recente.", "info");
@@ -474,7 +474,6 @@ export function bindEvents() {
   byId("openStorefrontBtn").addEventListener("click", () => window.open("https://fancy-pastelito-51931f.netlify.app/", "_blank", "noopener"));
   bindStorefrontImageInputs();
   bindStorefrontDescriptionEditor();
-  console.log("About to call bindMlCategorySelect");
   try {
     bindMlCategorySelect();
   } catch (e) {
@@ -1093,19 +1092,22 @@ export function bindActions() {
         await syncOrderPaymentCash(item, previousOrder);
       }
       if (action === "delete-order") {
-        if (!ensureCapability("delete_records", "excluir registros") || !confirm("Excluir esta encomenda?")) return;
+        if (!ensureCapability("delete_records", "excluir registros")) return;
+        if (!await showAppConfirm("Excluir encomenda?", "Esta ação não pode ser desfeita.", { confirmLabel: "Excluir", danger: true })) return;
         const deleted = state.data.orders.find((item) => item.id === id);
         await recordAudit("delete", "order", id, deleted?.orderCode, deleted, null, "manual");
         await removeRemote("orders", id);
         state.data.orders = state.data.orders.filter((item) => item.id !== id);
       }
       if (action === "delete-cash") {
-        if (!ensureCapability("delete_records", "excluir registros") || !confirm("Excluir este lançamento do fluxo de caixa?")) return;
+        if (!ensureCapability("delete_records", "excluir registros")) return;
+        if (!await showAppConfirm("Excluir lançamento?", "O lançamento será removido do fluxo de caixa.", { confirmLabel: "Excluir", danger: true })) return;
         state.data.cash = state.data.cash.filter((item) => item.id !== id);
         await removeRemote("cash", id);
       }
       if (action === "delete-material") {
-        if (!ensureCapability("delete_records", "excluir registros") || !confirm("Excluir este material e a saída vinculada no caixa?")) return;
+        if (!ensureCapability("delete_records", "excluir registros")) return;
+        if (!await showAppConfirm("Excluir material?", "O material e a saída vinculada no caixa serão removidos.", { confirmLabel: "Excluir", danger: true })) return;
         state.data.materials = state.data.materials.filter((item) => item.id !== id);
         const cashId = materialCashId(id);
         state.data.cash = state.data.cash.filter((item) => item.id !== cashId);
@@ -1118,7 +1120,8 @@ export function bindActions() {
         return;
       }
       if (action === "delete-inventory") {
-        if (!ensureCapability("delete_records", "excluir registros") || !confirm("Excluir este item do estoque?")) return;
+        if (!ensureCapability("delete_records", "excluir registros")) return;
+        if (!await showAppConfirm("Excluir item do estoque?", "Esta ação não pode ser desfeita.", { confirmLabel: "Excluir", danger: true })) return;
         const { error } = await state.supabase.from("inventory_items").delete().eq("id", id);
         if (error) {
           showAppMessage("Não foi possível excluir", error.message, "error");
@@ -1160,12 +1163,10 @@ export function updateSidebarToggle(collapsed) {
 }
 
 export function exportMarketplaceListings() {
-  console.log("EXPORT: Starting");
   const count = state.marketplaceListings?.length || 0;
-  console.log("EXPORT: Count =", count);
 
   if (!count) {
-    alert("Nenhum anúncio para exportar");
+    showAppMessage("Exportar anúncios", "Nenhum anúncio disponível para exportação.", "warning");
     return;
   }
 
@@ -1193,8 +1194,7 @@ export function exportMarketplaceListings() {
   link.click();
   URL.revokeObjectURL(url);
 
-  console.log("EXPORT: Done, downloaded", rows.length, "rows");
-  alert(`${rows.length} anúncio${rows.length > 1 ? "s" : ""} exportado${rows.length > 1 ? "s" : ""}`);
+  showAppMessage("Exportação concluída", `${rows.length} anúncio${rows.length > 1 ? "s" : ""} exportado${rows.length > 1 ? "s" : ""}.`, "success");
 }
 
 export function setTheme(theme) {

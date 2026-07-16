@@ -105,6 +105,20 @@ test("controles estaticos possuem nome acessivel", async ({ page }) => {
   expect(unnamed).toEqual([]);
 });
 
+test("estrutura estatica nao possui ids duplicados ou referencias ARIA quebradas", async ({ page }) => {
+  await page.goto("/");
+  const issues = await page.evaluate(() => {
+    const ids = [...document.querySelectorAll("[id]")].map((element) => element.id);
+    const duplicateIds = [...new Set(ids.filter((id, index) => ids.indexOf(id) !== index))];
+    const brokenReferences = [...document.querySelectorAll("[aria-labelledby], [aria-describedby], [aria-controls]")]
+      .flatMap((element) => ["aria-labelledby", "aria-describedby", "aria-controls"].flatMap((attribute) =>
+        String(element.getAttribute(attribute) || "").split(/\s+/).filter(Boolean)
+          .filter((id) => !document.getElementById(id)).map((id) => `${attribute}:${id}`)));
+    return { duplicateIds, brokenReferences };
+  });
+  expect(issues).toEqual({ duplicateIds: [], brokenReferences: [] });
+});
+
 test("rastreamento publico funciona sob CSP e escapa dados externos", async ({ page }) => {
   await page.route("**/functions/v1/public-tracking?**", (route) => route.fulfill({
     status: 200,

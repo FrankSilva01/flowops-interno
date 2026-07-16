@@ -1,5 +1,5 @@
 import { state } from "../core/state.js";
-import { byId, html, formatDate, formatDateTime, flashActionMessage, renderOperationalSummary } from "../core/dom.js";
+import { byId, html, formatDate, formatDateTime, flashActionMessage, renderOperationalSummary, showAppMessage, showAppPrompt } from "../core/dom.js";
 import { bindActions } from "../core/router.js";
 import { ensureCanEdit } from "../core/permissions.js";
 import { recordAudit } from "./logs.js";
@@ -216,7 +216,7 @@ export async function copyPublicTrackingLink(orderId) {
     await navigator.clipboard.writeText(url.toString());
     flashActionMessage("Link seguro de rastreamento copiado.");
   } catch {
-    window.prompt("Copie o link seguro de rastreamento:", url.toString());
+    await showAppPrompt("Copiar link de rastreamento", "A cópia automática foi bloqueada pelo navegador. Selecione o link abaixo e copie manualmente.", { label: "Link seguro", value: url.toString(), confirmLabel: "Fechar" });
   }
 }
 
@@ -268,7 +268,7 @@ export async function syncLogisticsFromMarketplace(orderId) {
     await applyLogisticsSync(orderId);
     flashActionMessage("Rastreio atualizado com o Mercado Livre.");
   } catch (error) {
-    alert(`Não foi possível sincronizar com o Mercado Livre: ${error.message}`);
+    showAppMessage("Falha na sincronização", `Não foi possível sincronizar com o Mercado Livre: ${error.message}`, "error");
   } finally {
     if (button) {
       button.disabled = false;
@@ -385,7 +385,7 @@ export async function saveLogisticsInfo(event) {
 
   const { error } = await state.supabase.from("order_logistics").upsert(payload);
   if (error) {
-    alert(`Não foi possível salvar o rastreio: ${error.message}`);
+    showAppMessage("Falha ao salvar rastreio", error.message, "error");
     return;
   }
   const index = state.orderLogistics.findIndex((item) => item.order_id === orderId);

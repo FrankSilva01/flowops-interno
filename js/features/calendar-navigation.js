@@ -1349,15 +1349,22 @@ function updateCalendarStats(year, month) {
   }
 
   // Atualizar elementos de resumo
-  const salesEl = document.getElementById("monthSales");
-  const deliveriesEl = document.getElementById("monthDeliveries");
-  const logisticsEl = document.getElementById("monthLogistics");
-  const cashEl = document.getElementById("monthCash");
-
-  if (salesEl) salesEl.textContent = salesCount || 0;
-  if (deliveriesEl) deliveriesEl.textContent = deliveriesCount || 0;
-  if (logisticsEl) logisticsEl.textContent = logisticsCount || 0;
-  if (cashEl) cashEl.textContent = cashCount || 0;
+  ["monthSales", "monthSummarySales"].forEach((id) => {
+    const element = document.getElementById(id);
+    if (element) element.textContent = salesCount || 0;
+  });
+  ["monthDeliveries", "monthSummaryDeliveries"].forEach((id) => {
+    const element = document.getElementById(id);
+    if (element) element.textContent = deliveriesCount || 0;
+  });
+  ["monthLogistics", "monthSummaryLogistics"].forEach((id) => {
+    const element = document.getElementById(id);
+    if (element) element.textContent = logisticsCount || 0;
+  });
+  ["monthCash", "monthSummaryCash"].forEach((id) => {
+    const element = document.getElementById(id);
+    if (element) element.textContent = cashCount || 0;
+  });
 
   // Atualizar total de eventos
   const totalEl = document.getElementById("monthTotal");

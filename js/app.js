@@ -19,7 +19,7 @@ import {
 } from "./core/session.js";
 import {
   setView, render, bindEvents, bindActions, applySidebarPreference, toggleSidebar,
-  updateSidebarToggle, setTheme, cycleTheme, applyTheme, exportMarketplaceListings,
+  updateSidebarToggle, setTheme, cycleTheme, applyTheme,
 } from "./core/router.js";
 import {
   persist, removeRemote, loadRemoteData, subscribeRemote, refreshRemote, tableName, toRemote,
@@ -171,7 +171,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   } catch (error) {
     console.error(error);
     setSessionInfo("Modo teste", "Falha no Supabase, usando local", "Modo local", false);
-    alert(`Não foi possível iniciar o modo online: ${error.message}`);
+    showAppMessage("Falha ao iniciar modo online", error.message, "error");
   }
   render();
   showMarketplaceOAuthStatus(marketplaceStatus);
@@ -227,12 +227,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Global functions for new features
   window.openMLPricingDialog = () => {
-    console.log("Opening IA Pricing...");
     openMLPricingDialog();
   };
   window.applyPriceRecommendation = applyPriceRecommendation;
   window.openAccountingSettings = () => {
-    console.log("Opening Accounting Settings...");
     accountingIntegration?.openSettingsDialog?.();
   };
 
@@ -256,27 +254,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   */
   window.syncAllAccountingData = () => accountingIntegration?.syncAllData?.();
 
-  // Setup export listings button
-  const exportBtn = byId("exportListingsBtn");
-  if (exportBtn) {
-    console.log("Export button found, adding listener in app.js");
-    exportBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      console.log("Export clicked from app.js");
-      setTimeout(() => {
-        exportMarketplaceListings();
-      }, 0);
-    });
-  } else {
-    console.warn("Export button NOT found");
-  }
-
   // Register Service Worker for PWA
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').then(() => {
-      console.log('Service Worker registered for PWA');
-    }).catch((err) => {
+    navigator.serviceWorker.register('/sw.js').catch((err) => {
       console.error('Service Worker registration failed:', err);
     });
   }
