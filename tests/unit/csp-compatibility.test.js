@@ -93,9 +93,22 @@ test("local user preferences recover from malformed JSON", async () => {
 
 test("calendar cache is scoped by organization and cleared at logout", async () => {
   const persistence = await readFile("js/features/calendar-persistence.js", "utf8");
+  const navigation = await readFile("js/features/calendar-navigation.js", "utf8");
   const session = await readFile("js/core/session.js", "utf8");
   assert.match(persistence, /\$\{LEGACY_STORAGE_KEY\}:\$\{state\.organizationId\}/);
+  assert.match(navigation, /saveCalendarEventsCache\(window\.calendarEvents\)/);
+  assert.doesNotMatch(navigation, /localStorage\.setItem\("calendarCustomEvents"/);
   assert.match(session, /startsWith\("calendarCustomEvents:"\)/);
+});
+
+test("calendar escapes user-authored labels before inserting HTML", async () => {
+  const source = await readFile("js/features/calendar-navigation.js", "utf8");
+  assert.match(source, /html as escapeHtml/);
+  assert.match(source, /escapeHtml\(event\.displayLabel\)/);
+  assert.match(source, /escapeHtml\(e\.tooltip\)/);
+  assert.match(source, /escapeHtml\(displayEvent\)/);
+  assert.doesNotMatch(source, /onmouseover=/);
+  assert.doesNotMatch(source, /onmouseout=/);
 });
 
 test("critical client mutations keep an explicit organization scope", async () => {

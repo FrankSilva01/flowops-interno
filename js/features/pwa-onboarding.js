@@ -48,8 +48,12 @@ function showOnboardingWizard(startStep = 1) {
     background: var(--panel);
     border-radius: 16px;
     box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-    min-width: 500px;
-    max-width: 90vw;
+    width: min(560px, calc(100vw - 32px));
+    min-width: 0;
+    max-width: none;
+    max-height: calc(100dvh - 32px);
+    overflow: auto;
+    box-sizing: border-box;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);

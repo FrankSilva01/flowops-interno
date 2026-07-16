@@ -1,9 +1,9 @@
 import { state } from "../core/state.js";
-import { byId, showAppConfirm, showAppMessage } from "../core/dom.js";
+import { byId, html as escapeHtml, showAppConfirm, showAppMessage } from "../core/dom.js";
 import { CALENDAR_HOLIDAYS as FERIADOS } from "./calendar-holidays.js";
 import {
   RECURRING_SUFFIX, calendarRecord, createCalendarEvent, loadCalendarEvents,
-  removeCalendarEvent, replaceCalendarEvent,
+  removeCalendarEvent, replaceCalendarEvent, saveCalendarEventsCache,
 } from "./calendar-persistence.js";
 
 // Feriados e datas importantes - Ano inteiro
@@ -100,17 +100,17 @@ function renderCalendarWithEvents(year, month) {
     const hasEvents = dayEvents.length > 0;
 
     html += `
-      <div class="calendar-day-cell${isToday ? ' today' : ''}" data-date="${dateStr}" data-events='${JSON.stringify(dayEvents).replace(/'/g, "&apos;")}'>
+      <div class="calendar-day-cell${isToday ? ' today' : ''}" data-date="${dateStr}" data-events='${escapeHtml(JSON.stringify(dayEvents))}'>
         <div class="calendar-day-number">${day}</div>
         <div class="calendar-day-events">
           ${dayEvents.slice(0, 2).map(event => `
-            <div class="calendar-event-badge ${event.type}" title="${event.displayLabel}">
-              ${event.displayLabel.length > 14 ? event.displayLabel.slice(0, 12) + '...' : event.displayLabel}
+            <div class="calendar-event-badge ${escapeHtml(event.type)}" title="${escapeHtml(event.displayLabel)}">
+              ${escapeHtml(event.displayLabel.length > 14 ? event.displayLabel.slice(0, 12) + '...' : event.displayLabel)}
             </div>
           `).join('')}
           ${dayEvents.length > 2 ? `<div class="calendar-event-more">+${dayEvents.length - 2}</div>` : ''}
         </div>
-        ${hasEvents ? `<div class="calendar-tooltip">${buildTooltipText(dayEvents)}</div>` : ''}
+        ${hasEvents ? `<div class="calendar-tooltip">${escapeHtml(buildTooltipText(dayEvents))}</div>` : ''}
       </div>
     `;
   }
@@ -568,19 +568,22 @@ function showEventDetailsModal(dateStr, event) {
     border-radius: 16px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     z-index: 10002;
-    min-width: 340px;
-    max-width: 90vw;
+    width: min(420px, calc(100vw - 32px));
+    min-width: 0;
+    max-width: none;
+    max-height: calc(100dvh - 32px);
+    box-sizing: border-box;
     overflow: hidden;
   `;
 
   const detailsHtml = event.tooltip.split('\n').map((line, idx) => {
-    if (idx === 0) return `<div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.9;">${line}</div>`;
-    return `<div style="font-size: 13px; margin: 4px 0; color: rgba(255,255,255,0.9)">${line}</div>`;
+    if (idx === 0) return `<div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.9;">${escapeHtml(line)}</div>`;
+    return `<div style="font-size: 13px; margin: 4px 0; color: rgba(255,255,255,0.9)">${escapeHtml(line)}</div>`;
   }).join('');
 
   modal.innerHTML = `
     <div style="background: linear-gradient(135deg, ${color}, ${color}dd); padding: 24px; color: white;">
-      ${event.displayLabel ? `<div style="font-size: 18px; font-weight: 700; word-break: break-word; margin-top: 8px;">${event.displayLabel}</div>` : ''}
+      ${event.displayLabel ? `<div style="font-size: 18px; font-weight: 700; word-break: break-word; margin-top: 8px;">${escapeHtml(event.displayLabel)}</div>` : ''}
     </div>
 
     <div style="padding: 24px;">
@@ -751,15 +754,18 @@ function showCustomEventModal(dateStr, event) {
     border-radius: 16px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     z-index: 10002;
-    min-width: 340px;
-    max-width: 90vw;
+    width: min(420px, calc(100vw - 32px));
+    min-width: 0;
+    max-width: none;
+    max-height: calc(100dvh - 32px);
+    box-sizing: border-box;
     overflow: hidden;
   `;
 
   modal.innerHTML = `
     <div style="background: linear-gradient(135deg, #00D084, #00c078); padding: 24px; color: white;">
       <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.9; margin-bottom: 8px;">Evento Customizado</div>
-      <div style="font-size: 18px; font-weight: 700; word-break: break-word;">${event.displayLabel.replace('📌 ', '')}</div>
+      <div style="font-size: 18px; font-weight: 700; word-break: break-word;">${escapeHtml(event.displayLabel.replace('📌 ', ''))}</div>
     </div>
 
     <div style="padding: 24px; display: flex; flex-direction: column; gap: 12px;">
@@ -894,7 +900,7 @@ function showCustomEventMenu(dayEl, event, allEvents) {
       <div style="padding: 4px 0;">
         <div style="padding: 8px 16px; background: var(--canvas); border-bottom: 1px solid var(--line);">
           <div style="font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Evento ${idx + 1}</div>
-          <div style="font-size: 12px; color: var(--ink); word-break: break-word;">${ev.displayLabel.replace('📌 ', '')}</div>
+          <div style="font-size: 12px; color: var(--ink); word-break: break-word;">${escapeHtml(ev.displayLabel.replace('📌 ', ''))}</div>
         </div>
         <div style="display: flex; gap: 6px; padding: 8px 8px;">
           <button class="calendar-menu-item" data-date="${dateStr}" data-index="${ev.customIndex}" style="
@@ -912,7 +918,7 @@ function showCustomEventMenu(dayEl, event, allEvents) {
             font-size: 12px;
             font-weight: 500;
             transition: all 0.2s;
-          " onmouseover="this.style.background='rgba(0, 208, 132, 0.1)'" onmouseout="this.style.background='transparent'">
+          ">
             <i class="ti ti-edit"></i> Editar
           </button>
           <button class="calendar-menu-delete" data-date="${dateStr}" data-index="${ev.customIndex}" style="
@@ -930,7 +936,7 @@ function showCustomEventMenu(dayEl, event, allEvents) {
             font-size: 12px;
             font-weight: 500;
             transition: all 0.2s;
-          " onmouseover="this.style.background='rgba(255, 107, 107, 0.1)'" onmouseout="this.style.background='transparent'">
+          ">
             <i class="ti ti-trash"></i> Deletar
           </button>
         </div>
@@ -1009,8 +1015,12 @@ function editCustomEvent(dateStr, index) {
     border-radius: 12px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
     z-index: 10001;
-    min-width: 350px;
-    max-width: 90vw;
+    width: min(420px, calc(100vw - 32px));
+    min-width: 0;
+    max-width: none;
+    max-height: calc(100dvh - 32px);
+    overflow: auto;
+    box-sizing: border-box;
   `;
 
   dialog.innerHTML = `
@@ -1027,7 +1037,7 @@ function editCustomEvent(dateStr, index) {
 
       <div>
         <label style="display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 8px; text-transform: uppercase;">Descrição do evento</label>
-        <input type="text" id="eventText" value="${displayEvent}" style="width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 13px; background: var(--canvas); color: var(--ink); box-sizing: border-box;">
+        <input type="text" id="eventText" value="${escapeHtml(displayEvent)}" style="width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 13px; background: var(--canvas); color: var(--ink); box-sizing: border-box;">
       </div>
 
       <div style="display: flex; align-items: center; gap: 8px; padding: 12px; background: var(--surface-secondary); border-radius: 8px;">
@@ -1126,7 +1136,7 @@ function editCustomEvent(dateStr, index) {
       }
     }
 
-    localStorage.setItem("calendarCustomEvents", JSON.stringify(window.calendarEvents));
+    saveCalendarEventsCache(window.calendarEvents);
     showAppMessage("Evento atualizado", `O evento ${isRecurring ? "recorrente " : ""}foi atualizado.`, "success");
     closeDialog();
 
@@ -1161,7 +1171,7 @@ async function deleteCustomEvent(dateStr, index) {
       if (window.calendarEvents[dateStr].length === 0) {
         delete window.calendarEvents[dateStr];
       }
-      localStorage.setItem("calendarCustomEvents", JSON.stringify(window.calendarEvents));
+      saveCalendarEventsCache(window.calendarEvents);
       showAppMessage("Evento excluído", "O evento foi removido do calendário.", "success");
 
       // Refresh
@@ -1188,8 +1198,12 @@ function openEventForm() {
     border-radius: 12px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
     z-index: 10001;
-    min-width: 350px;
-    max-width: 90vw;
+    width: min(420px, calc(100vw - 32px));
+    min-width: 0;
+    max-width: none;
+    max-height: calc(100dvh - 32px);
+    overflow: auto;
+    box-sizing: border-box;
   `;
 
   const today = new Date().toISOString().split("T")[0];
@@ -1298,7 +1312,7 @@ function openEventForm() {
       }
     }
 
-    localStorage.setItem("calendarCustomEvents", JSON.stringify(window.calendarEvents));
+    saveCalendarEventsCache(window.calendarEvents);
 
     showAppMessage("Evento criado", `O evento ${isRecurring ? "recorrente " : ""}foi adicionado ao calendário.`, "success");
     closeDialog();
@@ -1409,8 +1423,8 @@ function updateUpcomingEvents(year, month) {
   } else {
     upcomingEl.innerHTML = events.map(e => `
       <div style="padding: 10px; background: var(--canvas); border-left: 3px solid ${colorMap[e.type] || '#00D084'}; border-radius: 6px;">
-        <div style="font-weight: 600; color: var(--ink); font-size: 11px;">${e.label}</div>
-        <div style="font-size: 10px; color: var(--muted); margin-top: 4px;">${e.date}</div>
+        <div style="font-weight: 600; color: var(--ink); font-size: 11px;">${escapeHtml(e.label)}</div>
+        <div style="font-size: 10px; color: var(--muted); margin-top: 4px;">${escapeHtml(e.date)}</div>
       </div>
     `).join('');
   }
@@ -1434,16 +1448,16 @@ function updateResumoForDate(dateStr, events = null) {
   const dayEvents = events || getCalendarEventsForDay(date);
 
   if (dayEvents.length === 0) {
-    upcomingEl.innerHTML = `<p style="color: var(--muted); margin: 0;"><strong>${dayName}</strong><br>Nenhum evento</p>`;
+    upcomingEl.innerHTML = `<p style="color: var(--muted); margin: 0;"><strong>${escapeHtml(dayName)}</strong><br>Nenhum evento</p>`;
   } else {
     upcomingEl.innerHTML = `
       <div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--line);">
-        <strong style="color: var(--ink); font-size: 12px;">${dayName}</strong>
+        <strong style="color: var(--ink); font-size: 12px;">${escapeHtml(dayName)}</strong>
       </div>
       ${dayEvents.map(e => `
         <div style="padding: 10px; background: var(--canvas); border-left: 3px solid ${colorMap[e.type] || '#00D084'}; border-radius: 6px; margin-bottom: 8px;">
-          <div style="font-weight: 600; color: var(--ink); font-size: 12px;">${e.displayLabel}</div>
-          <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">${e.tooltip}</div>
+          <div style="font-weight: 600; color: var(--ink); font-size: 12px;">${escapeHtml(e.displayLabel)}</div>
+          <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">${escapeHtml(e.tooltip)}</div>
         </div>
       `).join('')}
     `;

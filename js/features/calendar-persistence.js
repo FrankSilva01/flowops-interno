@@ -7,6 +7,11 @@ function storageKey() {
   return state.organizationId ? `${LEGACY_STORAGE_KEY}:${state.organizationId}` : LEGACY_STORAGE_KEY;
 }
 
+export function saveCalendarEventsCache(events = window.calendarEvents || {}) {
+  if (!state.organizationId) return;
+  localStorage.setItem(storageKey(), JSON.stringify(events));
+}
+
 function readLegacyEvents() {
   try {
     const stored = localStorage.getItem(storageKey()) || localStorage.getItem(LEGACY_STORAGE_KEY) || "{}";
@@ -47,7 +52,7 @@ function applyBuckets(rows) {
   const buckets = calendarRowsToBuckets(rows);
   window.calendarEvents = buckets.events;
   window.calendarEventRecords = buckets.records;
-  localStorage.setItem(storageKey(), JSON.stringify(buckets.events));
+  saveCalendarEventsCache(buckets.events);
 }
 
 export async function loadCalendarEvents() {
