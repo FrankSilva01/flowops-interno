@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://fancy-pastelito-51931f.netlify.app/sitemap.xml
+Sitemap: https://rainbow-lokum-1fad14.netlify.app/sitemap.xml

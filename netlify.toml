@@ -9,3 +9,21 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
     Content-Security-Policy = "default-src 'self'; script-src 'self' https://unpkg.com https://cdn.jsdelivr.net https://sdk.mercadopago.com https://http2.mlstatic.com https://secure.mlstatic.com https://www.mercadopago.com.br; style-src 'self' 'unsafe-inline' https://http2.mlstatic.com https://secure.mlstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.functions.supabase.co https://api.mercadopago.com https://*.mercadopago.com https://api.mercadolibre.com https://*.mlstatic.com; frame-src https://*.mercadopago.com https://www.mercadopago.com.br https://*.mercadopago.com.br; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
+
+# Assets versionados por query string (?v=...) podem ser cacheados de forma
+# imutavel. Estas regras vem depois de "/*" para sobrescrever o Cache-Control
+# apenas nestes caminhos; os demais headers de seguranca continuam herdados.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/js/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/css/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

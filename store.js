@@ -276,7 +276,7 @@ function updateStoreSeo(product = null) {
   setMeta("meta[name='description']", description);
   setMeta("meta[property='og:title']", title);
   setMeta("meta[property='og:description']", description);
-  setMeta("meta[property='og:image']", product?.image_url || "https://fancy-pastelito-51931f.netlify.app/assets/logo-3daft.png");
+  setMeta("meta[property='og:image']", product?.image_url || "https://rainbow-lokum-1fad14.netlify.app/assets/logo-3daft.jpg");
 }
 
 function setMeta(selector, content) {

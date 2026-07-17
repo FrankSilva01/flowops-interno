@@ -58,6 +58,8 @@ export function flashActionMessage(message) {
   if (previous) previous.remove();
   const toast = document.createElement("div");
   toast.className = "toast-message";
+  toast.setAttribute("role", "status");
+  toast.setAttribute("aria-live", "polite");
   toast.textContent = message;
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 1800);

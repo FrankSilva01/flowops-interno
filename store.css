@@ -169,7 +169,7 @@ main {
   padding: 32px;
   background:
     linear-gradient(135deg, rgba(10, 13, 16, 0.98) 0%, rgba(37, 43, 49, 0.96) 58%, rgba(11, 24, 40, 0.96) 100%),
-    url("./assets/logo-3daft.png") center/cover;
+    url("./assets/logo-3daft.jpg") center/cover;
   color: #fff;
 }
 
