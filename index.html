@@ -20,9 +20,9 @@
     <link rel="preconnect" href="https://api.mercadopago.com" />
     <script src="./theme-init.js?v=200"></script>
     <link rel="stylesheet" href="./assets/tabler-icons/tabler-icons.min.css?v=200" />
-    <link rel="stylesheet" href="./css/flowops.css?v=262" />
+    <link rel="stylesheet" href="./css/flowops.css?v=263" />
     <script src="./supabase-config.js?v=200" defer></script>
-    <script type="module" src="./js/app.js?v=266"></script>
+    <script type="module" src="./js/app.js?v=267"></script>
   </head>
   <body>
     <main id="appView" class="app-shell" hidden>
@@ -2066,8 +2066,9 @@
         <!-- STEP 1: Dados básicos -->
         <div class="form-step" data-step="1" style="display:block">
           <label>Nome do produto*<input name="name" placeholder="Ex: Action Figure Deadpool" required /></label>
-          <label>Categoria do Mercado Livre*
-            <select name="mlCategoryId" required>
+          <small id="productNameMarketplaceHint" class="form-hint product-field-validation" hidden></small>
+          <label>Categoria do Mercado Livre
+            <select name="mlCategoryId">
               <option value="">Selecione uma categoria...</option>
               <option value="MLB457877">Miniaturas e action figures</option>
               <option value="MLB1839">Figuras de ação</option>
@@ -2083,6 +2084,7 @@
               <option value="MLB271399">Suportes para controle remoto</option>
             </select>
           </label>
+          <p class="form-hint">Obrigatória somente ao publicar no Mercado Livre.</p>
           <label>Categoria local (descrição)<input name="category" placeholder="Ex: Action figures" /></label>
           <label>SKU<input name="sku" placeholder="Gerado automaticamente" /></label>
 

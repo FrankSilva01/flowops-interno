@@ -296,6 +296,7 @@ export function openProductQuickDialog(productId = "") {
 
   renderProductListingOptions(product);
   updateProductMarketplaceStatusHints();
+  updateMlProductTitleHint();
   renderProductProfitPreview();
   byId("productDialogTitle").textContent = product ? `Editar produto - ${product.sku}` : "Cadastrar produto";
   byId("productFormMessage").textContent = "";
@@ -332,6 +333,7 @@ export function openProductQuickDialogForListing(marketplace, externalId) {
   const channel = normalizeMarketplaceChannel(listingMarketplace);
   if (channel === "mercado-livre") form.elements.publish_ml.checked = true;
   updateProductMarketplaceStatusHints();
+  updateMlProductTitleHint();
   renderProductProfitPreview();
   byId("productDialogTitle").textContent = product
     ? `Editar produto - ${product.sku}`
@@ -362,11 +364,13 @@ export function updateProductMarketplaceStatusHints() {
 export function bindProductMarketplaceCheckboxes() {
   const form = byId("productForm");
   if (!form) return;
+  form.elements.name.addEventListener("input", updateMlProductTitleHint);
   form.elements.publish_ml.addEventListener("change", () => {
     const mlConfigSection = byId("mlConfigSection");
     if (mlConfigSection) {
       mlConfigSection.style.display = form.elements.publish_ml.checked ? "block" : "none";
     }
+    updateMlProductTitleHint();
     renderProductProfitPreview();
   });
   form.elements.listingType.addEventListener("change", renderProductProfitPreview);
@@ -612,13 +616,26 @@ function buildMlProductAttributes(data, name) {
   ];
 }
 
-function validateMlProductTitle(name) {
+export function validateMlProductTitle(name) {
   const clean = String(name || "").trim().replace(/\s+/g, " ");
   const words = clean.split(" ").filter(Boolean);
   if (clean.length < 10 || words.length < 2) {
     return "Para publicar no Mercado Livre, use um nome mais completo com marca, modelo ou categoria. Ex: Miniatura Deadpool 15cm Resina.";
   }
   return "";
+}
+
+export function updateMlProductTitleHint() {
+  const form = byId("productForm");
+  const hint = byId("productNameMarketplaceHint");
+  if (!form || !hint) return;
+  const message = form.elements.publish_ml.checked
+    ? validateMlProductTitle(form.elements.name.value)
+    : "";
+  hint.textContent = message;
+  hint.hidden = !message;
+  form.elements.name.setAttribute("aria-invalid", message ? "true" : "false");
+  form.elements.name.setAttribute("aria-describedby", "productNameMarketplaceHint");
 }
 
 export async function saveProduct(event) {

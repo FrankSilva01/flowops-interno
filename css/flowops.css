@@ -6873,6 +6873,15 @@ button.attention-item:hover {
   font-size: 12px;
 }
 
+.product-field-validation {
+  color: var(--danger);
+  line-height: 1.45;
+}
+
+#productForm input[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
 /* Inteligencia Comercial - tabela de rentabilidade por anuncio */
 
 #intelligenceAnalysisSection {
