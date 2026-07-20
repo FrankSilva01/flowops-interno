@@ -268,7 +268,9 @@ async function handleMlStart(access: { email: string; organizationId: string }, 
     expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
   });
   if (error) throw error;
-  const connectUrl = "https://auth.mercadolibre.com.br/authorization"
+  // BR usa o dominio "mercadoLIVRE" (portugues) para a AUTORIZACAO interativa.
+  // As APIs (troca de token, /users/me) usam api.mercadoLIBRE.com (global).
+  const connectUrl = "https://auth.mercadolivre.com.br/authorization"
     + `?response_type=code&client_id=${encodeURIComponent(env("ML_CLIENT_ID"))}`
     + `&redirect_uri=${encodeURIComponent(mlRedirectUri())}`
     + `&state=${encodeURIComponent(stateHash)}`;
