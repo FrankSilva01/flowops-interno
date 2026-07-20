@@ -2324,28 +2324,24 @@
     </dialog>
     <dialog id="shopeeTemplateExportDialog" class="drawer-dialog shopee-export-dialog">
       <div class="drawer-header">
-        <div><span class="order-code">Marketplace</span><h3>Exportar para Shopee</h3><small>Gere uma planilha individual ou em lote usando o modelo atual da sua loja.</small></div>
+        <div><span class="order-code">Marketplace</span><h3>Exportar para Shopee</h3><small>Gere uma planilha pronta para importacao em massa, sem precisar baixar um modelo.</small></div>
         <button class="icon-btn" type="button" data-close-dialog="shopeeTemplateExportDialog" aria-label="Fechar"><i class="ti ti-x"></i></button>
       </div>
       <form id="shopeeTemplateExportForm" class="drawer-body shopee-export-form">
         <div class="workflow-callout"><i class="ti ti-file-spreadsheet" aria-hidden="true"></i><div><strong id="shopeeExportSelectionCount">0 anúncios selecionados</strong><small>Título, preço, estoque, SKU, descrição e imagens serão preenchidos automaticamente.</small></div></div>
-        <label>Modelo oficial da Shopee (.xlsx)
-          <input name="template" type="file" accept=".xlsx" required />
-          <small>Baixe o modelo selecionando a categoria dos produtos. O modelo básico não contém os atributos necessários para publicar.</small>
-        </label>
         <div class="order-form-grid">
-          <label class="span-2">Código da categoria Shopee (opcional)<input name="categoryId" inputmode="numeric" pattern="[0-9]+" placeholder="Ex: 101944" /><small>Só é exigido se o modelo tiver coluna de categoria. Exporte juntos somente produtos da mesma categoria.</small></label>
+          <label class="span-2">Código da categoria Shopee<input name="categoryId" inputmode="numeric" pattern="[0-9]+" placeholder="Ex: 101944" required /><small>Exporte juntos somente produtos da mesma categoria.</small></label>
           <label>Peso padrão (kg)<input name="weight" type="number" min="0.01" step="0.001" placeholder="Fallback para item sem peso" /></label>
           <label>Comprimento padrão (cm)<input name="length" type="number" min="0.1" step="0.1" placeholder="Fallback para item sem medida" /></label>
           <label>Largura padrão (cm)<input name="width" type="number" min="0.1" step="0.1" placeholder="Fallback para item sem medida" /></label>
           <label>Altura padrão (cm)<input name="height" type="number" min="0.1" step="0.1" placeholder="Fallback para item sem medida" /></label>
+          <label>Marca padrão<input name="brand" value="3D.AFT" placeholder="Ex: 3D.AFT ou Sem marca" /></label>
           <label>Prazo de postagem (dias)<input name="preOrderDays" type="number" min="1" max="30" step="1" value="3" required /></label>
           <label class="span-2 checkbox-field"><input name="noGtin" type="checkbox" checked required /> Confirmo que os produtos deste lote não possuem GTIN (EAN)</label>
         </div>
-        <section id="shopeeRequiredAttributes" class="order-form-section" hidden><h4>Atributos obrigatórios da categoria</h4><div id="shopeeRequiredAttributeFields" class="order-form-grid"></div></section>
         <div id="shopeeTemplateExportSummary" class="drawer-field-list"></div>
         <p id="shopeeTemplateExportMessage" class="form-error" role="alert"></p>
-        <div class="order-form-actions"><button class="secondary-btn" type="button" data-close-dialog="shopeeTemplateExportDialog">Cancelar</button><button id="shopeeTemplateExportSubmit" class="primary-btn" type="submit" disabled>Gerar planilha Shopee</button></div>
+        <div class="order-form-actions"><button class="secondary-btn" type="button" data-close-dialog="shopeeTemplateExportDialog">Cancelar</button><button id="shopeeTemplateExportSubmit" class="primary-btn" type="submit">Gerar planilha Shopee</button></div>
       </form>
     </dialog>
     <dialog id="planLimitDialog" class="history-dialog plan-limit-dialog">

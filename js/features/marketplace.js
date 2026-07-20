@@ -15,7 +15,12 @@ import { renderMarketplaceAnalyticsPanel, getListingAnalytics, computeIntentScor
 import { getProductForSale, renderProductionAssetShortcut } from "./product-assets.js";
 import { loadXlsx, parseCsv } from "../core/importer.js";
 import { MARKETPLACE_IMPORT_TEMPLATE, normalizeMarketplaceImportRows, runMarketplaceImportBatch } from "./marketplace-file-import.js";
-import { applyShopeeTemplateRows, assertShopeeTemplate, listingAttributeValue, marketplacePackageData, readShopeeTemplateSchema, validateShopeeListing } from "./shopee-template-export.js";
+import {
+  buildShopeeWorkbook,
+  marketplacePackageData,
+  validateShopeeExport,
+  validateShopeeListing,
+} from "./shopee-template-export.js";
 import { groupShopeeCategorySuggestions } from "./shopee-category-mapping.js";
 import {
   buildMarketplaceMigration,
@@ -32,7 +37,6 @@ export { marketplaceDisplayName, normalizeMarketplaceChannel } from "./marketpla
 
 const selectedMarketplaceMigrations = new Set();
 let marketplaceFileImportRows = [];
-let shopeeTemplateSchema = null;
 
 export function matchesMarketplaceChannel(item) {
   return state.marketplaceChannelFilter === "all"
@@ -889,10 +893,7 @@ export function openShopeeTemplateExport() {
   const form = byId("shopeeTemplateExportForm");
   form.reset();
   if (categoryGroups.length === 1 && categoryGroups[0].id) form.elements.categoryId.value = categoryGroups[0].id;
-  shopeeTemplateSchema = null;
-  byId("shopeeRequiredAttributes").hidden = true;
-  byId("shopeeRequiredAttributeFields").innerHTML = "";
-  byId("shopeeTemplateExportSubmit").disabled = true;
+  byId("shopeeTemplateExportSubmit").disabled = listings.length === invalid.length;
   byId("shopeeExportSelectionCount").textContent = `${listings.length} anúncio(s) selecionado(s)`;
   byId("shopeeTemplateExportSummary").innerHTML = `<div class="drawer-field-row"><span>Prontos para exportar</span><strong>${listings.length - invalid.length}</strong></div><div class="drawer-field-row"><span>Com pendências</span><strong>${invalid.length}</strong></div>`;
   byId("shopeeTemplateExportMessage").textContent = invalid.length ? `${invalid.length} anúncio(s) não serão exportados: complete título, preço e pelo menos 3 imagens.` : "";
@@ -903,57 +904,13 @@ export function openShopeeTemplateExport() {
   byId("shopeeTemplateExportDialog").showModal();
 }
 
-export async function previewShopeeTemplate() {
-  const form = byId("shopeeTemplateExportForm");
-  const file = form.elements.template.files?.[0];
-  const message = byId("shopeeTemplateExportMessage");
-  shopeeTemplateSchema = null;
-  byId("shopeeTemplateExportSubmit").disabled = true;
-  if (!file) return;
-  try {
-    await loadXlsx();
-    const workbook = window.XLSX.read(await file.arrayBuffer(), { type: "array", cellStyles: true });
-    const sheet = assertShopeeTemplate(workbook);
-    const schema = readShopeeTemplateSchema(sheet, window.XLSX);
-    const categoryGroups = groupShopeeCategorySuggestions(selectedMarketplaceListings());
-    if (categoryGroups.length > 1) throw new Error("A seleção mistura categorias. Exporte separadamente cada categoria com o modelo correspondente da Shopee.");
-    shopeeTemplateSchema = schema;
-    const listings = selectedMarketplaceListings();
-    // Aceita tanto o modelo basico quanto o categoria-especifico. Se o modelo
-    // tiver atributos obrigatorios de categoria, monta os campos; senao, segue
-    // com o basico (peso/medidas vem do Mercado Livre + fallback).
-    if (schema.requiredAttributes.length) {
-      byId("shopeeRequiredAttributeFields").innerHTML = schema.requiredAttributes.map((attribute) => {
-        const values = [...new Set(listings.map((listing) => listingAttributeValue(listing, attribute.label)).filter(Boolean))];
-        const suggested = values.length === 1 ? values[0] : "";
-        return `<label>${html(attribute.label)}<input name="attribute__${encodeURIComponent(attribute.marker)}" value="${html(suggested)}" placeholder="Valor padrão para o lote" required /></label>`;
-      }).join("");
-      byId("shopeeRequiredAttributes").hidden = false;
-      message.textContent = `${schema.requiredAttributes.length} atributo(s) obrigatório(s) detectado(s). Revise os valores antes de gerar.`;
-    } else {
-      byId("shopeeRequiredAttributeFields").innerHTML = "";
-      byId("shopeeRequiredAttributes").hidden = true;
-      message.textContent = "Modelo reconhecido. Peso e medidas serão preenchidos automaticamente do Mercado Livre; use os campos de fallback para itens sem essa informação.";
-    }
-    byId("shopeeTemplateExportSubmit").disabled = false;
-  } catch (error) {
-    byId("shopeeRequiredAttributes").hidden = true;
-    message.textContent = error.message;
-  }
-}
-
 export async function exportSelectedListingsToShopee(event) {
   event.preventDefault();
   if (!ensureCanAdmin()) return;
   const listings = selectedMarketplaceListings().filter((listing) => validateShopeeListing(listing).length === 0);
   const message = byId("shopeeTemplateExportMessage");
-  const file = event.currentTarget.elements.template.files?.[0];
-  if (!file || !listings.length) {
-    message.textContent = !listings.length ? "Nenhum anúncio selecionado atende aos requisitos." : "Selecione o modelo oficial da Shopee.";
-    return;
-  }
-  if (file.size > 3 * 1024 * 1024) {
-    message.textContent = "O modelo deve ter no máximo 3 MB.";
+  if (!listings.length) {
+    message.textContent = "Nenhum anúncio selecionado atende aos requisitos.";
     return;
   }
   try {
@@ -961,21 +918,21 @@ export async function exportSelectedListingsToShopee(event) {
     if (categoryGroups.length > 1) throw new Error("A seleção mistura categorias. Gere uma planilha por categoria.");
     message.textContent = "Gerando planilha...";
     await loadXlsx();
-    const workbook = window.XLSX.read(await file.arrayBuffer(), { type: "array", cellStyles: true });
-    const sheet = assertShopeeTemplate(workbook);
-    const schema = readShopeeTemplateSchema(sheet, window.XLSX);
     const data = new FormData(event.currentTarget);
-    const attributes = Object.fromEntries([...data.entries()].filter(([key]) => key.startsWith("attribute__")).map(([key, value]) => [decodeURIComponent(key.slice(11)), String(value).trim()]));
-    const options = { categoryId: data.get("categoryId"), weight: data.get("weight"), length: data.get("length"), width: data.get("width"), height: data.get("height"), preOrderDays: data.get("preOrderDays"), noGtin: data.get("noGtin") === "on", attributes };
-    // Codigo de categoria so e obrigatorio quando o modelo tem coluna de categoria (ps_category).
-    const hasCategoryColumn = schema.columns.some((column) => column.marker === "ps_category");
-    if (hasCategoryColumn && !/^\d+$/.test(String(options.categoryId || ""))) throw new Error("Este modelo tem coluna de categoria: informe o código numérico da categoria Shopee (ex: 101944).");
-    const rows = applyShopeeTemplateRows(sheet, listings, schema, options, window.XLSX);
-    const shippingColumns = schema.columns.filter(({ marker }) => ["ps_weight", "ps_length", "ps_width", "ps_height"].includes(marker));
-    const missingAttributes = rows.flatMap((row, index) => schema.requiredAttributes.filter(({ column }) => !String(row[column] || "").trim()).map(({ label }) => `${listings[index].title}: ${label}`));
-    const missingShipping = rows.flatMap((row, index) => shippingColumns.filter(({ column }) => !(Number(row[column]) > 0)).map(({ label }) => `${listings[index].title}: ${label}`));
-    if (missingAttributes.length) throw new Error(`Faltam atributos obrigatórios da categoria: ${missingAttributes.slice(0, 3).join("; ")}`);
-    if (missingShipping.length) throw new Error(`Sem peso/medida (não veio do Mercado Livre): ${missingShipping.slice(0, 3).join("; ")}. Preencha os campos de fallback (peso/comprimento/largura/altura) e gere novamente.`);
+    const options = {
+      categoryId: data.get("categoryId"),
+      weight: data.get("weight"),
+      length: data.get("length"),
+      width: data.get("width"),
+      height: data.get("height"),
+      brand: data.get("brand"),
+      preOrderDays: data.get("preOrderDays"),
+      noGtin: data.get("noGtin") === "on",
+    };
+    if (!/^\d+$/.test(String(options.categoryId || ""))) throw new Error("Informe o código numérico da categoria Shopee (ex: 101944).");
+    const issues = validateShopeeExport(listings, options);
+    if (issues.length) throw new Error(`Complete os dados obrigatórios: ${issues.slice(0, 3).join("; ")}.`);
+    const workbook = buildShopeeWorkbook(listings, options, window.XLSX);
     const output = window.XLSX.write(workbook, { bookType: "xlsx", type: "array", compression: true, cellStyles: true });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(new Blob([output], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));

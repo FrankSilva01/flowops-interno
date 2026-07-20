@@ -76,7 +76,7 @@ test.describe("sessao autenticada", () => {
     if (process.env.FLOWOPS_CAPTURE_VISUALS) await page.screenshot({ path: `output/playwright/order-create-drawer-${testInfo.project.name}.png` });
   });
 
-  test("abre exportacao Shopee para selecao individual", async ({ page }) => {
+  test("abre exportacao Shopee direta para selecao individual", async ({ page }) => {
     await page.goto("/#marketplace");
     await expect(page.locator("#appView")).toBeVisible();
     const checkbox = page.locator('[data-action="marketplace-migrate-select"]').first();
@@ -86,7 +86,8 @@ test.describe("sessao autenticada", () => {
     await page.locator("#exportShopeeTemplateBtn").click();
     await expect(page.locator("#shopeeTemplateExportDialog")).toBeVisible();
     await expect(page.locator("#shopeeExportSelectionCount")).toContainText("1 anúncio");
-    await expect(page.locator("#shopeeTemplateExportSubmit")).toBeDisabled();
+    await expect(page.locator('#shopeeTemplateExportForm input[type="file"]')).toHaveCount(0);
+    await expect(page.locator("#shopeeTemplateExportSubmit")).toBeEnabled();
   });
 
   test("seleciona encomenda e disponibiliza exclusao administrativa", async ({ page }) => {

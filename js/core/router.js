@@ -57,7 +57,7 @@ import {
   toggleMarketplaceMigrationSelection, toggleAllMarketplaceMigrationSelections,
   openMarketplaceFileImport, previewMarketplaceFileImport, saveMarketplaceFileImport,
   downloadMarketplaceImportTemplate,
-  bindMarketplaceFileImportDropzone, openShopeeTemplateExport, exportSelectedListingsToShopee, previewShopeeTemplate,
+  bindMarketplaceFileImportDropzone, openShopeeTemplateExport, exportSelectedListingsToShopee,
   toggleMarketplaceDocumentSelection, downloadSelectedMarketplaceDocuments, saveMarketplaceFiscalProfile, exportMarketplaceDocumentReport,
 } from "../features/marketplace.js";
 import {
@@ -459,7 +459,6 @@ export function bindEvents() {
   byId("marketplaceBulkMigrationForm")?.addEventListener("input", refreshBulkMarketplaceMigrationPreview);
   byId("marketplaceFileImportForm")?.addEventListener("submit", saveMarketplaceFileImport);
   byId("shopeeTemplateExportForm")?.addEventListener("submit", exportSelectedListingsToShopee);
-  byId("shopeeTemplateExportForm")?.elements.template.addEventListener("change", previewShopeeTemplate);
   byId("marketplaceFileImportInput")?.addEventListener("change", previewMarketplaceFileImport);
   byId("marketplaceFileImportForm")?.elements.marketplace.addEventListener("change", previewMarketplaceFileImport);
   bindMarketplaceFileImportDropzone();
