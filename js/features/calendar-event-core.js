@@ -1,5 +1,13 @@
 export const RECURRING_SUFFIX = " |RECURRING_MONTHLY";
 
+// Decide se a migracao legada (uma unica vez) do calendario deve rodar. So
+// quando o remoto esta vazio, ainda nao migramos, e existe conteudo na chave
+// GLOBAL antiga. Impede o bug de "ressureicao": remoto vazio + espelho scoped
+// cheio NAO reinsere nada (o espelho nao conta como legacyUnscopedKeys).
+export function shouldRunLegacyMigration({ remoteCount, migrationDone, legacyUnscopedKeys }) {
+  return remoteCount === 0 && !migrationDone && legacyUnscopedKeys > 0;
+}
+
 function clampMonthlyDate(dateString, offset) {
   const [year, month, day] = dateString.split("-").map(Number);
   const target = new Date(Date.UTC(year, month - 1 + offset, 1));

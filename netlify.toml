@@ -27,3 +27,19 @@
   for = "/css/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
+
+# Assets da loja publica ficam na raiz e tambem sao versionados por ?v=.
+[[headers]]
+  for = "/store.css"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/store.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/theme-init.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

@@ -2,7 +2,7 @@ import { state, normalizeOrderStatus, saveData } from "./state.js";
 import { byId, flashActionMessage, showAppMessage, closeAppMessage, applyAccessibleNames } from "./dom.js";
 import { ensureCanEdit, ensureCanAdmin, ensureCapability, hasCapability, updateEditAccess } from "./permissions.js";
 import { logout, saveRecoveredPassword } from "./session.js";
-import { persist, removeRemote } from "../data/remote.js";
+import { persist, removeRemote, refreshRemote } from "../data/remote.js";
 import {
   renderDashboard, renderCommercialDashboard, renderTopProducts, renderFollowUps,
   renderCompanySidebarStatus, openQuickAction, resetDashboardPreferences, openEmailDigest,
@@ -471,7 +471,7 @@ export function bindEvents() {
   byId("importListingToStorefrontBtn").addEventListener("click", importSelectedListingToStorefrontForm);
   byId("loadMlCategoryFieldsBtn").addEventListener("click", loadMlCategoryFields);
   byId("refreshStorefrontBtn").addEventListener("click", loadAndRenderMarketplaces);
-  byId("openStorefrontBtn").addEventListener("click", () => window.open("https://fancy-pastelito-51931f.netlify.app/", "_blank", "noopener"));
+  byId("openStorefrontBtn").addEventListener("click", () => window.open("https://rainbow-lokum-1fad14.netlify.app/store.html", "_blank", "noopener"));
   bindStorefrontImageInputs();
   bindStorefrontDescriptionEditor();
   try {
@@ -1134,8 +1134,22 @@ export function bindActions() {
       saveData();
       render();
     };
-    if (button.tagName === "SELECT") button.onchange = handler;
-    else button.onclick = handler;
+    // Wrapper de seguranca: sem isto, uma falha de rede/RLS num persist/remove
+    // deixava a rejeicao sem tratamento (sem aviso) e a memoria divergia do
+    // banco. Aqui avisamos o usuario e ressincronizamos memoria <- banco,
+    // desfazendo qualquer mutacao otimista que nao tenha persistido.
+    const safeHandler = async () => {
+      try {
+        await handler();
+      } catch (error) {
+        console.error("Acao falhou:", button.dataset.action, error);
+        showAppMessage("Nao foi possivel concluir a acao", error?.message || String(error), "error");
+        try { await refreshRemote(); } catch { /* mantem estado atual se o resync falhar */ }
+        render();
+      }
+    };
+    if (button.tagName === "SELECT") button.onchange = safeHandler;
+    else button.onclick = safeHandler;
   });
 }
 

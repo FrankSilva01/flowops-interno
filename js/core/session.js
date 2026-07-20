@@ -271,11 +271,18 @@ export async function enterOnlineApp(user) {
     byId("onlineLoginError").textContent = "Cadastro pendente de autorização. Peça ao administrador para liberar seu e-mail.";
     return;
   }
-  const { data: memberships } = await state.supabase
+  const { data: memberships, error: membershipsError } = await state.supabase
     .from("organization_members")
     .select("organization_id,role,permissions,organizations(name,slug,settings)")
     .eq("user_email", state.activeUserEmail)
     .eq("status", "active");
+  if (membershipsError) {
+    // Falha transitoria (rede/Supabase): NAO deslogar nem dizer que o usuario
+    // perdeu o acesso. Mantem a sessao e pede nova tentativa.
+    showLoginOverlay();
+    byId("onlineLoginError").textContent = "Nao foi possivel verificar seu acesso agora. Verifique a conexao e tente novamente.";
+    return;
+  }
   const membership = await chooseMembership(memberships || []);
   if (!membership?.organization_id) {
     await state.supabase.auth.signOut();
@@ -337,6 +344,12 @@ export async function enterOnlineApp(user) {
     true
   );
   try {
+    // Limpa os dados demo (INITIAL_DATA) antes de carregar o remoto: se o load
+    // falhar, a UI mostra vazio + erro em vez de dados ficticios, e o gate
+    // remoteLoaded impede que qualquer edicao grave esse conteudo no banco.
+    state.data.orders = [];
+    state.data.cash = [];
+    state.data.materials = [];
     await loadRemoteData();
     await loadResponsibles();
     if (state.isAdmin) {

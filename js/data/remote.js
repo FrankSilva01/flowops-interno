@@ -8,29 +8,51 @@ import {
 } from "../features/orders.js";
 
 export async function persist(kind, item) {
-  if (!state.online || !state.supabase) return;
+  // Sinaliza quando a escrita NAO foi ao banco (modo local/offline ou antes do
+  // load remoto ter sucesso) para o chamador poder avisar, em vez de fingir que
+  // salvou. O gate remoteLoaded impede gravar dados demo/nao-carregados caso o
+  // carregamento inicial tenha falhado.
+  if (!state.online || !state.supabase || !state.remoteLoaded) return { persisted: false };
   const { error } = await state.supabase.from(tableName(kind)).upsert(toRemote(kind, item));
   if (error) throw error;
+  return { persisted: true };
+}
+
+// Busca TODAS as linhas em paginas de 1000 (limite padrao do PostgREST).
+// Sem isso, tabelas com >1000 registros eram truncadas silenciosamente, o que
+// alem de esconder dados fazia o gerador de ID recalcular um id ja existente e
+// sobrescrever registros. `build` deve retornar um query builder novo a cada
+// chamada (o .range() executa a consulta).
+const PAGE_SIZE = 1000;
+async function fetchAllRows(build) {
+  const all = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await build().range(from, from + PAGE_SIZE - 1);
+    if (error) return { data: all, error };
+    all.push(...(data || []));
+    if (!data || data.length < PAGE_SIZE) return { data: all, error: null };
+  }
 }
 
 export async function removeRemote(kind, id) {
-  if (!state.online || !state.supabase) return;
+  if (!state.online || !state.supabase || !state.remoteLoaded) return { persisted: false };
   const { error } = await state.supabase.from(tableName(kind)).delete().eq("id", id).eq("organization_id", state.organizationId);
   if (error) throw error;
+  return { persisted: true };
 }
 
 export async function loadRemoteData() {
   const [orders, cashEntries, materials, inventoryItems, leads, auditEvents, notifications, storefrontEvents, customTags, leadFiles, backupRuns, marketplaceReviews, subscription, organizationInfo, subscriptionPlans, subscriptionPayments, supportTickets, announcements, changelog, orderLogistics, logisticsEvents, products, productListings, financialSettings, commercialSuggestions, privacyConsents, dataRequests, integrationJobs] = await Promise.all([
-    state.supabase.from("orders").select("*").eq("organization_id", state.organizationId).order("id"),
-    state.supabase.from("cash_entries").select("*").eq("organization_id", state.organizationId).order("date"),
-    state.supabase.from("materials").select("*").eq("organization_id", state.organizationId).order("date"),
-    state.supabase.from("inventory_items").select("*").eq("organization_id", state.organizationId).order("name"),
-    state.supabase.from("crm_leads").select("*").eq("organization_id", state.organizationId).order("updated_at", { ascending: false }),
+    fetchAllRows(() => state.supabase.from("orders").select("*").eq("organization_id", state.organizationId).order("id")),
+    fetchAllRows(() => state.supabase.from("cash_entries").select("*").eq("organization_id", state.organizationId).order("date").order("id")),
+    fetchAllRows(() => state.supabase.from("materials").select("*").eq("organization_id", state.organizationId).order("date").order("id")),
+    fetchAllRows(() => state.supabase.from("inventory_items").select("*").eq("organization_id", state.organizationId).order("name").order("id")),
+    fetchAllRows(() => state.supabase.from("crm_leads").select("*").eq("organization_id", state.organizationId).order("updated_at", { ascending: false }).order("id")),
     state.supabase.from("audit_events").select("*").eq("organization_id", state.organizationId).order("created_at", { ascending: false }).limit(250),
     state.supabase.from("notifications").select("*").eq("organization_id", state.organizationId).order("created_at", { ascending: false }).limit(200),
     state.supabase.from("storefront_events").select("*").eq("organization_id", state.organizationId).order("created_at", { ascending: false }).limit(500),
-    state.supabase.from("custom_tags").select("*").eq("organization_id", state.organizationId).order("name"),
-    state.supabase.from("lead_files").select("*").eq("organization_id", state.organizationId).order("created_at", { ascending: false }),
+    fetchAllRows(() => state.supabase.from("custom_tags").select("*").eq("organization_id", state.organizationId).order("name").order("id")),
+    fetchAllRows(() => state.supabase.from("lead_files").select("*").eq("organization_id", state.organizationId).order("created_at", { ascending: false }).order("id")),
     state.supabase.from("backup_runs").select("*").eq("organization_id", state.organizationId).order("started_at", { ascending: false }).limit(20),
     state.supabase.from("marketplace_reviews").select("*").eq("organization_id", state.organizationId).order("review_date", { ascending: false }).limit(200),
     state.supabase.from("organization_subscriptions").select("*").eq("organization_id", state.organizationId).maybeSingle(),
@@ -40,10 +62,10 @@ export async function loadRemoteData() {
     state.supabase.from("saas_support_tickets").select("*").eq("organization_id", state.organizationId).order("created_at", { ascending: false }).limit(100),
     state.supabase.from("saas_announcements").select("*").order("published_at", { ascending: false }).limit(100),
     state.supabase.from("saas_changelog").select("*").order("published_at", { ascending: false }).limit(100),
-    state.supabase.from("order_logistics").select("*").eq("organization_id", state.organizationId),
+    fetchAllRows(() => state.supabase.from("order_logistics").select("*").eq("organization_id", state.organizationId).order("order_id")),
     state.supabase.from("logistics_events").select("*").eq("organization_id", state.organizationId).order("occurred_at", { ascending: false }).limit(500),
-    state.supabase.from("products").select("*").eq("organization_id", state.organizationId),
-    state.supabase.from("product_listings").select("*").eq("organization_id", state.organizationId),
+    fetchAllRows(() => state.supabase.from("products").select("*").eq("organization_id", state.organizationId).order("id")),
+    fetchAllRows(() => state.supabase.from("product_listings").select("*").eq("organization_id", state.organizationId).order("id")),
     state.supabase.from("financial_settings").select("*").eq("organization_id", state.organizationId).maybeSingle(),
     state.supabase.from("commercial_suggestions").select("*").eq("organization_id", state.organizationId).order("created_at", { ascending: false }).limit(200),
     state.supabase.from("privacy_consents").select("*").eq("organization_id", state.organizationId).eq("user_email", state.activeUserEmail).order("accepted_at", { ascending: false }).limit(20),
@@ -89,6 +111,7 @@ export async function loadRemoteData() {
   state.privacyConsents = privacyConsents.error ? [] : privacyConsents.data || [];
   state.dataRequests = dataRequests.error ? [] : dataRequests.data || [];
   state.integrationJobs = integrationJobs.error ? [] : integrationJobs.data || [];
+  state.remoteLoaded = true;
 }
 
 // order-images e um bucket privado; o que fica salvo no pedido e so o caminho

@@ -1,10 +1,27 @@
 import { state } from "../core/state.js";
-import { RECURRING_SUFFIX, buildCalendarEventRows, calendarRowsToBuckets } from "./calendar-event-core.js";
+import { RECURRING_SUFFIX, buildCalendarEventRows, calendarRowsToBuckets, shouldRunLegacyMigration } from "./calendar-event-core.js";
 
 const LEGACY_STORAGE_KEY = "calendarCustomEvents";
 
 function storageKey() {
   return state.organizationId ? `${LEGACY_STORAGE_KEY}:${state.organizationId}` : LEGACY_STORAGE_KEY;
+}
+
+function migrationFlagKey() {
+  return state.organizationId ? `calendarMigrationDone:${state.organizationId}` : "calendarMigrationDone";
+}
+
+// Le apenas a chave GLOBAL pre-multi-tenant (fonte legitima de migracao unica).
+// NAO usa o espelho scoped, que applyBuckets reescreve a cada load - usa-lo aqui
+// faz um evento excluido "ressuscitar" (remoto vazio + espelho cheio -> reinsercao).
+function readUnscopedLegacy() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(LEGACY_STORAGE_KEY) || "{}");
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    localStorage.removeItem(LEGACY_STORAGE_KEY);
+    return {};
+  }
 }
 
 export function saveCalendarEventsCache(events = window.calendarEvents || {}) {
@@ -77,12 +94,17 @@ export async function loadCalendarEvents() {
   if (error) throw error;
 
   let rows = data || [];
-  if (!rows.length && Object.keys(legacy).length) {
-    const migrationRows = legacyRows(legacy);
+  // Migracao unica: so a partir da chave global antiga e so se ainda nao migramos.
+  // Assim, remoto vazio (ex.: usuario excluiu o ultimo evento) nunca reinsere nada.
+  const migrationDone = localStorage.getItem(migrationFlagKey()) === "1";
+  const legacyUnscoped = readUnscopedLegacy();
+  if (shouldRunLegacyMigration({ remoteCount: rows.length, migrationDone, legacyUnscopedKeys: Object.keys(legacyUnscoped).length })) {
+    const migrationRows = legacyRows(legacyUnscoped);
     const result = await state.supabase.from("calendar_events").insert(migrationRows).select("id,title,due_date,source,recurrence_rule,created_by,created_at,updated_at");
     if (result.error) throw result.error;
     rows = result.data || [];
   }
+  localStorage.setItem(migrationFlagKey(), "1");
   localStorage.removeItem(LEGACY_STORAGE_KEY);
   applyBuckets(rows);
 }

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildCalendarEventRows, calendarRowsToBuckets } from "../../js/features/calendar-event-core.js";
+import { buildCalendarEventRows, calendarRowsToBuckets, shouldRunLegacyMigration } from "../../js/features/calendar-event-core.js";
 
 test("builds a tenant-scoped monthly calendar series", () => {
   const rows = buildCalendarEventRows({
@@ -25,4 +25,22 @@ test("maps Supabase calendar rows to the existing calendar view", () => {
   ]);
   assert.deepEqual(buckets.events["2026-07-16"], ["Evento simples", "Evento mensal |RECURRING_MONTHLY"]);
   assert.deepEqual(buckets.records["2026-07-16"].map((row) => row.id), ["one", "two"]);
+});
+
+test("migra uma unica vez a partir da chave global antiga", () => {
+  assert.equal(shouldRunLegacyMigration({ remoteCount: 0, migrationDone: false, legacyUnscopedKeys: 1 }), true);
+});
+
+test("nao ressuscita evento: remoto vazio apos migracao concluida nao remigra", () => {
+  // Cenario do bug: usuario excluiu o ultimo evento (remoto vazio), mas o
+  // espelho scoped ainda tem dados. Como ja migramos (flag), NAO reinsere.
+  assert.equal(shouldRunLegacyMigration({ remoteCount: 0, migrationDone: true, legacyUnscopedKeys: 1 }), false);
+});
+
+test("espelho scoped sozinho (sem chave global) nunca dispara migracao", () => {
+  assert.equal(shouldRunLegacyMigration({ remoteCount: 0, migrationDone: false, legacyUnscopedKeys: 0 }), false);
+});
+
+test("remoto com eventos nunca dispara migracao", () => {
+  assert.equal(shouldRunLegacyMigration({ remoteCount: 3, migrationDone: false, legacyUnscopedKeys: 5 }), false);
 });

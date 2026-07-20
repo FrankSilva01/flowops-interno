@@ -160,6 +160,10 @@ export const state = {
   data: loadData(),
   supabase: null,
   online: false,
+  // So vira true apos loadRemoteData() ter sucesso. Enquanto false, persist()/
+  // removeRemote() nao escrevem, evitando gravar dados demo/nao-carregados no
+  // banco do tenant caso o carregamento inicial falhe.
+  remoteLoaded: false,
   subscribed: false,
   activeUserName: "Usuario local",
   activeUserEmail: "",
