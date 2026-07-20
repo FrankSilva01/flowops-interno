@@ -1,5 +1,42 @@
 # Changelog
 
+## [1.2.0] - 2026-07-20 (Auditoria: segurança, dados, marketplace, OAuth ML)
+
+### 🔒 Segurança (SQL/RLS aplicado em produção — `sql/2026-07-17_multitenant_hardening.sql`)
+- **Vazamento cross-tenant de backups**: bucket `system-backups` lia por `is_admin()` global (admin de qualquer empresa baixava dumps de outra). Re-escopado por org.
+- **Bypass de paywall**: `organization_subscriptions`/`subscription_payments` eram graváveis por qualquer membro. Escrita restrita a `service_role`; SELECT mantido.
+- **`storefront_events`**: removido INSERT público sem `organization_id`.
+- **`marketplace_documents`**: recriado SELECT por org (estava deny-all).
+- Obs.: `lead-files` storage já estava corrigido em produção (verificado ao vivo antes de mexer).
+
+### 🔧 Corrigido — dados (perda/corrupção)
+- **Paginação** em `remote.js` (orders, cash, materials, leads, etc.): fim do truncamento silencioso em 1000 linhas que escondia dados e fazia o gerador de ID sobrescrever registros.
+- **Gate `remoteLoaded`**: `persist`/`removeRemote` só gravam após o load remoto ter sucesso — não grava mais dados demo se o boot falhar.
+- **Calendário**: migração legada roda uma única vez (flag por org) e só da chave global antiga — corrige evento excluído que "ressuscitava".
+- **Router**: try/catch em todos os handlers `[data-action]` com ressync memória←banco em falha (antes a rejeição ficava sem tratamento).
+- **Caixa**: preserva a data original do lançamento quando o recebido não muda.
+- **IDs**: sufixo aleatório evita sobrescrita entre usuários simultâneos.
+- **Enterprise**: vai para contato comercial em vez do fluxo de downgrade.
+- **Assinatura**: revalida em `visibilitychange`/30min (só desloga em bloqueio definitivo, nunca em erro de rede).
+- **Realtime**: reassina em CHANNEL_ERROR/TIMED_OUT/CLOSED.
+- **Dinheiro**: arredondamento a 2 casas via `js/core/money.js` (evita erro de float).
+
+### 🛒 Marketplace / Loja
+- **Export Shopee**: aceita modelo básico (não exige mais categoria-específico) → botão "gerar planilha" habilita; código de categoria opcional (só se o modelo tem coluna `ps_category`); peso/medidas puxam do Mercado Livre com fallback nos campos do formulário.
+- **OAuth Mercado Livre implementado**: `ml/start` + `ml/callback` + `ml/disconnect` em `marketplace-auth` (antes o botão só fazia sync e mostrava erro falso). Conectar/reconectar/desconectar funcionam de verdade. Domínio de autorização BR = `auth.mercadolivre.com.br` (LIVRE).
+
+### 🎨 UI/UX / PWA / SEO
+- **Logout**: botão "Sair" no menu ⋮ da topbar (o do sidebar ficava escondido).
+- **PWA instalável**: `<link rel="manifest">` + ícones PNG reais 192/512; sem trava de orientação.
+- **SEO**: domínio antigo (`fancy-pastelito`) corrigido para `rainbow-lokum` em robots.txt, sitemap, metas e botão "abrir loja"; mojibake corrigido.
+- **Logo**: `logo-3daft` de 1,8MB PNG → 34KB JPEG.
+- **Acessibilidade**: toast com `role="status"`/`aria-live`.
+
+### 🚀 Deploy / Infra
+- Front-end deploya por push na `master` (Netlify auto-build).
+- **Cache** (`netlify.toml`): `/assets/*` imutável; `/js/*` e `/css/*` como `no-cache` (revalida via ETag) porque os módulos ES são importados SEM `?v=` — `immutable` congelaria o código após deploy.
+- Edge function `marketplace-auth` deploya via `supabase functions deploy` (NÃO pelo Netlify), rodado de dentro da pasta do projeto.
+
 ## [1.1.0] - 2026-07-09 (Bug Critical Fix - Versão 2)
 
 ### 🔧 Corrigido - CRÍTICO
