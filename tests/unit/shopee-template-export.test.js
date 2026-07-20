@@ -1,6 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { applyShopeeTemplateRows, buildShopeeTemplateRow, listingAttributeValue, marketplacePackageData, readShopeeTemplateSchema, shopeeSku, validateShopeeListing } from "../../js/features/shopee-template-export.js";
+import {
+  applyShopeeTemplateRows,
+  buildShopeeTemplateRow,
+  buildShopeeWorkbook,
+  listingAttributeValue,
+  marketplacePackageData,
+  readShopeeTemplateSchema,
+  shopeeSku,
+  validateShopeeExport,
+  validateShopeeListing,
+} from "../../js/features/shopee-template-export.js";
 
 const listing = {
   external_id: "MLB1234567890",
@@ -73,9 +83,9 @@ test("coleta dimensões e peso da embalagem do Mercado Livre", () => {
       ],
     },
   };
-  assert.deepEqual(marketplacePackageData(measured), { weight: 2.179, length: 9, width: 17, height: 27, brand: "Sem marca" });
+  assert.deepEqual(marketplacePackageData(measured), { weight: 2.179, length: 9, width: 17, height: 27, brand: "3DAFT" });
   assert.equal(buildShopeeTemplateRow(measured)[26], 2.179);
-  assert.equal(listingAttributeValue(measured, "Marca"), "Sem marca");
+  assert.equal(listingAttributeValue(measured, "Marca"), "3DAFT");
 });
 
 test("aceita profundidade e dimensões de outros marketplaces", () => {
@@ -116,4 +126,78 @@ test("preenche categoria, marca, peso e todas as dimensões no arquivo Shopee", 
   assert.equal(row[28], 17);
   assert.equal(row[29], 21);
   assert.equal(row[51], "Sem marca");
+});
+
+function workbookXlsxAdapter() {
+  return {
+    utils: {
+      aoa_to_sheet: (rows) => ({ rows }),
+      book_new: () => ({ SheetNames: [], Sheets: {} }),
+      book_append_sheet: (workbook, sheet, name) => {
+        workbook.SheetNames.push(name);
+        workbook.Sheets[name] = sheet;
+      },
+    },
+  };
+}
+
+test("gera workbook Shopee interno com metadados e dados sem modelo externo", () => {
+  const measured = {
+    ...listing,
+    raw_payload: {
+      ...listing.raw_payload,
+      attributes: [
+        { id: "SELLER_PACKAGE_WEIGHT", value_name: "500 g" },
+        { id: "SELLER_PACKAGE_LENGTH", value_name: "13 cm" },
+        { id: "SELLER_PACKAGE_WIDTH", value_name: "11 cm" },
+        { id: "SELLER_PACKAGE_HEIGHT", value_name: "16 cm" },
+        { id: "BRAND", name: "Marca", value_name: "3D.AFT" },
+      ],
+    },
+  };
+  const workbook = buildShopeeWorkbook([measured], {
+    categoryId: "101386",
+    preOrderDays: 3,
+  }, workbookXlsxAdapter());
+  assert.deepEqual(workbook.SheetNames, ["Modelo"]);
+  const rows = workbook.Sheets.Modelo.rows;
+  assert.equal(rows.length, 7);
+  assert.equal(rows[0][0], "ps_category|1|0");
+  assert.equal(rows[6][0], "101386");
+  assert.equal(rows[6][1], listing.title);
+  assert.equal(rows[6][26], 0.5);
+  assert.equal(rows[6][27], 13);
+  assert.equal(rows[6][28], 11);
+  assert.equal(rows[6][29], 16);
+  assert.equal(rows[6][31], "3D.AFT");
+  assert.equal(rows[6][32], 3);
+});
+
+test("usa valores manuais somente quando o anuncio nao possui embalagem", () => {
+  const workbook = buildShopeeWorkbook([listing], {
+    categoryId: "101386",
+    weight: 0.5,
+    length: 13,
+    width: 11,
+    height: 16,
+    brand: "3D.AFT",
+    preOrderDays: 3,
+  }, workbookXlsxAdapter());
+  const row = workbook.Sheets.Modelo.rows[6];
+  assert.deepEqual(row.slice(26, 33), [0.5, 13, 11, 16, "Ligado", "3D.AFT", 3]);
+});
+
+test("informa produto e campos obrigatorios ausentes antes de exportar", () => {
+  assert.deepEqual(validateShopeeExport([listing], { categoryId: "101386" }), [
+    "Kit 5 Miniaturas RPG em Resina: peso, comprimento, largura e altura",
+  ]);
+  assert.deepEqual(validateShopeeExport([listing], {
+    categoryId: "101386",
+    weight: 0.5,
+    length: 13,
+    width: 11,
+    height: 16,
+    brand: "3D.AFT",
+    preOrderDays: 3,
+  }), []);
 });
