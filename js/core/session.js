@@ -366,6 +366,7 @@ export async function enterOnlineApp(user) {
       bindSubscriptionWatcher();
     }
     render();
+    surfaceMlOauthResult();
   } catch (error) {
     showAppMessage("Falha ao carregar sua empresa", error.message, "error");
     throw error;
@@ -376,6 +377,24 @@ export async function enterOnlineApp(user) {
 // so rodava no login, entao uma aba aberta seguia operando apos vencimento.
 // So desloga em bloqueio DEFINITIVO (vencido/suspenso); erros de validacao
 // (reason:"error") nunca forcam logout, para nao expulsar por falha de rede.
+// Feedback ao voltar do OAuth do Mercado Livre (callback redireciona para
+// /?ml_connected=1#marketplace ou /?ml_error=...#marketplace). Mostra o
+// resultado e limpa a query da URL.
+function surfaceMlOauthResult() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.has("ml_connected")) {
+    showAppMessage("Mercado Livre", "Conta conectada com sucesso.", "success");
+  } else if (params.has("ml_error")) {
+    showAppMessage("Mercado Livre", `Não foi possível conectar: ${params.get("ml_error")}`, "error");
+  } else {
+    return;
+  }
+  params.delete("ml_connected");
+  params.delete("ml_error");
+  const clean = window.location.pathname + (params.toString() ? `?${params}` : "") + window.location.hash;
+  window.history.replaceState({}, "", clean);
+}
+
 function bindSubscriptionWatcher() {
   if (state.subscriptionWatcherBound) return;
   state.subscriptionWatcherBound = true;

@@ -1,11 +1,14 @@
 import {
   adminClient,
   applyCors,
+  appUrl,
   corsHeaders,
+  env,
   getMlAccountByUserId,
   importMlOrderWithRetry,
   json,
   logSync,
+  mlRedirectUri,
 } from "../_shared/marketplace.ts";
 import { adoptCachedMarketplaceDocument, archiveMarketplaceDocument, recordMarketplaceDocumentDownload, verifyMarketplaceDocument } from "../_shared/marketplace-documents.ts";
 
@@ -20,9 +23,16 @@ Deno.serve(async (req) => {
   let activeOrganizationId = "";
   try {
     const url = new URL(req.url);
+    // OAuth Mercado Livre. O callback volta do navegador (GET, SEM Bearer) e e
+    // validado pelo state; por isso e tratado antes do requireAdmin. start e
+    // disconnect exigem admin mas NAO uma conta ja conectada, entao vem antes
+    // do getMlAccountByUserId (que lancaria "Nenhuma conta conectada").
+    if (url.pathname.endsWith("/ml/callback")) return await handleMlCallback(url);
     const access = await requireAdmin(req);
     actorEmail = access.email;
     activeOrganizationId = access.organizationId;
+    if (url.pathname.endsWith("/ml/start")) return await handleMlStart(access, req);
+    if (url.pathname.endsWith("/ml/disconnect")) return await handleMlDisconnect(access);
     const marketplace = url.searchParams.get("marketplace") || "ml";
     if (marketplace !== "ml") return json({ ok: false, error: "Apenas Mercado Livre nesta etapa." }, { status: 400 });
 
@@ -213,6 +223,162 @@ async function requireAdmin(req: Request) {
     throw new Error("Apenas administrador pode gerenciar marketplaces.");
   }
   return { email, organizationId: membership.organization_id };
+}
+
+// ===================== OAuth Mercado Livre =====================
+// Fluxo:
+//  1. ml/start  (POST, admin): cria um state em marketplace_oauth_states e
+//     devolve connect_url para o app redirecionar o navegador ao ML.
+//  2. ml/callback (GET, navegador): ML volta com code+state; validamos o
+//     state, trocamos o code por tokens, salvamos a conta e redirecionamos
+//     de volta ao app.
+//  3. ml/disconnect (POST, admin): remove a conta da empresa.
+// Requer as secrets ML_CLIENT_ID/ML_CLIENT_SECRET (ja usadas no refresh) e o
+// redirect_uri (mlRedirectUri()) cadastrado IDENTICO no painel ML Developers.
+
+function oauthRedirect(rawReturn: string, params: Record<string, string>) {
+  const base = String(rawReturn || appUrl()).split("#")[0].split("?")[0].replace(/\/$/, "");
+  const query = new URLSearchParams(params).toString();
+  return new Response(null, {
+    status: 302,
+    headers: { ...corsHeaders, Location: `${base}/?${query}#marketplace` },
+  });
+}
+
+async function consumeOauthState(supabase: ReturnType<typeof adminClient>, stateHash: string) {
+  await supabase.from("marketplace_oauth_states")
+    .update({ consumed_at: new Date().toISOString() })
+    .eq("state_hash", stateHash);
+}
+
+async function handleMlStart(access: { email: string; organizationId: string }, req: Request) {
+  const body = await req.json().catch(() => ({}));
+  const appBase = appUrl().replace(/\/$/, "");
+  const requested = String(body?.return_url || "");
+  // evita open redirect: so aceita return_url do proprio app
+  const returnUrl = requested.startsWith(appBase) ? requested : `${appBase}/#marketplace`;
+  const stateHash = crypto.randomUUID();
+  const supabase = adminClient();
+  const { error } = await supabase.from("marketplace_oauth_states").insert({
+    state_hash: stateHash,
+    organization_id: access.organizationId,
+    marketplace: "Mercado Livre",
+    requested_by: access.email,
+    return_url: returnUrl,
+    expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+  });
+  if (error) throw error;
+  const connectUrl = "https://auth.mercadolibre.com.br/authorization"
+    + `?response_type=code&client_id=${encodeURIComponent(env("ML_CLIENT_ID"))}`
+    + `&redirect_uri=${encodeURIComponent(mlRedirectUri())}`
+    + `&state=${encodeURIComponent(stateHash)}`;
+  return json({ ok: true, connect_url: connectUrl });
+}
+
+async function handleMlDisconnect(access: { email: string; organizationId: string }) {
+  const supabase = adminClient();
+  const { error } = await supabase.from("marketplace_accounts")
+    .delete()
+    .eq("organization_id", access.organizationId)
+    .eq("marketplace", "Mercado Livre");
+  if (error) throw error;
+  await logSync("Mercado Livre", "oauth-disconnect", "success", "Conta Mercado Livre desconectada", {
+    organizationId: access.organizationId,
+    actorEmail: access.email,
+  }).catch(() => {});
+  return json({ ok: true });
+}
+
+async function handleMlCallback(url: URL) {
+  const supabase = adminClient();
+  const stateHash = url.searchParams.get("state") || "";
+  const code = url.searchParams.get("code") || "";
+  const oauthError = url.searchParams.get("error");
+
+  if (!stateHash) return oauthRedirect(appUrl(), { ml_error: "state_ausente" });
+  const { data: stateRow } = await supabase
+    .from("marketplace_oauth_states")
+    .select("*")
+    .eq("state_hash", stateHash)
+    .maybeSingle();
+  if (!stateRow) return oauthRedirect(appUrl(), { ml_error: "state_invalido" });
+  const returnUrl = stateRow.return_url || appUrl();
+  if (stateRow.consumed_at) return oauthRedirect(returnUrl, { ml_error: "state_ja_usado" });
+  if (new Date(stateRow.expires_at).getTime() < Date.now()) {
+    return oauthRedirect(returnUrl, { ml_error: "state_expirado" });
+  }
+  if (oauthError) {
+    await consumeOauthState(supabase, stateHash);
+    return oauthRedirect(returnUrl, { ml_error: oauthError });
+  }
+  if (!code) {
+    await consumeOauthState(supabase, stateHash);
+    return oauthRedirect(returnUrl, { ml_error: "code_ausente" });
+  }
+
+  try {
+    const tokenResponse = await fetch("https://api.mercadolibre.com/oauth/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
+      body: new URLSearchParams({
+        grant_type: "authorization_code",
+        client_id: env("ML_CLIENT_ID"),
+        client_secret: env("ML_CLIENT_SECRET"),
+        code,
+        redirect_uri: mlRedirectUri(),
+      }),
+    });
+    const token = await tokenResponse.json();
+    if (!tokenResponse.ok) throw new Error(`Falha ao trocar o code por token: ${JSON.stringify(token)}`);
+
+    const meResponse = await fetch("https://api.mercadolibre.com/users/me", {
+      headers: { Authorization: `Bearer ${token.access_token}` },
+    });
+    const me = await meResponse.json().catch(() => ({}));
+    const sellerId = String(token.user_id || me.id || "");
+
+    const record = {
+      marketplace: "Mercado Livre",
+      organization_id: stateRow.organization_id,
+      external_seller_id: sellerId,
+      seller_name: me.nickname || me.first_name || sellerId,
+      access_token: token.access_token,
+      refresh_token: token.refresh_token || null,
+      token_expires_at: new Date(Date.now() + Number(token.expires_in || 0) * 1000).toISOString(),
+      // NUNCA guardamos tokens no raw_payload (fica exposto em telas/logs).
+      raw_payload: { scope: token.scope || null, user_id: token.user_id || null, nickname: me.nickname || null },
+      connection_status: "connected",
+      connection_mode: "oauth",
+      updated_at: new Date().toISOString(),
+    };
+
+    // marketplace_accounts nao tem unique(org, marketplace): update se existir, senao insert.
+    const { data: existing } = await supabase
+      .from("marketplace_accounts")
+      .select("id")
+      .eq("organization_id", stateRow.organization_id)
+      .eq("marketplace", "Mercado Livre")
+      .order("updated_at", { ascending: false })
+      .limit(1);
+    if (existing?.[0]?.id) {
+      const { error } = await supabase.from("marketplace_accounts").update(record).eq("id", existing[0].id);
+      if (error) throw error;
+    } else {
+      const { error } = await supabase.from("marketplace_accounts").insert(record);
+      if (error) throw error;
+    }
+
+    await consumeOauthState(supabase, stateHash);
+    await logSync("Mercado Livre", "oauth-connect", "success", `Conta ${record.seller_name} conectada via OAuth`, {
+      organizationId: stateRow.organization_id,
+      actorEmail: stateRow.requested_by || "Sistema",
+      rawPayload: { seller_id: sellerId },
+    }).catch(() => {});
+    return oauthRedirect(returnUrl, { ml_connected: "1" });
+  } catch (error) {
+    await consumeOauthState(supabase, stateHash).catch(() => {});
+    return oauthRedirect(returnUrl, { ml_error: error instanceof Error ? error.message : String(error) });
+  }
 }
 
 async function getMlItemStats(itemId: string, account: Record<string, any>) {
