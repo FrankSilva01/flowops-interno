@@ -10,23 +10,28 @@
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
     Content-Security-Policy = "default-src 'self'; script-src 'self' https://unpkg.com https://cdn.jsdelivr.net https://sdk.mercadopago.com https://http2.mlstatic.com https://secure.mlstatic.com https://www.mercadopago.com.br; style-src 'self' 'unsafe-inline' https://http2.mlstatic.com https://secure.mlstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.functions.supabase.co https://api.mercadopago.com https://*.mercadopago.com https://api.mercadolibre.com https://*.mlstatic.com; frame-src https://*.mercadopago.com https://www.mercadopago.com.br https://*.mercadopago.com.br; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
 
-# Assets versionados por query string (?v=...) podem ser cacheados de forma
-# imutavel. Estas regras vem depois de "/*" para sobrescrever o Cache-Control
-# apenas nestes caminhos; os demais headers de seguranca continuam herdados.
+# Fontes/icones/imagens: conteudo estavel -> cache imutavel (maior ganho: as
+# fontes woff2 e a fonte de icones). Estas regras vem depois de "/*" para
+# sobrescrever so o Cache-Control; os headers de seguranca continuam herdados.
 [[headers]]
   for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
+# ATENCAO: os modulos ES sob /js/ sao importados SEM ?v= (ex.: import "./core/
+# state.js"), entao NAO podem ser imutaveis (congelaria o codigo apos deploy).
+# "no-cache" mantem o arquivo em cache mas revalida via ETag: 304 sem corpo
+# quando nao mudou (sem re-download de ~1MB) e atualizacao imediata no deploy.
+# Mesmo criterio para /css (evita depender de lembrar de bumpar ?v=).
 [[headers]]
   for = "/js/*"
   [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
+    Cache-Control = "public, no-cache"
 
 [[headers]]
   for = "/css/*"
   [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
+    Cache-Control = "public, no-cache"
 
 # Assets da loja publica ficam na raiz e tambem sao versionados por ?v=.
 [[headers]]
