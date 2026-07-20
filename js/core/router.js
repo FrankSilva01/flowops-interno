@@ -439,6 +439,7 @@ export function bindEvents() {
   byId("closeAppMessageBtn").addEventListener("click", closeAppMessage);
   byId("confirmAppMessageBtn").addEventListener("click", closeAppMessage);
   byId("logoutBtn").addEventListener("click", logout);
+  byId("topbarLogoutBtn")?.addEventListener("click", logout);
   byId("refreshApprovalsBtn").addEventListener("click", loadAndRenderApprovals);
   byId("refreshUsersBtn").addEventListener("click", loadAndRenderUsers);
   byId("refreshResponsiblesBtn").addEventListener("click", loadAndRenderResponsibles);

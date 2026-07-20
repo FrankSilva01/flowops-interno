@@ -138,7 +138,7 @@ export function subscribeRemote() {
     table,
     filter: `organization_id=eq.${state.organizationId}`,
   });
-  state.supabase
+  const channel = state.supabase
     .channel("printflow-3d-realtime")
     .on("postgres_changes", ownOrganizationChanges("orders"), scheduleRemoteRefresh)
     .on("postgres_changes", ownOrganizationChanges("cash_entries"), scheduleRemoteRefresh)
@@ -153,7 +153,20 @@ export function subscribeRemote() {
     .on("postgres_changes", ownOrganizationChanges("financial_settings"), scheduleRemoteRefresh)
     .on("postgres_changes", ownOrganizationChanges("commercial_suggestions"), scheduleRemoteRefresh)
     .on("postgres_changes", ownOrganizationChanges("calendar_events"), scheduleCalendarRefresh)
-    .subscribe();
+    .subscribe((status) => {
+      // Sem tratamento de status, uma queda do socket deixava o app sem updates
+      // e state.subscribed travado em true (nunca reassinava). Aqui, em erro/
+      // timeout/fechamento, liberamos e reassinamos, recarregando o que passou.
+      if (["CHANNEL_ERROR", "TIMED_OUT", "CLOSED"].includes(status)) {
+        state.subscribed = false;
+        try { state.supabase.removeChannel(channel); } catch { /* canal ja removido */ }
+        setTimeout(() => {
+          if (state.subscribed || !state.supabase) return;
+          subscribeRemote();
+          scheduleRemoteRefresh();
+        }, 2000);
+      }
+    });
 }
 
 let refreshTimer = null;

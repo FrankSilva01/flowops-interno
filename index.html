@@ -133,6 +133,7 @@
                 <button id="emailDigestBtn" type="button"><i class="ti ti-mail" aria-hidden="true"></i> Resumo e-mail</button>
                 <button id="exportBtn" type="button"><i class="ti ti-download" aria-hidden="true"></i> Exportar JSON</button>
                 <button id="refreshAppBtn" type="button"><i class="ti ti-refresh" aria-hidden="true"></i> Atualizar sistema</button>
+                <button id="topbarLogoutBtn" type="button" hidden><i class="ti ti-logout" aria-hidden="true"></i> Sair</button>
               </div>
             </div>
             <div id="topbarAvatar" class="topbar-avatar" title="">F</div>
@@ -2333,7 +2334,7 @@
           <small>Baixe o modelo selecionando a categoria dos produtos. O modelo básico não contém os atributos necessários para publicar.</small>
         </label>
         <div class="order-form-grid">
-          <label class="span-2">Código da categoria Shopee<input name="categoryId" inputmode="numeric" pattern="[0-9]+" placeholder="Ex: 101944" required /><small>Exporte juntos somente produtos da mesma categoria.</small></label>
+          <label class="span-2">Código da categoria Shopee (opcional)<input name="categoryId" inputmode="numeric" pattern="[0-9]+" placeholder="Ex: 101944" /><small>Só é exigido se o modelo tiver coluna de categoria. Exporte juntos somente produtos da mesma categoria.</small></label>
           <label>Peso padrão (kg)<input name="weight" type="number" min="0.01" step="0.001" placeholder="Fallback para item sem peso" /></label>
           <label>Comprimento padrão (cm)<input name="length" type="number" min="0.1" step="0.1" placeholder="Fallback para item sem medida" /></label>
           <label>Largura padrão (cm)<input name="width" type="number" min="0.1" step="0.1" placeholder="Fallback para item sem medida" /></label>

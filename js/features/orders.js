@@ -819,9 +819,14 @@ export async function syncOrderPaymentCash(item, previous = null) {
     }
     return;
   }
+  const existing = existingIndex >= 0 ? state.data.cash[existingIndex] : null;
+  const receivedUnchanged = previous && Number(previous.received || 0) === received;
   const cashEntry = {
     id: cashId,
-    date: new Date().toISOString().slice(0, 10),
+    // Preserva a data original do lancamento quando o valor recebido nao mudou
+    // (ex.: so editou a descricao). Sem isto, corrigir um pedido antigo movia a
+    // entrada de caixa para "hoje" e distorcia relatorios por periodo.
+    date: existing && receivedUnchanged ? existing.date : new Date().toISOString().slice(0, 10),
     type: "Entrada",
     category: "Venda",
     description: `${getOrderCode(item)} - ${item.description || item.client || "Encomenda"}`,

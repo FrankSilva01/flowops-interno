@@ -1,3 +1,5 @@
+import { roundMoney } from "../core/money.js";
+
 export function classifyProfitability(marginPct, thresholds) {
   if (marginPct < thresholds.critical) return { key: "loss", label: "Prejuízo", className: "danger-badge" };
   if (marginPct < thresholds.attention) return { key: "critical", label: "Crítico", className: "danger-badge" };
@@ -21,11 +23,11 @@ export function computeMarginBreakdown(inputs, thresholds) {
       level: classifyProfitability(0, thresholds),
     };
   }
-  const feeAmount = normalizedRevenue * (feePct / 100);
-  const taxAmount = normalizedRevenue * (taxPct / 100);
+  const feeAmount = roundMoney(normalizedRevenue * (feePct / 100));
+  const taxAmount = roundMoney(normalizedRevenue * (taxPct / 100));
   const shippingForCalc = normalizedShipping !== null ? normalizedShipping : 0;
-  const netProfit = normalizedRevenue - normalizedCost - feeAmount - normalizedFixedFee
-    - taxAmount - shippingForCalc - normalizedPackaging;
+  const netProfit = roundMoney(normalizedRevenue - normalizedCost - feeAmount - normalizedFixedFee
+    - taxAmount - shippingForCalc - normalizedPackaging);
   const marginPct = (netProfit / normalizedRevenue) * 100;
   return {
     revenue: normalizedRevenue, cost: normalizedCost, feePct, feeAmount,

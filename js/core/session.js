@@ -363,12 +363,35 @@ export async function enterOnlineApp(user) {
     if (!state.supportMode) {
       await ensureOperationalNotifications();
       subscribeRemote();
+      bindSubscriptionWatcher();
     }
     render();
   } catch (error) {
     showAppMessage("Falha ao carregar sua empresa", error.message, "error");
     throw error;
   }
+}
+
+// Revalida a assinatura periodicamente e ao voltar o foco da aba. Antes o gate
+// so rodava no login, entao uma aba aberta seguia operando apos vencimento.
+// So desloga em bloqueio DEFINITIVO (vencido/suspenso); erros de validacao
+// (reason:"error") nunca forcam logout, para nao expulsar por falha de rede.
+function bindSubscriptionWatcher() {
+  if (state.subscriptionWatcherBound) return;
+  state.subscriptionWatcherBound = true;
+  const revalidate = async () => {
+    if (document.visibilityState !== "visible" || state.supportMode || !state.organizationId) return;
+    try {
+      const status = await getSubscriptionAccessStatus();
+      if (!status.allowed && status.reason !== "error") {
+        await state.supabase.auth.signOut();
+        showLoginOverlay();
+        byId("onlineLoginError").textContent = status.message;
+      }
+    } catch { /* falha transitoria: nao desloga */ }
+  };
+  document.addEventListener("visibilitychange", revalidate);
+  setInterval(revalidate, 30 * 60 * 1000);
 }
 
 export async function chooseMembership(memberships) {
@@ -457,6 +480,8 @@ export function setSessionInfo(name, role, mode, canLogout) {
   syncMode.textContent = staging ? "Ambiente de homologacao" : mode;
   syncMode.hidden = !staging;
   byId("logoutBtn").hidden = !canLogout;
+  const topbarLogout = byId("topbarLogoutBtn");
+  if (topbarLogout) topbarLogout.hidden = !canLogout;
   const avatar = byId("topbarAvatar");
   if (avatar) {
     const words = String(name || "").trim().split(/\s+/).filter(Boolean);

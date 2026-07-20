@@ -917,17 +917,25 @@ export async function previewShopeeTemplate() {
     const schema = readShopeeTemplateSchema(sheet, window.XLSX);
     const categoryGroups = groupShopeeCategorySuggestions(selectedMarketplaceListings());
     if (categoryGroups.length > 1) throw new Error("A seleção mistura categorias. Exporte separadamente cada categoria com o modelo correspondente da Shopee.");
-    if (!schema.categorySpecific) throw new Error("Este é o modelo básico. Baixe na Shopee um modelo selecionando a categoria para incluir os atributos obrigatórios.");
     shopeeTemplateSchema = schema;
     const listings = selectedMarketplaceListings();
-    byId("shopeeRequiredAttributeFields").innerHTML = schema.requiredAttributes.map((attribute) => {
-      const values = [...new Set(listings.map((listing) => listingAttributeValue(listing, attribute.label)).filter(Boolean))];
-      const suggested = values.length === 1 ? values[0] : "";
-      return `<label>${html(attribute.label)}<input name="attribute__${encodeURIComponent(attribute.marker)}" value="${html(suggested)}" placeholder="Valor padrão para o lote" required /></label>`;
-    }).join("");
-    byId("shopeeRequiredAttributes").hidden = false;
+    // Aceita tanto o modelo basico quanto o categoria-especifico. Se o modelo
+    // tiver atributos obrigatorios de categoria, monta os campos; senao, segue
+    // com o basico (peso/medidas vem do Mercado Livre + fallback).
+    if (schema.requiredAttributes.length) {
+      byId("shopeeRequiredAttributeFields").innerHTML = schema.requiredAttributes.map((attribute) => {
+        const values = [...new Set(listings.map((listing) => listingAttributeValue(listing, attribute.label)).filter(Boolean))];
+        const suggested = values.length === 1 ? values[0] : "";
+        return `<label>${html(attribute.label)}<input name="attribute__${encodeURIComponent(attribute.marker)}" value="${html(suggested)}" placeholder="Valor padrão para o lote" required /></label>`;
+      }).join("");
+      byId("shopeeRequiredAttributes").hidden = false;
+      message.textContent = `${schema.requiredAttributes.length} atributo(s) obrigatório(s) detectado(s). Revise os valores antes de gerar.`;
+    } else {
+      byId("shopeeRequiredAttributeFields").innerHTML = "";
+      byId("shopeeRequiredAttributes").hidden = true;
+      message.textContent = "Modelo reconhecido. Peso e medidas serão preenchidos automaticamente do Mercado Livre; use os campos de fallback para itens sem essa informação.";
+    }
     byId("shopeeTemplateExportSubmit").disabled = false;
-    message.textContent = `${schema.requiredAttributes.length} atributo(s) obrigatório(s) detectado(s). Revise os valores antes de gerar.`;
   } catch (error) {
     byId("shopeeRequiredAttributes").hidden = true;
     message.textContent = error.message;
@@ -956,18 +964,18 @@ export async function exportSelectedListingsToShopee(event) {
     const workbook = window.XLSX.read(await file.arrayBuffer(), { type: "array", cellStyles: true });
     const sheet = assertShopeeTemplate(workbook);
     const schema = readShopeeTemplateSchema(sheet, window.XLSX);
-    if (!schema.categorySpecific) throw new Error("Use um modelo da Shopee gerado para a categoria dos produtos.");
     const data = new FormData(event.currentTarget);
     const attributes = Object.fromEntries([...data.entries()].filter(([key]) => key.startsWith("attribute__")).map(([key, value]) => [decodeURIComponent(key.slice(11)), String(value).trim()]));
     const options = { categoryId: data.get("categoryId"), weight: data.get("weight"), length: data.get("length"), width: data.get("width"), height: data.get("height"), preOrderDays: data.get("preOrderDays"), noGtin: data.get("noGtin") === "on", attributes };
-    if (!/^\d+$/.test(String(options.categoryId || ""))) throw new Error("Informe o código numérico da categoria Shopee.");
+    // Codigo de categoria so e obrigatorio quando o modelo tem coluna de categoria (ps_category).
+    const hasCategoryColumn = schema.columns.some((column) => column.marker === "ps_category");
+    if (hasCategoryColumn && !/^\d+$/.test(String(options.categoryId || ""))) throw new Error("Este modelo tem coluna de categoria: informe o código numérico da categoria Shopee (ex: 101944).");
     const rows = applyShopeeTemplateRows(sheet, listings, schema, options, window.XLSX);
     const shippingColumns = schema.columns.filter(({ marker }) => ["ps_weight", "ps_length", "ps_width", "ps_height"].includes(marker));
-    const incomplete = rows.flatMap((row, index) => [
-      ...schema.requiredAttributes.filter(({ column }) => !String(row[column] || "").trim()).map(({ label }) => `${listings[index].title}: ${label}`),
-      ...shippingColumns.filter(({ column }) => !(Number(row[column]) > 0)).map(({ label }) => `${listings[index].title}: ${label}`),
-    ]);
-    if (incomplete.length) throw new Error(`Ainda faltam atributos obrigatórios: ${incomplete.slice(0, 3).join("; ")}`);
+    const missingAttributes = rows.flatMap((row, index) => schema.requiredAttributes.filter(({ column }) => !String(row[column] || "").trim()).map(({ label }) => `${listings[index].title}: ${label}`));
+    const missingShipping = rows.flatMap((row, index) => shippingColumns.filter(({ column }) => !(Number(row[column]) > 0)).map(({ label }) => `${listings[index].title}: ${label}`));
+    if (missingAttributes.length) throw new Error(`Faltam atributos obrigatórios da categoria: ${missingAttributes.slice(0, 3).join("; ")}`);
+    if (missingShipping.length) throw new Error(`Sem peso/medida (não veio do Mercado Livre): ${missingShipping.slice(0, 3).join("; ")}. Preencha os campos de fallback (peso/comprimento/largura/altura) e gere novamente.`);
     const output = window.XLSX.write(workbook, { bookType: "xlsx", type: "array", compression: true, cellStyles: true });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(new Blob([output], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
@@ -1529,8 +1537,20 @@ export async function connectMercadoLivre() {
       }),
     });
     const payload = await response.json();
-    if (!response.ok || !payload.connect_url) throw new Error(payload.error || "Nao foi possivel iniciar a conexao.");
-    window.location.href = payload.connect_url;
+    // Fluxo OAuth interativo (quando implementado no backend): redireciona.
+    if (payload.connect_url) { window.location.href = payload.connect_url; return; }
+    if (!response.ok) throw new Error(payload.error || "Nao foi possivel iniciar a conexao.");
+    // O backend atual nao faz OAuth interativo: uma resposta ok SEM connect_url
+    // significa que a conta ja esta conectada e a sincronizacao foi executada.
+    // Antes isso disparava um erro falso mesmo com o sync funcionando.
+    const imported = Number(payload.imported || 0);
+    const listingCount = Number(payload.listing_count || 0);
+    showAppMessage(
+      "Mercado Livre",
+      `Conta já conectada. Sincronização concluída${imported ? ` — ${imported} pedido(s)` : ""}${listingCount ? `, ${listingCount} anúncio(s)` : ""}.`,
+      "success",
+    );
+    await loadAndRenderMarketplaces();
   } catch (error) {
     showAppMessage("Conexão Mercado Livre", `Não consegui iniciar a conexão: ${error.message}`, "error");
   }

@@ -118,12 +118,18 @@ export function nextId(prefix, rows) {
      state.organizationId.replace(/-/g, "").slice(0, 6).toUpperCase()
     : "";
   const base = tenantCode ? `${prefix}-${tenantCode}` : prefix;
-  const pattern = new RegExp(`^${base}-(\\d+)$`);
+  // Aceita ids antigos (sem sufixo) e novos (com sufixo) no calculo do maximo,
+  // mantendo o numero sequencial coerente/legivel.
+  const pattern = new RegExp(`^${base}-(\\d+)(?:-[0-9a-z]+)?$`);
   const max = rows.reduce((value, row) => {
     const match = String(row.id || "").match(pattern);
     return Math.max(value, match ? Number(match[1]) : 0);
   }, 0);
-  return `${base}-${String(max + 1).padStart(3, "0")}`;
+  // Sufixo aleatorio garante unicidade da PK mesmo com dois usuarios gerando o
+  // mesmo sequencial ao mesmo tempo (o upsert deixa de sobrescrever o registro
+  // do outro). Ex.: ENC-018-a3f2 / ENC-ABC123-018-a3f2.
+  const suffix = (globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2)).replace(/-/g, "").slice(0, 4);
+  return `${base}-${String(max + 1).padStart(3, "0")}-${suffix}`;
 }
 
 export function sum(rows, field) {

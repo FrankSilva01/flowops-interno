@@ -165,6 +165,7 @@ export const state = {
   // banco do tenant caso o carregamento inicial falhe.
   remoteLoaded: false,
   subscribed: false,
+  subscriptionWatcherBound: false,
   activeUserName: "Usuario local",
   activeUserEmail: "",
   activeUserRoleName: "",

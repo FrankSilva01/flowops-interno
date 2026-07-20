@@ -12,8 +12,8 @@ export async function getSubscriptionAccessStatus() {
       .select("status,trial_end,current_period_end,next_payment_at,grace_ends_at,plan_code,metadata")
       .eq("organization_id", state.organizationId)
       .maybeSingle();
-    if (error) return { allowed: false, message: "Nao foi possivel validar a assinatura da empresa." };
-    if (!subscription) return { allowed: false, message: "Assinatura da empresa nao encontrada." };
+    if (error) return { allowed: false, message: "Nao foi possivel validar a assinatura da empresa.", reason: "error" };
+    if (!subscription) return { allowed: false, message: "Assinatura da empresa nao encontrada.", reason: "error" };
     const status = String(subscription.status || "").toLowerCase();
     if (subscription.plan_code === "free" || status === "free") return { allowed: true };
     const now = Date.now();
@@ -51,7 +51,7 @@ export async function getSubscriptionAccessStatus() {
       message: "A assinatura desta empresa esta suspensa ou pendente. Regularize em Minha Assinatura para reativar o acesso.",
     };
   } catch {
-    return { allowed: false, message: "Nao foi possivel validar a assinatura da empresa." };
+    return { allowed: false, message: "Nao foi possivel validar a assinatura da empresa.", reason: "error" };
   }
 }
 
@@ -303,12 +303,24 @@ export function renderSubscriptionPlanOptions(currentPlan) {
 export async function requestPlanChange(planCode) {
   const targetPlan = state.subscriptionPlans.find((plan) => plan.code === planCode);
   const currentPlan = state.subscriptionPlans.find((plan) => plan.code === state.subscription?.plan_code);
+  const message = byId("subscriptionChangeMessage");
+  // Enterprise e "sob consulta" (preco 0): nunca e upgrade/downgrade por preco.
+  // Desvia para contato comercial ANTES do calculo de downgrade, senao o
+  // preco 0 < preco atual jogava o usuario no fluxo de desativacao de usuarios.
+  const isEnterprise = planCode === "enterprise"
+    || (targetPlan && !Number(targetPlan.price_monthly) && Number(targetPlan?.limits?.users || 0) === 0);
+  if (isEnterprise) {
+    if (message) {
+      message.textContent = "Plano Enterprise é sob consulta. Fale com nosso time comercial pelo suporte para contratar.";
+      message.className = "form-message";
+    }
+    return;
+  }
   const isDowngrade = Number(targetPlan?.price_monthly || 0) < Number(currentPlan?.price_monthly || 0);
   if (isDowngrade) {
     openDowngradeDialog(targetPlan);
     return;
   }
-  const message = byId("subscriptionChangeMessage");
   message.textContent = "Validando alteração...";
   message.className = "form-message";
   try {

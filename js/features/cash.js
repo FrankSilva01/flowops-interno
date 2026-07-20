@@ -1,4 +1,5 @@
 import { state, money, saveData } from "../core/state.js";
+import { roundMoney } from "../core/money.js";
 import { byId, html, formatDate, nextId, number, filterRows, renderOperationalSummary } from "../core/dom.js";
 import { bindActions, render } from "../core/router.js";
 import { ensureCanEdit } from "../core/permissions.js";
@@ -7,9 +8,9 @@ import { persist } from "../data/remote.js";
 export function renderCash() {
   let running = 0;
   const rows = filterCash(filterRows([...state.data.cash].sort((a, b) => a.date.localeCompare(b.date)), ["description", "category", "type"]));
-  const income = rows.reduce((sum, item) => sum + Number(item.income || 0), 0);
-  const expense = rows.reduce((sum, item) => sum + Number(item.expense || 0), 0);
-  const receivable = state.data.orders.reduce((sum, item) => sum + Math.max(0, Number(item.charged || 0) - Number(item.received || 0)), 0);
+  const income = roundMoney(rows.reduce((sum, item) => sum + Number(item.income || 0), 0));
+  const expense = roundMoney(rows.reduce((sum, item) => sum + Number(item.expense || 0), 0));
+  const receivable = roundMoney(state.data.orders.reduce((sum, item) => sum + Math.max(0, Number(item.charged || 0) - Number(item.received || 0)), 0));
   renderOperationalSummary("cashView", "cashPageSummary", [
     ["Saldo atual", money.format(income - expense), "resultado acumulado", "teal"],
     ["Entradas", money.format(income), "recebimentos e vendas", "green"],
@@ -18,7 +19,7 @@ export function renderCash() {
     ["Lucro líquido", money.format(income - expense), "resultado do período", "blue"],
   ]);
   byId("cashTable").innerHTML = rows.map((entry) => {
-    running += Number(entry.income || 0) - Number(entry.expense || 0);
+    running = roundMoney(running + Number(entry.income || 0) - Number(entry.expense || 0));
     return `
       <tr>
         <td>${formatDate(entry.date)}</td>
