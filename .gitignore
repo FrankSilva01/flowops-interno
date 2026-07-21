@@ -1,4 +1,5 @@
 node_modules/
+.superpowers/
 playwright-report/
 .playwright-cli/
 test-results/
