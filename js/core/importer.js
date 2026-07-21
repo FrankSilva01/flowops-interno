@@ -138,13 +138,33 @@ export function normalizeDate(value) {
   return "";
 }
 
+let xlsxLoadPromise = null;
+
 export function loadXlsx() {
   if (window.XLSX) return Promise.resolve();
-  return new Promise((resolve, reject) => {
+  if (xlsxLoadPromise) return xlsxLoadPromise;
+  xlsxLoadPromise = new Promise((resolve, reject) => {
     const script = document.createElement("script");
-    script.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
-    script.onload = resolve;
-    script.onerror = () => reject(new Error("Não foi possível carregar o leitor de XLSX."));
+    script.src = "./assets/vendor/xlsx.full.min.js";
+    const timeout = setTimeout(() => {
+      xlsxLoadPromise = null;
+      reject(new Error("O gerador de planilhas demorou para carregar. Atualize a página e tente novamente."));
+    }, 10000);
+    script.onload = () => {
+      clearTimeout(timeout);
+      if (!window.XLSX) {
+        xlsxLoadPromise = null;
+        reject(new Error("O gerador de planilhas local não foi inicializado."));
+        return;
+      }
+      resolve();
+    };
+    script.onerror = () => {
+      clearTimeout(timeout);
+      xlsxLoadPromise = null;
+      reject(new Error("Não foi possível carregar o gerador de planilhas local."));
+    };
     document.head.appendChild(script);
   });
+  return xlsxLoadPromise;
 }
