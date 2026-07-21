@@ -996,20 +996,25 @@
         </section>
 
         <section id="marketplaceView" class="view">
-          <div class="view-tabs marketplace-tab-groups" role="tablist" aria-label="Marketplace">
-            <div class="marketplace-tab-group">
-              <span>Operação</span>
+          <div class="view-tabs marketplace-area-tabs" role="tablist" aria-label="Áreas do Marketplace">
+            <button class="view-tab active" type="button" data-marketplace-area="operation"><i class="ti ti-building-store" aria-hidden="true"></i>Operação</button>
+            <button class="view-tab" type="button" data-marketplace-area="catalog"><i class="ti ti-packages" aria-hidden="true"></i>Catálogo</button>
+            <button class="view-tab" type="button" data-marketplace-area="performance"><i class="ti ti-chart-line" aria-hidden="true"></i>Performance</button>
+            <button class="view-tab" type="button" data-marketplace-area="settings"><i class="ti ti-settings" aria-hidden="true"></i>Configurações</button>
+          </div>
+          <div class="marketplace-secondary-tabs" aria-label="Visões do Marketplace">
+            <div data-marketplace-area-views="operation">
               <button class="view-tab active" type="button" data-marketplace-view="listings">Anúncios</button>
               <button class="view-tab" type="button" data-marketplace-view="sales">Vendas</button>
               <button class="view-tab" type="button" data-marketplace-view="ml-questions">Perguntas</button>
-              <button class="view-tab" type="button" data-marketplace-view="storefront">Vitrine</button>
             </div>
-            <div class="marketplace-tab-group">
-              <span>Inteligência</span>
+            <div data-marketplace-area-views="catalog" hidden>
+              <button class="view-tab" type="button" data-marketplace-view="storefront">Produtos e vitrine</button>
+            </div>
+            <div data-marketplace-area-views="performance" hidden>
               <button class="view-tab" type="button" data-marketplace-view="intelligence">Diagnóstico</button>
             </div>
-            <div class="marketplace-tab-group">
-              <span>Configurações</span>
+            <div data-marketplace-area-views="settings" hidden>
               <button class="view-tab" type="button" data-marketplace-view="integrations">Integrações</button>
               <button class="view-tab" type="button" data-marketplace-view="api-logs">Logs</button>
               <button class="view-tab" type="button" data-marketplace-view="backup">Backup</button>

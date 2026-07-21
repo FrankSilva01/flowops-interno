@@ -49,7 +49,7 @@ import {
   renderMarketplaces, loadAndRenderMarketplaces, connectMercadoLivre, disconnectMercadoLivre,
   configureShopee, connectAmazon, syncAmazon, syncMercadoLivre, saveMarketplaceListing,
   saveStorefrontProduct, updateStorefrontTargetFields, importSelectedListingToStorefrontForm,
-  loadMlCategoryFields, bindStorefrontImageInputs, bindStorefrontDescriptionEditor, bindMlCategorySelect, setMarketplaceView,
+  loadMlCategoryFields, bindStorefrontImageInputs, bindStorefrontDescriptionEditor, bindMlCategorySelect, setMarketplaceView, setMarketplaceArea,
   applyMarketplaceLogRange, showMarketplaceStats, fillStorefrontFormFromListing,
   openMarketplaceEdit, viewMarketplaceOrder, createMarketplaceOrder, downloadMarketplaceDocument,
   openMarketplaceMigration, prepareMarketplaceMigration, refreshMarketplaceMigrationPreview,
@@ -481,6 +481,9 @@ export function bindEvents() {
   }
   document.querySelectorAll("[data-marketplace-view]").forEach((button) => {
     button.addEventListener("click", () => setMarketplaceView(button.dataset.marketplaceView));
+  });
+  document.querySelectorAll("[data-marketplace-area]").forEach((button) => {
+    button.addEventListener("click", () => setMarketplaceArea(button.dataset.marketplaceArea));
   });
   document.querySelectorAll("[data-close-dialog]").forEach((button) => {
     button.addEventListener("click", () => byId(button.dataset.closeDialog).close());

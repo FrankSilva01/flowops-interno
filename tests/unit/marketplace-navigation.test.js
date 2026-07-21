@@ -1,0 +1,26 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import {
+  MARKETPLACE_AREAS,
+  defaultMarketplaceViewForArea,
+  marketplaceAreaForView,
+} from "../../js/features/marketplace-navigation.js";
+
+test("agrupa todas as visoes do Marketplace em quatro areas", () => {
+  assert.deepEqual(Object.keys(MARKETPLACE_AREAS), ["operation", "catalog", "performance", "settings"]);
+  assert.equal(marketplaceAreaForView("listings"), "operation");
+  assert.equal(marketplaceAreaForView("sales"), "operation");
+  assert.equal(marketplaceAreaForView("ml-questions"), "operation");
+  assert.equal(marketplaceAreaForView("storefront"), "catalog");
+  assert.equal(marketplaceAreaForView("intelligence"), "performance");
+  assert.equal(marketplaceAreaForView("integrations"), "settings");
+  assert.equal(marketplaceAreaForView("api-logs"), "settings");
+  assert.equal(marketplaceAreaForView("backup"), "settings");
+});
+
+test("cada area possui uma visao inicial estavel", () => {
+  assert.equal(defaultMarketplaceViewForArea("operation"), "listings");
+  assert.equal(defaultMarketplaceViewForArea("catalog"), "storefront");
+  assert.equal(defaultMarketplaceViewForArea("performance"), "intelligence");
+  assert.equal(defaultMarketplaceViewForArea("settings"), "integrations");
+});

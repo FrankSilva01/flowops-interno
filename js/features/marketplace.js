@@ -22,6 +22,7 @@ import {
   validateShopeeListing,
 } from "./shopee-template-export.js";
 import { groupShopeeCategorySuggestions } from "./shopee-category-mapping.js";
+import { defaultMarketplaceViewForArea, marketplaceAreaForView } from "./marketplace-navigation.js";
 import {
   buildMarketplaceMigration,
   buildMarketplaceMigrationBatch,
@@ -1575,6 +1576,15 @@ export function setMarketplaceView(view) {
   document.querySelectorAll("[data-marketplace-view]").forEach((button) => {
     button.classList.toggle("active", button.dataset.marketplaceView === state.marketplaceView);
   });
+  const area = marketplaceAreaForView(state.marketplaceView);
+  document.querySelectorAll("[data-marketplace-area]").forEach((button) => {
+    const active = button.dataset.marketplaceArea === area;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-selected", String(active));
+  });
+  document.querySelectorAll("[data-marketplace-area-views]").forEach((group) => {
+    group.hidden = group.dataset.marketplaceAreaViews !== area;
+  });
   byId("marketplaceListingsView").classList.toggle("active", state.marketplaceView === "listings");
   byId("marketplaceStorefrontView").classList.toggle("active", state.marketplaceView === "storefront");
   byId("marketplaceSalesView").classList.toggle("active", state.marketplaceView === "sales");
@@ -1584,6 +1594,10 @@ export function setMarketplaceView(view) {
   byId("marketplaceBackupView").classList.toggle("active", state.marketplaceView === "backup");
   byId("marketplaceMLQuestionsView").classList.toggle("active", state.marketplaceView === "ml-questions");
 
+}
+
+export function setMarketplaceArea(area) {
+  setMarketplaceView(defaultMarketplaceViewForArea(area));
 }
 
 export function applyMarketplaceLogRange() {
