@@ -20,9 +20,9 @@
     <link rel="preconnect" href="https://api.mercadopago.com" />
     <script src="./theme-init.js?v=200"></script>
     <link rel="stylesheet" href="./assets/tabler-icons/tabler-icons.min.css?v=200" />
-    <link rel="stylesheet" href="./css/flowops.css?v=263" />
+    <link rel="stylesheet" href="./css/flowops.css?v=264" />
     <script src="./supabase-config.js?v=200" defer></script>
-    <script type="module" src="./js/app.js?v=267"></script>
+    <script type="module" src="./js/app.js?v=268"></script>
   </head>
   <body>
     <main id="appView" class="app-shell" hidden>
@@ -1034,13 +1034,23 @@
             <div class="panel-head">
               <h3>Anúncios sincronizados</h3>
               <div class="inline-actions">
-                <button id="openMarketplaceFileImportBtn" class="secondary-btn" type="button" data-action="marketplace-import-file">Importar arquivo</button>
-                <button id="openBulkMarketplaceMigrationBtn" class="secondary-btn" type="button" data-action="marketplace-migrate-bulk" disabled>Replicar selecionados</button>
+                <button id="syncMercadoLivreBtn" class="secondary-btn" type="button"><i class="ti ti-refresh" aria-hidden="true"></i> Sincronizar</button>
+                <details id="marketplaceMoreActions" class="marketplace-more-actions">
+                  <summary class="secondary-btn"><i class="ti ti-dots" aria-hidden="true"></i> Mais ações</summary>
+                  <div class="marketplace-actions-menu">
+                    <button id="openMarketplaceFileImportBtn" type="button" data-action="marketplace-import-file" data-marketplace-overflow-action><i class="ti ti-file-import" aria-hidden="true"></i> Importar arquivo</button>
+                    <button id="exportListingsBtn" type="button" data-action="marketplace-export-csv" data-marketplace-overflow-action><i class="ti ti-file-export" aria-hidden="true"></i> Exportar CSV</button>
+                    <button id="refreshMarketplacesBtn" type="button" data-marketplace-overflow-action><i class="ti ti-reload" aria-hidden="true"></i> Atualizar dados</button>
+                  </div>
+                </details>
+                <button id="openProductDialogBtn" class="primary-btn" type="button" data-action="open-product-dialog"><i class="ti ti-plus" aria-hidden="true"></i> Cadastrar produto</button>
+              </div>
+            </div>
+            <div id="marketplaceBulkActions" class="marketplace-bulk-actions" hidden>
+              <strong><span id="marketplaceBulkSelectionCount">0</span> selecionado(s)</strong>
+              <div class="inline-actions">
+                <button id="openBulkMarketplaceMigrationBtn" class="secondary-btn" type="button" data-action="marketplace-migrate-bulk" disabled>Replicar</button>
                 <button id="exportShopeeTemplateBtn" class="secondary-btn" type="button" data-action="marketplace-export-shopee" disabled><i class="ti ti-file-spreadsheet" aria-hidden="true"></i> Exportar Shopee</button>
-                <button id="openProductDialogBtn" class="secondary-btn" type="button" data-action="open-product-dialog">Cadastrar produto</button>
-                <button id="exportListingsBtn" class="secondary-btn" type="button" data-action="marketplace-export-csv">Exportar</button>
-                <button id="refreshMarketplacesBtn" class="secondary-btn" type="button">Atualizar</button>
-                <button id="syncMercadoLivreBtn" class="primary-btn" type="button">Sincronizar ML</button>
               </div>
             </div>
             <div id="marketplaceStatus" class="marketplace-status"></div>
@@ -2338,15 +2348,26 @@
         <div class="workflow-callout"><i class="ti ti-file-spreadsheet" aria-hidden="true"></i><div><strong id="shopeeExportSelectionCount">0 anúncios selecionados</strong><small>Título, preço, estoque, SKU, descrição e imagens serão preenchidos automaticamente.</small></div></div>
         <div class="order-form-grid">
           <label class="span-2">Código da categoria Shopee<input name="categoryId" inputmode="numeric" pattern="[0-9]+" placeholder="Ex: 101944" required /><small>Exporte juntos somente produtos da mesma categoria.</small></label>
-          <label>Peso padrão (kg)<input name="weight" type="number" min="0.01" step="0.001" placeholder="Fallback para item sem peso" /></label>
-          <label>Comprimento padrão (cm)<input name="length" type="number" min="0.1" step="0.1" placeholder="Fallback para item sem medida" /></label>
-          <label>Largura padrão (cm)<input name="width" type="number" min="0.1" step="0.1" placeholder="Fallback para item sem medida" /></label>
-          <label>Altura padrão (cm)<input name="height" type="number" min="0.1" step="0.1" placeholder="Fallback para item sem medida" /></label>
           <label>Marca padrão<input name="brand" value="3D.AFT" placeholder="Ex: 3D.AFT ou Sem marca" /></label>
           <label>Prazo de postagem (dias)<input name="preOrderDays" type="number" min="1" max="30" step="1" value="3" required /></label>
           <label class="span-2 checkbox-field"><input name="noGtin" type="checkbox" checked required /> Confirmo que os produtos deste lote não possuem GTIN (EAN)</label>
         </div>
-        <div id="shopeeTemplateExportSummary" class="drawer-field-list"></div>
+        <details id="shopeeFallbackFields" class="shopee-fallback-fields">
+          <summary>Preencher dados ausentes <span id="shopeeMissingPackageCount">0 item(ns)</span></summary>
+          <p class="form-hint">Estes valores são usados apenas quando o anúncio não possui peso ou medidas.</p>
+          <div class="order-form-grid">
+            <label>Peso padrão (kg)<input name="weight" type="number" min="0.01" step="0.001" placeholder="Ex: 0,5" /></label>
+            <label>Comprimento padrão (cm)<input name="length" type="number" min="0.1" step="0.1" placeholder="Ex: 13" /></label>
+            <label>Largura padrão (cm)<input name="width" type="number" min="0.1" step="0.1" placeholder="Ex: 13" /></label>
+            <label>Altura padrão (cm)<input name="height" type="number" min="0.1" step="0.1" placeholder="Ex: 16" /></label>
+          </div>
+        </details>
+        <div id="shopeeTemplateExportSummary" class="shopee-export-summary-grid">
+          <div><span>Total</span><strong id="shopeeSummaryTotal">0</strong></div>
+          <div><span>Prontos</span><strong id="shopeeSummaryReady">0</strong></div>
+          <div><span>Pendências</span><strong id="shopeeSummaryIssues">0</strong></div>
+        </div>
+        <div id="shopeeTemplateCategorySummary" class="shopee-category-summary"></div>
         <p id="shopeeTemplateExportMessage" class="form-error" role="alert"></p>
         <div class="order-form-actions"><button class="secondary-btn" type="button" data-close-dialog="shopeeTemplateExportDialog">Cancelar</button><button id="shopeeTemplateExportSubmit" class="primary-btn" type="submit">Gerar planilha Shopee</button></div>
       </form>

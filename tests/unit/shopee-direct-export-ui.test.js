@@ -11,6 +11,9 @@ test("exportacao Shopee nao exige upload de modelo", () => {
   assert.ok(dialog);
   assert.doesNotMatch(dialog, /type="file"|name="template"/);
   assert.match(dialog, /name="brand"/);
+  assert.match(dialog, /id="shopeeFallbackFields"/);
+  assert.match(dialog, /id="shopeeTemplateCategorySummary"/);
+  assert.match(dialog, /shopee-export-summary-grid/);
   assert.match(dialog, /Gerar planilha Shopee/);
 });
 

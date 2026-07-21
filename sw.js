@@ -1,4 +1,4 @@
-const CACHE_NAME = "flowops-v59";
+const CACHE_NAME = "flowops-v60";
 const STATIC_ASSETS = [
   "/",
   "/index.html",

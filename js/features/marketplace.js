@@ -871,6 +871,10 @@ function selectedMarketplaceListings() {
 function updateMarketplaceMigrationSelectionUi() {
   const button = byId("openBulkMarketplaceMigrationBtn");
   const count = selectedMarketplaceMigrations.size;
+  const bulkActions = byId("marketplaceBulkActions");
+  const selectionCount = byId("marketplaceBulkSelectionCount");
+  if (bulkActions) bulkActions.hidden = count === 0;
+  if (selectionCount) selectionCount.textContent = String(count);
   if (button) {
     button.disabled = count === 0;
     button.textContent = count ? `Replicar selecionados (${count})` : "Replicar selecionados";
@@ -896,9 +900,13 @@ export function openShopeeTemplateExport() {
   if (categoryGroups.length === 1 && categoryGroups[0].id) form.elements.categoryId.value = categoryGroups[0].id;
   byId("shopeeTemplateExportSubmit").disabled = listings.length === invalid.length;
   byId("shopeeExportSelectionCount").textContent = `${listings.length} anúncio(s) selecionado(s)`;
-  byId("shopeeTemplateExportSummary").innerHTML = `<div class="drawer-field-row"><span>Prontos para exportar</span><strong>${listings.length - invalid.length}</strong></div><div class="drawer-field-row"><span>Com pendências</span><strong>${invalid.length}</strong></div>`;
+  byId("shopeeSummaryTotal").textContent = String(listings.length);
+  byId("shopeeSummaryReady").textContent = String(listings.length - invalid.length);
+  byId("shopeeSummaryIssues").textContent = String(invalid.length);
+  byId("shopeeMissingPackageCount").textContent = `${missingPackageData.length} item(ns)`;
+  byId("shopeeFallbackFields").open = missingPackageData.length > 0;
   byId("shopeeTemplateExportMessage").textContent = invalid.length ? `${invalid.length} anúncio(s) não serão exportados: complete título, preço e pelo menos 3 imagens.` : "";
-  byId("shopeeTemplateExportSummary").insertAdjacentHTML("beforeend", `<div class="drawer-field-row"><span>Sem peso ou medidas completas</span><strong>${missingPackageData.length}</strong></div>${categoryGroups.map((group) => `<div class="drawer-field-row"><span>${html(group.path)}</span><strong>${group.count}</strong></div>`).join("")}`);
+  byId("shopeeTemplateCategorySummary").innerHTML = categoryGroups.map((group) => `<span>${html(group.path)} <strong>${group.count}</strong></span>`).join("");
   if (categoryGroups.length > 1) {
     byId("shopeeTemplateExportMessage").textContent += ` A seleção possui ${categoryGroups.length} categorias sugeridas; gere uma planilha por categoria usando o modelo correspondente da Shopee.`;
   }
@@ -918,6 +926,7 @@ export async function exportSelectedListingsToShopee(event) {
     const categoryGroups = groupShopeeCategorySuggestions(listings);
     if (categoryGroups.length > 1) throw new Error("A seleção mistura categorias. Gere uma planilha por categoria.");
     message.textContent = "Gerando planilha...";
+    byId("shopeeTemplateExportSubmit").disabled = true;
     await loadXlsx();
     const data = new FormData(event.currentTarget);
     const options = {
@@ -943,7 +952,12 @@ export async function exportSelectedListingsToShopee(event) {
     byId("shopeeTemplateExportDialog").close();
     flashActionMessage(`Planilha Shopee gerada com ${listings.length} anúncio(s).`);
   } catch (error) {
-    message.textContent = `Não foi possível gerar a planilha: ${error.message}`;
+    const loaderFailure = /gerador|carregar|inicializado/i.test(String(error.message || ""));
+    message.textContent = loaderFailure
+      ? `Falha ao carregar o gerador de planilhas: ${error.message}`
+      : `Não foi possível gerar a planilha: ${error.message}`;
+  } finally {
+    byId("shopeeTemplateExportSubmit").disabled = false;
   }
 }
 

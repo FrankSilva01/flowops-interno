@@ -6882,6 +6882,196 @@ button.attention-item:hover {
   border-color: var(--danger);
 }
 
+/* Marketplace: navegacao orientada por fluxo e acoes contextuais */
+.marketplace-area-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  overflow: visible;
+}
+
+.marketplace-area-tabs .view-tab {
+  justify-content: center;
+  gap: 7px;
+  min-height: 42px;
+}
+
+.marketplace-secondary-tabs {
+  display: flex;
+  min-height: 38px;
+  padding: 7px 0 9px;
+  border-bottom: 1px solid var(--line);
+}
+
+.marketplace-secondary-tabs > div {
+  display: flex;
+  gap: 5px;
+}
+
+.marketplace-secondary-tabs > div[hidden] {
+  display: none;
+}
+
+.marketplace-secondary-tabs .view-tab {
+  min-height: 32px;
+  padding: 6px 11px;
+  border-radius: 6px;
+}
+
+.marketplace-more-actions {
+  position: relative;
+}
+
+.marketplace-more-actions > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.marketplace-more-actions > summary::-webkit-details-marker {
+  display: none;
+}
+
+.marketplace-actions-menu {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 6px);
+  right: 0;
+  display: grid;
+  min-width: 210px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.marketplace-actions-menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+}
+
+.marketplace-actions-menu button:hover {
+  background: var(--soft);
+}
+
+.marketplace-bulk-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 0;
+  padding: 9px 11px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line));
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--accent) 8%, var(--panel));
+}
+
+.marketplace-bulk-actions[hidden] {
+  display: none;
+}
+
+.shopee-fallback-fields {
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel);
+}
+
+.shopee-fallback-fields > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 12px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.shopee-fallback-fields > summary span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.shopee-fallback-fields > p,
+.shopee-fallback-fields > .order-form-grid {
+  margin: 0 12px 12px;
+}
+
+.shopee-export-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.shopee-export-summary-grid > div {
+  display: grid;
+  gap: 3px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--soft);
+}
+
+.shopee-export-summary-grid span,
+.shopee-category-summary {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.shopee-export-summary-grid strong {
+  color: var(--text);
+  font-size: 20px;
+}
+
+.shopee-category-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.shopee-category-summary span {
+  padding: 5px 7px;
+  border-radius: 5px;
+  background: var(--soft);
+}
+
+@media (max-width: 760px) {
+  .marketplace-area-tabs {
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .marketplace-area-tabs .view-tab {
+    flex: 0 0 auto;
+    min-width: 130px;
+  }
+
+  .marketplace-secondary-tabs {
+    overflow-x: auto;
+  }
+
+  .marketplace-bulk-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .shopee-export-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Inteligencia Comercial - tabela de rentabilidade por anuncio */
 
 #intelligenceAnalysisSection {

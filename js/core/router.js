@@ -82,7 +82,7 @@ import {
   showCalculatorSuggestion, getSuggestionForListing, syncFeeCalculatorFull,
 } from "../features/marketplace-analytics.js";
 
-const APP_VERSION = "261";
+const APP_VERSION = "262";
 
 async function refreshAppShell() {
   showAppMessage("Atualizando sistema", "Limpando cache local e carregando a versão mais recente.", "info");
@@ -336,12 +336,15 @@ export function bindEvents() {
       byId("topbarMoreMenu").hidden = true;
       byId("topbarMoreBtn")?.setAttribute("aria-expanded", "false");
     }
+    const marketplaceMenu = event.target.closest("#marketplaceMoreActions");
+    if (!marketplaceMenu && byId("marketplaceMoreActions")) byId("marketplaceMoreActions").open = false;
   });
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
     byId("notificationDropdown").hidden = true;
     byId("dashboardCustomizePanel").hidden = true;
     byId("topbarMoreMenu").hidden = true;
+    if (byId("marketplaceMoreActions")) byId("marketplaceMoreActions").open = false;
     closeOrderDrawer();
     closeListingDrawer();
   });
@@ -352,6 +355,9 @@ export function bindEvents() {
     byId("topbarMoreBtn").setAttribute("aria-expanded", String(willOpen));
   });
   document.addEventListener("click", async (event) => {
+    if (event.target.closest("[data-marketplace-overflow-action]") && byId("marketplaceMoreActions")) {
+      byId("marketplaceMoreActions").open = false;
+    }
     const planButton = event.target.closest("[data-request-plan]");
     if (planButton) await requestPlanChange(planButton.dataset.requestPlan);
     const paymentButton = event.target.closest("[data-payment-action]");
