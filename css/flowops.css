@@ -6925,7 +6925,11 @@ button.attention-item:hover {
 .marketplace-more-actions > summary {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
+  box-sizing: border-box;
+  min-height: 40px;
+  padding: 0 12px;
   list-style: none;
   cursor: pointer;
 }

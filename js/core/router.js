@@ -355,6 +355,16 @@ export function bindEvents() {
     byId("topbarMoreBtn").setAttribute("aria-expanded", String(willOpen));
   });
   document.addEventListener("click", async (event) => {
+    const marketplaceAreaButton = event.target.closest("[data-marketplace-area]");
+    if (marketplaceAreaButton) {
+      setMarketplaceArea(marketplaceAreaButton.dataset.marketplaceArea);
+      return;
+    }
+    const marketplaceViewButton = event.target.closest("[data-marketplace-view]");
+    if (marketplaceViewButton) {
+      setMarketplaceView(marketplaceViewButton.dataset.marketplaceView);
+      return;
+    }
     if (event.target.closest("[data-marketplace-overflow-action]") && byId("marketplaceMoreActions")) {
       byId("marketplaceMoreActions").open = false;
     }
@@ -485,12 +495,6 @@ export function bindEvents() {
   } catch (e) {
     console.error("Error calling bindMlCategorySelect:", e);
   }
-  document.querySelectorAll("[data-marketplace-view]").forEach((button) => {
-    button.addEventListener("click", () => setMarketplaceView(button.dataset.marketplaceView));
-  });
-  document.querySelectorAll("[data-marketplace-area]").forEach((button) => {
-    button.addEventListener("click", () => setMarketplaceArea(button.dataset.marketplaceArea));
-  });
   document.querySelectorAll("[data-close-dialog]").forEach((button) => {
     button.addEventListener("click", () => byId(button.dataset.closeDialog).close());
   });
