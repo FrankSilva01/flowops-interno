@@ -13,6 +13,7 @@ import { renderLineChart } from "../core/charts.js";
 import { marketplaceRequest } from "./marketplace.js";
 import { PERFORMANCE_SECTIONS, performanceSectionForKey } from "./marketplace-navigation.js";
 import { buildMarketplacePerformanceSnapshot } from "./marketplace-performance-model.js";
+import { marketplaceRevenueForPeriod } from "./report-marketplace-data.js";
 import {
   hasCommercialIntelligenceAccess, getListingProfitability, getFinancialSettings,
   computeMarginBreakdown, openPriceCalculatorForListing, renderCommercialIntelligence,
@@ -256,30 +257,7 @@ export function computeIntentScore(analytics) {
   };
 }
 
-function marketplaceSalesRevenueByListing(listings) {
-  const listingKeys = new Set(listings.map((listing) => `${listing.marketplace}:${listing.external_id}`));
-  const revenueByListing = new Map();
-  let hasCoverage = false;
-
-  state.marketplacePerformanceSales.forEach((sale) => {
-    const items = sale.raw_payload?.order_items;
-    if (!Array.isArray(items)) return;
-    items.forEach((item) => {
-      const key = `${sale.marketplace}:${item?.item?.id ?? ""}`;
-      if (!listingKeys.has(key)) return;
-      const unitPrice = Number(item.unit_price ?? item.full_unit_price);
-      const quantity = Number(item.quantity ?? 1);
-      if (!Number.isFinite(unitPrice) || !Number.isFinite(quantity)) return;
-      hasCoverage = true;
-      revenueByListing.set(key, (revenueByListing.get(key) || 0) + unitPrice * quantity);
-    });
-  });
-
-  return { hasCoverage, revenueByListing, coverage: state.marketplacePerformanceSalesCoverage };
-}
-
 function buildMarketplacePerformanceEntries() {
-  const salesCoverage = marketplaceSalesRevenueByListing(state.marketplaceListings);
   return state.marketplaceListings.map((listing) => {
     const analytics = getListingAnalytics(listing.marketplace, listing.external_id);
     return {
@@ -287,12 +265,19 @@ function buildMarketplacePerformanceEntries() {
       analytics,
       intent: computeIntentScore(analytics),
       profitability: getListingProfitability(listing),
-      salesRevenue: salesCoverage.hasCoverage
-        ? salesCoverage.revenueByListing.get(`${listing.marketplace}:${listing.external_id}`) || 0
-        : null,
-      salesRevenueCoverage: salesCoverage.coverage,
     };
   });
+}
+
+function performanceRevenue() {
+  const end = new Date();
+  const start = new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const revenue = marketplaceRevenueForPeriod(state.marketplacePerformanceSales, { start, end }, state.data.orders);
+  if (state.marketplacePerformanceSalesCoverage === "unavailable") return { value: null, coverage: "unavailable" };
+  return {
+    ...revenue,
+    coverage: revenue.coverage === "complete" ? state.marketplacePerformanceSalesCoverage : revenue.coverage,
+  };
 }
 
 function unavailable(value, formatter) {
@@ -347,7 +332,7 @@ export function renderMarketplacePerformanceExecutive(snapshot) {
   const flow = byId("marketplacePerformanceFlow");
   const priorities = byId("marketplacePerformancePriorities");
   const indicatorRows = [
-    ["Receita das vendas", unavailable(snapshot.indicators.revenue, (value) => money.format(value)), state.marketplacePerformanceSalesCoverage === "partial" ? "Parcial: mais de 1.000 vendas confirmadas no período" : "Vendas confirmadas importadas nos últimos 30 dias"],
+    ["Receita das vendas", unavailable(snapshot.indicators.revenue, (value) => money.format(value)), snapshot.revenueCoverage === "partial" ? "Parcial: há pedidos sem dados compatíveis ou acima do limite carregado" : snapshot.revenueCoverage === "unavailable" ? "Indisponível: faltam data real ou dados de venda compatíveis" : "Vendas confirmadas nos últimos 30 dias"],
     ["Conversão", unavailable(snapshot.indicators.conversion, (value) => percent.format(value / 100)), "Vendas sobre visitas em 30 dias"],
     ["Margem média", unavailable(snapshot.indicators.averageMargin, (value) => percent.format(value / 100)), "Anúncios com custos cadastrados"],
     ["Saúde dos anúncios", unavailable(snapshot.indicators.health, (value) => percent.format(value)), "Média informada pelo marketplace"],
@@ -963,7 +948,7 @@ export function renderMarketplaceAnalyticsPanel() {
   renderIntentScoreRanking();
   renderIntentScoreInsights();
   renderCategoryTrendsPanel();
-  const snapshot = buildMarketplacePerformanceSnapshot(buildMarketplacePerformanceEntries());
+  const snapshot = buildMarketplacePerformanceSnapshot(buildMarketplacePerformanceEntries(), { revenue: performanceRevenue() });
   renderMarketplacePerformanceExecutive(snapshot);
   const section = state.marketplacePerformanceSection === "profitability" && snapshot.defaultSection === "listings"
     ? snapshot.defaultSection

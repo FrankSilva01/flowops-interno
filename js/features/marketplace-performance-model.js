@@ -184,16 +184,20 @@ export function buildMarketplacePerformanceSnapshot(entries = [], options = {}) 
     .filter(Boolean)
     .map((item) => firstFinite(item.health_score, item.healthScore))
     .filter((value) => value != null);
+  const revenue = options.revenue && Object.hasOwn(options.revenue, "value")
+    ? options.revenue.value
+    : sumKnown(normalizedEntries, (entry) => entry.salesRevenue);
 
   return {
     indicators: {
-      revenue: sumKnown(normalizedEntries, (entry) => entry.salesRevenue),
+      revenue,
       conversion,
       averageMargin: average(margins),
       health: average(healthScores),
     },
     totals,
     visitsSeries: aggregateVisitsSeries(normalizedEntries),
+    revenueCoverage: options.revenue?.coverage ?? null,
     priorities: selectPerformancePriorities(normalizedEntries, options.priorityLimit ?? PRIORITY_LIMIT, options),
     defaultSection: normalizedEntries.some((entry) => entry.profitability)
       ? "profitability"
