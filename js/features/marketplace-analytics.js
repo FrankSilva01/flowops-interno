@@ -256,23 +256,30 @@ export function computeIntentScore(analytics) {
   };
 }
 
-function saleRevenueForListing(listing) {
-  return state.marketplaceSales.reduce((total, sale) => {
-    if (sale.marketplace !== listing.marketplace) return total;
+function marketplaceSalesRevenueByListing(listings) {
+  const listingKeys = new Set(listings.map((listing) => `${listing.marketplace}:${listing.external_id}`));
+  const revenueByListing = new Map();
+  let hasCoverage = false;
+
+  state.marketplaceSales.forEach((sale) => {
     const items = sale.raw_payload?.order_items;
-    if (!Array.isArray(items)) return total;
-    return total + items.reduce((saleTotal, item) => {
-      if (String(item?.item?.id || "") !== String(listing.external_id || "")) return saleTotal;
+    if (!Array.isArray(items)) return;
+    items.forEach((item) => {
+      const key = `${sale.marketplace}:${item?.item?.id ?? ""}`;
+      if (!listingKeys.has(key)) return;
       const unitPrice = Number(item.unit_price ?? item.full_unit_price);
       const quantity = Number(item.quantity ?? 1);
-      return Number.isFinite(unitPrice) && Number.isFinite(quantity)
-        ? saleTotal + unitPrice * quantity
-        : saleTotal;
-    }, 0);
-  }, 0);
+      if (!Number.isFinite(unitPrice) || !Number.isFinite(quantity)) return;
+      hasCoverage = true;
+      revenueByListing.set(key, (revenueByListing.get(key) || 0) + unitPrice * quantity);
+    });
+  });
+
+  return { hasCoverage, revenueByListing };
 }
 
 function buildMarketplacePerformanceEntries() {
+  const salesCoverage = marketplaceSalesRevenueByListing(state.marketplaceListings);
   return state.marketplaceListings.map((listing) => {
     const analytics = getListingAnalytics(listing.marketplace, listing.external_id);
     return {
@@ -280,7 +287,9 @@ function buildMarketplacePerformanceEntries() {
       analytics,
       intent: computeIntentScore(analytics),
       profitability: getListingProfitability(listing),
-      salesRevenue: saleRevenueForListing(listing),
+      salesRevenue: salesCoverage.hasCoverage
+        ? salesCoverage.revenueByListing.get(`${listing.marketplace}:${listing.external_id}`) || 0
+        : null,
     };
   });
 }
@@ -297,6 +306,25 @@ function renderExecutiveEmptyState() {
   if (indicators) indicators.innerHTML = `<div class="empty-chart">${message}</div>`;
   if (flow) flow.innerHTML = `<div class="empty-chart">${message}</div>`;
   if (priorities) priorities.innerHTML = `<div class="empty-chart">${message}</div>`;
+}
+
+function clearMarketplacePerformanceExecutive() {
+  ["marketplacePerformanceIndicators", "marketplacePerformanceFlow", "marketplacePerformancePriorities"].forEach((id) => {
+    const target = byId(id);
+    if (target) target.innerHTML = "";
+  });
+}
+
+function setMarketplacePerformanceVisibility(visible) {
+  document.querySelectorAll([
+    ".marketplace-performance-head",
+    "#marketplacePerformanceIndicators",
+    ".marketplace-performance-overview",
+    ".marketplace-performance-detail-tabs",
+    "#intelligenceAnalysisSection",
+  ].join(",")).forEach((element) => {
+    element.hidden = !visible;
+  });
 }
 
 export function renderMarketplacePerformanceExecutive(snapshot) {
@@ -875,7 +903,9 @@ export function renderSellerReputationPanel() {
 // --- Painel geral (botao de sync + "atualizado em") ---
 export function renderMarketplaceAnalyticsPanel() {
   if (!hasCommercialIntelligenceAccess()) {
-    renderMarketplacePerformanceExecutive(null);
+    byId("marketplaceAnalyticsEmptyState")?.setAttribute("hidden", "");
+    setMarketplacePerformanceVisibility(false);
+    clearMarketplacePerformanceExecutive();
     return;
   }
   const connected = state.marketplaceAccounts.length > 0;
@@ -887,9 +917,12 @@ export function renderMarketplaceAnalyticsPanel() {
       const panel = byId(id);
       if (panel) panel.hidden = true;
     });
-    renderMarketplacePerformanceExecutive(null);
+    if (byId("intelligenceEmptyState")) byId("intelligenceEmptyState").hidden = true;
+    setMarketplacePerformanceVisibility(false);
+    clearMarketplacePerformanceExecutive();
     return;
   }
+  setMarketplacePerformanceVisibility(true);
   ["marketplacePerformancePanel", "investmentRankingPanel", "intentScoreRankingPanel", "categoryTrendsPanel"].forEach((id) => {
     const panel = byId(id);
     if (panel) panel.hidden = false;

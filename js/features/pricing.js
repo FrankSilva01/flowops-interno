@@ -1670,6 +1670,8 @@ export async function saveBulkCosts(input, dialog) {
     dialog?.remove();
     renderBulkCostRows();
     renderCommercialIntelligence();
+    const { renderMarketplaceAnalyticsPanel } = await import("./marketplace-analytics.js");
+    renderMarketplaceAnalyticsPanel();
   } catch (error) {
     showAppMessage("Falha ao salvar custos", error.message, "error");
   }
@@ -1685,11 +1687,13 @@ export function renderCommercialIntelligence() {
   const analysisSection = byId("intelligenceAnalysisSection");
   const upsell = byId("intelligenceUpsell");
   const emptyState = byId("intelligenceEmptyState");
+  const profitabilityPanel = byId("marketplacePerformanceProfitabilityPanel");
   if (!analysisSection || !upsell) return;
   const access = hasCommercialIntelligenceAccess();
   upsell.hidden = access;
   if (!access) {
     analysisSection.hidden = true;
+    if (profitabilityPanel) profitabilityPanel.hidden = true;
     if (emptyState) emptyState.hidden = true;
     return;
   }
@@ -1699,11 +1703,14 @@ export function renderCommercialIntelligence() {
     emptyState.hidden = !showEmptyState;
     if (showEmptyState) renderIntelligenceEmptyState(coverage);
   }
-  analysisSection.hidden = showEmptyState;
+  analysisSection.hidden = false;
   if (showEmptyState) {
+    if (profitabilityPanel) profitabilityPanel.hidden = true;
+    state.marketplacePerformanceSection = "listings";
     bindActions();
     return;
   }
+  if (profitabilityPanel) profitabilityPanel.hidden = false;
   renderProfitabilitySummaryPanel();
   renderProfitabilityDistributionChart();
   renderTopProductsProfitChart();

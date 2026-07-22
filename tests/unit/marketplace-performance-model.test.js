@@ -52,6 +52,15 @@ test("mantem indicador indisponivel quando nenhuma linha possui o dado", () => {
   assert.equal(snapshot.defaultSection, "listings");
 });
 
+test("mantem receita indisponivel sem cobertura de vendas utilizaveis", () => {
+  const snapshot = buildMarketplacePerformanceSnapshot([
+    { listing: {}, analytics: { visits_30d: 10 }, profitability: null, salesRevenue: null },
+    { listing: {}, analytics: { visits_30d: 20 }, profitability: null, salesRevenue: null },
+  ]);
+
+  assert.equal(snapshot.indicators.revenue, null);
+});
+
 test("usa anuncios como secao inicial sem cobertura financeira", () => {
   const snapshot = buildMarketplacePerformanceSnapshot([
     { listing: {}, analytics: {}, profitability: null },
