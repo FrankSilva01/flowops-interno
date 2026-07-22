@@ -52,3 +52,10 @@ Marketplace order payloads carry the listing key at `raw_payload.order_items[].i
 - When that fallback occurs, the existing safe dynamic import obtains `setMarketplacePerformanceSection("listings")`, which synchronizes tab active state, `aria-selected`, roving tab index, and panel visibility. The callback rechecks that the selected section remains `listings` before applying it.
 - No additional focused model test was added for this P2 because the affected state and ARIA synchronization are DOM behavior in the renderer, while `marketplace-performance-model.test.js` exercises only the pure snapshot model. Browser-level section preservation remains appropriate for the planned browser task.
 - Verification rerun: `node --test tests/unit/marketplace-performance-model.test.js` exited 0 with 12 passed; `npm run check` exited 0 with 60 JavaScript files validated; `npm run test:unit` exited 0 with 99 passed; `git diff --check` exited 0 with no whitespace errors.
+
+## Final P2 Evidence
+
+- With sufficient cost coverage, `renderCommercialIntelligence()` now sets Profitability visibility from `state.marketplacePerformanceSection` before financial rendering. A selected Listings, Investment, or Reputation section therefore does not expose Profitability beside it.
+- After financial rendering, the existing dynamic analytics import invokes `setMarketplacePerformanceSection(state.marketplacePerformanceSection)`. This restores the active tab, ARIA state, and exactly one matching panel after the fee-sync order of analytics render followed by commercial render.
+- The low-cost branch remains unchanged: it hides Profitability and only falls back from Profitability to Listings.
+- Verification rerun: `node --test tests/unit/marketplace-performance-model.test.js` exited 0 with 12 passed; `npm run check` exited 0 with 60 JavaScript files validated; `npm run test:unit` exited 0 with 99 passed; `git diff --check` exited 0 with no whitespace errors.

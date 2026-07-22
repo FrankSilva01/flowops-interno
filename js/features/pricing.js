@@ -1715,7 +1715,7 @@ export function renderCommercialIntelligence() {
     bindActions();
     return;
   }
-  if (profitabilityPanel) profitabilityPanel.hidden = false;
+  if (profitabilityPanel) profitabilityPanel.hidden = state.marketplacePerformanceSection !== "profitability";
   renderProfitabilitySummaryPanel();
   renderProfitabilityDistributionChart();
   renderTopProductsProfitChart();
@@ -1723,6 +1723,9 @@ export function renderCommercialIntelligence() {
   renderSuggestions();
   renderProfitSimulator();
   renderMarketplaceComparison();
+  import("./marketplace-analytics.js").then(({ setMarketplacePerformanceSection }) => {
+    setMarketplacePerformanceSection(state.marketplacePerformanceSection);
+  });
 }
 
 function getListingAnalyticsSnapshot(listing) {
