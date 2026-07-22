@@ -1706,7 +1706,12 @@ export function renderCommercialIntelligence() {
   analysisSection.hidden = false;
   if (showEmptyState) {
     if (profitabilityPanel) profitabilityPanel.hidden = true;
-    state.marketplacePerformanceSection = "listings";
+    if (state.marketplacePerformanceSection === "profitability") {
+      state.marketplacePerformanceSection = "listings";
+      import("./marketplace-analytics.js").then(({ setMarketplacePerformanceSection }) => {
+        if (state.marketplacePerformanceSection === "listings") setMarketplacePerformanceSection("listings");
+      });
+    }
     bindActions();
     return;
   }

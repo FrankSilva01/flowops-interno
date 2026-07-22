@@ -45,3 +45,10 @@ Marketplace order payloads carry the listing key at `raw_payload.order_items[].i
 - `npm run check` exited 0: `60 arquivos JavaScript validados.`
 - `npm run test:unit` exited 0: 99 passed, 0 failed.
 - `git diff --check` exited 0 with no whitespace errors.
+
+## P2 Re-review Evidence
+
+- In the low-cost branch, `renderCommercialIntelligence()` now falls back to `listings` only when `state.marketplacePerformanceSection === "profitability"`. Investment and Reputation selections are left unchanged across rerenders.
+- When that fallback occurs, the existing safe dynamic import obtains `setMarketplacePerformanceSection("listings")`, which synchronizes tab active state, `aria-selected`, roving tab index, and panel visibility. The callback rechecks that the selected section remains `listings` before applying it.
+- No additional focused model test was added for this P2 because the affected state and ARIA synchronization are DOM behavior in the renderer, while `marketplace-performance-model.test.js` exercises only the pure snapshot model. Browser-level section preservation remains appropriate for the planned browser task.
+- Verification rerun: `node --test tests/unit/marketplace-performance-model.test.js` exited 0 with 12 passed; `npm run check` exited 0 with 60 JavaScript files validated; `npm run test:unit` exited 0 with 99 passed; `git diff --check` exited 0 with no whitespace errors.
