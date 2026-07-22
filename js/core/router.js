@@ -692,6 +692,13 @@ export function bindActions() {
   document.querySelectorAll("[data-action]").forEach((button) => {
     const handler = async () => {
       const { action, id } = button.dataset;
+      if (action === "toggle-performance-actions") {
+        const menu = byId("performanceActionsMenu");
+        if (!menu) return;
+        menu.hidden = !menu.hidden;
+        button.setAttribute("aria-expanded", String(!menu.hidden));
+        return;
+      }
       if (action === "marketplace-export-csv") {
         if (!ensureCapability("export_data", "exportar dados")) return;
         exportMarketplaceListings();

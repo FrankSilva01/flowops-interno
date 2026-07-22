@@ -5,6 +5,8 @@ export const MARKETPLACE_AREAS = Object.freeze({
   settings: Object.freeze(["integrations", "api-logs", "backup"]),
 });
 
+export const PERFORMANCE_SECTIONS = ["profitability", "listings", "investment", "reputation"];
+
 export function marketplaceAreaForView(view) {
   return Object.entries(MARKETPLACE_AREAS).find(([, views]) => views.includes(view))?.[0] || "operation";
 }

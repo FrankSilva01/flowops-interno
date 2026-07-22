@@ -203,6 +203,7 @@ export const state = {
     marginUnder20: false, intentHigh: false, intentVeryHigh: false,
   },
   marketplaceView: "listings",
+  marketplacePerformanceSection: "profitability",
   leads: [],
   auditEvents: [],
   notifications: [],

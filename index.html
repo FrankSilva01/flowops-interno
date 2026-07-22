@@ -1302,15 +1302,16 @@
           </div>
 
           <div id="marketplaceIntelligenceView" class="marketplace-subview">
-            <div class="panel-head">
-              <div>
-                <h3>Inteligência Comercial</h3>
-                <small>Produtos internos, arquivos de produção, rentabilidade e performance dos anúncios.</small>
-              </div>
+            <div class="marketplace-performance-head">
+              <div><h3>Performance</h3><small id="analyticsSyncedAtLabel">Ainda não sincronizado</small></div>
               <div class="inline-actions">
-                <button id="syncFeeCalculatorBtn" class="secondary-btn" type="button" data-action="sync-fee-calculator">Sincronizar taxas</button>
-                <button id="openBulkCostBtn" class="secondary-btn" type="button" data-action="open-bulk-cost-dialog">Cadastrar custos em lote</button>
-                <button id="openFinancialSettingsBtn" class="secondary-btn" type="button" data-action="open-financial-settings">Configurações financeiras</button>
+                <button id="syncAnalyticsBtn" class="primary-btn" type="button" data-action="sync-analytics-full">Atualizar métricas</button>
+                <button class="icon-btn" type="button" data-action="toggle-performance-actions" aria-label="Mais ações" aria-expanded="false"><i class="ti ti-dots"></i></button>
+                <div id="performanceActionsMenu" class="action-menu" hidden>
+                  <button id="syncFeeCalculatorBtn" type="button" data-action="sync-fee-calculator">Sincronizar taxas</button>
+                  <button id="openBulkCostBtn" type="button" data-action="open-bulk-cost-dialog">Cadastrar custos em lote</button>
+                  <button id="openFinancialSettingsBtn" type="button" data-action="open-financial-settings">Configurações financeiras</button>
+                </div>
               </div>
             </div>
 
@@ -1318,30 +1319,16 @@
               <strong>Conecte o Mercado Livre</strong>
               <span>Conecte uma conta em Marketplace &gt; Integrações para desbloquear performance, competitividade, reputação e o ranking "Onde investir".</span>
             </div>
-
-            <div id="sellerReputationPanel" class="panel" hidden>
-              <div class="panel-head"><h3>Reputação do vendedor</h3></div>
-              <div id="sellerReputationContent"></div>
+            <div id="marketplacePerformanceIndicators" class="marketplace-performance-indicators"></div>
+            <div class="marketplace-performance-overview">
+              <section class="panel"><div id="marketplacePerformanceFlow"></div></section>
+              <section class="panel"><div id="marketplacePerformancePriorities"></div></section>
             </div>
-
-            <div class="panel panel-collapsible collapsed" data-panel-collapsible="product-catalog">
-              <div class="panel-head">
-                <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="false">
-                  <span class="dashboard-collapsible-head"><strong>Produtos e arquivos de produção</strong><small>Base interna: SKU, custo, STL, imagem e vínculos com anúncios</small></span>
-                  <i class="ti ti-chevron-down" aria-hidden="true"></i>
-                </button>
-                <div class="panel-filters">
-                  <input type="search" id="productSearchInput" placeholder="Buscar produto por nome, SKU ou categoria..." aria-label="Buscar produto" />
-                </div>
-              </div>
-              <div class="dashboard-collapsible-body">
-                <div class="table-wrap">
-                  <table>
-                    <thead><tr><th>SKU</th><th>Produto interno</th><th>Arquivos</th><th>Anúncios vinculados</th><th>Custo</th><th>Ações</th></tr></thead>
-                    <tbody id="productCatalogTable"></tbody>
-                  </table>
-                </div>
-              </div>
+            <div class="marketplace-performance-detail-tabs" role="tablist" aria-label="Detalhes da performance">
+              <button type="button" role="tab" id="marketplacePerformanceProfitabilityTab" aria-controls="marketplacePerformanceProfitabilityPanel" aria-selected="true" data-action="set-performance-section" data-section="profitability" data-performance-section="profitability">Rentabilidade</button>
+              <button type="button" role="tab" id="marketplacePerformanceListingsTab" aria-controls="marketplacePerformanceListingsPanel" aria-selected="false" data-action="set-performance-section" data-section="listings" data-performance-section="listings">Anúncios</button>
+              <button type="button" role="tab" id="marketplacePerformanceInvestmentTab" aria-controls="marketplacePerformanceInvestmentPanel" aria-selected="false" data-action="set-performance-section" data-section="investment" data-performance-section="investment">Investimento</button>
+              <button type="button" role="tab" id="marketplacePerformanceReputationTab" aria-controls="marketplacePerformanceReputationPanel" aria-selected="false" data-action="set-performance-section" data-section="reputation" data-performance-section="reputation">Reputação</button>
             </div>
 
             <div id="intelligenceUpsell" class="panel premium-upsell" hidden>
@@ -1370,18 +1357,19 @@
             </div>
 
             <div id="intelligenceAnalysisSection">
-              <div id="intelligenceDecisionBoard" class="intelligence-decision-board"></div>
-              <div class="panel panel-collapsible" data-panel-collapsible="suggestions">
-                <div class="panel-head">
-                  <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="true">
-                    <span class="dashboard-collapsible-head"><strong>Ações recomendadas</strong><small>Lista curta, priorizada pelo impacto operacional</small></span>
-                    <i class="ti ti-chevron-down" aria-hidden="true"></i>
-                  </button>
+              <section id="marketplacePerformanceProfitabilityPanel" data-performance-section-panel="profitability" role="tabpanel" aria-labelledby="marketplacePerformanceProfitabilityTab">
+                <div id="intelligenceDecisionBoard" class="intelligence-decision-board"></div>
+                <div class="panel panel-collapsible" data-panel-collapsible="suggestions">
+                  <div class="panel-head">
+                    <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="true">
+                      <span class="dashboard-collapsible-head"><strong>Ações recomendadas</strong><small>Lista curta, priorizada pelo impacto operacional</small></span>
+                      <i class="ti ti-chevron-down" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                  <div class="dashboard-collapsible-body">
+                    <div id="suggestionsList" class="stack-list"></div>
+                  </div>
                 </div>
-                <div class="dashboard-collapsible-body">
-                  <div id="suggestionsList" class="stack-list"></div>
-                </div>
-              </div>
               <div class="panel panel-collapsible collapsed" data-panel-collapsible="profitability-summary">
                 <div class="panel-head">
                   <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="false">
@@ -1458,12 +1446,31 @@
                   </div>
                 </div>
               </div>
-              <div id="marketplacePerformancePanel" class="panel panel-collapsible collapsed" data-panel-collapsible="performance-table">
+              </section>
+
+              <section id="marketplacePerformanceListingsPanel" data-performance-section-panel="listings" role="tabpanel" aria-labelledby="marketplacePerformanceListingsTab">
+                <div class="panel panel-collapsible collapsed" data-panel-collapsible="product-catalog">
+                  <div class="panel-head">
+                    <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="false">
+                      <span class="dashboard-collapsible-head"><strong>Produtos e arquivos de produção</strong><small>Base interna: SKU, custo, STL, imagem e vínculos com anúncios</small></span>
+                      <i class="ti ti-chevron-down" aria-hidden="true"></i>
+                    </button>
+                    <div class="panel-filters">
+                      <input type="search" id="productSearchInput" placeholder="Buscar produto por nome, SKU ou categoria..." aria-label="Buscar produto" />
+                    </div>
+                  </div>
+                  <div class="dashboard-collapsible-body">
+                    <div class="table-wrap">
+                      <table>
+                        <thead><tr><th>SKU</th><th>Produto interno</th><th>Arquivos</th><th>Anúncios vinculados</th><th>Custo</th><th>Ações</th></tr></thead>
+                        <tbody id="productCatalogTable"></tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+                <div id="marketplacePerformancePanel" class="panel" data-panel-collapsible="performance-table">
                 <div class="panel-head">
-                  <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="false">
-                    <span class="dashboard-collapsible-head"><strong>Performance dos anúncios</strong><small id="analyticsSyncedAtLabel">Ainda não sincronizado</small></span>
-                    <i class="ti ti-chevron-down" aria-hidden="true"></i>
-                  </button>
+                  <h3>Performance dos anúncios</h3>
                   <div class="panel-filters">
                     <select id="performanceTableHealthFilter" aria-label="Filtrar por saúde do anúncio">
                       <option value="all">Todas as saúdes</option>
@@ -1476,10 +1483,9 @@
                       <option value="conversion_desc">Maior conversão</option>
                       <option value="visits_desc">Mais visitas</option>
                     </select>
-                    <button id="syncAnalyticsBtn" class="secondary-btn" type="button" data-action="sync-analytics-full">Atualizar métricas</button>
                   </div>
                 </div>
-                <div class="dashboard-collapsible-body">
+                <div>
                   <div class="table-wrap">
                     <table>
                       <thead><tr><th>Produto</th><th>Preço</th><th>vs Média</th><th>Visitas</th><th>Conversão</th><th>Vendas</th><th>Perguntas</th><th>Saúde</th><th>Score</th><th>Sugestão</th></tr></thead>
@@ -1489,6 +1495,9 @@
                   </div>
                 </div>
               </div>
+              </section>
+
+              <section id="marketplacePerformanceInvestmentPanel" data-performance-section-panel="investment" role="tabpanel" aria-labelledby="marketplacePerformanceInvestmentTab">
               <div id="investmentRankingPanel" class="panel panel-collapsible collapsed" data-panel-collapsible="investment-ranking">
                 <div class="panel-head">
                   <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="false">
@@ -1557,6 +1566,14 @@
                   <div id="categoryTrendsContent"></div>
                 </div>
               </div>
+              </section>
+
+              <section id="marketplacePerformanceReputationPanel" data-performance-section-panel="reputation" role="tabpanel" aria-labelledby="marketplacePerformanceReputationTab">
+                <div id="sellerReputationPanel" class="panel" hidden>
+                  <div class="panel-head"><h3>Reputação do vendedor</h3></div>
+                  <div id="sellerReputationContent"></div>
+                </div>
+              </section>
             </div>
           </div>
 

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   MARKETPLACE_AREAS,
+  PERFORMANCE_SECTIONS,
   defaultMarketplaceViewForArea,
   marketplaceAreaForView,
 } from "../../js/features/marketplace-navigation.js";
@@ -23,4 +24,8 @@ test("cada area possui uma visao inicial estavel", () => {
   assert.equal(defaultMarketplaceViewForArea("catalog"), "storefront");
   assert.equal(defaultMarketplaceViewForArea("performance"), "intelligence");
   assert.equal(defaultMarketplaceViewForArea("settings"), "integrations");
+});
+
+test("define secoes estaveis para os detalhes de performance", () => {
+  assert.deepEqual(PERFORMANCE_SECTIONS, ["profitability", "listings", "investment", "reputation"]);
 });
