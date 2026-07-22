@@ -11459,3 +11459,322 @@ dialog::backdrop { background: rgba(2,6,12,.66); backdrop-filter: blur(2px); }
   .kpi strong, .metric strong, .report-kpi strong { font-size: 15px !important; }
 }
 
+/* Marketplace performance: compact executive hierarchy and contained overflow. */
+#marketplaceIntelligenceView,
+#marketplaceIntelligenceView [data-performance-section-panel],
+#marketplaceIntelligenceView .panel,
+#marketplaceIntelligenceView .dashboard-collapsible-body {
+  min-width: 0;
+}
+
+.marketplace-performance-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.marketplace-performance-head > div:first-child {
+  min-width: 0;
+}
+
+.marketplace-performance-head h3 {
+  overflow-wrap: anywhere;
+}
+
+.marketplace-performance-head .inline-actions {
+  position: relative;
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+.marketplace-performance-head .primary-btn {
+  flex: 0 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+#performanceActionsMenu {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 6px);
+  right: 0;
+  display: grid;
+  width: min(260px, calc(100vw - 20px));
+  gap: 2px;
+  padding: 6px;
+  border: 1px solid var(--fo-border);
+  border-radius: var(--fo-radius);
+  background: var(--fo-surface-1);
+  box-shadow: var(--shadow);
+}
+
+#performanceActionsMenu button {
+  width: 100%;
+  min-height: 34px;
+  padding: 7px 8px;
+  border: 0;
+  color: var(--fo-text);
+  background: transparent;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+#performanceActionsMenu button:hover,
+#performanceActionsMenu button:focus-visible {
+  background: var(--fo-surface-2);
+}
+
+.marketplace-performance-indicators {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.marketplace-performance-indicator {
+  display: grid;
+  align-content: start;
+  min-width: 0;
+  min-height: 96px;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--fo-border);
+  border-radius: var(--fo-radius);
+  background: var(--fo-surface-1);
+}
+
+.marketplace-performance-indicator span,
+.marketplace-performance-indicator small {
+  color: var(--fo-muted);
+  font-size: 10px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.marketplace-performance-indicator strong {
+  min-width: 0;
+  color: var(--fo-text);
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.marketplace-performance-indicators .empty-chart {
+  grid-column: 1 / -1;
+}
+
+.marketplace-performance-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(280px, .75fr);
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.marketplace-performance-overview > .panel {
+  min-width: 0;
+  padding: 12px 14px !important;
+  border-radius: var(--fo-radius) !important;
+}
+
+.marketplace-performance-flow-head,
+.marketplace-performance-priorities-head {
+  display: grid;
+  gap: 2px;
+}
+
+.marketplace-performance-flow-head small,
+.marketplace-performance-priorities-head small {
+  color: var(--fo-muted);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.marketplace-performance-flow-stages {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.marketplace-performance-flow-stages > div {
+  min-width: 0;
+}
+
+.marketplace-performance-flow-stages span,
+.marketplace-performance-flow-stages strong {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.marketplace-performance-flow-stages span {
+  color: var(--fo-muted);
+  font-size: 10px;
+}
+
+.marketplace-performance-flow-stages strong {
+  margin-top: 3px;
+  color: var(--fo-text);
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.marketplace-performance-flow-stages > i {
+  color: var(--fo-muted);
+}
+
+#marketplacePerformancePriorities .stack-list {
+  gap: 0;
+  margin-top: 8px;
+  border-top: 1px solid var(--fo-border);
+}
+
+#marketplacePerformancePriorities .marketplace-performance-priority {
+  min-width: 0;
+  padding: 8px 0;
+  border: 0;
+  border-bottom: 1px solid var(--fo-border);
+  border-radius: 0;
+  background: transparent;
+}
+
+#marketplacePerformancePriorities .marketplace-performance-priority > div {
+  min-width: 0;
+}
+
+#marketplacePerformancePriorities .marketplace-performance-priority strong,
+#marketplacePerformancePriorities .marketplace-performance-priority span {
+  overflow-wrap: anywhere;
+}
+
+.marketplace-performance-detail-tabs {
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+  gap: 4px;
+  margin-bottom: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-bottom: 1px solid var(--fo-border);
+  scrollbar-width: thin;
+}
+
+.marketplace-performance-detail-tabs [role="tab"] {
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  color: var(--fo-muted);
+  background: transparent;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.marketplace-performance-detail-tabs [role="tab"].active,
+.marketplace-performance-detail-tabs [role="tab"][aria-selected="true"] {
+  border-bottom-color: var(--fo-accent);
+  color: var(--fo-text);
+}
+
+.marketplace-performance-detail-tabs [role="tab"]:focus-visible,
+.marketplace-performance-head .icon-btn:focus-visible,
+#performanceActionsMenu button:focus-visible {
+  outline: 2px solid var(--fo-accent);
+  outline-offset: -2px;
+}
+
+#marketplaceIntelligenceView [data-performance-section-panel][hidden] {
+  display: none !important;
+}
+
+#marketplaceIntelligenceView [data-performance-section-panel] .table-wrap {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto !important;
+  overflow-y: hidden;
+}
+
+#marketplaceIntelligenceView [data-performance-section-panel] .table-wrap > table {
+  min-width: 720px;
+}
+
+@media (max-width: 1100px) {
+  .marketplace-performance-indicators {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .marketplace-performance-overview {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .marketplace-area-tabs,
+  .marketplace-secondary-tabs {
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .marketplace-area-tabs {
+    display: flex;
+    grid-template-columns: none;
+  }
+
+  .marketplace-area-tabs .view-tab,
+  .marketplace-secondary-tabs > div,
+  .marketplace-secondary-tabs .view-tab {
+    flex: 0 0 auto;
+  }
+
+  .marketplace-performance-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .marketplace-performance-head .inline-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .marketplace-performance-head .primary-btn {
+    flex: 1 1 auto;
+  }
+
+  .marketplace-performance-overview > .panel,
+  #marketplaceIntelligenceView .panel {
+    padding: 10px !important;
+  }
+
+  .marketplace-performance-flow-stages {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .marketplace-performance-flow-stages > i {
+    display: none;
+  }
+
+  #marketplacePerformancePriorities .marketplace-performance-priority {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  #marketplaceIntelligenceView [data-performance-section-panel] .table-wrap > table {
+    min-width: 640px;
+  }
+}
+
+@media (max-width: 359px) {
+  .marketplace-performance-indicators {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+

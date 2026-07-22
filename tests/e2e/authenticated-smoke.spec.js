@@ -90,6 +90,17 @@ test.describe("sessao autenticada", () => {
     await expect(page.locator("#shopeeTemplateExportSubmit")).toBeEnabled();
   });
 
+  test("performance do marketplace nao cria overflow horizontal", async ({ page }) => {
+    await page.goto("/#marketplace");
+    await expect(page.locator("#appView")).toBeVisible();
+    const performanceArea = page.locator('[data-marketplace-area="performance"]');
+    test.skip(!(await performanceArea.isVisible()), "Marketplace indisponivel para este perfil.");
+    await performanceArea.click();
+    await expect(page.locator("#marketplaceIntelligenceView")).toHaveClass(/active/);
+    const hasOverflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+    expect(hasOverflow).toBe(false);
+  });
+
   test("seleciona encomenda e disponibiliza exclusao administrativa", async ({ page }) => {
     test.skip((page.viewportSize()?.width || 0) < 720, "Barra de ações em lote validada no layout desktop.");
     await page.goto("/#orders");
