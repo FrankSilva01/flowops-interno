@@ -32,6 +32,23 @@ function sumKnown(items, valueFor) {
   return known ? total : null;
 }
 
+function aggregateVisitsSeries(entries) {
+  const valuesByDate = new Map();
+  entries.forEach((entry) => {
+    const series = entry.analytics?.raw_summary?.visits_series;
+    if (!Array.isArray(series)) return;
+    series.forEach((point) => {
+      const date = typeof point?.date === "string" ? point.date : null;
+      const value = finite(point?.total);
+      if (!date || value == null) return;
+      valuesByDate.set(date, (valuesByDate.get(date) || 0) + value);
+    });
+  });
+  return [...valuesByDate.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([date, value]) => ({ date, value }));
+}
+
 function entryIdentity(entry) {
   const listing = entry.listing || {};
   return {
@@ -148,8 +165,14 @@ export function buildMarketplacePerformanceSnapshot(entries = [], options = {}) 
     questions: sumKnown(normalizedEntries, (entry) => firstFinite(entry.analytics?.questions_30d, entry.analytics?.questions_total, entry.analytics?.questions)),
     sales: sumKnown(normalizedEntries, (entry) => firstFinite(entry.analytics?.sales_30d, entry.analytics?.sold_quantity, entry.analytics?.sales)),
   };
-  const conversion = totals.visits != null && totals.sales != null && totals.visits > 0
-    ? (totals.sales / totals.visits) * 100
+  const pairedConversionTotals = normalizedEntries.reduce((result, entry) => {
+    const visits = firstFinite(entry.analytics?.visits_30d, entry.analytics?.visits);
+    const sales = firstFinite(entry.analytics?.sales_30d, entry.analytics?.sold_quantity, entry.analytics?.sales);
+    if (visits == null || sales == null) return result;
+    return { visits: result.visits + visits, sales: result.sales + sales, known: true };
+  }, { visits: 0, sales: 0, known: false });
+  const conversion = pairedConversionTotals.known && pairedConversionTotals.visits > 0
+    ? (pairedConversionTotals.sales / pairedConversionTotals.visits) * 100
     : null;
   const margins = normalizedEntries
     .map((entry) => entry.profitability)
@@ -170,8 +193,9 @@ export function buildMarketplacePerformanceSnapshot(entries = [], options = {}) 
       health: average(healthScores),
     },
     totals,
+    visitsSeries: aggregateVisitsSeries(normalizedEntries),
     priorities: selectPerformancePriorities(normalizedEntries, options.priorityLimit ?? PRIORITY_LIMIT, options),
-    defaultSection: normalizedEntries.some((entry) => entry.profitability && entry.profitability.hasCost !== false)
+    defaultSection: normalizedEntries.some((entry) => entry.profitability)
       ? "profitability"
       : "listings",
   };

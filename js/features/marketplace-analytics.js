@@ -11,7 +11,7 @@ import { bindActions } from "../core/router.js";
 import { ensureCanEdit } from "../core/permissions.js";
 import { renderLineChart } from "../core/charts.js";
 import { marketplaceRequest } from "./marketplace.js";
-import { PERFORMANCE_SECTIONS } from "./marketplace-navigation.js";
+import { PERFORMANCE_SECTIONS, performanceSectionForKey } from "./marketplace-navigation.js";
 import { buildMarketplacePerformanceSnapshot } from "./marketplace-performance-model.js";
 import {
   hasCommercialIntelligenceAccess, getListingProfitability, getFinancialSettings,
@@ -261,7 +261,7 @@ function marketplaceSalesRevenueByListing(listings) {
   const revenueByListing = new Map();
   let hasCoverage = false;
 
-  state.marketplaceSales.forEach((sale) => {
+  state.marketplacePerformanceSales.forEach((sale) => {
     const items = sale.raw_payload?.order_items;
     if (!Array.isArray(items)) return;
     items.forEach((item) => {
@@ -275,7 +275,7 @@ function marketplaceSalesRevenueByListing(listings) {
     });
   });
 
-  return { hasCoverage, revenueByListing };
+  return { hasCoverage, revenueByListing, coverage: state.marketplacePerformanceSalesCoverage };
 }
 
 function buildMarketplacePerformanceEntries() {
@@ -290,6 +290,7 @@ function buildMarketplacePerformanceEntries() {
       salesRevenue: salesCoverage.hasCoverage
         ? salesCoverage.revenueByListing.get(`${listing.marketplace}:${listing.external_id}`) || 0
         : null,
+      salesRevenueCoverage: salesCoverage.coverage,
     };
   });
 }
@@ -346,7 +347,7 @@ export function renderMarketplacePerformanceExecutive(snapshot) {
   const flow = byId("marketplacePerformanceFlow");
   const priorities = byId("marketplacePerformancePriorities");
   const indicatorRows = [
-    ["Receita das vendas", unavailable(snapshot.indicators.revenue, (value) => money.format(value)), "Vendas sincronizadas por item"],
+    ["Receita das vendas", unavailable(snapshot.indicators.revenue, (value) => money.format(value)), state.marketplacePerformanceSalesCoverage === "partial" ? "Parcial: mais de 1.000 vendas confirmadas no período" : "Vendas confirmadas importadas nos últimos 30 dias"],
     ["Conversão", unavailable(snapshot.indicators.conversion, (value) => percent.format(value / 100)), "Vendas sobre visitas em 30 dias"],
     ["Margem média", unavailable(snapshot.indicators.averageMargin, (value) => percent.format(value / 100)), "Anúncios com custos cadastrados"],
     ["Saúde dos anúncios", unavailable(snapshot.indicators.health, (value) => percent.format(value)), "Média informada pelo marketplace"],
@@ -373,7 +374,16 @@ export function renderMarketplacePerformanceExecutive(snapshot) {
         <i class="ti ti-arrow-right" aria-hidden="true"></i>
         <div><span>Vendas</span><strong>${html(formatTotal(snapshot.totals.sales))}</strong></div>
       </div>
+      <div id="marketplacePerformanceVisitsChart" class="marketplace-performance-visits-chart"></div>
     `;
+    if (snapshot.visitsSeries.length) {
+      renderLineChart("marketplacePerformanceVisitsChart", snapshot.visitsSeries.map((point) => ({
+        label: point.date.slice(5),
+        value: point.value,
+      })), { format: (value) => `${value} visita${value === 1 ? "" : "s"}`, valueLabel: "Visitas por dia" });
+    } else {
+      byId("marketplacePerformanceVisitsChart").innerHTML = `<div class="empty-chart">Sem série histórica de visitas disponível.</div>`;
+    }
   }
 
   if (priorities) {
@@ -405,6 +415,14 @@ export function setMarketplacePerformanceSection(section) {
   document.querySelectorAll("[data-performance-section-panel]").forEach((panel) => {
     panel.hidden = panel.dataset.performanceSectionPanel !== allowed;
   });
+}
+
+export function moveMarketplacePerformanceSection(currentSection, key) {
+  const nextSection = performanceSectionForKey(currentSection, key);
+  if (!nextSection) return false;
+  setMarketplacePerformanceSection(nextSection);
+  document.querySelector(`[data-performance-section="${nextSection}"]`)?.focus();
+  return true;
 }
 
 // --- Sugestao inteligente de preco: 4 cenarios contextualizados ---

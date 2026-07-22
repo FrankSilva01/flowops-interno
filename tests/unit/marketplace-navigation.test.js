@@ -5,6 +5,7 @@ import {
   PERFORMANCE_SECTIONS,
   defaultMarketplaceViewForArea,
   marketplaceAreaForView,
+  performanceSectionForKey,
 } from "../../js/features/marketplace-navigation.js";
 
 test("agrupa todas as visoes do Marketplace em quatro areas", () => {
@@ -28,4 +29,12 @@ test("cada area possui uma visao inicial estavel", () => {
 
 test("define secoes estaveis para os detalhes de performance", () => {
   assert.deepEqual(PERFORMANCE_SECTIONS, ["profitability", "listings", "investment", "reputation"]);
+});
+
+test("navega as abas de performance com as teclas padrao", () => {
+  assert.equal(performanceSectionForKey("profitability", "ArrowRight"), "listings");
+  assert.equal(performanceSectionForKey("profitability", "ArrowLeft"), "reputation");
+  assert.equal(performanceSectionForKey("investment", "Home"), "profitability");
+  assert.equal(performanceSectionForKey("investment", "End"), "reputation");
+  assert.equal(performanceSectionForKey("investment", "Enter"), null);
 });

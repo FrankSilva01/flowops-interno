@@ -7,6 +7,16 @@ export const MARKETPLACE_AREAS = Object.freeze({
 
 export const PERFORMANCE_SECTIONS = ["profitability", "listings", "investment", "reputation"];
 
+export function performanceSectionForKey(currentSection, key) {
+  const currentIndex = PERFORMANCE_SECTIONS.indexOf(currentSection);
+  const index = currentIndex === -1 ? 0 : currentIndex;
+  if (key === "Home") return PERFORMANCE_SECTIONS[0];
+  if (key === "End") return PERFORMANCE_SECTIONS.at(-1);
+  if (key === "ArrowRight") return PERFORMANCE_SECTIONS[(index + 1) % PERFORMANCE_SECTIONS.length];
+  if (key === "ArrowLeft") return PERFORMANCE_SECTIONS[(index - 1 + PERFORMANCE_SECTIONS.length) % PERFORMANCE_SECTIONS.length];
+  return null;
+}
+
 export function marketplaceAreaForView(view) {
   return Object.entries(MARKETPLACE_AREAS).find(([, views]) => views.includes(view))?.[0] || "operation";
 }

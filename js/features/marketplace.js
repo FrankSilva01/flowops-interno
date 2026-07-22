@@ -546,15 +546,19 @@ export async function loadMarketplaces() {
     state.marketplaceAccounts = [];
     state.marketplaceListings = [];
     state.marketplaceSales = [];
+    state.marketplacePerformanceSales = [];
+    state.marketplacePerformanceSalesCoverage = "unavailable";
     state.marketplaceDocuments = [];
     state.marketplaceDocumentVersions = [];
     state.marketplaceLogs = [];
     return;
   }
-  const [accounts, listings, sales, documents, documentVersions, fiscalDocuments, logs] = await Promise.all([
+  const performanceSalesCutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const [accounts, listings, sales, performanceSales, documents, documentVersions, fiscalDocuments, logs] = await Promise.all([
     state.supabase.from("marketplace_accounts").select("marketplace,seller_name,external_seller_id,token_expires_at,updated_at,raw_payload").eq("organization_id", state.organizationId).order("updated_at", { ascending: false }),
     state.supabase.from("marketplace_listings").select("marketplace,external_id,title,sku,price,status,permalink,thumbnail_url,raw_payload,updated_at").eq("organization_id", state.organizationId).order("updated_at", { ascending: false }).limit(100),
     state.supabase.from("marketplace_order_links").select("marketplace,external_order_id,internal_order_id,raw_payload,created_at,updated_at").eq("organization_id", state.organizationId).order("created_at", { ascending: false }).limit(100),
+    state.supabase.from("marketplace_order_links").select("marketplace,external_order_id,internal_order_id,raw_payload,created_at,updated_at", { count: "exact" }).eq("organization_id", state.organizationId).gte("created_at", performanceSalesCutoff).in("raw_payload->>status", ["paid", "confirmed", "shipped", "delivered"]).order("created_at", { ascending: false }).range(0, 999),
     state.supabase.from("marketplace_documents").select("marketplace,external_order_id,internal_order_id,document_type,status,file_name,mime_type,storage_path,last_error,downloaded_at,checksum_sha256,version,verified_at,updated_at").eq("organization_id", state.organizationId).order("updated_at", { ascending: false }).limit(300),
     state.supabase.from("marketplace_document_versions").select("marketplace,external_order_id,document_type,version,file_name,checksum_sha256,created_at").eq("organization_id", state.organizationId).order("created_at", { ascending: false }).limit(500),
     state.supabase.from("fiscal_documents").select("id,order_id,type,status,file_name,storage_path,updated_at").eq("organization_id", state.organizationId).order("updated_at", { ascending: false }).limit(300),
@@ -564,6 +568,7 @@ export async function loadMarketplaces() {
     ["marketplace_accounts", accounts.error],
     ["marketplace_listings", listings.error],
     ["marketplace_order_links", sales.error],
+    ["marketplace_order_links_performance", performanceSales.error],
     ["marketplace_documents", documents.error],
     ["marketplace_document_versions", documentVersions.error],
     ["fiscal_documents", fiscalDocuments.error],
@@ -572,6 +577,10 @@ export async function loadMarketplaces() {
   state.marketplaceAccounts = accounts.error ? [] : accounts.data || [];
   state.marketplaceListings = listings.error ? [] : listings.data || [];
   state.marketplaceSales = sales.error ? [] : sales.data || [];
+  state.marketplacePerformanceSales = performanceSales.error ? [] : performanceSales.data || [];
+  state.marketplacePerformanceSalesCoverage = performanceSales.error
+    ? "unavailable"
+    : performanceSales.count > state.marketplacePerformanceSales.length ? "partial" : "complete";
   state.marketplaceDocuments = documents.error ? [] : documents.data || [];
   state.marketplaceDocumentVersions = documentVersions.error ? [] : documentVersions.data || [];
   state.fiscalDocuments = fiscalDocuments.error ? (state.fiscalDocuments || []) : fiscalDocuments.data || [];

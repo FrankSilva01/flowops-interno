@@ -183,6 +183,8 @@ export const state = {
   marketplaceAccounts: [],
   marketplaceListings: [],
   marketplaceSales: [],
+  marketplacePerformanceSales: [],
+  marketplacePerformanceSalesCoverage: "unavailable",
   marketplaceDocuments: [],
   marketplaceDocumentVersions: [],
   marketplaceDocumentSearch: "",

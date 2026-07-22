@@ -94,7 +94,7 @@ test("preserva metricas desconhecidas e soma apenas valores conhecidos", () => {
   ]);
 
   assert.deepEqual(snapshot.totals, { visits: 100, questions: 3, sales: 2 });
-  assert.equal(snapshot.indicators.conversion, 2);
+  assert.equal(snapshot.indicators.conversion, null);
   assert.equal(snapshot.indicators.revenue, 50);
 });
 
@@ -104,6 +104,30 @@ test("usa intent fornecido e exige vendas conhecidas para a prioridade de intenc
 
   assert.deepEqual(selectPerformancePriorities([unknownSales], 4), []);
   assert.equal(selectPerformancePriorities([zeroSales], 4)[0].kind, "intent");
+});
+
+test("calcula conversao apenas com anuncios que possuem visitas e vendas conhecidas", () => {
+  const snapshot = buildMarketplacePerformanceSnapshot([
+    { listing: {}, analytics: { visits_30d: 100, sales_30d: null }, profitability: null },
+    { listing: {}, analytics: { visits_30d: null, sales_30d: 2 }, profitability: null },
+    { listing: {}, analytics: { visits_30d: 50, sales_30d: 5 }, profitability: null },
+  ]);
+
+  assert.deepEqual(snapshot.totals, { visits: 150, questions: null, sales: 7 });
+  assert.equal(snapshot.indicators.conversion, 10);
+});
+
+test("agrega a serie historica de visitas para o grafico executivo", () => {
+  const snapshot = buildMarketplacePerformanceSnapshot([
+    { listing: {}, analytics: { raw_summary: { visits_series: [{ date: "2026-07-01", total: 4 }, { date: "2026-07-02", total: 7 }] } }, profitability: null },
+    { listing: {}, analytics: { raw_summary: { visits_series: [{ date: "2026-07-01", total: 3 }, { date: "2026-07-03", total: 2 }] } }, profitability: null },
+  ]);
+
+  assert.deepEqual(snapshot.visitsSeries, [
+    { date: "2026-07-01", value: 7 },
+    { date: "2026-07-02", value: 7 },
+    { date: "2026-07-03", value: 2 },
+  ]);
 });
 
 test("classifica trafego e conversao relativamente ao portfolio", () => {
@@ -156,6 +180,14 @@ test("usa profitability como seção padrão quando há cobertura financeira", (
 
   assert.equal(snapshot.defaultSection, "profitability");
   assert.deepEqual(snapshot.priorities, []);
+});
+
+test("mantem rentabilidade como secao inicial com cobertura financeira sem custo", () => {
+  const snapshot = buildMarketplacePerformanceSnapshot([
+    makeEntry("missing-cost", { visits_30d: 10 }, { hasCost: false }),
+  ]);
+
+  assert.equal(snapshot.defaultSection, "profitability");
 });
 
 test("ordena empatadas de forma estável pelo título", () => {

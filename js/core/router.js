@@ -84,7 +84,7 @@ import {
 import {
   syncAnalyticsFull, renderPerformanceTable, bindPerformanceTableToggles,
   openListingDrawer, bindListingDrawer, closeListingDrawer,
-  showCalculatorSuggestion, getSuggestionForListing, syncFeeCalculatorFull, setMarketplacePerformanceSection,
+  showCalculatorSuggestion, getSuggestionForListing, syncFeeCalculatorFull, setMarketplacePerformanceSection, moveMarketplacePerformanceSection,
 } from "../features/marketplace-analytics.js";
 
 const APP_VERSION = "263";
@@ -689,6 +689,11 @@ export function render() {
 }
 
 export function bindActions() {
+  document.querySelectorAll("[data-performance-section]").forEach((button) => {
+    button.onkeydown = (event) => {
+      if (moveMarketplacePerformanceSection(button.dataset.performanceSection, event.key)) event.preventDefault();
+    };
+  });
   document.querySelectorAll("[data-action]").forEach((button) => {
     const handler = async () => {
       const { action, id } = button.dataset;
