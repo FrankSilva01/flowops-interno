@@ -1704,7 +1704,6 @@ export function renderCommercialIntelligence() {
     bindActions();
     return;
   }
-  renderIntelligenceDecisionBoard();
   renderProfitabilitySummaryPanel();
   renderProfitabilityDistributionChart();
   renderTopProductsProfitChart();

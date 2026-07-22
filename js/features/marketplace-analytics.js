@@ -11,6 +11,8 @@ import { bindActions } from "../core/router.js";
 import { ensureCanEdit } from "../core/permissions.js";
 import { renderLineChart } from "../core/charts.js";
 import { marketplaceRequest } from "./marketplace.js";
+import { PERFORMANCE_SECTIONS } from "./marketplace-navigation.js";
+import { buildMarketplacePerformanceSnapshot } from "./marketplace-performance-model.js";
 import {
   hasCommercialIntelligenceAccess, getListingProfitability, getFinancialSettings,
   computeMarginBreakdown, openPriceCalculatorForListing, renderCommercialIntelligence,
@@ -19,6 +21,7 @@ import {
 
 const ANALYTICS_URL = `${supabaseFunctionUrl("marketplace-sync")}?marketplace=ml&action=analytics-full`;
 const INTENT_SCORE_URL = `${supabaseFunctionUrl("marketplace-sync")}?marketplace=ml&action=intent-score`;
+const percent = new Intl.NumberFormat("pt-BR", { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
 function analyticsKey(marketplace, externalId) {
   return `${marketplace}:${externalId}`;
@@ -251,6 +254,129 @@ export function computeIntentScore(analytics) {
       ["Conversão", conversionScore, 15],
     ],
   };
+}
+
+function saleRevenueForListing(listing) {
+  return state.marketplaceSales.reduce((total, sale) => {
+    if (sale.marketplace !== listing.marketplace) return total;
+    const items = sale.raw_payload?.order_items;
+    if (!Array.isArray(items)) return total;
+    return total + items.reduce((saleTotal, item) => {
+      if (String(item?.item?.id || "") !== String(listing.external_id || "")) return saleTotal;
+      const unitPrice = Number(item.unit_price ?? item.full_unit_price);
+      const quantity = Number(item.quantity ?? 1);
+      return Number.isFinite(unitPrice) && Number.isFinite(quantity)
+        ? saleTotal + unitPrice * quantity
+        : saleTotal;
+    }, 0);
+  }, 0);
+}
+
+function buildMarketplacePerformanceEntries() {
+  return state.marketplaceListings.map((listing) => {
+    const analytics = getListingAnalytics(listing.marketplace, listing.external_id);
+    return {
+      listing,
+      analytics,
+      intent: computeIntentScore(analytics),
+      profitability: getListingProfitability(listing),
+      salesRevenue: saleRevenueForListing(listing),
+    };
+  });
+}
+
+function unavailable(value, formatter) {
+  return value == null ? "Não disponível" : formatter(value);
+}
+
+function renderExecutiveEmptyState() {
+  const message = "Sincronize as métricas para ver os indicadores executivos.";
+  const indicators = byId("marketplacePerformanceIndicators");
+  const flow = byId("marketplacePerformanceFlow");
+  const priorities = byId("marketplacePerformancePriorities");
+  if (indicators) indicators.innerHTML = `<div class="empty-chart">${message}</div>`;
+  if (flow) flow.innerHTML = `<div class="empty-chart">${message}</div>`;
+  if (priorities) priorities.innerHTML = `<div class="empty-chart">${message}</div>`;
+}
+
+export function renderMarketplacePerformanceExecutive(snapshot) {
+  if (!snapshot) {
+    renderExecutiveEmptyState();
+    return;
+  }
+
+  const hasExecutiveData = Object.values(snapshot.totals).some((value) => value != null)
+    || snapshot.indicators.averageMargin != null
+    || snapshot.indicators.health != null
+    || snapshot.indicators.revenue > 0;
+  if (!hasExecutiveData) {
+    renderExecutiveEmptyState();
+    return;
+  }
+
+  const indicators = byId("marketplacePerformanceIndicators");
+  const flow = byId("marketplacePerformanceFlow");
+  const priorities = byId("marketplacePerformancePriorities");
+  const indicatorRows = [
+    ["Receita das vendas", unavailable(snapshot.indicators.revenue, (value) => money.format(value)), "Vendas sincronizadas por item"],
+    ["Conversão", unavailable(snapshot.indicators.conversion, (value) => percent.format(value / 100)), "Vendas sobre visitas em 30 dias"],
+    ["Margem média", unavailable(snapshot.indicators.averageMargin, (value) => percent.format(value / 100)), "Anúncios com custos cadastrados"],
+    ["Saúde dos anúncios", unavailable(snapshot.indicators.health, (value) => percent.format(value)), "Média informada pelo marketplace"],
+  ];
+
+  if (indicators) {
+    indicators.innerHTML = indicatorRows.map(([label, value, detail]) => `
+      <article class="marketplace-performance-indicator">
+        <span>${html(label)}</span>
+        <strong>${html(value)}</strong>
+        <small>${html(detail)}</small>
+      </article>
+    `).join("");
+  }
+
+  if (flow) {
+    const formatTotal = (value) => value == null ? "Não disponível" : Number(value).toLocaleString("pt-BR");
+    flow.innerHTML = `
+      <div class="marketplace-performance-flow-head"><strong>Fluxo de performance</strong><small>Totais conhecidos dos últimos 30 dias</small></div>
+      <div class="marketplace-performance-flow-stages">
+        <div><span>Visitas</span><strong>${html(formatTotal(snapshot.totals.visits))}</strong></div>
+        <i class="ti ti-arrow-right" aria-hidden="true"></i>
+        <div><span>Perguntas</span><strong>${html(formatTotal(snapshot.totals.questions))}</strong></div>
+        <i class="ti ti-arrow-right" aria-hidden="true"></i>
+        <div><span>Vendas</span><strong>${html(formatTotal(snapshot.totals.sales))}</strong></div>
+      </div>
+    `;
+  }
+
+  if (priorities) {
+    priorities.innerHTML = snapshot.priorities.length ? `
+      <div class="marketplace-performance-priorities-head"><strong>Prioridades de hoje</strong><small>Ações ordenadas por impacto operacional</small></div>
+      <div class="stack-list">${snapshot.priorities.map((priority) => {
+        const action = priority.kind === "cost"
+          ? `<button class="secondary-btn" type="button" data-action="open-bulk-cost-dialog">${html(priority.actionLabel)}</button>`
+          : `<button class="secondary-btn" type="button" data-action="open-listing-drawer" data-marketplace="${html(priority.marketplace)}" data-external-id="${html(priority.externalId)}">${html(priority.actionLabel)}</button>`;
+        return `<div class="list-row marketplace-performance-priority ${html(priority.severity)}">
+          <div><strong>${html(priority.title)}</strong><span>${html(priority.reason)}</span></div>
+          ${action}
+        </div>`;
+      }).join("")}</div>
+    ` : `<div class="empty-chart">Nenhuma prioridade crítica com os dados disponíveis.</div>`;
+  }
+  bindActions();
+}
+
+export function setMarketplacePerformanceSection(section) {
+  const allowed = PERFORMANCE_SECTIONS.includes(section) ? section : "listings";
+  state.marketplacePerformanceSection = allowed;
+  document.querySelectorAll("[data-performance-section]").forEach((button) => {
+    const active = button.dataset.performanceSection === allowed;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-selected", String(active));
+    button.tabIndex = active ? 0 : -1;
+  });
+  document.querySelectorAll("[data-performance-section-panel]").forEach((panel) => {
+    panel.hidden = panel.dataset.performanceSectionPanel !== allowed;
+  });
 }
 
 // --- Sugestao inteligente de preco: 4 cenarios contextualizados ---
@@ -748,7 +874,10 @@ export function renderSellerReputationPanel() {
 
 // --- Painel geral (botao de sync + "atualizado em") ---
 export function renderMarketplaceAnalyticsPanel() {
-  if (!hasCommercialIntelligenceAccess()) return;
+  if (!hasCommercialIntelligenceAccess()) {
+    renderMarketplacePerformanceExecutive(null);
+    return;
+  }
   const connected = state.marketplaceAccounts.length > 0;
   const emptyState = byId("marketplaceAnalyticsEmptyState");
   const panels = ["sellerReputationPanel", "marketplacePerformancePanel", "investmentRankingPanel", "intentScoreRankingPanel", "categoryTrendsPanel"];
@@ -758,6 +887,7 @@ export function renderMarketplaceAnalyticsPanel() {
       const panel = byId(id);
       if (panel) panel.hidden = true;
     });
+    renderMarketplacePerformanceExecutive(null);
     return;
   }
   ["marketplacePerformancePanel", "investmentRankingPanel", "intentScoreRankingPanel", "categoryTrendsPanel"].forEach((id) => {
@@ -782,6 +912,12 @@ export function renderMarketplaceAnalyticsPanel() {
   renderIntentScoreRanking();
   renderIntentScoreInsights();
   renderCategoryTrendsPanel();
+  const snapshot = buildMarketplacePerformanceSnapshot(buildMarketplacePerformanceEntries());
+  renderMarketplacePerformanceExecutive(snapshot);
+  const section = state.marketplacePerformanceSection === "profitability" && snapshot.defaultSection === "listings"
+    ? snapshot.defaultSection
+    : state.marketplacePerformanceSection;
+  setMarketplacePerformanceSection(section);
 }
 
 // --- Widget do dashboard: "Centro de comando" ---

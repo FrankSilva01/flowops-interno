@@ -84,7 +84,7 @@ import {
 import {
   syncAnalyticsFull, renderPerformanceTable, bindPerformanceTableToggles,
   openListingDrawer, bindListingDrawer, closeListingDrawer,
-  showCalculatorSuggestion, getSuggestionForListing, syncFeeCalculatorFull,
+  showCalculatorSuggestion, getSuggestionForListing, syncFeeCalculatorFull, setMarketplacePerformanceSection,
 } from "../features/marketplace-analytics.js";
 
 const APP_VERSION = "263";
@@ -697,6 +697,10 @@ export function bindActions() {
         if (!menu) return;
         menu.hidden = !menu.hidden;
         button.setAttribute("aria-expanded", String(!menu.hidden));
+        return;
+      }
+      if (action === "set-performance-section") {
+        setMarketplacePerformanceSection(button.dataset.section);
         return;
       }
       if (action === "marketplace-export-csv") {

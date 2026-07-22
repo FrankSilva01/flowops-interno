@@ -52,6 +52,14 @@ test("mantem indicador indisponivel quando nenhuma linha possui o dado", () => {
   assert.equal(snapshot.defaultSection, "listings");
 });
 
+test("usa anuncios como secao inicial sem cobertura financeira", () => {
+  const snapshot = buildMarketplacePerformanceSnapshot([
+    { listing: {}, analytics: {}, profitability: null },
+  ]);
+
+  assert.equal(snapshot.defaultSection, "listings");
+});
+
 test("seleciona prioridades na ordem do plano e respeita o limite", () => {
   const entries = [
     { ...makeEntry("intent", { visits_30d: 80, sales_30d: 0, conversion_rate: 4, health_score: 0.8 }), intent: { score: 90 } },
