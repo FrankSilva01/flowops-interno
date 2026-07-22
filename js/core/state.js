@@ -196,6 +196,8 @@ export const state = {
   marketplaceLogsCleared: false,
   marketplaceChannelFilter: "all",
   marketplaceListingSearch: "",
+  marketplaceListingsPage: 1,
+  storefrontPage: 1,
   marketplaceListingFilters: {
     noSales: false, visits100: false, questions3: false, zeroStock: false,
     marginUnder20: false, intentHigh: false, intentVeryHigh: false,

@@ -23,6 +23,8 @@ import {
 } from "./shopee-template-export.js";
 import { groupShopeeCategorySuggestions } from "./shopee-category-mapping.js";
 import { defaultMarketplaceViewForArea, marketplaceAreaForView } from "./marketplace-navigation.js";
+import { closeStorefrontProductDialog } from "./storefront-wizard.js";
+import { paginate, responsivePageSize } from "../core/pagination.js";
 import {
   buildMarketplaceMigration,
   buildMarketplaceMigrationBatch,
@@ -37,7 +39,20 @@ import {
 export { marketplaceDisplayName, normalizeMarketplaceChannel } from "./marketplace-channel.js";
 
 const selectedMarketplaceMigrations = new Set();
+let currentVisibleMarketplaceListings = [];
 let marketplaceFileImportRows = [];
+
+function marketplacePageSize() {
+  return responsivePageSize(typeof window === "undefined" ? undefined : window.innerHeight);
+}
+
+function paginationMarkup(result, action) {
+  if (!result.total) return "";
+  const buttons = Array.from({ length: result.pageCount }, (_, index) => index + 1)
+    .filter((page) => page === 1 || page === result.pageCount || Math.abs(page - result.page) <= 1)
+    .map((page, index, pages) => `${index && page - pages[index - 1] > 1 ? '<span aria-hidden="true">…</span>' : ""}<button class="icon-btn ${page === result.page ? "active" : ""}" type="button" data-action="${action}" data-page="${page}" aria-label="Página ${page}" ${page === result.page ? 'aria-current="page"' : ""}>${page}</button>`).join("");
+  return `<span>${result.start}-${result.end} de ${result.total}</span><div><button class="icon-btn" type="button" data-action="${action}" data-page="${result.page - 1}" aria-label="Página anterior" ${result.page === 1 ? "disabled" : ""}><i class="ti ti-chevron-left" aria-hidden="true"></i></button>${buttons}<button class="icon-btn" type="button" data-action="${action}" data-page="${result.page + 1}" aria-label="Próxima página" ${result.page === result.pageCount ? "disabled" : ""}><i class="ti ti-chevron-right" aria-hidden="true"></i></button></div>`;
+}
 
 export function matchesMarketplaceChannel(item) {
   return state.marketplaceChannelFilter === "all"
@@ -228,6 +243,9 @@ export function renderMarketplaces() {
   }
   const accounts = state.marketplaceAccounts.filter(matchesMarketplaceChannel);
   const listings = filterListingsForDisplay(state.marketplaceListings.filter(matchesMarketplaceChannel));
+  const listingsPage = paginate(listings, state.marketplaceListingsPage, marketplacePageSize());
+  state.marketplaceListingsPage = listingsPage.page;
+  currentVisibleMarketplaceListings = listingsPage.items;
   const channelSales = state.marketplaceSales.filter(matchesMarketplaceChannel);
   const sales = filterMarketplaceDocumentSales(channelSales);
   const documents = state.marketplaceDocuments.filter(matchesMarketplaceChannel);
@@ -275,12 +293,12 @@ export function renderMarketplaces() {
       </td>
     </tr>
   `).join("") : `<tr><td colspan="6">Nenhuma conta conectada.</td></tr>`;
-  const featuredListing = listings[0];
+  const featuredListing = currentVisibleMarketplaceListings[0];
   listingsGrid.innerHTML = listings.length ? `
     <div class="marketplace-listing-table-wrap">
       <table class="marketplace-listing-table">
         <thead><tr><th class="listing-select-cell"><input type="checkbox" data-action="marketplace-migrate-select-all" aria-label="Selecionar anuncios visiveis" /></th><th>Produto</th><th>Marketplace</th><th>Preço</th><th>Estoque</th><th>Visualizações</th><th>Conversão</th><th>Intenção</th><th>Status</th><th>Ações</th></tr></thead>
-        <tbody>${listings.map((item) => {
+        <tbody>${currentVisibleMarketplaceListings.map((item) => {
           const analytics = getListingAnalytics(item.marketplace, item.external_id);
           const intent = computeIntentScore(analytics);
           return `
@@ -309,6 +327,8 @@ export function renderMarketplaces() {
       <button class="primary-btn" type="button" data-action="marketplace-edit" data-id="${html(featuredListing.external_id)}" data-marketplace="${html(featuredListing.marketplace || "Mercado Livre")}">Editar anúncio</button>
     </aside>
   ` : `<div class="empty-chart">Nenhum anúncio importado.</div>`;
+  const listingsPagination = byId("marketplaceListingsPagination");
+  if (listingsPagination) listingsPagination.innerHTML = paginationMarkup(listingsPage, "marketplace-listings-page");
   updateMarketplaceMigrationSelectionUi();
   salesGrid.innerHTML = sales.length ? sales.map((sale) => {
     const payload = sale.raw_payload || {};
@@ -584,6 +604,20 @@ export async function loadAndRenderMarketplaces() {
 
 let storefrontUploadedImages = [];
 
+export function resetStorefrontProductDraft() {
+  const form = byId("storefrontProductForm");
+  form?.reset();
+  if (form?.elements.external_id) form.elements.external_id.value = "";
+  const editor = byId("storefrontDescriptionEditor");
+  if (editor) editor.innerHTML = "";
+  const fileInput = byId("storefrontImageFiles");
+  if (fileInput) fileInput.value = "";
+  const message = byId("storefrontProductMessage");
+  if (message) message.textContent = "";
+  storefrontUploadedImages = [];
+  updateStorefrontTargetFields();
+}
+
 export function renderStorefrontAdmin() {
   const source = byId("storefrontSourceListing");
   const list = byId("storefrontProductList");
@@ -608,7 +642,9 @@ export function renderStorefrontAdmin() {
     <article><span>Cliques/orçamentos</span><strong>${quoteClicks}</strong></article>
     <article><span>Última atualização</span><strong>${formatDateTime(state.marketplaceListings[0]?.updated_at)}</strong></article>
   `;
-  list.innerHTML = state.marketplaceListings.length ? state.marketplaceListings.map((item) => {
+  const storefrontPage = paginate(state.marketplaceListings, state.storefrontPage, marketplacePageSize());
+  state.storefrontPage = storefrontPage.page;
+  list.innerHTML = state.marketplaceListings.length ? storefrontPage.items.map((item) => {
     const payload = item.raw_payload || {};
     const images = storefrontListingImages(item);
     return `
@@ -623,6 +659,8 @@ export function renderStorefrontAdmin() {
       </article>
     `;
   }).join("") : `<div class="empty-chart">Nenhum produto na vitrine.</div>`;
+  const pagination = byId("storefrontPagination");
+  if (pagination) pagination.innerHTML = paginationMarkup(storefrontPage, "storefront-page");
 }
 
 export function updateStorefrontTargetFields() {
@@ -847,6 +885,7 @@ export async function saveStorefrontProduct(event) {
     await loadMarketplaces();
     renderMarketplaces();
     message.textContent = "Produto salvo na vitrine.";
+    closeStorefrontProductDialog();
   } catch (error) {
     message.textContent = error.message;
   }
@@ -971,7 +1010,7 @@ export function toggleMarketplaceMigrationSelection(itemId, marketplace, selecte
 }
 
 export function toggleAllMarketplaceMigrationSelections(selected) {
-  filterListingsForDisplay(state.marketplaceListings.filter(matchesMarketplaceChannel))
+  currentVisibleMarketplaceListings
     .filter((listing) => ["mercado-livre", "shopee"].includes(normalizeMarketplaceChannel(listing.marketplace)))
     .forEach((listing) => {
       const key = marketplaceMigrationKey(listing);

@@ -20,9 +20,9 @@
     <link rel="preconnect" href="https://api.mercadopago.com" />
     <script src="./theme-init.js?v=200"></script>
     <link rel="stylesheet" href="./assets/tabler-icons/tabler-icons.min.css?v=200" />
-  <link rel="stylesheet" href="./css/flowops.css?v=265" />
+  <link rel="stylesheet" href="./css/flowops.css?v=266" />
     <script src="./supabase-config.js?v=200" defer></script>
-  <script type="module" src="./js/app.js?v=269"></script>
+  <script type="module" src="./js/app.js?v=270"></script>
   </head>
   <body>
     <main id="appView" class="app-shell" hidden>
@@ -1067,6 +1067,7 @@
               </div>
             </div>
             <div id="marketplaceListingsGrid" class="marketplace-listings-grid"></div>
+            <nav id="marketplaceListingsPagination" class="marketplace-pagination" aria-label="Paginação dos anúncios"></nav>
           </div>
 
           <div id="marketplaceStorefrontView" class="marketplace-subview">
@@ -1076,11 +1077,19 @@
                 <small>Cadastre produtos da vitrine pública, use dados sincronizados do marketplace ou prepare publicação no Mercado Livre.</small>
               </div>
               <div class="inline-actions">
+                <button id="openStorefrontProductDialogBtn" class="primary-btn" type="button"><i class="ti ti-plus" aria-hidden="true"></i> Cadastrar produto</button>
                 <button id="openStorefrontBtn" class="secondary-btn" type="button">Abrir vitrine</button>
                 <button id="refreshStorefrontBtn" class="secondary-btn" type="button">Atualizar</button>
               </div>
             </div>
-            <div class="storefront-admin-grid">
+            <div class="storefront-admin-grid storefront-catalog-layout">
+              <dialog id="storefrontProductDialog" class="storefront-wizard-dialog">
+                <div class="storefront-wizard-shell">
+                  <header class="storefront-wizard-header">
+                    <div><span class="eyebrow">Catálogo</span><h3 id="storefrontDialogTitle">Cadastrar produto</h3></div>
+                    <button id="closeStorefrontProductDialogBtn" class="icon-btn" type="button" aria-label="Fechar"><i class="ti ti-x" aria-hidden="true"></i></button>
+                  </header>
+                  <div id="storefrontWizardProgress" class="storefront-wizard-progress" aria-label="Etapas do cadastro"></div>
               <form id="storefrontProductForm" class="storefront-product-form">
                 <input name="external_id" type="hidden" />
                 <div class="form-section-title">Origem do produto</div>
@@ -1224,11 +1233,18 @@
 
                 <label class="checkbox-row"><input name="featured" type="checkbox" checked /> Exibir na vitrine</label>
                 <p id="storefrontProductMessage" class="form-error"></p>
-                <button class="primary-btn" type="submit">Salvar produto da vitrine</button>
+                <div class="storefront-wizard-actions wide">
+                  <button id="storefrontPrevBtn" class="secondary-btn" type="button">Voltar</button>
+                  <button id="storefrontNextBtn" class="primary-btn" type="button">Próximo</button>
+                  <button id="storefrontSubmitBtn" class="primary-btn" type="submit">Salvar produto</button>
+                </div>
               </form>
+                </div>
+              </dialog>
               <div>
                 <div id="storefrontStats" class="integration-summary-grid"></div>
                 <div id="storefrontProductList" class="storefront-product-list"></div>
+                <nav id="storefrontPagination" class="marketplace-pagination" aria-label="Paginação dos produtos publicados"></nav>
               </div>
             </div>
           </div>

@@ -44,11 +44,16 @@ import { submitSupportTicket, renderSupportPortal, renderWhatsNew } from "../fea
 import { renderGovernance } from "../features/governance.js";
 import { renderFiscalDocs, renderDAS, renderPurchaseInvoices, renderSalesInvoices, renderFiscalTab } from "../features/fiscal.js";
 import { initGlobalSearch } from "./search.js";
+import {
+  initializeStorefrontWizard, openStorefrontProductDialog, closeStorefrontProductDialog,
+  nextStorefrontStep, previousStorefrontStep,
+} from "../features/storefront-wizard.js";
 import { bindCalendarEvents, attachCalendarEventListeners, updateCalendarStats } from "../features/calendar-navigation.js";
 import {
   renderMarketplaces, loadAndRenderMarketplaces, connectMercadoLivre, disconnectMercadoLivre,
   configureShopee, connectAmazon, syncAmazon, syncMercadoLivre, saveMarketplaceListing,
   saveStorefrontProduct, updateStorefrontTargetFields, importSelectedListingToStorefrontForm,
+  resetStorefrontProductDraft,
   loadMlCategoryFields, bindStorefrontImageInputs, bindStorefrontDescriptionEditor, bindMlCategorySelect, setMarketplaceView, setMarketplaceArea,
   applyMarketplaceLogRange, showMarketplaceStats, fillStorefrontFormFromListing,
   openMarketplaceEdit, viewMarketplaceOrder, createMarketplaceOrder, downloadMarketplaceDocument,
@@ -82,7 +87,7 @@ import {
   showCalculatorSuggestion, getSuggestionForListing, syncFeeCalculatorFull,
 } from "../features/marketplace-analytics.js";
 
-const APP_VERSION = "262";
+const APP_VERSION = "263";
 
 async function refreshAppShell() {
   showAppMessage("Atualizando sistema", "Limpando cache local e carregando a versão mais recente.", "info");
@@ -172,6 +177,7 @@ function applyPanelCollapsedPreferences() {
 }
 
 export function bindEvents() {
+  initializeStorefrontWizard();
   byId("sidebarToggle")?.addEventListener("click", toggleSidebar);
   document.querySelectorAll(".tab[data-view]").forEach((button) => {
     button.addEventListener("click", () => setView(button.dataset.view));
@@ -479,6 +485,13 @@ export function bindEvents() {
   byId("marketplaceFileImportForm")?.elements.marketplace.addEventListener("change", previewMarketplaceFileImport);
   bindMarketplaceFileImportDropzone();
   byId("storefrontProductForm").addEventListener("submit", saveStorefrontProduct);
+  byId("openStorefrontProductDialogBtn")?.addEventListener("click", () => {
+    resetStorefrontProductDraft();
+    openStorefrontProductDialog();
+  });
+  byId("closeStorefrontProductDialogBtn")?.addEventListener("click", closeStorefrontProductDialog);
+  byId("storefrontNextBtn")?.addEventListener("click", nextStorefrontStep);
+  byId("storefrontPrevBtn")?.addEventListener("click", previousStorefrontStep);
   byId("storefrontProductForm").elements.publish_ml.addEventListener("change", updateStorefrontTargetFields);
   byId("storefrontProductForm").elements.publish_shopee.addEventListener("change", updateStorefrontTargetFields);
   byId("storefrontProductForm").elements.publish_tiktok?.addEventListener("change", updateStorefrontTargetFields);
@@ -533,11 +546,13 @@ export function bindEvents() {
   });
   byId("marketplaceListingSearchInput")?.addEventListener("input", (event) => {
     state.marketplaceListingSearch = event.target.value.trim().toLowerCase();
+    state.marketplaceListingsPage = 1;
     renderMarketplaces();
   });
   document.querySelectorAll("[data-listing-filter]").forEach((checkbox) => {
     checkbox.addEventListener("change", (event) => {
       state.marketplaceListingFilters[event.target.dataset.listingFilter] = event.target.checked;
+      state.marketplaceListingsPage = 1;
       renderMarketplaces();
     });
   });
@@ -936,6 +951,17 @@ export function bindActions() {
         );
         fillStorefrontFormFromListing(item);
         setMarketplaceView("storefront");
+        openStorefrontProductDialog({ editing: true });
+        return;
+      }
+      if (action === "storefront-page") {
+        state.storefrontPage = Number(button.dataset.page) || 1;
+        renderMarketplaces();
+        return;
+      }
+      if (action === "marketplace-listings-page") {
+        state.marketplaceListingsPage = Number(button.dataset.page) || 1;
+        renderMarketplaces();
         return;
       }
       if (action === "marketplace-view-order") {
@@ -970,6 +996,7 @@ export function bindActions() {
       }
       if (action === "marketplace-channel-filter") {
         state.marketplaceChannelFilter = button.dataset.channel || "all";
+        state.marketplaceListingsPage = 1;
         renderMarketplaces();
         return;
       }
