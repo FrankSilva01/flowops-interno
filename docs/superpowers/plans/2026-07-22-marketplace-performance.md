@@ -221,7 +221,11 @@ Use one executive header, one indicator grid, one two-column overview, and a tab
   <div class="inline-actions">
     <button id="syncAnalyticsBtn" class="primary-btn" type="button" data-action="sync-analytics-full">Atualizar métricas</button>
     <button class="icon-btn" type="button" data-action="toggle-performance-actions" aria-label="Mais ações" aria-expanded="false"><i class="ti ti-dots"></i></button>
-    <div id="performanceActionsMenu" class="action-menu" hidden>...</div>
+    <div id="performanceActionsMenu" class="action-menu" hidden>
+      <button type="button" data-action="sync-fee-calculator">Sincronizar taxas</button>
+      <button type="button" data-action="open-bulk-cost-dialog">Cadastrar custos em lote</button>
+      <button type="button" data-action="open-financial-settings">Configurações financeiras</button>
+    </div>
   </div>
 </div>
 <div id="marketplacePerformanceIndicators" class="marketplace-performance-indicators"></div>
@@ -234,15 +238,11 @@ Use one executive header, one indicator grid, one two-column overview, and a tab
 
 Move existing financial, listing, investment, and reputation elements into the matching `[data-performance-section-panel]` containers. Preserve every existing element ID used by JavaScript.
 
-- [ ] **Step 5: Bind delegated tab and overflow-menu actions**
+- [ ] **Step 5: Bind the delegated overflow-menu action**
 
-In the router action delegation:
+In the router action delegation, bind only the overflow menu in this task. The section action is bound in Task 3 after `setMarketplacePerformanceSection` exists, avoiding a temporary broken import:
 
 ```js
-if (action === "set-performance-section") {
-  setMarketplacePerformanceSection(trigger.dataset.section);
-  return;
-}
 if (action === "toggle-performance-actions") {
   const menu = byId("performanceActionsMenu");
   menu.hidden = !menu.hidden;
@@ -300,6 +300,7 @@ Inside `marketplace-analytics.js`, map each synchronized listing to:
 const entries = state.marketplaceListings.map((listing) => ({
   listing,
   analytics: getListingAnalytics(listing.marketplace, listing.external_id),
+  intent: computeIntentScore(getListingAnalytics(listing.marketplace, listing.external_id)),
   profitability: getListingProfitability(listing),
   salesRevenue: state.marketplaceSales
     .filter((sale) => sale.marketplace === listing.marketplace && sale.listing_external_id === listing.external_id)
@@ -308,6 +309,8 @@ const entries = state.marketplaceListings.map((listing) => ({
 ```
 
 Adapt the sale-listing key to the existing normalized sales payload found in `state.marketplaceSales`; do not add a new backend field.
+
+The `intent` property is mandatory when analytics exists. It must come from the existing `computeIntentScore()` function; do not duplicate or approximate the intent formula in the presentation model.
 
 - [ ] **Step 4: Render the four executive indicators**
 
@@ -332,6 +335,15 @@ export function setMarketplacePerformanceSection(section) {
   document.querySelectorAll("[data-performance-section-panel]").forEach((panel) => {
     panel.hidden = panel.dataset.performanceSectionPanel !== allowed;
   });
+}
+```
+
+Bind the delegated section action in `js/core/router.js` in this task, importing the now-existing renderer function:
+
+```js
+if (action === "set-performance-section") {
+  setMarketplacePerformanceSection(trigger.dataset.section);
+  return;
 }
 ```
 
