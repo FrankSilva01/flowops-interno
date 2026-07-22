@@ -54,7 +54,7 @@ test("mantem indicador indisponivel quando nenhuma linha possui o dado", () => {
 
 test("seleciona prioridades na ordem do plano e respeita o limite", () => {
   const entries = [
-    { ...makeEntry("intent", { visits_30d: 80, sales_30d: 0, conversion_rate: 0, health_score: 0.8 }), intent: { score: 90 } },
+    { ...makeEntry("intent", { visits_30d: 80, sales_30d: 0, conversion_rate: 4, health_score: 0.8 }), intent: { score: 90 } },
     makeEntry("conversion", { visits_30d: 80, sales_30d: 1, conversion_rate: 0.5, health_score: 0.8 }),
     makeEntry("risk", { health_score: 0.2, visits_30d: 10, sales_30d: 0 }),
     makeEntry("opportunity", { health_score: 0.9, visits_30d: 100, sales_30d: 10, conversion_rate: 8.3 }),
@@ -91,13 +91,29 @@ test("usa intent fornecido e exige vendas conhecidas para a prioridade de intenc
 
 test("classifica trafego e conversao relativamente ao portfolio", () => {
   const entries = [
-    makeEntry("relative-conversion", { visits_30d: 80, sales_30d: 1, conversion_rate: 2 }),
+    makeEntry("relative-conversion", { visits_30d: 50, sales_30d: 1, conversion_rate: 2 }),
     makeEntry("portfolio-reference", { visits_30d: 100, sales_30d: 10, conversion_rate: 10 }),
   ];
 
   const priorities = selectPerformancePriorities(entries, 4, { portfolioAvgConversion: 5, maxVisits: 100 });
 
   assert.equal(priorities[0].kind, "conversion");
+});
+
+test("mantem prioridades independentes por anuncio e consolida custo em lote", () => {
+  const entries = [
+    {
+      ...makeEntry("multi", { visits_30d: 50, sales_30d: 0, conversion_rate: 5, health_score: 0.2 }),
+      intent: { score: 90 },
+    },
+    makeEntry("no-cost-risk", { visits_30d: 10, health_score: 0.2 }, { hasCost: false }),
+  ];
+
+  const priorities = selectPerformancePriorities(entries, 10, { portfolioAvgConversion: 5, maxVisits: 100 });
+
+  assert.deepEqual(priorities.map((item) => item.kind), ["intent", "risk", "risk", "cost"]);
+  assert.equal(priorities.filter((item) => item.kind === "cost").length, 1);
+  assert.equal(priorities.find((item) => item.kind === "cost").externalId, null);
 });
 
 test("normaliza health apenas pela semantica 0-1 e deduplica cobertura de custo", () => {

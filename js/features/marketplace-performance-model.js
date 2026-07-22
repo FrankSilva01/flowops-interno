@@ -56,9 +56,10 @@ function priority(entry, kind, rank, score, severity, reason, actionLabel) {
   };
 }
 
-function classifyEntryPriority(entry, context) {
+function classifyEntryPriorities(entry, context) {
   const analytics = entry.analytics || {};
   const profitability = entry.profitability;
+  const priorities = [];
   const sales = firstFinite(analytics.sales_30d, analytics.sold_quantity, analytics.sales);
   const salesKnown = sales != null;
   const visits30d = firstFinite(analytics.visits_30d, analytics.visits);
@@ -75,36 +76,36 @@ function classifyEntryPriority(entry, context) {
   );
 
   if (salesKnown && sales === 0 && intentScore != null && intentScore >= 80) {
-    return priority(entry, "intent", 1, intentScore, "attention", "Alta intencao de compra sem venda recente.", "Revisar anuncio");
+    priorities.push(priority(entry, "intent", 1, intentScore, "attention", "Alta intencao de compra sem venda recente.", "Revisar anuncio"));
   }
 
   const highTraffic = context.maxVisits != null
     && context.maxVisits > 0
     && visits30d != null
-    && visits30d >= context.maxVisits * 0.7;
+    && visits30d >= context.maxVisits * 0.5;
   const lowConversion = context.portfolioAvgConversion != null
     && conversion != null
     && conversion < context.portfolioAvgConversion * 0.6;
 
   if (highTraffic && lowConversion) {
-    return priority(entry, "conversion", 2, visits30d - conversion, "warning", "O anuncio recebe trafego, mas converte pouco.", "Melhorar conversao");
+    priorities.push(priority(entry, "conversion", 2, visits30d - conversion, "warning", "O anuncio recebe trafego, mas converte pouco.", "Melhorar conversao"));
   }
 
   if (blockingIssue || (health != null && health < 0.5)) {
-    return priority(entry, "risk", 3, blockingIssue ? 100 : 40 - health, "critical", "O anuncio tem risco de saude ou bloqueio no marketplace.", "Resolver risco");
+    priorities.push(priority(entry, "risk", 3, blockingIssue ? 100 : 40 - health, "critical", "O anuncio tem risco de saude ou bloqueio no marketplace.", "Resolver risco"));
   }
 
   if (health != null && health >= 0.8 && highTraffic && conversion != null
     && context.portfolioAvgConversion != null
     && conversion >= context.portfolioAvgConversion) {
-    return priority(entry, "opportunity", 4, health + conversion, "positive", "O anuncio saudavel tem sinais de potencial para investimento.", "Avaliar investimento");
+    priorities.push(priority(entry, "opportunity", 4, health + conversion, "positive", "O anuncio saudavel tem sinais de potencial para investimento.", "Avaliar investimento"));
   }
 
   if (profitability == null || profitability.hasCost === false) {
-    return priority(entry, "cost", 5, visits30d ?? 0, "warning", "Sem custo cadastrado, a rentabilidade nao pode ser analisada.", "Cadastrar custos em lote");
+    priorities.push(priority(entry, "cost", 5, visits30d ?? 0, "warning", "Sem custo cadastrado, a rentabilidade nao pode ser analisada.", "Cadastrar custos em lote"));
   }
 
-  return null;
+  return priorities;
 }
 
 export function selectPerformancePriorities(entries = [], limit = PRIORITY_LIMIT, options = {}) {
@@ -121,8 +122,7 @@ export function selectPerformancePriorities(entries = [], limit = PRIORITY_LIMIT
   const context = { portfolioAvgConversion, maxVisits };
   const seen = new Set();
   return normalizedEntries
-    .map((entry) => classifyEntryPriority(entry, context))
-    .filter(Boolean)
+    .flatMap((entry) => classifyEntryPriorities(entry, context))
     .filter((item) => {
       if (item.kind === "cost") {
         if (seen.has("cost")) return false;
