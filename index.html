@@ -1306,7 +1306,7 @@
               <div><h3>Performance</h3><small id="analyticsSyncedAtLabel">Ainda não sincronizado</small></div>
               <div class="inline-actions">
                 <button id="syncAnalyticsBtn" class="primary-btn" type="button" data-action="sync-analytics-full">Atualizar métricas</button>
-                <button class="icon-btn" type="button" data-action="toggle-performance-actions" aria-label="Mais ações" aria-expanded="false"><i class="ti ti-dots"></i></button>
+                <button class="icon-btn" type="button" data-action="toggle-performance-actions" aria-label="Mais ações" aria-expanded="false" aria-controls="performanceActionsMenu"><i class="ti ti-dots"></i></button>
                 <div id="performanceActionsMenu" class="action-menu" hidden>
                   <button id="syncFeeCalculatorBtn" type="button" data-action="sync-fee-calculator">Sincronizar taxas</button>
                   <button id="openBulkCostBtn" type="button" data-action="open-bulk-cost-dialog">Cadastrar custos em lote</button>
@@ -1448,7 +1448,7 @@
               </div>
               </section>
 
-              <section id="marketplacePerformanceListingsPanel" data-performance-section-panel="listings" role="tabpanel" aria-labelledby="marketplacePerformanceListingsTab">
+              <section id="marketplacePerformanceListingsPanel" data-performance-section-panel="listings" role="tabpanel" aria-labelledby="marketplacePerformanceListingsTab" hidden>
                 <div class="panel panel-collapsible collapsed" data-panel-collapsible="product-catalog">
                   <div class="panel-head">
                     <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="false">
@@ -1468,9 +1468,12 @@
                     </div>
                   </div>
                 </div>
-                <div id="marketplacePerformancePanel" class="panel" data-panel-collapsible="performance-table">
+                <div id="marketplacePerformancePanel" class="panel panel-collapsible collapsed" data-panel-collapsible="performance-table">
                 <div class="panel-head">
-                  <h3>Performance dos anúncios</h3>
+                  <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="false">
+                    <span class="dashboard-collapsible-head"><strong>Performance dos anúncios</strong></span>
+                    <i class="ti ti-chevron-down" aria-hidden="true"></i>
+                  </button>
                   <div class="panel-filters">
                     <select id="performanceTableHealthFilter" aria-label="Filtrar por saúde do anúncio">
                       <option value="all">Todas as saúdes</option>
@@ -1485,7 +1488,7 @@
                     </select>
                   </div>
                 </div>
-                <div>
+                <div class="dashboard-collapsible-body">
                   <div class="table-wrap">
                     <table>
                       <thead><tr><th>Produto</th><th>Preço</th><th>vs Média</th><th>Visitas</th><th>Conversão</th><th>Vendas</th><th>Perguntas</th><th>Saúde</th><th>Score</th><th>Sugestão</th></tr></thead>
@@ -1497,7 +1500,7 @@
               </div>
               </section>
 
-              <section id="marketplacePerformanceInvestmentPanel" data-performance-section-panel="investment" role="tabpanel" aria-labelledby="marketplacePerformanceInvestmentTab">
+              <section id="marketplacePerformanceInvestmentPanel" data-performance-section-panel="investment" role="tabpanel" aria-labelledby="marketplacePerformanceInvestmentTab" hidden>
               <div id="investmentRankingPanel" class="panel panel-collapsible collapsed" data-panel-collapsible="investment-ranking">
                 <div class="panel-head">
                   <button class="dashboard-collapsible-toggle" type="button" data-panel-toggle aria-expanded="false">
@@ -1568,7 +1571,7 @@
               </div>
               </section>
 
-              <section id="marketplacePerformanceReputationPanel" data-performance-section-panel="reputation" role="tabpanel" aria-labelledby="marketplacePerformanceReputationTab">
+              <section id="marketplacePerformanceReputationPanel" data-performance-section-panel="reputation" role="tabpanel" aria-labelledby="marketplacePerformanceReputationTab" hidden>
                 <div id="sellerReputationPanel" class="panel" hidden>
                   <div class="panel-head"><h3>Reputação do vendedor</h3></div>
                   <div id="sellerReputationContent"></div>
