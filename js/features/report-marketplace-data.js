@@ -51,8 +51,8 @@ export function marketplaceSaleTimestamp(sale, order = null) {
 
 function marketplaceSaleStatusKind(status) {
   const normalized = status.toLowerCase();
-  if (["paid", "confirmed", "approved", "shipped", "delivered", "complete", "completed"].includes(normalized)) return "confirmed";
-  if (["cancelled", "canceled", "payment_required", "pending", "unshipped", "refunded", "partially_refunded", "returned"].includes(normalized)) return "excluded";
+  if (["paid", "confirmed", "approved", "shipped", "unshipped", "partiallyshipped", "delivered", "complete", "completed"].includes(normalized)) return "confirmed";
+  if (["cancelled", "canceled", "payment_required", "pending", "refunded", "partially_refunded", "returned"].includes(normalized)) return "excluded";
   return "unknown";
 }
 

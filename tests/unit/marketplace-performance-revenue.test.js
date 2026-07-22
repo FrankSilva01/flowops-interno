@@ -29,6 +29,16 @@ test("normaliza valores, status e data de pedidos Mercado Livre e Amazon", () =>
   assert.equal(revenue.coverage, "complete");
 });
 
+test("inclui pedidos Amazon ativos ainda nao enviados ou parcialmente enviados", () => {
+  const revenue = marketplaceRevenueForPeriod([
+    { marketplace: "Amazon", external_order_id: "amazon-unshipped", raw_payload: { OrderStatus: "Unshipped", PurchaseDate: "2026-07-12T12:00:00.000Z", OrderTotal: { Amount: "35" } } },
+    { marketplace: "Amazon", external_order_id: "amazon-partial", raw_payload: { OrderStatus: "pArTiAlLyShIpPeD", PurchaseDate: "2026-07-13T12:00:00.000Z", OrderTotal: { Amount: "45" } } },
+  ], period);
+
+  assert.equal(revenue.value, 80);
+  assert.equal(revenue.coverage, "complete");
+});
+
 test("usa a data real do pedido e trata backfill sem data como parcial", () => {
   const revenue = marketplaceRevenueForPeriod([
     { marketplace: "Mercado Livre", created_at: "2026-07-21T12:00:00.000Z", raw_payload: { status: "paid", date_created: "2026-06-01T12:00:00.000Z", total_amount: 100 } },

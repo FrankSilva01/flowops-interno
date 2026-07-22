@@ -36,3 +36,9 @@
 - Initial parallel `npm run test:e2e` run had one mobile Chromium context shutdown before test setup; the same test passed when rerun serially with one worker.
 - Full serial E2E verification initially passed (21 tests; 17 authenticated scenarios skipped because credentials are not configured). A later serial rerun had one pre-setup Chromium context shutdown in the public mobile ARIA test; that exact test passed immediately when rerun in isolation with one worker. This is retained as a runner-environment risk, not a product failure.
 - Restored prior UI integration coverage as behavioral tests for retained Rentabilidade selection, keyboard detail navigation, unavailable/partial revenue semantics, and historical visualization inputs.
+
+## Amazon Active-order Follow-up
+
+- Amazon `Unshipped` and `PartiallyShipped` are normalized as active confirmed revenue states, case-insensitively.
+- Added behavioral coverage for both statuses and mixed-case payload values.
+- `npm run check`, focused revenue tests, and `npm run test:unit` passed (112 unit tests).
