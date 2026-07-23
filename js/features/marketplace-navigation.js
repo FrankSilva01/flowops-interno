@@ -63,6 +63,45 @@ export async function resolveLinkedMarketplaceListing(link, marketplaceListings 
   );
   return listing || fetchListing?.(link) || null;
 }
+
+export async function routeSelectedMarketplaceListingEdit(listing, {
+  ensureCanManage,
+  closeDrawer,
+  openMarketplaceEdit,
+} = {}) {
+  if (!listing || !ensureCanManage?.()) return false;
+  closeDrawer?.();
+  await openMarketplaceEdit?.(listing.external_id, listing.marketplace);
+  return true;
+}
+
+export async function openResolvedLinkedMarketplaceListing(link, marketplaceListings = [], fetchListing, {
+  openDrawer,
+  showFeedback,
+} = {}) {
+  try {
+    const listing = await resolveLinkedMarketplaceListing(link, marketplaceListings, fetchListing);
+    if (listing) {
+      openDrawer?.(listing);
+      return { listing, status: "resolved" };
+    }
+    const feedback = {
+      title: "Anúncio ainda não associado",
+      message: "O anúncio não foi encontrado neste tenant. O vínculo continua pendente de associação; sincronize os anúncios ou revise o código do anúncio.",
+      tone: "warning",
+    };
+    showFeedback?.(feedback);
+    return { listing: null, status: "not-found", feedback };
+  } catch (error) {
+    const feedback = {
+      title: "Não foi possível consultar o anúncio",
+      message: "O vínculo continua pendente de associação. Tente novamente ou sincronize os anúncios antes de editar.",
+      tone: "warning",
+    };
+    showFeedback?.(feedback);
+    return { listing: null, status: "error", error, feedback };
+  }
+}
 function html(value) {
   return String(value ?? "").replace(/[&<>"']/g, (char) => ({
     "&": "&amp;",

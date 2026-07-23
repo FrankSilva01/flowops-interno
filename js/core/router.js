@@ -86,9 +86,19 @@ import {
   openListingDrawer, bindListingDrawer, closeListingDrawer,
   showCalculatorSuggestion, getSuggestionForListing, syncFeeCalculatorFull, setMarketplacePerformanceSection, moveMarketplacePerformanceSection,
 } from "../features/marketplace-analytics.js";
-import { marketplaceAreaForView } from "../features/marketplace-navigation.js";
+import { marketplaceAreaForView, routeSelectedMarketplaceListingEdit } from "../features/marketplace-navigation.js";
 
 const APP_VERSION = "263";
+
+function openMarketplaceListingDrawer(listing) {
+  openListingDrawer(listing, {
+    onEdit: () => routeSelectedMarketplaceListingEdit(listing, {
+      ensureCanManage: () => ensureCapability("manage_marketplaces", "gerenciar marketplaces"),
+      closeDrawer: closeListingDrawer,
+      openMarketplaceEdit,
+    }),
+  });
+}
 
 async function refreshAppShell() {
   showAppMessage("Atualizando sistema", "Limpando cache local e carregando a versão mais recente.", "info");
@@ -849,12 +859,17 @@ export function bindActions() {
         return;
       }
       if (action === "open-listing-drawer") {
-        openListingDrawer(button.dataset.marketplace, button.dataset.externalId);
+        const listing = state.marketplaceListings.find((item) =>
+          item.marketplace === button.dataset.marketplace && item.external_id === button.dataset.externalId
+        );
+        openMarketplaceListingDrawer(listing);
         return;
       }
       if (action === "open-linked-listing") {
-        const listing = await openLinkedMarketplaceListing(button.dataset.marketplace, button.dataset.externalId);
-        if (listing) openListingDrawer(listing.marketplace, listing.external_id);
+        await openLinkedMarketplaceListing(button.dataset.marketplace, button.dataset.externalId, {
+          openDrawer: openMarketplaceListingDrawer,
+          showFeedback: ({ title, message, tone }) => showAppMessage(title, message, tone),
+        });
         return;
       }
       if (action === "resolve-suggestion") {

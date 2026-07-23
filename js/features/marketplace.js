@@ -28,8 +28,8 @@ import {
   operationalMarketplaceListings,
   productListingLinks,
   marketplaceChannelFiltersVisible,
+  openResolvedLinkedMarketplaceListing,
   renderCatalogLinkedListing,
-  resolveLinkedMarketplaceListing,
 } from "./marketplace-navigation.js";
 import { closeStorefrontProductDialog } from "./storefront-wizard.js";
 import { paginate, responsivePageSize } from "../core/pagination.js";
@@ -1692,13 +1692,14 @@ async function fetchLinkedMarketplaceListing(link) {
   return data || null;
 }
 
-export async function openLinkedMarketplaceListing(marketplace, externalId) {
+export async function openLinkedMarketplaceListing(marketplace, externalId, actions) {
   const link = { marketplace, external_id: externalId };
-  const listing = await resolveLinkedMarketplaceListing(link, state.marketplaceListings, fetchLinkedMarketplaceListing);
+  const result = await openResolvedLinkedMarketplaceListing(link, state.marketplaceListings, fetchLinkedMarketplaceListing, actions);
+  const { listing } = result;
   if (listing && !state.marketplaceListings.some((item) => item.marketplace === listing.marketplace && item.external_id === listing.external_id)) {
     state.marketplaceListings.push(listing);
   }
-  return listing;
+  return result;
 }
 
 export function applyMarketplaceLogRange() {

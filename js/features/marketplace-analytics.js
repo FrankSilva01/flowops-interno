@@ -1067,9 +1067,9 @@ export function closeListingDrawer() {
   byId("listingDrawerOverlay").hidden = true;
 }
 
-export function openListingDrawer(marketplace, externalId) {
-  const listing = state.marketplaceListings.find((item) => item.marketplace === marketplace && item.external_id === externalId);
+export function openListingDrawer(listing, { onEdit } = {}) {
   if (!listing) return;
+  const { marketplace, external_id: externalId } = listing;
   const analytics = getListingAnalytics(marketplace, externalId);
   const profitability = getListingProfitability(listing);
   const portfolioAvgConversion = computePortfolioAvgConversion();
@@ -1100,10 +1100,7 @@ export function openListingDrawer(marketplace, externalId) {
   if (permalink) openMlBtn.href = permalink;
 
   const editBtn = byId("listingDrawerEditBtn");
-  editBtn.onclick = () => {
-    closeListingDrawer();
-    document.querySelector(`[data-action="marketplace-edit"][data-id="${CSS.escape(externalId)}"]`)?.click();
-  };
+  editBtn.onclick = () => onEdit?.(listing);
 
   byId("listingDrawer").classList.add("open");
   byId("listingDrawer").setAttribute("aria-hidden", "false");
