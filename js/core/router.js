@@ -57,7 +57,7 @@ import {
   loadMlCategoryFields, bindStorefrontImageInputs, bindStorefrontDescriptionEditor, bindMlCategorySelect, setMarketplaceView, setMarketplaceArea,
   applyMarketplaceLogRange, showMarketplaceStats, fillStorefrontFormFromListing,
   openMarketplaceEdit, viewMarketplaceOrder, createMarketplaceOrder, downloadMarketplaceDocument,
-  openMarketplaceMigration, prepareMarketplaceMigration, refreshMarketplaceMigrationPreview,
+  openMarketplaceMigration, openLinkedMarketplaceListing, prepareMarketplaceMigration, refreshMarketplaceMigrationPreview,
   openBulkMarketplaceMigration, saveBulkMarketplaceMigration, refreshBulkMarketplaceMigrationPreview,
   toggleMarketplaceMigrationSelection, toggleAllMarketplaceMigrationSelections,
   openMarketplaceFileImport, previewMarketplaceFileImport, saveMarketplaceFileImport,
@@ -86,6 +86,7 @@ import {
   openListingDrawer, bindListingDrawer, closeListingDrawer,
   showCalculatorSuggestion, getSuggestionForListing, syncFeeCalculatorFull, setMarketplacePerformanceSection, moveMarketplacePerformanceSection,
 } from "../features/marketplace-analytics.js";
+import { marketplaceAreaForView } from "../features/marketplace-navigation.js";
 
 const APP_VERSION = "263";
 
@@ -851,6 +852,11 @@ export function bindActions() {
         openListingDrawer(button.dataset.marketplace, button.dataset.externalId);
         return;
       }
+      if (action === "open-linked-listing") {
+        const listing = await openLinkedMarketplaceListing(button.dataset.marketplace, button.dataset.externalId);
+        if (listing) openListingDrawer(listing.marketplace, listing.external_id);
+        return;
+      }
       if (action === "resolve-suggestion") {
         if (!ensureCanEdit()) return;
         await resolveSuggestion(id);
@@ -1015,6 +1021,7 @@ export function bindActions() {
         return;
       }
       if (action === "marketplace-channel-filter") {
+        if (marketplaceAreaForView(state.marketplaceView) !== "operation") return;
         state.marketplaceChannelFilter = button.dataset.channel || "all";
         state.marketplaceListingsPage = 1;
         renderMarketplaces();

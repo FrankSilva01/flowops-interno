@@ -25,6 +25,10 @@ export function defaultMarketplaceViewForArea(area) {
   return MARKETPLACE_AREAS[area]?.[0] || "listings";
 }
 
+export function marketplaceChannelFiltersVisible(area) {
+  return area === "operation";
+}
+
 export function isOperationalMarketplaceListing(listing) {
   return String(listing?.marketplace || "").trim().toLowerCase() !== "vitrine";
 }
@@ -43,3 +47,29 @@ export function productListingLinks(product, productListings = [], marketplaceLi
       ) || null,
     }));
 }
+
+export function renderCatalogLinkedListing(link, listing = null) {
+  const marketplace = html(marketplaceDisplayName(link?.marketplace));
+  const externalId = html(link?.external_id || "-");
+  const action = listing ? "open-listing-drawer" : "open-linked-listing";
+  const label = listing ? "Ver anúncio" : "Resolver anúncio";
+  const pending = listing ? "" : '<span class="badge queue">Pendente de associação</span>';
+  return `<span class="catalog-linked-listing">${marketplace} · ${externalId} ${pending}<button class="secondary-btn" type="button" data-action="${action}" data-marketplace="${html(link?.marketplace)}" data-external-id="${externalId}">${label}</button></span>`;
+}
+
+export async function resolveLinkedMarketplaceListing(link, marketplaceListings = [], fetchListing) {
+  const listing = marketplaceListings.find((item) =>
+    item.marketplace === link?.marketplace && item.external_id === link?.external_id
+  );
+  return listing || fetchListing?.(link) || null;
+}
+function html(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;",
+  })[char]);
+}
+import { marketplaceDisplayName } from "./marketplace-channel.js";

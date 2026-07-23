@@ -27,6 +27,9 @@ import {
   marketplaceAreaForView,
   operationalMarketplaceListings,
   productListingLinks,
+  marketplaceChannelFiltersVisible,
+  renderCatalogLinkedListing,
+  resolveLinkedMarketplaceListing,
 } from "./marketplace-navigation.js";
 import { closeStorefrontProductDialog } from "./storefront-wizard.js";
 import { paginate, responsivePageSize } from "../core/pagination.js";
@@ -666,10 +669,10 @@ export function renderStorefrontAdmin() {
         <div>
           <strong>${html(product.name || "Produto sem nome")}</strong>
           <span>${html(product.sku || "Sem SKU")} • ${html(product.category || "Sem categoria")} • Custo ${money.format(Number(product.cost_price || 0))}</span>
-          <small>${links.length ? links.map(({ link }) => `${marketplaceDisplayName(link.marketplace)} · ${link.external_id}`).join(" | ") : "Ainda não publicado"}</small>
+          <small>${links.length ? links.map(({ link }) => `${html(marketplaceDisplayName(link.marketplace))} · ${html(link.external_id)}`).join(" | ") : "Ainda não publicado"}</small>
         </div>
         <div class="inline-actions">
-          ${links.map(({ link, listing }) => listing ? `<button class="secondary-btn" type="button" data-action="open-listing-drawer" data-marketplace="${html(link.marketplace)}" data-external-id="${html(link.external_id)}">Ver anúncio</button>` : "").join("")}
+          ${links.map(({ link, listing }) => renderCatalogLinkedListing(link, listing)).join("")}
           <button class="secondary-btn" type="button" data-action="edit-product" data-id="${html(product.id)}">Editar produto</button>
         </div>
       </article>
@@ -1654,6 +1657,13 @@ export function setMarketplaceView(view) {
   document.querySelectorAll("[data-marketplace-area-views]").forEach((group) => {
     group.hidden = group.dataset.marketplaceAreaViews !== area;
   });
+  const marketplaceChannelFilters = byId("marketplaceChannelFilters");
+  if (marketplaceChannelFilters) {
+    marketplaceChannelFilters.hidden = !marketplaceChannelFiltersVisible(area);
+    marketplaceChannelFilters.querySelectorAll("button").forEach((button) => {
+      button.disabled = !marketplaceChannelFiltersVisible(area);
+    });
+  }
   byId("marketplaceListingsView").classList.toggle("active", state.marketplaceView === "listings");
   byId("marketplaceStorefrontView").classList.toggle("active", state.marketplaceView === "storefront");
   byId("marketplaceSalesView").classList.toggle("active", state.marketplaceView === "sales");
@@ -1667,6 +1677,28 @@ export function setMarketplaceView(view) {
 
 export function setMarketplaceArea(area) {
   setMarketplaceView(defaultMarketplaceViewForArea(area));
+}
+
+async function fetchLinkedMarketplaceListing(link) {
+  if (!state.supabase || !state.organizationId) return null;
+  const { data, error } = await state.supabase
+    .from("marketplace_listings")
+    .select("marketplace,external_id,title,sku,price,status,permalink,thumbnail_url,raw_payload,updated_at")
+    .eq("organization_id", state.organizationId)
+    .eq("marketplace", link.marketplace)
+    .eq("external_id", link.external_id)
+    .maybeSingle();
+  if (error) throw error;
+  return data || null;
+}
+
+export async function openLinkedMarketplaceListing(marketplace, externalId) {
+  const link = { marketplace, external_id: externalId };
+  const listing = await resolveLinkedMarketplaceListing(link, state.marketplaceListings, fetchLinkedMarketplaceListing);
+  if (listing && !state.marketplaceListings.some((item) => item.marketplace === listing.marketplace && item.external_id === listing.external_id)) {
+    state.marketplaceListings.push(listing);
+  }
+  return listing;
 }
 
 export function applyMarketplaceLogRange() {

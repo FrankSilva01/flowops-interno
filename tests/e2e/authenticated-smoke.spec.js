@@ -111,6 +111,29 @@ test.describe("sessao autenticada", () => {
     }
   });
 
+  test("mantem filtros de canal somente na Operacao do Marketplace", async ({ page }) => {
+    await page.goto("/#marketplace");
+    await expect(page.locator("#appView")).toBeVisible();
+    const operationArea = page.locator('[data-marketplace-area="operation"]');
+    const catalogArea = page.locator('[data-marketplace-area="catalog"]');
+    test.skip(!(await operationArea.isVisible()) || !(await catalogArea.isVisible()), "Marketplace indisponivel para este perfil.");
+
+    await operationArea.click();
+    const filters = page.locator("#marketplaceChannelFilters");
+    const shopee = filters.locator('[data-channel="shopee"]');
+    await shopee.click();
+    await expect(shopee).toHaveClass(/active/);
+
+    await catalogArea.click();
+    await expect(filters).toBeHidden();
+    expect(await filters.locator("button").evaluateAll((buttons) => buttons.every((button) => button.disabled))).toBe(true);
+
+    await operationArea.click();
+    await expect(filters).toBeVisible();
+    expect(await filters.locator("button").evaluateAll((buttons) => buttons.every((button) => !button.disabled))).toBe(true);
+    await expect(shopee).toHaveClass(/active/);
+  });
+
   test("seleciona encomenda e disponibiliza exclusao administrativa", async ({ page }) => {
     test.skip((page.viewportSize()?.width || 0) < 720, "Barra de ações em lote validada no layout desktop.");
     await page.goto("/#orders");
