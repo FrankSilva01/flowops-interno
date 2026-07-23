@@ -1,4 +1,5 @@
 import { SUPABASE_CONFIG } from "./core/config.js";
+import { initAssistant } from "./features/ai-assistant.js";
 import {
   state, money, DEFAULT_RESPONSIBLES, PRODUCTION_STAGES, PRIORITY_OPTIONS, STATUS_OPTIONS,
   SUBSCRIPTION_DEFAULT_GRACE_DAYS, normalizeOrderStatus, normalizeStage, defaultChecklist,
@@ -242,6 +243,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       console.error('Service Worker registration failed:', err);
     });
   }
+
+  // Initialize AI Assistant (after app is ready)
+  setTimeout(() => { try { initAssistant(); } catch(e) { console.warn('AI Assistant init:', e); } }, 800);
 
 });
 
