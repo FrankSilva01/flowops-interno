@@ -6,6 +6,7 @@ import { formatInventoryNumber, startInventoryEdit } from "./materials.js";
 import { getTokenAlert, getRecentIntegrationErrors } from "./dashboard.js";
 import { startOrderEdit } from "./orders.js";
 import { getSubscriptionAlert } from "./subscription.js";
+import { demandForecast, normalize as kbNormalize } from "../data/knowledge-base.js";
 import { setMarketplaceView } from "./marketplace.js";
 import { checkLogisticsDelays } from "./logistics.js";
 import { generateSuggestions } from "./pricing.js";
@@ -45,6 +46,12 @@ export async function ensureOperationalNotifications() {
     if (item.status !== "Entregue" && item.deliveryDate && new Date(`${item.deliveryDate}T00:00:00`) < now) {
       add("system", "Pedido atrasado", `${item.orderCode || item.id} - ${item.description}`, "order", item.id, "high");
     }
+    // IA proativa: avisa entregas de hoje e de amanhã antes de virarem atraso
+    if (item.status !== "Entregue" && item.deliveryDate) {
+      const diffDays = Math.round((new Date(`${item.deliveryDate}T00:00:00`) - now) / 86400000);
+      if (diffDays === 0) add("delivery", "Entrega hoje", `${item.orderCode || item.id} - ${item.description}`, "order", item.id, "high");
+      else if (diffDays === 1) add("delivery", "Entrega amanhã", `${item.orderCode || item.id} - ${item.description}`, "order", item.id);
+    }
     if (item.status !== "Entregue" && !item.deliveryDate && !item.quoteStage) {
       add("system", "Encomenda sem data", `${item.orderCode || item.id} - ${item.description}`, "order", item.id);
     }
@@ -72,6 +79,24 @@ export async function ensureOperationalNotifications() {
         "high",
       );
     });
+  // Previsão de demanda: sugere compra quando o uso projetado supera o estoque
+  try {
+    const { materials } = demandForecast({ data: state.data });
+    Object.entries(materials).slice(0, 10).forEach(([materialName, need]) => {
+      const inv = state.inventoryItems.find((i) =>
+        kbNormalize(i.name || "").includes(kbNormalize(materialName)) || kbNormalize(materialName).includes(kbNormalize(i.name || "")));
+      if (!inv) return;
+      const stock = Number(inv.quantity || 0);
+      if (stock >= need) return;
+      add(
+        "stock",
+        "Sugestão de compra (previsão)",
+        `${materialName}: uso projetado ~${Math.ceil(need)} ${inv.unit || "un."} em 4 semanas; estoque atual ${stock}. Sugestão: compre ~${Math.ceil(need - stock)}.`,
+        "inventory",
+        `forecast-${kbNormalize(materialName)}`,
+      );
+    });
+  } catch (e) { /* previsão nunca bloqueia as notificações operacionais */ }
   const subscriptionAlert = getSubscriptionAlert();
   if (subscriptionAlert) {
     add(

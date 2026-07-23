@@ -1,4 +1,5 @@
 import { state, saveData, normalizeOrderStatus } from "../core/state.js";
+import { enqueueWrite, readQueue, replaceQueue } from "../core/offline-queue.js";
 import { render } from "../core/router.js";
 import { subscriptionFallbackFromOrganization } from "../features/subscription.js";
 import { loadCalendarEvents } from "../features/calendar-persistence.js";
@@ -12,10 +13,46 @@ export async function persist(kind, item) {
   // load remoto ter sucesso) para o chamador poder avisar, em vez de fingir que
   // salvou. O gate remoteLoaded impede gravar dados demo/nao-carregados caso o
   // carregamento inicial tenha falhado.
-  if (!state.online || !state.supabase || !state.remoteLoaded) return { persisted: false };
+  if (!state.online || !state.supabase || !state.remoteLoaded) {
+    // Fila offline: só quando a sessão JA carregou do banco (remoteLoaded) e a
+    // queda é de conectividade — nunca enfileira dados de sessão não carregada.
+    if (!state.online && state.supabase && state.remoteLoaded && state.organizationId) {
+      const queued = enqueueWrite(state.organizationId, { op: "persist", kind, itemId: item?.id, item });
+      return { persisted: false, queued };
+    }
+    return { persisted: false };
+  }
   const { error } = await state.supabase.from(tableName(kind)).upsert(toRemote(kind, item));
   if (error) throw error;
   return { persisted: true };
+}
+
+// Reaplica as escritas guardadas offline (chamado quando a conexão volta).
+// Reaplica só as da organização logada; falhas param o flush e ficam na fila.
+export async function flushOfflineQueue() {
+  const orgId = state.organizationId;
+  if (!orgId || !state.online || !state.supabase || !state.remoteLoaded) return 0;
+  const queue = readQueue(orgId);
+  if (!queue.length) return 0;
+  let flushed = 0;
+  const remaining = [...queue];
+  for (const entry of queue) {
+    try {
+      if (entry.op === "persist") {
+        const { error } = await state.supabase.from(tableName(entry.kind)).upsert(toRemote(entry.kind, entry.item));
+        if (error) throw error;
+      } else if (entry.op === "remove") {
+        const { error } = await state.supabase.from(tableName(entry.kind)).delete().eq("id", entry.itemId).eq("organization_id", orgId);
+        if (error) throw error;
+      }
+      remaining.shift();
+      flushed += 1;
+    } catch (e) {
+      break; // mantém o restante na fila pra próxima tentativa
+    }
+  }
+  replaceQueue(orgId, remaining);
+  return flushed;
 }
 
 // Busca TODAS as linhas em paginas de 1000 (limite padrao do PostgREST).
@@ -35,7 +72,13 @@ async function fetchAllRows(build) {
 }
 
 export async function removeRemote(kind, id) {
-  if (!state.online || !state.supabase || !state.remoteLoaded) return { persisted: false };
+  if (!state.online || !state.supabase || !state.remoteLoaded) {
+    if (!state.online && state.supabase && state.remoteLoaded && state.organizationId) {
+      const queued = enqueueWrite(state.organizationId, { op: "remove", kind, itemId: id });
+      return { persisted: false, queued };
+    }
+    return { persisted: false };
+  }
   const { error } = await state.supabase.from(tableName(kind)).delete().eq("id", id).eq("organization_id", state.organizationId);
   if (error) throw error;
   return { persisted: true };

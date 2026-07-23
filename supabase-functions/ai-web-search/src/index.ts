@@ -92,6 +92,8 @@ async function marketSearch(term: string, organizationId: string) {
     ok: true,
     answer: `🔎 **"${term}" no Mercado Livre** (${rs.length} anúncios, ${Number(d.paging?.total || 0).toLocaleString("pt-BR")} no total):\n\n• Mínimo: R$ ${fmtBRL(min)}\n• **Mediana: R$ ${fmtBRL(median)}**\n• Média: R$ ${fmtBRL(avg)}\n• Máximo: R$ ${fmtBRL(max)}\n• ${free}% com frete grátis\n\n**Exemplos:**\n${top}\n\n_Use a Calculadora da Inteligência pra definir seu preço com margem._`,
     source: "Mercado Livre (tempo real)",
+    // stats numéricos crus — usados pela vigilância de preços (market-watch)
+    stats: { median, min, max, avg, total: Number(d.paging?.total || 0), sample: rs.length, free_pct: free },
   });
 }
 

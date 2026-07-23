@@ -296,5 +296,5 @@ function searchAllData(query) {
   }
   return { items: unique.slice(0, 15), total: unique.length };
 }
-// CSS agora está em 12-global-search.css
+// CSS da busca global vive no bundle css/flowops.css (seção global-search)
 // Nada para inicializar aqui

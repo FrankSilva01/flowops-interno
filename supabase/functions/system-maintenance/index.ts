@@ -84,18 +84,96 @@ Deno.serve(async (req) => {
     await requireSystemOperator(req);
     const token = await maintainMlToken();
     const subscriptions = await maintainSubscriptions();
+    const monthlyReports = await sendMonthlyReports().catch((error) => ({ error: String(error?.message || error) }));
     const emails = await dispatchPendingEmails(adminClient());
     const integrationJobs = await processIntegrationJobs();
     const logs = await cleanupOperationalLogs();
     const governance = await cleanupGovernanceRecords();
     const marketplaceDocuments = await reconcileMarketplaceDocuments();
     const backup = await createBackup("Sistema", false);
-    return json({ ok: true, token, subscriptions, emails, integration_jobs: integrationJobs, logs, governance, marketplace_documents: marketplaceDocuments, backup });
+    return json({ ok: true, token, subscriptions, monthly_reports: monthlyReports, emails, integration_jobs: integrationJobs, logs, governance, marketplace_documents: marketplaceDocuments, backup });
   } catch (error) {
     await createSystemNotification("Backup falhou", error.message || String(error), "high").catch(() => {});
     return json({ ok: false, error: error.message || String(error) }, { status: 500 });
   }
 });
+
+// Relatório mensal por e-mail (Brevo): no dia 1º, agrega o mês anterior de
+// cada organização e enfileira no outbox (dispatchPendingEmails envia logo em
+// seguida no mesmo fluxo). Dedup: 1 envio por org/mês via consulta ao outbox.
+function fmtBRLReport(n: number) {
+  return Number(n || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+async function sendMonthlyReports() {
+  const now = new Date();
+  if (now.getUTCDate() !== 1) return { skipped: "not_first_day" };
+  const supabase = adminClient();
+  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
+  const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const periodLabel = `${String(start.getUTCMonth() + 1).padStart(2, "0")}/${start.getUTCFullYear()}`;
+
+  const { data: orgs, error: orgsError } = await supabase.from("organizations").select("id,name,owner_email");
+  if (orgsError) throw orgsError;
+
+  let sent = 0;
+  let skipped = 0;
+  for (const org of orgs || []) {
+    if (!org.owner_email) { skipped += 1; continue; }
+    const { data: dup } = await supabase
+      .from("saas_email_outbox")
+      .select("id")
+      .eq("organization_id", org.id)
+      .eq("template_code", "monthly_report")
+      .gte("created_at", end.toISOString())
+      .limit(1);
+    if (dup?.length) { skipped += 1; continue; }
+
+    const [ordersRes, cashRes] = await Promise.all([
+      supabase.from("orders")
+        .select("charged,description,quantity,created_at")
+        .eq("organization_id", org.id)
+        .gte("created_at", start.toISOString())
+        .lt("created_at", end.toISOString()),
+      supabase.from("cash_entries")
+        .select("income,expense")
+        .eq("organization_id", org.id)
+        .gte("date", start.toISOString().slice(0, 10))
+        .lt("date", end.toISOString().slice(0, 10)),
+    ]);
+    const orders = ordersRes.data || [];
+    const cash = cashRes.data || [];
+    if (!orders.length && !cash.length) { skipped += 1; continue; } // sem atividade: não envia
+
+    const revenue = orders.reduce((acc, o) => acc + Number(o.charged || 0), 0);
+    const cashIn = cash.reduce((acc, c) => acc + Number(c.income || 0), 0);
+    const cashOut = cash.reduce((acc, c) => acc + Number(c.expense || 0), 0);
+    const byProduct: Record<string, number> = {};
+    orders.forEach((o) => {
+      const key = String(o.description || "?");
+      byProduct[key] = (byProduct[key] || 0) + Math.max(1, Number(o.quantity || 1));
+    });
+    const topProduct = Object.entries(byProduct).sort((a, b) => b[1] - a[1])[0];
+
+    await supabase.from("saas_email_outbox").insert({
+      organization_id: org.id,
+      recipient_email: org.owner_email,
+      template_code: "monthly_report",
+      variables: {
+        company: org.name || "",
+        period: periodLabel,
+        orders_count: String(orders.length),
+        revenue: fmtBRLReport(revenue),
+        cash_in: fmtBRLReport(cashIn),
+        cash_out: fmtBRLReport(cashOut),
+        profit: fmtBRLReport(cashIn - cashOut),
+        top_product: topProduct ? `${topProduct[0]} (${topProduct[1]}x)` : "—",
+      },
+    });
+    sent += 1;
+  }
+  return { sent, skipped, period: periodLabel };
+}
 
 async function processIntegrationJobs() {
   const supabase = adminClient();

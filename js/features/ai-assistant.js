@@ -9,8 +9,9 @@ import { recordAudit } from "./logs.js";
 import {
   searchKnowledge, searchDataQuery, searchEntityQuery, runDataQuery,
   getContextualSuggestions, normalize, tokenize, coverage,
-  detectPeriod, isPeriodOnly,
+  detectPeriod, isPeriodOnly, buildDailyDigest,
 } from "../data/knowledge-base.js";
+import { addWatch, removeWatch, describeWatches, checkWatchesDaily, edgeMarketSearch } from "./market-watch.js";
 
 let chatHistory = [];
 let isOpen = false;
@@ -47,6 +48,8 @@ export function initAssistant() {
     if (e.key === "Escape" && isOpen) toggle();
   });
   restoreHistory();
+  // Vigilância de preços: checagem diária em segundo plano (day-gate interno)
+  setTimeout(() => { checkWatchesDaily().catch(() => null); }, 15000);
 }
 
 function toggle() {
@@ -58,8 +61,22 @@ function toggle() {
   if (isOpen) {
     updateSuggestions();
     if (!chatHistory.length) greet();
+    showDailyDigest();
     setTimeout(() => byId("aiIn")?.focus(), 100);
   }
+}
+
+// IA proativa: resumo do dia na primeira abertura do assistente (1x/dia/org)
+function showDailyDigest() {
+  try {
+    const key = `flowops_ai_digest_${state.organizationId || "local"}`;
+    const today = new Date().toISOString().slice(0, 10);
+    if (localStorage.getItem(key) === today) return;
+    const digest = buildDailyDigest(state);
+    if (!digest) return;
+    localStorage.setItem(key, today);
+    addBot(digest, { view: "dashboard" }, "IA proativa");
+  } catch (e) { /* digest nunca quebra o chat */ }
 }
 
 function greet() {
@@ -171,6 +188,16 @@ async function processQuery(query) {
     }
   }
 
+  // CAMADA 0.6: vigilância de preços (linguagem natural)
+  const qn0 = normalize(trimmed);
+  const watchAdd = qn0.match(/^(?:vigiar|monitorar|acompanhar)\s+(?:o\s+)?preco\s+(?:de|do|da|dos|das)?\s*(.{3,80})$/);
+  if (watchAdd) { const r = await addWatch(watchAdd[1]); addBot(r.message, r.ok ? { view: "marketplace" } : null, "Vigilância de preços"); return; }
+  const watchDel = qn0.match(/^(?:parar de vigiar|remover alerta|parar de monitorar)\s+(?:o\s+)?(?:preco\s+)?(?:de|do|da)?\s*(.{2,80})$/);
+  if (watchDel) { const r = await removeWatch(watchDel[1]); addBot(r.message); return; }
+  if (/^(?:meus alertas|alertas de preco|o que estou vigiando|lista de alertas)\b/.test(qn0)) {
+    addBot(await describeWatches(), { view: "marketplace" }, "Vigilância de preços"); return;
+  }
+
   // CAMADA 0.7: pergunta "como fazer" → base de conhecimento tem prioridade
   if (/^(como|o que e|oque e|pra que serve|para que serve|onde fica|onde encontro)\b/.test(normalize(trimmed))) {
     const howTo = searchKnowledge(trimmed);
@@ -252,15 +279,22 @@ async function processQuery(query) {
   if (state.canEdit) offerTeach(query);
 }
 
-function handleCommand(cmd) {
-  const c = normalize(cmd.slice(1)).split(" ")[0];
+async function handleCommand(cmd) {
+  const rest = cmd.slice(1).trim();
+  const c = normalize(rest).split(" ")[0];
   if (c === "limpar") { clearChat(); return; }
   if (c === "ensinar") {
     if (!state.canEdit) { addBot("Apenas usuários com permissão de edição podem me ensinar."); return; }
     offerTeach("");
     return;
   }
-  addBot("**Comandos:**\n\n• **/ajuda** — esta lista\n• **/ensinar** — cadastrar uma resposta nova (admins)\n• **/limpar** — limpar a conversa\n\n**O que sei fazer:**\n\n• Dados: \"lucro do mês\", \"atrasados\", \"estoque crítico\", \"pedidos do [cliente]\"\n• Follow-up: depois de uma consulta, \"e essa semana?\"\n• Sistema: \"como criar encomenda\", \"como funciona o kanban\"\n• Mercado: \"preço médio de [produto]\" (pesquisa real no ML)\n• Aprendo com 👍/👎 e com respostas ensinadas");
+  if (c === "vigiar") {
+    const term = rest.replace(/^\S+\s*/, "");
+    const r = await addWatch(term);
+    addBot(r.message, r.ok ? { view: "marketplace" } : null, "Vigilância de preços");
+    return;
+  }
+  addBot("**Comandos:**\n\n• **/ajuda** — esta lista\n• **/ensinar** — cadastrar uma resposta nova (admins)\n• **/vigiar [produto]** — alerta quando a concorrência baixar o preço\n• **/limpar** — limpar a conversa\n\n**O que sei fazer:**\n\n• Dados: \"lucro do mês\", \"atrasados\", \"estoque crítico\", \"pedidos do [cliente]\"\n• Previsão: \"previsão de demanda\", \"o que comprar\"\n• Follow-up: depois de uma consulta, \"e essa semana?\"\n• Sistema: \"como criar encomenda\", \"como funciona o kanban\"\n• Mercado: \"preço médio de [produto]\" · \"vigiar preço de [produto]\" · \"meus alertas de preço\"\n• Resumo proativo do dia ao abrir o chat\n• Aprendo com 👍/👎 e com respostas ensinadas");
 }
 
 // ============================== APRENDIZADO (reforço) ==============================
@@ -453,7 +487,7 @@ async function searchMercadoLivre(term) {
   } catch (e) { /* segue pro fallback */ }
   // 2) Fallback: Edge Function com o token da conta ML da organização
   //    (a busca pública do ML passou a exigir autenticação)
-  const viaEdge = await callEdge({ query: term, mode: "market", organization_id: state.organizationId });
+  const viaEdge = await edgeMarketSearch(term);
   return viaEdge?.answer || null;
 }
 

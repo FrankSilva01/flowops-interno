@@ -162,10 +162,12 @@ export const DATA_QUERIES=[
 {p:['quantos pedidos','total pedidos'],period:true,fn:(s,p)=>{const o=fop(s.data.orders,p);const e=o.filter(x=>x.status==='Entregue').length;return{t:`**Pedidos ${pl(p)}:** ${o.length}\nEntregues: ${e} | Pendentes: ${o.length-e}`,v:'reports'}}},
 {p:['quantos clientes','total clientes'],fn:(s)=>{const t=(s.data.leads||[]).length;const a=(s.data.leads||[]).filter(l=>l.status==='Cliente').length;return{t:`**${t} contato(s):** ${a} ativos, ${t-a} leads`,v:'leads'}}},
 {p:['melhor cliente','quem mais compra','top cliente'],fn:(s)=>{const c={};s.data.orders.forEach(o=>{const n=o.client||'?';c[n]=(c[n]||0)+N(o.charged)});const sorted=Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,5);return{t:`**Top clientes:**\n\n${sorted.map(([n,v],i)=>`${i+1}. **${n}** — R$ ${f(v)}`).join('\n')}`,v:'leads'}}},
-{p:['estoque','material acabando','critico','repor'],fn:(s)=>{const items=(s.inventoryItems||[]).filter(i=>N(i.current_quantity)<=N(i.min_quantity));if(!items.length)return{t:'Estoque OK. 👍'};return{t:`⚠️ **${items.length} crítico(s):**\n\n${items.map(i=>`• **${i.name}** — ${i.current_quantity||0}/${i.min_quantity||0} un.`).join('\n')}`,v:'materials'}}},
+{p:['estoque','material acabando','critico','repor'],fn:(s)=>{const items=lowStock(s);if(!items.length)return{t:'Estoque OK. 👍'};return{t:`⚠️ **${items.length} crítico(s):**\n\n${items.map(i=>`• **${i.name}** — ${i.quantity||0}/${i.minimum_quantity||0} ${i.unit||'un.'}`).join('\n')}`,v:'materials'}}},
+{p:['entregar amanha','entrega amanha','despachar amanha'],fn:(s)=>{const tm=new Date();tm.setDate(tm.getDate()+1);const td=tm.toISOString().split('T')[0];const o=s.data.orders.filter(x=>(x.deliveryDate||'').startsWith(td)&&x.status!=='Entregue');if(!o.length)return{t:'Nenhum pedido pra amanhã. 🎉'};return{t:`**${o.length} pra amanhã:**\n\n${o.map(x=>`• **${x.description}** (${x.orderCode||'?'}) — R$ ${f(N(x.charged))}`).join('\n')}`,v:'orders'}}},
+{p:['previsao','demanda','o que comprar','sugestao de compra','quanto vou vender','projecao','comprar material'],fn:(s)=>{const fc=demandForecast(s);if(!fc.rows.length)return{t:'Ainda não tenho vendas suficientes nas últimas 8 semanas pra projetar demanda.'};const prods=fc.rows.slice(0,6).map(r=>`• **${r.name}** — ~${r.perWeek.toFixed(1)}/sem${r.trend===null?'':r.trend>=0?` (▲${r.trend.toFixed(0)}%)`:` (▼${Math.abs(r.trend).toFixed(0)}%)`} → ~${r.next4} em 4 sem`).join('\n');const mats=Object.entries(fc.materials).slice(0,5).map(([m,need])=>{const inv=(s.inventoryItems||[]).find(i=>normalize(i.name||'').includes(normalize(m))||normalize(m).includes(normalize(i.name||'')));const stock=inv?N(inv.quantity):null;const flag=stock!==null&&stock<need?` ⚠️ estoque ${stock} — **compre ~${Math.ceil(need-stock)}**`:stock!==null?` (estoque ${stock} ok)`:'';return`• **${m}**: uso projetado ~${Math.ceil(need)} em 4 sem${flag}`}).join('\n');return{t:`📈 **Previsão (média móvel 4 sem, tendência vs 4 sem anteriores):**\n\n${prods}${mats?`\n\n**Materiais:**\n${mats}`:''}\n\n_Estatística pura sobre seus pedidos — sem IA externa._`,v:'materials'}}},
 {p:['anuncios','quantos anuncios'],fn:(s)=>{const l=(s.data.marketplaceListings||[]);return{t:`**${l.length} anúncio(s)** (${l.filter(x=>x.status==='active').length} ativos)`,v:'marketplace'}}},
 {p:['qual marketplace','melhor canal','onde vendo'],fn:(s)=>{const c={};s.data.orders.forEach(o=>{const ch=o.source||'manual';c[ch]=(c[ch]||0)+N(o.charged)});const sorted=Object.entries(c).sort((a,b)=>b[1]-a[1]);return{t:`**Vendas por canal:**\n\n${sorted.map(([k,v])=>`• **${k}**: R$ ${f(v)}`).join('\n')}`,v:'reports'}}},
-{p:['resumo','visao geral','como esta','situacao','meu negocio'],fn:(s)=>{const o=s.data.orders||[];const c=s.data.cash||[];const now=new Date();const m=c.filter(x=>x.date&&new Date(x.date).getMonth()===now.getMonth());const i=m.reduce((a,x)=>a+N(x.income),0);const e=m.reduce((a,x)=>a+N(x.expense),0);const td=now.toISOString().split('T')[0];const pend=o.filter(x=>!['Entregue','Despachado'].includes(x.status)).length;const late=o.filter(x=>x.deliveryDate&&x.deliveryDate<td&&!['Entregue'].includes(x.status)).length;const inv=(s.inventoryItems||[]).filter(x=>N(x.current_quantity)<=N(x.min_quantity)).length;return{t:`📊 **Resumo:**\n\n💰 Mês: R$ ${f(i)} entrada, R$ ${f(e)} saída, **R$ ${f(i-e)} lucro**\n📦 ${pend} pendentes, ${late} atrasados\n🔴 ${inv} estoque crítico\n📋 ${o.length} pedidos, 👥 ${(s.data.leads||[]).length} clientes`,v:'dashboard'}}},
+{p:['resumo','visao geral','como esta','situacao','meu negocio'],fn:(s)=>{const o=s.data.orders||[];const c=s.data.cash||[];const now=new Date();const m=c.filter(x=>x.date&&new Date(x.date).getMonth()===now.getMonth());const i=m.reduce((a,x)=>a+N(x.income),0);const e=m.reduce((a,x)=>a+N(x.expense),0);const td=now.toISOString().split('T')[0];const pend=o.filter(x=>!['Entregue','Despachado'].includes(x.status)).length;const late=o.filter(x=>x.deliveryDate&&x.deliveryDate<td&&!['Entregue'].includes(x.status)).length;const inv=lowStock(s).length;return{t:`📊 **Resumo:**\n\n💰 Mês: R$ ${f(i)} entrada, R$ ${f(e)} saída, **R$ ${f(i-e)} lucro**\n📦 ${pend} pendentes, ${late} atrasados\n🔴 ${inv} estoque crítico\n📋 ${o.length} pedidos, 👥 ${(s.data.leads||[]).length} clientes`,v:'dashboard'}}},
 {p:['gastos material','custo material','compras material'],period:true,fn:(s,p)=>{const m=fp(s.data.materials||[],p,'date');const t=m.reduce((a,x)=>a+N(x.total),0);return{t:`**Gastos materiais ${pl(p)}:** R$ ${f(t)} (${m.length} compras)`,v:'materials'}}},
 ];
 
@@ -279,6 +281,69 @@ export function searchEntityQuery(query,s){
 export function getContextualSuggestions(view){
   const s={dashboard:['Como está meu negócio?','Lucro do mês?','Atrasados?','Estoque crítico?'],orders:['Entregar hoje?','Pendentes?','Como criar encomenda?'],production:['Personalizar etapas?','Pendentes?'],logistics:['Como rastrear?','Atrasados?'],leads:['Quantos clientes?','Top cliente?'],cash:['Lucro do mês?','A receber?','Despesas do mês?'],materials:['Estoque crítico?'],reports:['Mais vendido?','Vendas do mês?'],marketplace:['Taxas do ML?','Como exportar?','Preço médio de um produto?'],calendar:['Vencimentos?','DAS?'],fiscal:['DAS MEI?','Nota fiscal?']};
   return s[view]||s.dashboard;
+}
+
+// Itens de estoque abaixo do mínimo (campos reais do schema: quantity/minimum_quantity)
+export function lowStock(s){
+  return (s.inventoryItems||[]).filter(i=>N(i.quantity)<=N(i.minimum_quantity));
+}
+
+// ============================== PREVISÃO DE DEMANDA ==============================
+// Média móvel semanal (últimas 4 semanas) + tendência vs as 4 anteriores.
+// Estatística pura sobre os pedidos — sem IA.
+
+export function demandForecast(s){
+  const orders=s.data?.orders||[];
+  const now=Date.now();
+  const byProd={};
+  orders.forEach(o=>{
+    const d=new Date(o.createdAt||o.created_at||'');
+    if(isNaN(d))return;
+    const weeks=(now-d.getTime())/(7*86400000);
+    if(weeks>8)return;
+    const k=o.description||'?';
+    const e=byProd[k]=byProd[k]||{recent:0,prev:0,material:o.material||null};
+    const qty=Math.max(1,N(o.quantity)||1);
+    if(weeks<=4)e.recent+=qty;else e.prev+=qty;
+  });
+  const rows=Object.entries(byProd)
+    .map(([name,v])=>({name,material:v.material,perWeek:v.recent/4,trend:v.prev>0?((v.recent-v.prev)/v.prev*100):null,next4:Math.ceil(v.recent||0)}))
+    .filter(r=>r.perWeek>0)
+    .sort((a,b)=>b.perWeek-a.perWeek);
+  const materials={};
+  rows.forEach(r=>{if(r.material)materials[r.material]=(materials[r.material]||0)+r.perWeek*4});
+  return{rows,materials};
+}
+
+// ============================== RESUMO PROATIVO DO DIA ==============================
+// Retorna null quando não há nada acionável (o assistente não incomoda à toa).
+
+export function buildDailyDigest(s){
+  const orders=s.data?.orders||[];
+  if(!orders.length&&!(s.inventoryItems||[]).length)return null;
+  const td=new Date().toISOString().split('T')[0];
+  const tm=new Date();tm.setDate(tm.getDate()+1);
+  const tdT=tm.toISOString().split('T')[0];
+  const open=o=>!['Entregue','Despachado'].includes(o.status);
+  const today=orders.filter(o=>(o.deliveryDate||'')===td&&open(o));
+  const tomorrow=orders.filter(o=>(o.deliveryDate||'')===tdT&&open(o));
+  const late=orders.filter(o=>o.deliveryDate&&o.deliveryDate<td&&open(o));
+  const stock=lowStock(s);
+  const receivable=orders.filter(o=>N(o.charged)>0&&N(o.received)===0);
+  const recTotal=receivable.reduce((a,o)=>a+N(o.charged),0);
+  const lines=[];
+  if(late.length)lines.push(`⚠️ **${late.length} pedido(s) atrasado(s)** — priorize hoje`);
+  if(today.length)lines.push(`📦 **${today.length} entrega(s) pra hoje**`);
+  if(tomorrow.length)lines.push(`🗓️ ${tomorrow.length} entrega(s) amanhã`);
+  if(stock.length)lines.push(`🔴 ${stock.length} item(ns) de estoque abaixo do mínimo`);
+  if(receivable.length)lines.push(`💰 R$ ${f(recTotal)} a receber (${receivable.length} pedidos)`);
+  try{
+    const fc=demandForecast(s);
+    const worst=Object.entries(fc.materials).map(([m,need])=>{const inv=(s.inventoryItems||[]).find(i=>normalize(i.name||'').includes(normalize(m))||normalize(m).includes(normalize(i.name||'')));return inv&&N(inv.quantity)<need?{m,falta:Math.ceil(need-N(inv.quantity))}:null}).filter(Boolean).sort((a,b)=>b.falta-a.falta)[0];
+    if(worst)lines.push(`🛒 Previsão: **${worst.m}** deve faltar (~${worst.falta} un. em 4 semanas)`);
+  }catch(e){/* previsão nunca derruba o digest */}
+  if(!lines.length)return null;
+  return`☀️ **Resumo de hoje:**\n\n${lines.join('\n')}\n\n_Pergunte "atrasados", "entregar hoje" ou "previsão de demanda" pra detalhar._`;
 }
 
 export function generateBusinessContext(s){

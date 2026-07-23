@@ -7,7 +7,7 @@ import { ensureOperationalNotifications } from "../features/notifications.js";
 import { getSubscriptionAccessStatus } from "../features/subscription.js";
 import { loadMarketplaces } from "../features/marketplace.js";
 import { loadListingAnalytics, loadSellerMetrics, loadListingFeeSync } from "../features/marketplace-analytics.js";
-import { loadRemoteData, subscribeRemote } from "../data/remote.js";
+import { loadRemoteData, subscribeRemote, flushOfflineQueue } from "../data/remote.js";
 
 export async function setupBackend() {
   const config = window.SUPABASE_CONFIG || {};
@@ -20,8 +20,9 @@ export async function setupBackend() {
   state.supabase.auth.onAuthStateChange(async (event) => {
     if (event === "PASSWORD_RECOVERY") await promptForNewPassword();
   });
-  state.online = true;
+  state.online = navigator.onLine !== false;
   setSessionInfo("Online", "Aguardando login", "Supabase online", false);
+  bindConnectivityListeners();
 
   if (isPasswordRecoveryUrl()) {
     await applyRecoverySessionFromUrl();
@@ -364,6 +365,9 @@ export async function enterOnlineApp(user) {
       await ensureOperationalNotifications();
       subscribeRemote();
       bindSubscriptionWatcher();
+      // Escritas guardadas offline numa sessão anterior sincronizam agora
+      const flushed = await flushOfflineQueue().catch(() => 0);
+      if (flushed > 0) showAppMessage("Sincronizado", `${flushed} alteração(ões) feitas offline foram enviadas ao banco.`, "success");
     }
     render();
     surfaceMlOauthResult();
@@ -488,6 +492,32 @@ export async function logout() {
   localStorage.removeItem("accountingIntegrationConfig");
   localStorage.removeItem("accountingSyncHistory");
   window.location.reload();
+}
+
+// Modo offline do PWA: marca o estado, avisa o usuário e sincroniza a fila
+// de escritas quando a conexão volta. Registrado uma única vez.
+let connectivityBound = false;
+function bindConnectivityListeners() {
+  if (connectivityBound) return;
+  connectivityBound = true;
+  window.addEventListener("offline", () => {
+    state.online = false;
+    showAppMessage("Sem conexão", "Você está offline. Alterações serão guardadas e sincronizadas quando a internet voltar.", "warning");
+  });
+  window.addEventListener("online", async () => {
+    state.online = true;
+    try {
+      const flushed = await flushOfflineQueue();
+      if (flushed > 0) {
+        showAppMessage("Sincronizado", `${flushed} alteração(ões) feitas offline foram enviadas ao banco.`, "success");
+        render();
+      } else {
+        showAppMessage("Conexão restabelecida", "Você está online novamente.", "success");
+      }
+    } catch (e) {
+      showAppMessage("Conexão restabelecida", "Você está online novamente.", "success");
+    }
+  });
 }
 
 export function setSessionInfo(name, role, mode, canLogout) {
