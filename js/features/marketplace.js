@@ -22,7 +22,7 @@ import {
   validateShopeeListing,
 } from "./shopee-template-export.js";
 import { groupShopeeCategorySuggestions } from "./shopee-category-mapping.js";
-import { defaultMarketplaceViewForArea, marketplaceAreaForView } from "./marketplace-navigation.js";
+import { defaultMarketplaceViewForArea, marketplaceAreaForView, productListingLinks } from "./marketplace-navigation.js";
 import { closeStorefrontProductDialog } from "./storefront-wizard.js";
 import { paginate, responsivePageSize } from "../core/pagination.js";
 import {
@@ -636,37 +636,39 @@ export function renderStorefrontAdmin() {
     <option value="${html(`${item.marketplace}:${item.external_id}`)}">${html(marketplaceDisplayName(item.marketplace))} - ${html(item.title || item.external_id)}</option>
   `).join("");
   source.value = [...source.options].some((option) => option.value === selected) ? selected : "";
-  const synced = state.marketplaceListings.filter((item) => normalizeMarketplaceChannel(item.marketplace) !== "vitrine").length;
-  const manual = state.marketplaceListings.filter((item) => normalizeMarketplaceChannel(item.marketplace) === "vitrine").length;
+  const linkedProducts = state.products.filter((product) => productListingLinks(product, state.productListings, state.marketplaceListings).length).length;
+  const unpublishedProducts = Math.max(0, state.products.length - linkedProducts);
   const views = state.storefrontEvents.filter((item) => item.event_type === "product_view").length;
   const buyClicks = state.storefrontEvents.filter((item) => item.event_type === "buy_click").length;
   const quoteClicks = state.storefrontEvents.filter((item) => ["quote_click", "custom_quote"].includes(item.event_type)).length;
   stats.innerHTML = `
-    <article><span>Produtos na vitrine</span><strong>${state.marketplaceListings.length}</strong></article>
-    <article><span>Sincronizados</span><strong>${synced}</strong></article>
-    <article><span>Manuais</span><strong>${manual}</strong></article>
+    <article><span>Produtos cadastrados</span><strong>${state.products.length}</strong></article>
+    <article><span>Com anúncios</span><strong>${linkedProducts}</strong></article>
+    <article><span>Ainda não publicados</span><strong>${unpublishedProducts}</strong></article>
     <article><span>Visualizações</span><strong>${views}</strong></article>
     <article><span>Cliques em comprar</span><strong>${buyClicks}</strong></article>
     <article><span>Cliques/orçamentos</span><strong>${quoteClicks}</strong></article>
-    <article><span>Última atualização</span><strong>${formatDateTime(state.marketplaceListings[0]?.updated_at)}</strong></article>
+    <article><span>Última atualização</span><strong>${formatDateTime(state.products[0]?.updated_at)}</strong></article>
   `;
-  const storefrontPage = paginate(state.marketplaceListings, state.storefrontPage, marketplacePageSize());
+  const storefrontPage = paginate(state.products, state.storefrontPage, marketplacePageSize());
   state.storefrontPage = storefrontPage.page;
-  list.innerHTML = state.marketplaceListings.length ? storefrontPage.items.map((item) => {
-    const payload = item.raw_payload || {};
-    const images = storefrontListingImages(item);
+  list.innerHTML = state.products.length ? storefrontPage.items.map((product) => {
+    const links = productListingLinks(product, state.productListings, state.marketplaceListings);
     return `
       <article class="storefront-product-row">
-        <img src="${html(images[0] || ensureHttpsUrl(item.thumbnail_url) || "")}" alt="${html(item.title)}" />
+        <span class="listing-placeholder" aria-hidden="true"></span>
         <div>
-          <strong>${html(item.title)}</strong>
-          <span>${html(marketplaceDisplayName(item.marketplace))} • ${money.format(Number(item.price || 0))}</span>
-          <small>${html(payload.description || payload.plain_text || "Descrição vinda do marketplace ou cadastro interno.")}</small>
+          <strong>${html(product.name || "Produto sem nome")}</strong>
+          <span>${html(product.sku || "Sem SKU")} • ${html(product.category || "Sem categoria")} • Custo ${money.format(Number(product.cost_price || 0))}</span>
+          <small>${links.length ? links.map(({ link }) => `${marketplaceDisplayName(link.marketplace)} · ${link.external_id}`).join(" | ") : "Ainda não publicado"}</small>
         </div>
-        <button class="secondary-btn" type="button" data-action="storefront-edit" data-id="${html(item.external_id)}" data-marketplace="${html(item.marketplace)}">Editar</button>
+        <div class="inline-actions">
+          ${links.map(({ link, listing }) => listing ? `<button class="secondary-btn" type="button" data-action="open-listing-drawer" data-marketplace="${html(link.marketplace)}" data-external-id="${html(link.external_id)}">Ver anúncio</button>` : "").join("")}
+          <button class="secondary-btn" type="button" data-action="edit-product" data-id="${html(product.id)}">Editar produto</button>
+        </div>
       </article>
     `;
-  }).join("") : `<div class="empty-chart">Nenhum produto na vitrine.</div>`;
+  }).join("") : `<div class="empty-chart">Nenhum produto cadastrado. Cadastre o primeiro produto para começar.</div>`;
   const pagination = byId("storefrontPagination");
   if (pagination) pagination.innerHTML = paginationMarkup(storefrontPage, "storefront-page");
 }

@@ -15,6 +15,13 @@ test("prioriza cadastro e agrupa acoes raras do Marketplace", () => {
   assert.match(page, /id="exportListingsBtn"[^>]*data-marketplace-overflow-action/);
 });
 
+test("catalogo usa produtos mestres e uma unica entrada de cadastro", () => {
+  assert.match(page, /id="openCatalogProductDialogBtn"[^>]*data-action="open-product-dialog"/);
+  assert.match(marketplace, /state\.products/);
+  assert.match(marketplace, /productListingLinks/);
+  assert.match(page, /Produtos cadastrados/);
+});
+
 test("barra de lote depende da selecao de anuncios", () => {
   assert.match(page, /id="marketplaceBulkActions"[^>]*hidden/);
   assert.match(marketplace, /marketplaceBulkActions/);

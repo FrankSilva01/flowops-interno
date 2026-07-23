@@ -14,7 +14,7 @@ test("catalogo e anuncios possuem paginadores independentes", () => {
 });
 
 test("renderizacao pagina as duas colecoes antes de criar as linhas", () => {
-  assert.match(marketplace, /paginate\(state\.marketplaceListings/);
+  assert.match(marketplace, /paginate\(state\.products/);
   assert.match(marketplace, /paginate\(listings,\s*state\.marketplaceListingsPage/);
   assert.match(marketplace, /paginationMarkup\(storefrontPage,\s*"storefront-page"\)/);
   assert.match(marketplace, /paginationMarkup\(listingsPage,\s*"marketplace-listings-page"\)/);
