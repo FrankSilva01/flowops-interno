@@ -22,7 +22,12 @@ import {
   validateShopeeListing,
 } from "./shopee-template-export.js";
 import { groupShopeeCategorySuggestions } from "./shopee-category-mapping.js";
-import { defaultMarketplaceViewForArea, marketplaceAreaForView, productListingLinks } from "./marketplace-navigation.js";
+import {
+  defaultMarketplaceViewForArea,
+  marketplaceAreaForView,
+  operationalMarketplaceListings,
+  productListingLinks,
+} from "./marketplace-navigation.js";
 import { closeStorefrontProductDialog } from "./storefront-wizard.js";
 import { paginate, responsivePageSize } from "../core/pagination.js";
 import {
@@ -242,7 +247,8 @@ export function renderMarketplaces() {
     return;
   }
   const accounts = state.marketplaceAccounts.filter(matchesMarketplaceChannel);
-  const listings = filterListingsForDisplay(state.marketplaceListings.filter(matchesMarketplaceChannel));
+  const operationalListings = operationalMarketplaceListings(state.marketplaceListings);
+  const listings = filterListingsForDisplay(operationalListings.filter(matchesMarketplaceChannel));
   const listingsPage = paginate(listings, state.marketplaceListingsPage, marketplacePageSize());
   state.marketplaceListingsPage = listingsPage.page;
   currentVisibleMarketplaceListings = listingsPage.items;

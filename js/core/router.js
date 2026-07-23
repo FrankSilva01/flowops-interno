@@ -796,6 +796,10 @@ export function bindActions() {
         openProductQuickDialog();
         return;
       }
+      if (action === "marketplace-open-catalog") {
+        setMarketplaceArea("catalog");
+        return;
+      }
       if (action === "edit-product") {
         if (!ensureCanEdit()) return;
         openProductQuickDialog(id);

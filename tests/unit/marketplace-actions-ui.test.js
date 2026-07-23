@@ -9,10 +9,18 @@ const styles = readFileSync(new URL("../../css/flowops.css", import.meta.url), "
 
 test("prioriza cadastro e agrupa acoes raras do Marketplace", () => {
   assert.match(page, /id="marketplaceMoreActions"/);
-  assert.match(page, /id="openProductDialogBtn" class="primary-btn"/);
+  assert.match(page, /id="openMarketplaceCatalogBtn" class="primary-btn"/);
   assert.match(page, /id="syncMercadoLivreBtn" class="secondary-btn"/);
   assert.match(page, /id="openMarketplaceFileImportBtn"[^>]*data-marketplace-overflow-action/);
   assert.match(page, /id="exportListingsBtn"[^>]*data-marketplace-overflow-action/);
+});
+
+test("operacao leva ao catalogo em vez de abrir cadastro duplicado", () => {
+  assert.match(page, /data-action="marketplace-open-catalog"/);
+  assert.doesNotMatch(page, /id="openProductDialogBtn"[^>]*data-action="open-product-dialog"/);
+  assert.match(router, /action === "marketplace-open-catalog"/);
+  assert.match(router, /setMarketplaceArea\("catalog"\)/);
+  assert.match(marketplace, /operationalMarketplaceListings\(state\.marketplaceListings\)/);
 });
 
 test("catalogo usa produtos mestres e uma unica entrada de cadastro", () => {
