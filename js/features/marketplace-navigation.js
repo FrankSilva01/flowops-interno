@@ -24,3 +24,22 @@ export function marketplaceAreaForView(view) {
 export function defaultMarketplaceViewForArea(area) {
   return MARKETPLACE_AREAS[area]?.[0] || "listings";
 }
+
+export function isOperationalMarketplaceListing(listing) {
+  return String(listing?.marketplace || "").trim().toLowerCase() !== "vitrine";
+}
+
+export function operationalMarketplaceListings(listings = []) {
+  return listings.filter(isOperationalMarketplaceListing);
+}
+
+export function productListingLinks(product, productListings = [], marketplaceListings = []) {
+  return productListings
+    .filter((link) => link.product_id === product?.id)
+    .map((link) => ({
+      link,
+      listing: marketplaceListings.find((item) =>
+        item.marketplace === link.marketplace && item.external_id === link.external_id
+      ) || null,
+    }));
+}
