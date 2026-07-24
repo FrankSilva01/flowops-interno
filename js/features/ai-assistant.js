@@ -9,13 +9,14 @@ import { recordAudit } from "./logs.js";
 import {
   searchKnowledge, searchDataQuery, searchEntityQuery, runDataQuery,
   getContextualSuggestions, normalize, tokenize, coverage,
-  detectPeriod, isPeriodOnly, buildDailyDigest, searchSmallTalk, pick,
+  detectPeriod, isPeriodOnly, buildDailyDigest, searchSmallTalk, pick, searchComposite,
 } from "../data/knowledge-base.js";
 import { addWatch, removeWatch, describeWatches, checkWatchesDaily, edgeMarketSearch } from "./market-watch.js";
 
 let chatHistory = [];
 let isOpen = false;
 let lastDataResult = null;      // p/ follow-up "e essa semana?"
+let lastEntity = null;          // p/ correferência: { name, query } → "e da Maria?"
 let learnedCache = null;        // respostas aprendidas (org)
 let aiAnswersOk = true;         // tabela ai_custom_answers disponível?
 let aiLogOk = true;             // tabela ai_interactions disponível?
@@ -25,7 +26,7 @@ const HIST_LIMIT = 40;
 export function initAssistant() {
   if (document.getElementById("aiBtn")) return;
   const s = document.createElement("style"); s.id = "aiCSS";
-  s.textContent = `#aiBtn{position:fixed;bottom:20px;right:20px;z-index:400;width:48px;height:48px;border-radius:50%;background:#0EA5E9;color:#fff;border:none;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(14,165,233,.4);transition:transform .2s}#aiBtn:hover{transform:scale(1.1)}#aiPanel{position:fixed;bottom:80px;right:20px;z-index:401;width:390px;max-height:560px;border-radius:12px;background:var(--panel,#1a2332);border:.5px solid var(--line,#2d3748);box-shadow:0 8px 32px rgba(0,0,0,.4);display:none;flex-direction:column;overflow:hidden;font-family:var(--font,system-ui)}.ai-hd{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:.5px solid var(--line,#2d3748)}.ai-hd-t{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500;color:var(--ink,#edf2f7)}.ai-hd-t i{font-size:18px;color:#0EA5E9}.ai-hd .ai-hd-a{display:flex;gap:6px}.ai-hd button{background:none;border:none;color:var(--muted,#8896a6);cursor:pointer;font-size:16px}.ai-msgs{flex:1;overflow-y:auto;padding:12px 16px;max-height:340px;min-height:200px;display:flex;flex-direction:column;gap:8px}.ai-m{max-width:88%;padding:8px 12px;border-radius:10px;font-size:12px;line-height:1.6;word-wrap:break-word}.ai-m.bot{background:var(--canvas,#0f1923);color:var(--ink,#edf2f7);align-self:flex-start;border-bottom-left-radius:2px}.ai-m.user{background:#0EA5E9;color:#fff;align-self:flex-end;border-bottom-right-radius:2px}.ai-m.typing{opacity:.6;font-style:italic}.ai-act{display:inline-block;margin-top:6px;font-size:11px;color:var(--accent-text,#38bdf8);cursor:pointer;text-decoration:underline}.ai-fb{display:flex;gap:4px;margin-top:6px}.ai-fb button{background:none;border:.5px solid var(--line,#2d3748);border-radius:4px;padding:2px 6px;font-size:10px;color:var(--muted);cursor:pointer}.ai-fb button:hover,.ai-fb button.voted{background:rgba(14,165,233,.12);color:#38bdf8;border-color:#0EA5E9}.ai-src{font-size:9px;color:var(--muted);margin-top:4px;opacity:.7}.ai-sug{padding:8px 16px;display:flex;flex-wrap:wrap;gap:4px;border-top:.5px solid var(--line,#2d3748)}.ai-sg{font-size:11px;padding:4px 10px;border-radius:12px;background:var(--canvas,#0f1923);color:#38bdf8;cursor:pointer;border:.5px solid var(--line,#2d3748);transition:background .15s}.ai-sg:hover{background:rgba(14,165,233,.12)}.ai-iw{display:flex;gap:8px;padding:12px 16px;border-top:.5px solid var(--line,#2d3748)}.ai-iw input{flex:1;background:var(--canvas,#0f1923);border:.5px solid var(--line,#2d3748);border-radius:8px;padding:8px 12px;color:var(--ink,#edf2f7);font-size:12px;outline:none;font-family:inherit}.ai-iw input:focus{border-color:#0EA5E9}.ai-iw input::placeholder{color:var(--muted)}.ai-iw button{background:#0EA5E9;color:#fff;border:none;border-radius:8px;width:36px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px}.ai-teach{background:var(--canvas,#0f1923);border:.5px solid var(--line,#2d3748);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;align-self:stretch}.ai-teach label{font-size:10px;color:var(--muted)}.ai-teach input,.ai-teach textarea{background:var(--panel,#1a2332);border:.5px solid var(--line,#2d3748);border-radius:6px;padding:6px 8px;color:var(--ink,#edf2f7);font-size:11px;outline:none;font-family:inherit;resize:vertical}.ai-teach textarea{min-height:52px}.ai-teach .ai-teach-b{display:flex;gap:6px;justify-content:flex-end}.ai-teach button{border:none;border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer}.ai-teach .tsave{background:#0EA5E9;color:#fff}.ai-teach .tcancel{background:none;color:var(--muted);border:.5px solid var(--line,#2d3748)}.ai-fu{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}`;
+  s.textContent = `#aiBtn{position:fixed;bottom:20px;right:20px;z-index:400;width:48px;height:48px;border-radius:50%;background:#0EA5E9;color:#fff;border:none;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(14,165,233,.4);transition:transform .2s}#aiBtn:hover{transform:scale(1.1)}#aiPanel{position:fixed;bottom:80px;right:20px;z-index:401;width:390px;max-height:560px;border-radius:12px;background:var(--panel,#1a2332);border:.5px solid var(--line,#2d3748);box-shadow:0 8px 32px rgba(0,0,0,.4);display:none;flex-direction:column;overflow:hidden;font-family:var(--font,system-ui)}.ai-hd{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:.5px solid var(--line,#2d3748)}.ai-hd-t{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500;color:var(--ink,#edf2f7)}.ai-hd-t i{font-size:18px;color:#0EA5E9}.ai-hd .ai-hd-a{display:flex;gap:6px}.ai-hd button{background:none;border:none;color:var(--muted,#8896a6);cursor:pointer;font-size:16px}.ai-msgs{flex:1;overflow-y:auto;padding:12px 16px;max-height:340px;min-height:200px;display:flex;flex-direction:column;gap:8px}.ai-m{max-width:88%;padding:8px 12px;border-radius:10px;font-size:12px;line-height:1.6;word-wrap:break-word}.ai-m.bot{background:var(--canvas,#0f1923);color:var(--ink,#edf2f7);align-self:flex-start;border-bottom-left-radius:2px}.ai-m.user{background:#0EA5E9;color:#fff;align-self:flex-end;border-bottom-right-radius:2px}.ai-m.typing{opacity:.6;font-style:italic}.ai-act{display:inline-block;margin-top:6px;font-size:11px;color:var(--accent-text,#38bdf8);cursor:pointer;text-decoration:underline}.ai-fb{display:flex;gap:4px;margin-top:6px}.ai-fb button{background:none;border:.5px solid var(--line,#2d3748);border-radius:4px;padding:2px 6px;font-size:10px;color:var(--muted);cursor:pointer}.ai-fb button:hover,.ai-fb button.voted{background:rgba(14,165,233,.12);color:#38bdf8;border-color:#0EA5E9}.ai-src{font-size:9px;color:var(--muted);margin-top:4px;opacity:.7}.ai-sug{padding:8px 16px;display:flex;flex-wrap:wrap;gap:4px;border-top:.5px solid var(--line,#2d3748)}.ai-sg{font-size:11px;padding:4px 10px;border-radius:12px;background:var(--canvas,#0f1923);color:#38bdf8;cursor:pointer;border:.5px solid var(--line,#2d3748);transition:background .15s}.ai-sg:hover{background:rgba(14,165,233,.12)}.ai-iw{display:flex;gap:8px;padding:12px 16px;border-top:.5px solid var(--line,#2d3748)}.ai-iw input{flex:1;background:var(--canvas,#0f1923);border:.5px solid var(--line,#2d3748);border-radius:8px;padding:8px 12px;color:var(--ink,#edf2f7);font-size:12px;outline:none;font-family:inherit}.ai-iw input:focus{border-color:#0EA5E9}.ai-iw input::placeholder{color:var(--muted)}.ai-iw button{background:#0EA5E9;color:#fff;border:none;border-radius:8px;width:36px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px}.ai-teach{background:var(--canvas,#0f1923);border:.5px solid var(--line,#2d3748);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;align-self:stretch}.ai-teach label{font-size:10px;color:var(--muted)}.ai-teach input,.ai-teach textarea{background:var(--panel,#1a2332);border:.5px solid var(--line,#2d3748);border-radius:6px;padding:6px 8px;color:var(--ink,#edf2f7);font-size:11px;outline:none;font-family:inherit;resize:vertical}.ai-teach textarea{min-height:52px}.ai-teach .ai-teach-b{display:flex;gap:6px;justify-content:flex-end}.ai-teach button{border:none;border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer}.ai-teach .tsave{background:#0EA5E9;color:#fff}.ai-teach .tcancel{background:none;color:var(--muted);border:.5px solid var(--line,#2d3748)}.ai-fu{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}#aiMic{background:var(--canvas,#0f1923)!important;color:var(--muted,#8896a6)!important;border:.5px solid var(--line,#2d3748)!important}#aiMic.listening{background:#dc2626!important;color:#fff!important;animation:aiPulse 1s infinite}@keyframes aiPulse{50%{opacity:.55}}`;
   document.head.appendChild(s);
 
   const btn = document.createElement("button");
@@ -36,12 +37,13 @@ export function initAssistant() {
 
   const panel = document.createElement("div");
   panel.id = "aiPanel";
-  panel.innerHTML = '<div class="ai-hd"><div class="ai-hd-t"><i class="ti ti-message-chatbot"></i><span>Assistente FlowOps</span></div><div class="ai-hd-a"><button type="button" id="aiClear" title="Limpar conversa"><i class="ti ti-eraser"></i></button><button type="button" id="aiClose"><i class="ti ti-x"></i></button></div></div><div class="ai-msgs" id="aiMsgs"></div><div class="ai-sug" id="aiSug"></div><div class="ai-iw"><input type="text" id="aiIn" placeholder="Pergunte algo... (/ajuda)" autocomplete="off"/><button type="button" id="aiSend"><i class="ti ti-send"></i></button></div>';
+  panel.innerHTML = '<div class="ai-hd"><div class="ai-hd-t"><i class="ti ti-message-chatbot"></i><span>Assistente FlowOps</span></div><div class="ai-hd-a"><button type="button" id="aiClear" title="Limpar conversa"><i class="ti ti-eraser"></i></button><button type="button" id="aiClose"><i class="ti ti-x"></i></button></div></div><div class="ai-msgs" id="aiMsgs"></div><div class="ai-sug" id="aiSug"></div><div class="ai-iw"><input type="text" id="aiIn" placeholder="Pergunte algo... (/ajuda)" autocomplete="off"/><button type="button" id="aiMic" title="Falar (pt-BR)" hidden><i class="ti ti-microphone"></i></button><button type="button" id="aiSend"><i class="ti ti-send"></i></button></div>';
   document.body.appendChild(panel);
   panel.querySelector("#aiClose").addEventListener("click", toggle);
   panel.querySelector("#aiClear").addEventListener("click", clearChat);
   panel.querySelector("#aiSend").addEventListener("click", send);
   panel.querySelector("#aiIn").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } });
+  setupVoiceInput(panel);
 
   document.addEventListener("keydown", e => {
     if (e.altKey && e.key === "a") { e.preventDefault(); toggle(); }
@@ -189,6 +191,12 @@ async function processQuery(query) {
   const chat = searchSmallTalk(trimmed);
   if (chat) { addBot(chat, null, null, null, true, ["Como está meu negócio?", "Como melhorar?"]); return; }
 
+  // CAMADA 0.4: "por quê?" — explica como a última resposta foi calculada
+  if (/^(por ?que|pq\b|porque|como (voce |vc )?(calculou|chegou|sabe)|explica( isso| esse)?[\s?]*$)/.test(normalize(trimmed)) && lastDataResult?.dq?.explain) {
+    addBot(`🧮 ${lastDataResult.dq.explain}`, null, "Como eu calculo", null, true, ["Como melhorar?", "E essa semana?"]);
+    return;
+  }
+
   // CAMADA 0.5: follow-up de período ("e essa semana?")
   if (lastDataResult?.dq?.period && isPeriodOnly(trimmed)) {
     const period = detectPeriod(trimmed);
@@ -196,6 +204,20 @@ async function processQuery(query) {
     if (r && r.type === "data") {
       lastDataResult = r;
       presentDataAnswer(r, query);
+      return;
+    }
+  }
+
+  // CAMADA 0.55: correferência — "e da Maria?", "e o vaso groot?" reusa a
+  // última consulta por entidade trocando o nome
+  const corefMatch = normalize(trimmed).match(/^e\s+(?:d?[oa]s?\s+)?(.{2,40}?)\??$/);
+  if (corefMatch && lastEntity && !isPeriodOnly(trimmed)) {
+    const synth = lastEntity.query.replace(new RegExp(escapeRegex(lastEntity.name), "i"), corefMatch[1]);
+    const swapped = searchEntityQuery(synth, state);
+    if (swapped) {
+      lastEntity = { name: swapped.entityName, query: synth };
+      const interaction = logInteraction(query, "entity", swapped.text);
+      addBot(swapped.text, swapped.action, "Seus dados", { query, layer: "entity", interaction });
       return;
     }
   }
@@ -208,6 +230,21 @@ async function processQuery(query) {
   if (watchDel) { const r = await removeWatch(watchDel[1]); addBot(r.message); return; }
   if (/^(?:meus alertas|alertas de preco|o que estou vigiando|lista de alertas)\b/.test(qn0)) {
     addBot(await describeWatches(), { view: "marketplace" }, "Vigilância de preços"); return;
+  }
+
+  // CAMADA 0.65: conteúdo externo rápido — câmbio, tendências do ML, CEP
+  if ((/\b(dolar|euro)\b/.test(qn0) && /(cotacao|cambio|hoje|agora|quanto|valor|preco|ta|esta)/.test(qn0)) || /^(cotacao|cambio)\b/.test(qn0)) {
+    await answerExternal(query, { query: "USD-BRL,EUR-BRL", mode: "currency" }, "Consultando câmbio...", "câmbio");
+    return;
+  }
+  if (/tendencia/.test(qn0) && /(ml\b|mercado livre|mercado|venda|busca)/.test(qn0)) {
+    await answerExternal(query, { query: "MLB", mode: "trends", organization_id: state.organizationId }, "Buscando tendências do Mercado Livre...", "tendências (requer conta ML conectada)");
+    return;
+  }
+  const cepMatch = qn0.match(/\bcep\s*(\d{5})\s*-?\s*(\d{3})\b/);
+  if (cepMatch) {
+    await answerExternal(query, { query: `${cepMatch[1]}${cepMatch[2]}`, mode: "cep" }, "Consultando CEP...", "CEP");
+    return;
   }
 
   // CAMADA 0.7: pergunta "como fazer" → base de conhecimento tem prioridade
@@ -231,8 +268,17 @@ async function processQuery(query) {
   // CAMADA 2: entidades (cliente/produto pelo nome)
   const entity = searchEntityQuery(query, state);
   if (entity) {
+    if (entity.entityName) lastEntity = { name: entity.entityName, query };
     const interaction = logInteraction(query, "entity", entity.text);
     addBot(entity.text, entity.action, "Seus dados", { query, layer: "entity", interaction });
+    return;
+  }
+
+  // CAMADA 2.5: pergunta composta ("lucro e atrasados", "vendas, estoque")
+  const composite = searchComposite(query, state);
+  if (composite) {
+    const interaction = logInteraction(query, "data", composite.text);
+    addBot(composite.text, composite.action, "Seus dados (resposta combinada)", { query, layer: "data", interaction });
     return;
   }
 
@@ -290,6 +336,51 @@ async function processQuery(query) {
   if (state.canEdit) offerTeach(query);
 }
 
+function escapeRegex(s) { return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+
+// Entrada por voz — Web Speech API do navegador (pt-BR), sem serviço externo.
+// O botão só aparece quando o navegador suporta (Chrome/Edge/Android).
+function setupVoiceInput(panel) {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const mic = panel.querySelector("#aiMic");
+  if (!SR || !mic) return;
+  mic.hidden = false;
+  let listening = false;
+  mic.addEventListener("click", () => {
+    if (listening) return;
+    try {
+      const recog = new SR();
+      recog.lang = "pt-BR";
+      recog.interimResults = false;
+      recog.maxAlternatives = 1;
+      listening = true;
+      mic.classList.add("listening");
+      recog.onresult = (e) => {
+        const text = e.results?.[0]?.[0]?.transcript || "";
+        const input = byId("aiIn");
+        if (text && input) { input.value = text; send(); }
+      };
+      recog.onend = () => { listening = false; mic.classList.remove("listening"); };
+      recog.onerror = () => { listening = false; mic.classList.remove("listening"); };
+      recog.start();
+    } catch (e) { listening = false; mic.classList.remove("listening"); }
+  });
+}
+
+// Consulta externa via Edge Function com typing + fallback honesto
+async function answerExternal(query, body, typingLabel, what) {
+  showTyping(typingLabel);
+  const r = await callEdge(body);
+  hideTyping();
+  if (r?.answer) {
+    const interaction = logInteraction(query, "web", r.answer);
+    addBot(r.answer, null, r.source || "Conteúdo externo (tempo real)", { query, layer: "web", interaction });
+  } else {
+    logInteraction(query, "miss", null);
+    addBot(`Não consegui consultar ${what} agora. 😕\n\nA função externa **ai-web-search** precisa estar publicada no Supabase (e no caso de tendências, a conta ML conectada).`);
+  }
+}
+
 // Resposta de dados "com vida": número + análise (vs período anterior) + dica
 // contextual + chips de próxima pergunta. Insights vêm de dq.ins (regras
 // locais sobre os dados) — nunca quebram a resposta principal.
@@ -319,7 +410,7 @@ async function handleCommand(cmd) {
     addBot(r.message, r.ok ? { view: "marketplace" } : null, "Vigilância de preços");
     return;
   }
-  addBot("**Comandos:**\n\n• **/ajuda** — esta lista\n• **/ensinar** — cadastrar uma resposta nova (admins)\n• **/vigiar [produto]** — alerta quando a concorrência baixar o preço\n• **/limpar** — limpar a conversa\n\n**O que sei fazer:**\n\n• Dados: \"lucro do mês\", \"atrasados\", \"estoque crítico\", \"pedidos do [cliente]\"\n• Previsão: \"previsão de demanda\", \"o que comprar\"\n• Follow-up: depois de uma consulta, \"e essa semana?\"\n• Sistema: \"como criar encomenda\", \"como funciona o kanban\"\n• Mercado: \"preço médio de [produto]\" · \"vigiar preço de [produto]\" · \"meus alertas de preço\"\n• Resumo proativo do dia ao abrir o chat\n• Aprendo com 👍/👎 e com respostas ensinadas");
+  addBot("**Comandos:**\n\n• **/ajuda** — esta lista\n• **/ensinar** — cadastrar uma resposta nova (admins)\n• **/vigiar [produto]** — alerta quando a concorrência baixar o preço\n• **/limpar** — limpar a conversa\n\n**O que sei fazer:**\n\n• Dados: \"lucro do mês\", \"atrasados\", \"pedidos do [cliente]\" — e combinadas: \"lucro e atrasados\"\n• Continuação: \"e essa semana?\" · \"e da Maria?\" · \"por quê?\" (explico o cálculo)\n• Análise: \"como melhorar?\" · \"previsão de demanda\" · \"o que comprar\"\n• Mercado: \"preço médio de [produto]\" · \"vigiar preço de X\" · \"tendências do ML\"\n• Externo: \"cotação do dólar\" · \"cep 01310-100\" · \"o que é PLA?\"\n• Sistema: \"como criar encomenda\", \"como funciona o kanban\"\n• 🎤 Voz: clique no microfone e fale (Chrome/Edge/celular)\n• Aprendo com 👍/👎 e com respostas ensinadas");
 }
 
 // ============================== APRENDIZADO (reforço) ==============================

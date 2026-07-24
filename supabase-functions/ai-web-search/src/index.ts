@@ -97,6 +97,68 @@ async function marketSearch(term: string, organizationId: string) {
   });
 }
 
+// Câmbio em tempo real (AwesomeAPI — pública, sem chave). term: "USD-BRL,EUR-BRL"
+async function currencySearch(term: string) {
+  const pairs = term.replace(/[^A-Z,-]/gi, "").slice(0, 40) || "USD-BRL,EUR-BRL";
+  const res = await fetch(`https://economia.awesomeapi.com.br/json/last/${encodeURIComponent(pairs)}`);
+  if (!res.ok) return json({ ok: false, error: "cambio indisponivel" }, { status: 502 });
+  const data = await res.json();
+  const rows = Object.values(data || {}) as Record<string, string>[];
+  if (!rows.length) return json({ ok: false, error: "sem cotacao" }, { status: 404 });
+  const icon: Record<string, string> = { USD: "💵", EUR: "💶", GBP: "💷" };
+  const lines = rows.map((r) => {
+    const chg = Number(r.pctChange || 0);
+    const arrow = chg > 0 ? `▲ +${chg.toFixed(2)}%` : chg < 0 ? `▼ ${chg.toFixed(2)}%` : "estável";
+    return `${icon[r.code] || "💱"} **${r.name?.split("/")[0] || r.code}**: R$ ${Number(r.bid).toFixed(4).replace(".", ",")} (${arrow} hoje · mín R$ ${Number(r.low).toFixed(2).replace(".", ",")} · máx R$ ${Number(r.high).toFixed(2).replace(".", ",")})`;
+  });
+  return json({
+    ok: true,
+    answer: `**Câmbio agora:**\n\n${lines.join("\n")}\n\n_Dólar alto encarece filamento importado — vale comparar fornecedor nacional._`,
+    source: "AwesomeAPI (tempo real)",
+  });
+}
+
+// CEP via ViaCEP (pública, sem chave). term: 8 dígitos
+async function cepSearch(term: string) {
+  const cep = term.replace(/\D/g, "").slice(0, 8);
+  if (cep.length !== 8) return json({ ok: false, error: "cep invalido" }, { status: 400 });
+  const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+  if (!res.ok) return json({ ok: false, error: "viacep indisponivel" }, { status: 502 });
+  const d = await res.json();
+  if (d?.erro) return json({ ok: false, error: "cep nao encontrado" }, { status: 404 });
+  return json({
+    ok: true,
+    answer: `📍 **CEP ${cep.slice(0, 5)}-${cep.slice(5)}:**\n\n${[d.logradouro, d.bairro].filter(Boolean).join(", ") || "(logradouro não informado)"}\n**${d.localidade} – ${d.uf}**${d.ddd ? `\nDDD ${d.ddd}` : ""}`,
+    source: "ViaCEP",
+  });
+}
+
+// Tendências de busca do Mercado Livre (requer token da conta da organização)
+async function trendsSearch(organizationId: string) {
+  if (!organizationId) return json({ ok: false, error: "organization_id obrigatorio" }, { status: 400 });
+  const supabase = adminClient();
+  const { data: account } = await supabase
+    .from("marketplace_accounts")
+    .select("access_token")
+    .eq("organization_id", organizationId)
+    .eq("marketplace", "Mercado Livre")
+    .eq("status", "connected")
+    .maybeSingle();
+  if (!account?.access_token) return json({ ok: false, error: "conta ML nao conectada" }, { status: 404 });
+  const res = await fetch("https://api.mercadolibre.com/trends/MLB", {
+    headers: { Authorization: `Bearer ${account.access_token}` },
+  });
+  if (!res.ok) return json({ ok: false, error: `ML respondeu ${res.status}` }, { status: 502 });
+  const data = await res.json();
+  const list = (Array.isArray(data) ? data : []).slice(0, 12);
+  if (!list.length) return json({ ok: false, error: "sem tendencias" }, { status: 404 });
+  return json({
+    ok: true,
+    answer: `🔥 **Buscas em alta no Mercado Livre agora:**\n\n${list.map((t: any, i: number) => `${i + 1}. ${t.keyword}`).join("\n")}\n\n_Tem algo aí que você consegue produzir? Pergunte "preço médio de [termo]" pra ver se vale a pena._`,
+    source: "Mercado Livre Trends (tempo real)",
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ ok: false, error: "use POST" }, { status: 405 });
@@ -106,6 +168,9 @@ Deno.serve(async (req) => {
     const term = String(body.query || "").trim().slice(0, 120);
     if (!term) return json({ ok: false, error: "query obrigatoria" }, { status: 400 });
     if (body.mode === "market") return await marketSearch(term, String(body.organization_id || ""));
+    if (body.mode === "currency") return await currencySearch(term);
+    if (body.mode === "cep") return await cepSearch(term);
+    if (body.mode === "trends") return await trendsSearch(String(body.organization_id || ""));
     return await webSearch(term);
   } catch (error) {
     return json({ ok: false, error: String(error) }, { status: 500 });
