@@ -9,7 +9,7 @@ import { recordAudit } from "./logs.js";
 import {
   searchKnowledge, searchDataQuery, searchEntityQuery, runDataQuery,
   getContextualSuggestions, normalize, tokenize, coverage,
-  detectPeriod, isPeriodOnly, buildDailyDigest,
+  detectPeriod, isPeriodOnly, buildDailyDigest, searchSmallTalk, pick,
 } from "../data/knowledge-base.js";
 import { addWatch, removeWatch, describeWatches, checkWatchesDaily, edgeMarketSearch } from "./market-watch.js";
 
@@ -25,7 +25,7 @@ const HIST_LIMIT = 40;
 export function initAssistant() {
   if (document.getElementById("aiBtn")) return;
   const s = document.createElement("style"); s.id = "aiCSS";
-  s.textContent = `#aiBtn{position:fixed;bottom:20px;right:20px;z-index:400;width:48px;height:48px;border-radius:50%;background:#0EA5E9;color:#fff;border:none;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(14,165,233,.4);transition:transform .2s}#aiBtn:hover{transform:scale(1.1)}#aiPanel{position:fixed;bottom:80px;right:20px;z-index:401;width:390px;max-height:560px;border-radius:12px;background:var(--panel,#1a2332);border:.5px solid var(--line,#2d3748);box-shadow:0 8px 32px rgba(0,0,0,.4);display:none;flex-direction:column;overflow:hidden;font-family:var(--font,system-ui)}.ai-hd{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:.5px solid var(--line,#2d3748)}.ai-hd-t{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500;color:var(--ink,#edf2f7)}.ai-hd-t i{font-size:18px;color:#0EA5E9}.ai-hd .ai-hd-a{display:flex;gap:6px}.ai-hd button{background:none;border:none;color:var(--muted,#8896a6);cursor:pointer;font-size:16px}.ai-msgs{flex:1;overflow-y:auto;padding:12px 16px;max-height:340px;min-height:200px;display:flex;flex-direction:column;gap:8px}.ai-m{max-width:88%;padding:8px 12px;border-radius:10px;font-size:12px;line-height:1.6;word-wrap:break-word}.ai-m.bot{background:var(--canvas,#0f1923);color:var(--ink,#edf2f7);align-self:flex-start;border-bottom-left-radius:2px}.ai-m.user{background:#0EA5E9;color:#fff;align-self:flex-end;border-bottom-right-radius:2px}.ai-m.typing{opacity:.6;font-style:italic}.ai-act{display:inline-block;margin-top:6px;font-size:11px;color:var(--accent-text,#38bdf8);cursor:pointer;text-decoration:underline}.ai-fb{display:flex;gap:4px;margin-top:6px}.ai-fb button{background:none;border:.5px solid var(--line,#2d3748);border-radius:4px;padding:2px 6px;font-size:10px;color:var(--muted);cursor:pointer}.ai-fb button:hover,.ai-fb button.voted{background:rgba(14,165,233,.12);color:#38bdf8;border-color:#0EA5E9}.ai-src{font-size:9px;color:var(--muted);margin-top:4px;opacity:.7}.ai-sug{padding:8px 16px;display:flex;flex-wrap:wrap;gap:4px;border-top:.5px solid var(--line,#2d3748)}.ai-sg{font-size:11px;padding:4px 10px;border-radius:12px;background:var(--canvas,#0f1923);color:#38bdf8;cursor:pointer;border:.5px solid var(--line,#2d3748);transition:background .15s}.ai-sg:hover{background:rgba(14,165,233,.12)}.ai-iw{display:flex;gap:8px;padding:12px 16px;border-top:.5px solid var(--line,#2d3748)}.ai-iw input{flex:1;background:var(--canvas,#0f1923);border:.5px solid var(--line,#2d3748);border-radius:8px;padding:8px 12px;color:var(--ink,#edf2f7);font-size:12px;outline:none;font-family:inherit}.ai-iw input:focus{border-color:#0EA5E9}.ai-iw input::placeholder{color:var(--muted)}.ai-iw button{background:#0EA5E9;color:#fff;border:none;border-radius:8px;width:36px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px}.ai-teach{background:var(--canvas,#0f1923);border:.5px solid var(--line,#2d3748);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;align-self:stretch}.ai-teach label{font-size:10px;color:var(--muted)}.ai-teach input,.ai-teach textarea{background:var(--panel,#1a2332);border:.5px solid var(--line,#2d3748);border-radius:6px;padding:6px 8px;color:var(--ink,#edf2f7);font-size:11px;outline:none;font-family:inherit;resize:vertical}.ai-teach textarea{min-height:52px}.ai-teach .ai-teach-b{display:flex;gap:6px;justify-content:flex-end}.ai-teach button{border:none;border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer}.ai-teach .tsave{background:#0EA5E9;color:#fff}.ai-teach .tcancel{background:none;color:var(--muted);border:.5px solid var(--line,#2d3748)}`;
+  s.textContent = `#aiBtn{position:fixed;bottom:20px;right:20px;z-index:400;width:48px;height:48px;border-radius:50%;background:#0EA5E9;color:#fff;border:none;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(14,165,233,.4);transition:transform .2s}#aiBtn:hover{transform:scale(1.1)}#aiPanel{position:fixed;bottom:80px;right:20px;z-index:401;width:390px;max-height:560px;border-radius:12px;background:var(--panel,#1a2332);border:.5px solid var(--line,#2d3748);box-shadow:0 8px 32px rgba(0,0,0,.4);display:none;flex-direction:column;overflow:hidden;font-family:var(--font,system-ui)}.ai-hd{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:.5px solid var(--line,#2d3748)}.ai-hd-t{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500;color:var(--ink,#edf2f7)}.ai-hd-t i{font-size:18px;color:#0EA5E9}.ai-hd .ai-hd-a{display:flex;gap:6px}.ai-hd button{background:none;border:none;color:var(--muted,#8896a6);cursor:pointer;font-size:16px}.ai-msgs{flex:1;overflow-y:auto;padding:12px 16px;max-height:340px;min-height:200px;display:flex;flex-direction:column;gap:8px}.ai-m{max-width:88%;padding:8px 12px;border-radius:10px;font-size:12px;line-height:1.6;word-wrap:break-word}.ai-m.bot{background:var(--canvas,#0f1923);color:var(--ink,#edf2f7);align-self:flex-start;border-bottom-left-radius:2px}.ai-m.user{background:#0EA5E9;color:#fff;align-self:flex-end;border-bottom-right-radius:2px}.ai-m.typing{opacity:.6;font-style:italic}.ai-act{display:inline-block;margin-top:6px;font-size:11px;color:var(--accent-text,#38bdf8);cursor:pointer;text-decoration:underline}.ai-fb{display:flex;gap:4px;margin-top:6px}.ai-fb button{background:none;border:.5px solid var(--line,#2d3748);border-radius:4px;padding:2px 6px;font-size:10px;color:var(--muted);cursor:pointer}.ai-fb button:hover,.ai-fb button.voted{background:rgba(14,165,233,.12);color:#38bdf8;border-color:#0EA5E9}.ai-src{font-size:9px;color:var(--muted);margin-top:4px;opacity:.7}.ai-sug{padding:8px 16px;display:flex;flex-wrap:wrap;gap:4px;border-top:.5px solid var(--line,#2d3748)}.ai-sg{font-size:11px;padding:4px 10px;border-radius:12px;background:var(--canvas,#0f1923);color:#38bdf8;cursor:pointer;border:.5px solid var(--line,#2d3748);transition:background .15s}.ai-sg:hover{background:rgba(14,165,233,.12)}.ai-iw{display:flex;gap:8px;padding:12px 16px;border-top:.5px solid var(--line,#2d3748)}.ai-iw input{flex:1;background:var(--canvas,#0f1923);border:.5px solid var(--line,#2d3748);border-radius:8px;padding:8px 12px;color:var(--ink,#edf2f7);font-size:12px;outline:none;font-family:inherit}.ai-iw input:focus{border-color:#0EA5E9}.ai-iw input::placeholder{color:var(--muted)}.ai-iw button{background:#0EA5E9;color:#fff;border:none;border-radius:8px;width:36px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px}.ai-teach{background:var(--canvas,#0f1923);border:.5px solid var(--line,#2d3748);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;align-self:stretch}.ai-teach label{font-size:10px;color:var(--muted)}.ai-teach input,.ai-teach textarea{background:var(--panel,#1a2332);border:.5px solid var(--line,#2d3748);border-radius:6px;padding:6px 8px;color:var(--ink,#edf2f7);font-size:11px;outline:none;font-family:inherit;resize:vertical}.ai-teach textarea{min-height:52px}.ai-teach .ai-teach-b{display:flex;gap:6px;justify-content:flex-end}.ai-teach button{border:none;border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer}.ai-teach .tsave{background:#0EA5E9;color:#fff}.ai-teach .tcancel{background:none;color:var(--muted);border:.5px solid var(--line,#2d3748)}.ai-fu{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}`;
   document.head.appendChild(s);
 
   const btn = document.createElement("button");
@@ -80,7 +80,12 @@ function showDailyDigest() {
 }
 
 function greet() {
-  addBot("Olá! 👋 Sou o assistente do FlowOps.\n\n• **Pergunte sobre o sistema** — como usar cada funcionalidade\n• **Consulte seus dados** — lucro, pedidos, estoque, clientes\n• **Pesquise o mercado** — \"preço médio de [produto]\" no ML\n• **Me ensine** — aprendo com seus votos 👍/👎 e com /ensinar\n\nDigite **/ajuda** pra ver tudo que sei fazer.");
+  const h = new Date().getHours();
+  const sauda = h < 12 ? "Bom dia" : h < 18 ? "Boa tarde" : "Boa noite";
+  const name = String(state.activeUserEmail || "").split("@")[0];
+  const oi = name ? `${sauda}, **${name.charAt(0).toUpperCase() + name.slice(1)}**! 👋` : `${sauda}! 👋`;
+  addBot(`${oi} Sou o assistente do FlowOps.\n\n• **Seus números** — "lucro do mês", "atrasados", "a receber"\n• **Dicas pro negócio** — "como melhorar?" (analiso seus dados)\n• **Mercado** — "preço médio de [produto]" · "vigiar preço de [produto]"\n• **Sistema** — "como criar encomenda", "como funciona o kanban"\n\nE eu aprendo com você: vote 👍/👎 nas respostas. **/ajuda** mostra tudo.`, null, null, null, true,
+    ["Como está meu negócio?", "Como melhorar?", "Lucro do mês"]);
 }
 
 // ============================== RENDER ==============================
@@ -90,19 +95,23 @@ function fmtText(text) {
   return html(String(text)).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/\n/g, "<br>");
 }
 
-function addBot(text, action, source, meta = null, persist = true) {
+function addBot(text, action, source, meta = null, persist = true, followups = null) {
   const c = byId("aiMsgs"); if (!c) return;
   const id = "m" + Date.now() + Math.floor(Math.random() * 999);
   const actHtml = action?.view ? `<span class="ai-act" data-view="${html(action.view)}">Ir para ${html(action.view)} →</span>` : "";
   const srcHtml = source ? `<div class="ai-src">📎 ${html(source)}</div>` : "";
   const fbHtml = meta ? `<div class="ai-fb"><button data-v="up" title="Útil">👍</button><button data-v="down" title="Não ajudou">👎</button></div>` : "";
+  const fuHtml = followups?.length ? `<div class="ai-fu">${followups.slice(0, 3).map(s => `<span class="ai-sg">${html(s)}</span>`).join("")}</div>` : "";
   const d = document.createElement("div");
   d.className = "ai-m bot"; d.id = id;
-  d.innerHTML = fmtText(text) + actHtml + srcHtml + fbHtml;
+  d.innerHTML = fmtText(text) + actHtml + fuHtml + srcHtml + fbHtml;
   c.appendChild(d); c.scrollTop = c.scrollHeight;
   d.querySelector(".ai-act")?.addEventListener("click", e => {
     const v = e.target.dataset.view;
     if (v) { const tab = document.querySelector(`[data-view="${v}"]`); if (tab) tab.click(); }
+  });
+  d.querySelectorAll(".ai-fu .ai-sg").forEach(el => {
+    el.addEventListener("click", () => { const input = byId("aiIn"); if (input) { input.value = el.textContent; send(); } });
   });
   if (meta) {
     d.querySelectorAll(".ai-fb button").forEach(b => {
@@ -176,14 +185,17 @@ async function processQuery(query) {
   // CAMADA 0: comandos
   if (trimmed.startsWith("/")) { handleCommand(trimmed); return; }
 
+  // CAMADA 0.3: small talk (oi, obrigado, quem é você...)
+  const chat = searchSmallTalk(trimmed);
+  if (chat) { addBot(chat, null, null, null, true, ["Como está meu negócio?", "Como melhorar?"]); return; }
+
   // CAMADA 0.5: follow-up de período ("e essa semana?")
   if (lastDataResult?.dq?.period && isPeriodOnly(trimmed)) {
     const period = detectPeriod(trimmed);
     const r = runDataQuery(lastDataResult.dq, state, period);
     if (r && r.type === "data") {
       lastDataResult = r;
-      const interaction = logInteraction(query, "data", r.text);
-      addBot(r.text, r.action, "Seus dados", { query, layer: "data", interaction });
+      presentDataAnswer(r, query);
       return;
     }
   }
@@ -228,8 +240,7 @@ async function processQuery(query) {
   const dataResult = searchDataQuery(query, state);
   if (dataResult && dataResult.type === "data") {
     lastDataResult = dataResult;
-    const interaction = logInteraction(query, "data", dataResult.text);
-    addBot(dataResult.text, dataResult.action, "Seus dados", { query, layer: "data", interaction });
+    presentDataAnswer(dataResult, query);
     return;
   }
 
@@ -277,6 +288,20 @@ async function processQuery(query) {
   logInteraction(query, "miss", null);
   addBot("Não encontrei resposta. 🤔\n\n• Reformule a pergunta\n• Veja as sugestões abaixo\n• Use o **Suporte** pra falar com a equipe", { view: "support" });
   if (state.canEdit) offerTeach(query);
+}
+
+// Resposta de dados "com vida": número + análise (vs período anterior) + dica
+// contextual + chips de próxima pergunta. Insights vêm de dq.ins (regras
+// locais sobre os dados) — nunca quebram a resposta principal.
+function presentDataAnswer(result, query) {
+  let text = result.text;
+  let followups = result.dq?.next || null;
+  try {
+    const insights = result.dq?.ins ? result.dq.ins(state, result.period) : [];
+    if (insights?.length) text += `\n\n${insights.join("\n\n")}`;
+  } catch (e) { /* insight nunca derruba a resposta */ }
+  const interaction = logInteraction(query, "data", text);
+  addBot(text, result.action, "Seus dados", { query, layer: "data", interaction }, true, followups);
 }
 
 async function handleCommand(cmd) {

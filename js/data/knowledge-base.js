@@ -150,25 +150,26 @@ export const KNOWLEDGE=[
 // ============================== DATA QUERIES ==============================
 
 export const DATA_QUERIES=[
-{p:['lucro','ganhei','resultado','saldo'],period:true,fn:(s,p)=>{const c=fp(s.data.cash,p);const i=c.reduce((a,x)=>a+N(x.income),0);const e=c.reduce((a,x)=>a+N(x.expense),0);return{t:`**Resultado ${pl(p)}:**\n\nEntradas: R$ ${f(i)}\nSaídas: R$ ${f(e)}\n**Lucro: R$ ${f(i-e)}**\nMargem: ${i?((i-e)/i*100).toFixed(1):'0'}%`,v:'cash'}}},
-{p:['faturamento','receita','vendas total','quanto vendi','vendas'],period:true,fn:(s,p)=>{const o=fop(s.data.orders,p);const t=o.reduce((a,x)=>a+N(x.charged),0);const r=o.reduce((a,x)=>a+N(x.received),0);return{t:`**Vendas ${pl(p)}:** ${o.length} pedido(s)\nTotal: R$ ${f(t)}\nRecebido: R$ ${f(r)}\nA receber: R$ ${f(t-r)}`,v:'reports'}}},
+{p:['lucro','ganhei','resultado','saldo'],period:true,fn:(s,p)=>{const c=fp(s.data.cash,p);const i=c.reduce((a,x)=>a+N(x.income),0);const e=c.reduce((a,x)=>a+N(x.expense),0);return{t:`**Resultado ${pl(p)}:**\n\nEntradas: R$ ${f(i)}\nSaídas: R$ ${f(e)}\n**Lucro: R$ ${f(i-e)}**\nMargem: ${i?((i-e)/i*100).toFixed(1):'0'}%`,v:'cash'}},ins:(s,p)=>{const lines=[];const cur=fp(s.data.cash,p);const prev=fpPrev(s.data.cash,p);const c=cur.reduce((a,x)=>a+N(x.income)-N(x.expense),0);const pv=prev.reduce((a,x)=>a+N(x.income)-N(x.expense),0);const dl=deltaLine(c,pv,p);if(dl)lines.push(dl);const inc=cur.reduce((a,x)=>a+N(x.income),0);if(inc>0){const m=c/inc*100;if(m<0)lines.push('🚨 **Prejuízo no período.** Vale revisar os maiores gastos — pergunte "despesas" que eu abro por categoria.');else if(m<10)lines.push('💡 Margem apertada (<10%). Revise preços na **Calculadora da Inteligência** ou negocie custos de material.');else if(m>30)lines.push('💡 Margem saudável (>30%)! Bom momento pra investir em anúncios Premium ou reforçar estoque.')}return lines},next:['E essa semana?','Despesas do mês','A receber']},
+{p:['faturamento','receita','vendas total','quanto vendi','vendas'],period:true,fn:(s,p)=>{const o=fop(s.data.orders,p);const t=o.reduce((a,x)=>a+N(x.charged),0);const r=o.reduce((a,x)=>a+N(x.received),0);return{t:`**Vendas ${pl(p)}:** ${o.length} pedido(s)\nTotal: R$ ${f(t)}\nRecebido: R$ ${f(r)}\nA receber: R$ ${f(t-r)}`,v:'reports'}},ins:(s,p)=>{const lines=[];const cur=fop(s.data.orders,p);const prev=fopPrev(s.data.orders,p);const t=cur.reduce((a,x)=>a+N(x.charged),0);const pv=prev.reduce((a,x)=>a+N(x.charged),0);const dl=deltaLine(t,pv,p);if(dl)lines.push(dl);const pend=cur.reduce((a,x)=>a+N(x.charged)-N(x.received),0);if(t>0&&pend/t>0.4)lines.push(`💡 ${(pend/t*100).toFixed(0)}% ainda não foi recebido. Pergunte **"a receber"** que eu listo quem falta pagar.`);if(cur.length&&prev.length&&cur.length<prev.length)lines.push(`📊 Volume caiu de ${prev.length} pra ${cur.length} pedidos — pode ser sazonal, mas vale checar os anúncios.`);return lines},next:['Mais vendido','Vendas por canal','Ticket médio']},
 {p:['despesas','gastos','saidas','quanto gastei'],period:true,fn:(s,p)=>{const c=fp(s.data.cash,p).filter(x=>N(x.expense)>0);const t=c.reduce((a,x)=>a+N(x.expense),0);const by={};c.forEach(x=>{const k=x.category||'Outros';by[k]=(by[k]||0)+N(x.expense)});const top=Object.entries(by).sort((a,b)=>b[1]-a[1]).slice(0,6);return{t:`**Despesas ${pl(p)}: R$ ${f(t)}** (${c.length} lançamentos)\n\n${top.map(([k,v])=>`• ${k}: R$ ${f(v)}`).join('\n')||'Nenhuma despesa.'}`,v:'cash'}}},
-{p:['ticket medio','media por pedido'],period:true,fn:(s,p)=>{const o=fop(s.data.orders,p);const t=o.reduce((a,x)=>a+N(x.charged),0);return{t:`**Ticket médio ${pl(p)}:** R$ ${f(o.length?t/o.length:0)} (${o.length} pedidos)`,v:'reports'}}},
-{p:['receber','a receber','pendentes valor','falta receber','devem'],fn:(s)=>{const r=s.data.orders.filter(o=>N(o.charged)>0&&N(o.received)===0);const t=r.reduce((a,o)=>a+N(o.charged),0);if(!r.length)return{t:'Nenhum valor pendente. ✅'};return{t:`**R$ ${f(t)} a receber** (${r.length} pedidos)\n\n${r.slice(0,8).map(o=>`• **${o.description}** — R$ ${f(N(o.charged))}`).join('\n')}`,v:'cash'}}},
+{p:['ticket medio','media por pedido'],period:true,fn:(s,p)=>{const o=fop(s.data.orders,p);const t=o.reduce((a,x)=>a+N(x.charged),0);return{t:`**Ticket médio ${pl(p)}:** R$ ${f(o.length?t/o.length:0)} (${o.length} pedidos)`,v:'reports'}},ins:(s,p)=>{const cur=fop(s.data.orders,p);const prev=fopPrev(s.data.orders,p);if(!cur.length||!prev.length)return[];const tc=cur.reduce((a,x)=>a+N(x.charged),0)/cur.length;const tp=prev.reduce((a,x)=>a+N(x.charged),0)/prev.length;const dl=deltaLine(tc,tp,p);const lines=dl?[dl]:[];if(tp>0&&tc<tp*0.9)lines.push('💡 Ticket caindo: experimente **kits/combos** (2+ peças juntas) ou frete grátis acima de um valor mínimo.');return lines},next:['Vendas do mês','Mais vendido','Melhor cliente']},
+{p:['receber','a receber','pendentes valor','falta receber','devem'],fn:(s)=>{const r=s.data.orders.filter(o=>N(o.charged)>0&&N(o.received)===0);const t=r.reduce((a,o)=>a+N(o.charged),0);if(!r.length)return{t:'Nenhum valor pendente. ✅ Caixa em dia!'};return{t:`**R$ ${f(t)} a receber** (${r.length} pedidos)\n\n${r.slice(0,8).map(o=>`• **${o.description}** — R$ ${f(N(o.charged))}`).join('\n')}`,v:'cash'}},ins:(s)=>{const r=s.data.orders.filter(o=>N(o.charged)>0&&N(o.received)===0);if(!r.length)return[];const t=r.reduce((a,o)=>a+N(o.charged),0);const top=[...r].sort((a,b)=>N(b.charged)-N(a.charged))[0];const lines=[];if(top&&N(top.charged)/t>0.4)lines.push(`💡 Só **${top.description}** concentra ${(N(top.charged)/t*100).toFixed(0)}% do valor. Cobre esse primeiro — no pedido tem o botão **WhatsApp** com template de cobrança pronto.`);else lines.push('💡 Dica: use o botão **WhatsApp** no pedido — tem template de cobrança que preenche sozinho.');return lines},next:['Lucro do mês','Pendentes','Entregar hoje?']},
 {p:['entregar hoje','entrega hoje','despachar hoje','pedidos hoje'],fn:(s)=>{const td=new Date().toISOString().split('T')[0];const o=s.data.orders.filter(x=>(x.deliveryDate||'').startsWith(td));if(!o.length)return{t:'Nenhum pedido pra hoje. 🎉'};return{t:`**${o.length} pra hoje:**\n\n${o.map(x=>`• **${x.description}** (${x.orderCode||'?'}) — R$ ${f(N(x.charged))}`).join('\n')}`,v:'orders'}}},
 {p:['pendente','em aberto','a preparar','falta entregar','producao pendente'],fn:(s)=>{const p=s.data.orders.filter(o=>!['Entregue','Despachado'].includes(o.status));if(!p.length)return{t:'Tudo entregue! 🎉'};const t=p.reduce((a,o)=>a+N(o.charged),0);const by={};p.forEach(o=>{const st=o.status||'A preparar';by[st]=(by[st]||0)+1});return{t:`**${p.length} pendente(s)** (R$ ${f(t)})\n\n${Object.entries(by).map(([k,v])=>`• ${k}: ${v}`).join('\n')}`,v:'orders'}}},
-{p:['atrasado','atraso','prazo vencido'],fn:(s)=>{const td=new Date().toISOString().split('T')[0];const l=s.data.orders.filter(o=>o.deliveryDate&&o.deliveryDate<td&&!['Entregue','Despachado'].includes(o.status));if(!l.length)return{t:'Nenhum atrasado. ✅'};return{t:`⚠️ **${l.length} atrasado(s):**\n\n${l.map(o=>`• **${o.description}** — era ${o.deliveryDate}`).join('\n')}`,v:'orders'}}},
+{p:['atrasado','atraso','prazo vencido'],fn:(s)=>{const td=new Date().toISOString().split('T')[0];const l=s.data.orders.filter(o=>o.deliveryDate&&o.deliveryDate<td&&!['Entregue','Despachado'].includes(o.status));if(!l.length)return{t:'Nenhum atrasado. ✅ Produção em dia!'};return{t:`⚠️ **${l.length} atrasado(s):**\n\n${l.map(o=>`• **${o.description}** — era ${o.deliveryDate}`).join('\n')}`,v:'orders'}},ins:(s)=>{const td=new Date().toISOString().split('T')[0];const l=s.data.orders.filter(o=>o.deliveryDate&&o.deliveryDate<td&&!['Entregue','Despachado'].includes(o.status));if(!l.length)return[];const oldest=[...l].sort((a,b)=>String(a.deliveryDate).localeCompare(String(b.deliveryDate)))[0];const days=Math.floor((Date.now()-new Date(`${oldest.deliveryDate}T00:00:00`).getTime())/86400000);const lines=[`💡 O mais antigo (**${oldest.description}**) está ${days} dia(s) atrasado. Avise o cliente pelo **WhatsApp** antes que ele cobre — transparência segura a reputação.`];if(l.length>=3)lines.push('📊 3+ atrasos costumam indicar gargalo. Veja o kanban da **Produção**: alguma etapa acumulando?');return lines},next:['Pendentes','Entregar hoje?','Como funciona o kanban?']},
 {p:['mais vendido','top produto','vende mais','campeao','ranking produto'],fn:(s)=>{const c={};s.data.orders.forEach(o=>{const n=o.description||'?';c[n]=(c[n]||0)+1});const sorted=Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,10);if(!sorted.length)return{t:'Sem vendas ainda.'};return{t:`**Top 10:**\n\n${sorted.map(([n,q],i)=>`${i+1}. **${n}** — ${q}x`).join('\n')}`,v:'reports'}}},
 {p:['quantos pedidos','total pedidos'],period:true,fn:(s,p)=>{const o=fop(s.data.orders,p);const e=o.filter(x=>x.status==='Entregue').length;return{t:`**Pedidos ${pl(p)}:** ${o.length}\nEntregues: ${e} | Pendentes: ${o.length-e}`,v:'reports'}}},
 {p:['quantos clientes','total clientes'],fn:(s)=>{const t=(s.data.leads||[]).length;const a=(s.data.leads||[]).filter(l=>l.status==='Cliente').length;return{t:`**${t} contato(s):** ${a} ativos, ${t-a} leads`,v:'leads'}}},
 {p:['melhor cliente','quem mais compra','top cliente'],fn:(s)=>{const c={};s.data.orders.forEach(o=>{const n=o.client||'?';c[n]=(c[n]||0)+N(o.charged)});const sorted=Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,5);return{t:`**Top clientes:**\n\n${sorted.map(([n,v],i)=>`${i+1}. **${n}** — R$ ${f(v)}`).join('\n')}`,v:'leads'}}},
-{p:['estoque','material acabando','critico','repor'],fn:(s)=>{const items=lowStock(s);if(!items.length)return{t:'Estoque OK. 👍'};return{t:`⚠️ **${items.length} crítico(s):**\n\n${items.map(i=>`• **${i.name}** — ${i.quantity||0}/${i.minimum_quantity||0} ${i.unit||'un.'}`).join('\n')}`,v:'materials'}}},
+{p:['estoque','material acabando','critico','repor'],fn:(s)=>{const items=lowStock(s);if(!items.length)return{t:'Estoque OK. 👍 Nada abaixo do mínimo.'};return{t:`⚠️ **${items.length} crítico(s):**\n\n${items.map(i=>`• **${i.name}** — ${i.quantity||0}/${i.minimum_quantity||0} ${i.unit||'un.'}`).join('\n')}`,v:'materials'}},ins:(s)=>{const items=lowStock(s);if(!items.length)return[];const lines=['💡 Antes de comprar, pergunte **"previsão de demanda"** — eu calculo quanto você vai usar nas próximas 4 semanas e sugiro a quantidade certa.'];return lines},next:['Previsão de demanda','Gastos com material','Mais vendido']},
 {p:['entregar amanha','entrega amanha','despachar amanha'],fn:(s)=>{const tm=new Date();tm.setDate(tm.getDate()+1);const td=tm.toISOString().split('T')[0];const o=s.data.orders.filter(x=>(x.deliveryDate||'').startsWith(td)&&x.status!=='Entregue');if(!o.length)return{t:'Nenhum pedido pra amanhã. 🎉'};return{t:`**${o.length} pra amanhã:**\n\n${o.map(x=>`• **${x.description}** (${x.orderCode||'?'}) — R$ ${f(N(x.charged))}`).join('\n')}`,v:'orders'}}},
 {p:['previsao','demanda','o que comprar','sugestao de compra','quanto vou vender','projecao','comprar material'],fn:(s)=>{const fc=demandForecast(s);if(!fc.rows.length)return{t:'Ainda não tenho vendas suficientes nas últimas 8 semanas pra projetar demanda.'};const prods=fc.rows.slice(0,6).map(r=>`• **${r.name}** — ~${r.perWeek.toFixed(1)}/sem${r.trend===null?'':r.trend>=0?` (▲${r.trend.toFixed(0)}%)`:` (▼${Math.abs(r.trend).toFixed(0)}%)`} → ~${r.next4} em 4 sem`).join('\n');const mats=Object.entries(fc.materials).slice(0,5).map(([m,need])=>{const inv=(s.inventoryItems||[]).find(i=>normalize(i.name||'').includes(normalize(m))||normalize(m).includes(normalize(i.name||'')));const stock=inv?N(inv.quantity):null;const flag=stock!==null&&stock<need?` ⚠️ estoque ${stock} — **compre ~${Math.ceil(need-stock)}**`:stock!==null?` (estoque ${stock} ok)`:'';return`• **${m}**: uso projetado ~${Math.ceil(need)} em 4 sem${flag}`}).join('\n');return{t:`📈 **Previsão (média móvel 4 sem, tendência vs 4 sem anteriores):**\n\n${prods}${mats?`\n\n**Materiais:**\n${mats}`:''}\n\n_Estatística pura sobre seus pedidos — sem IA externa._`,v:'materials'}}},
 {p:['anuncios','quantos anuncios'],fn:(s)=>{const l=(s.data.marketplaceListings||[]);return{t:`**${l.length} anúncio(s)** (${l.filter(x=>x.status==='active').length} ativos)`,v:'marketplace'}}},
 {p:['qual marketplace','melhor canal','onde vendo'],fn:(s)=>{const c={};s.data.orders.forEach(o=>{const ch=o.source||'manual';c[ch]=(c[ch]||0)+N(o.charged)});const sorted=Object.entries(c).sort((a,b)=>b[1]-a[1]);return{t:`**Vendas por canal:**\n\n${sorted.map(([k,v])=>`• **${k}**: R$ ${f(v)}`).join('\n')}`,v:'reports'}}},
 {p:['resumo','visao geral','como esta','situacao','meu negocio'],fn:(s)=>{const o=s.data.orders||[];const c=s.data.cash||[];const now=new Date();const m=c.filter(x=>x.date&&new Date(x.date).getMonth()===now.getMonth());const i=m.reduce((a,x)=>a+N(x.income),0);const e=m.reduce((a,x)=>a+N(x.expense),0);const td=now.toISOString().split('T')[0];const pend=o.filter(x=>!['Entregue','Despachado'].includes(x.status)).length;const late=o.filter(x=>x.deliveryDate&&x.deliveryDate<td&&!['Entregue'].includes(x.status)).length;const inv=lowStock(s).length;return{t:`📊 **Resumo:**\n\n💰 Mês: R$ ${f(i)} entrada, R$ ${f(e)} saída, **R$ ${f(i-e)} lucro**\n📦 ${pend} pendentes, ${late} atrasados\n🔴 ${inv} estoque crítico\n📋 ${o.length} pedidos, 👥 ${(s.data.leads||[]).length} clientes`,v:'dashboard'}}},
 {p:['gastos material','custo material','compras material'],period:true,fn:(s,p)=>{const m=fp(s.data.materials||[],p,'date');const t=m.reduce((a,x)=>a+N(x.total),0);return{t:`**Gastos materiais ${pl(p)}:** R$ ${f(t)} (${m.length} compras)`,v:'materials'}}},
+{p:['dicas','como melhorar','melhorar meu negocio','conselho','sugestoes','o que posso melhorar','onde melhorar','me ajuda a crescer'],fn:(s)=>({t:businessTips(s),v:'dashboard'}),next:['Previsão de demanda','Lucro do mês','A receber']},
 ];
 
 function N(v){return Number(v||0)}
@@ -179,6 +180,19 @@ function sameDay(d,ref){return d.toDateString()===ref.toDateString()}
 function inPeriod(d,period){const now=new Date();if(isNaN(d))return false;if(period==='today')return sameDay(d,now);if(period==='yesterday'){const y=new Date(now);y.setDate(y.getDate()-1);return sameDay(d,y)}if(period==='week'){const w=new Date(now);w.setDate(w.getDate()-7);return d>=w}if(period==='month')return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();if(period==='year')return d.getFullYear()===now.getFullYear();return true}
 function fp(arr,period,df='date'){return (arr||[]).filter(c=>c[df]&&inPeriod(new Date(c[df]),period))}
 function fop(o,p){return (o||[]).filter(x=>inPeriod(new Date(x.createdAt||x.created_at||''),p))}
+
+// Período ANTERIOR equivalente (pra comparação "vs mês passado" nos insights)
+function inPrevPeriod(d,period){const now=new Date();if(isNaN(d))return false;
+  if(period==='today'){const y=new Date(now);y.setDate(y.getDate()-1);return sameDay(d,y)}
+  if(period==='yesterday'){const y=new Date(now);y.setDate(y.getDate()-2);return sameDay(d,y)}
+  if(period==='week'){const a=new Date(now);a.setDate(a.getDate()-14);const b=new Date(now);b.setDate(b.getDate()-7);return d>=a&&d<b}
+  if(period==='year')return d.getFullYear()===now.getFullYear()-1;
+  const pm=new Date(now.getFullYear(),now.getMonth()-1,1);return d.getMonth()===pm.getMonth()&&d.getFullYear()===pm.getFullYear()}
+function fpPrev(arr,period,df='date'){return (arr||[]).filter(c=>c[df]&&inPrevPeriod(new Date(c[df]),period))}
+function fopPrev(o,p){return (o||[]).filter(x=>inPrevPeriod(new Date(x.createdAt||x.created_at||''),p))}
+function plPrev(p){return p==='today'?'ontem':p==='yesterday'?'anteontem':p==='week'?'a semana anterior':p==='year'?'o ano passado':'o mês passado'}
+export function pick(arr){return arr[Math.floor(Math.random()*arr.length)]}
+function deltaLine(cur,prev,p){if(!(Math.abs(prev)>0.005))return null;const d=(cur-prev)/Math.abs(prev)*100;if(Math.abs(d)<1)return `➡️ Estável comparado com ${plPrev(p)}.`;return d>0?`📈 **${d.toFixed(0)}% acima** comparado com ${plPrev(p)} (era R$ ${f(prev)}). Bom sinal!`:`📉 **${Math.abs(d).toFixed(0)}% abaixo** comparado com ${plPrev(p)} (era R$ ${f(prev)}).`}
 
 // Pergunta que é SÓ um período? ("e hoje?", "essa semana", "e no ano?") → follow-up
 export function isPeriodOnly(query){
@@ -286,6 +300,79 @@ export function getContextualSuggestions(view){
 // Itens de estoque abaixo do mínimo (campos reais do schema: quantity/minimum_quantity)
 export function lowStock(s){
   return (s.inventoryItems||[]).filter(i=>N(i.quantity)<=N(i.minimum_quantity));
+}
+
+// ============================== SMALL TALK ==============================
+// Conversa natural: saudações, agradecimento, despedida, identidade.
+
+export function searchSmallTalk(query){
+  const q=normalize(query);
+  const words=q.split(' ').filter(Boolean);
+  if(/^(oi+|ola|eai|e ai|opa|hey|salve|bom dia|boa tarde|boa noite|tudo bem|td bem|como vai)\b/.test(q)&&words.length<=4){
+    const h=new Date().getHours();
+    const sauda=h<12?'Bom dia':h<18?'Boa tarde':'Boa noite';
+    return pick([
+      `${sauda}! 😊 Como posso ajudar? Se quiser um panorama rápido, pergunte **"como está meu negócio?"**.`,
+      `${sauda}! Tudo certo por aqui. Quer ver o **resumo do dia** ou consultar algo específico?`,
+      `Oi! ${sauda}! 👋 Posso puxar seus números, explicar o sistema ou dar dicas — o que precisa?`,
+    ]);
+  }
+  if(/\b(obrigad\w*|valeu|vlw|brigad\w*|agradec\w*)\b/.test(q)&&words.length<=5){
+    return pick([
+      'Por nada! 😊 Qualquer coisa é só chamar — e se a resposta ajudou, o 👍 me faz aprender.',
+      'Tamo junto! 🚀 Se quiser, posso dar umas **dicas pro negócio** — é só pedir.',
+      'De nada! Estou aqui sempre que precisar.',
+    ]);
+  }
+  if(/\b(tchau|ate mais|ate logo|falou|flw|fui)\b/.test(q)&&words.length<=3){
+    return pick(['Até mais! 👋 Boa produção!','Falou! Qualquer coisa estou por aqui — **Alt+A** me chama.']);
+  }
+  if(/\b(quem e voce|o que voce faz|voce e uma ia|qual seu nome|o que voce sabe)\b/.test(q)){
+    return 'Sou o **assistente do FlowOps** 🤖 — rodo 100% dentro do sistema, sem mandar seus dados pra nenhuma IA externa.\n\nSei consultar seus números, explicar funcionalidades, pesquisar preços no Mercado Livre, prever demanda e dar dicas pro negócio. E aprendo: cada 👍/👎 seu me deixa melhor.\n\nDigite **/ajuda** pra ver tudo.';
+  }
+  return null;
+}
+
+// ============================== COACH DE NEGÓCIO ==============================
+// Dicas priorizadas por regras sobre os dados reais — sem IA externa.
+
+export function businessTips(s){
+  const tips=[];
+  const orders=s.data?.orders||[];
+  const cash=s.data?.cash||[];
+  const td=new Date().toISOString().split('T')[0];
+  // 1. Prejuízo/margem do mês
+  const m=fp(cash,'month');
+  const inc=m.reduce((a,x)=>a+N(x.income),0),exp=m.reduce((a,x)=>a+N(x.expense),0);
+  if(inc>0&&inc-exp<0)tips.push({pr:1,t:`🚨 **Mês no prejuízo** (R$ ${f(inc-exp)}). Abra "despesas do mês" e corte as 2 maiores categorias que não geram venda.`});
+  else if(inc>0&&(inc-exp)/inc<0.1)tips.push({pr:2,t:`⚠️ **Margem do mês abaixo de 10%.** Use a Calculadora da Inteligência pra reprecificar os produtos que mais vendem.`});
+  // 2. Atrasados
+  const late=orders.filter(o=>o.deliveryDate&&o.deliveryDate<td&&!['Entregue','Despachado'].includes(o.status));
+  if(late.length)tips.push({pr:2,t:`⏰ **${late.length} pedido(s) atrasado(s).** Avise os clientes via WhatsApp hoje — atraso comunicado desgasta bem menos que atraso silencioso.`});
+  // 3. A receber concentrado/alto
+  const rec=orders.filter(o=>N(o.charged)>0&&N(o.received)===0);
+  const recT=rec.reduce((a,o)=>a+N(o.charged),0);
+  if(recT>0&&inc>0&&recT>inc*0.5)tips.push({pr:2,t:`💰 **R$ ${f(recT)} parados em cobranças** (mais da metade do que entrou no mês). Reserve 30 min hoje pra cobrar os maiores.`});
+  // 4. Estoque
+  const low=lowStock(s);
+  if(low.length)tips.push({pr:3,t:`📦 **${low.length} materiais abaixo do mínimo.** Pergunte "previsão de demanda" antes de comprar — evita capital parado em excesso.`});
+  // 5. Clientes inativos com histórico
+  const byClient={};
+  orders.forEach(o=>{const c=o.client;if(!c)return;const d=o.createdAt||o.created_at;const e=byClient[c]=byClient[c]||{count:0,last:''};e.count++;if(d&&d>e.last)e.last=d});
+  const cutoff=new Date(Date.now()-60*86400000).toISOString();
+  const inactive=Object.entries(byClient).filter(([,v])=>v.count>=2&&v.last&&v.last<cutoff);
+  if(inactive.length)tips.push({pr:4,t:`👥 **${inactive.length} cliente(s) recorrentes sumidos há 60+ dias** (ex.: ${inactive.slice(0,2).map(([n])=>n).join(', ')}). Uma mensagem "novidade + cupom" costuma reativar.`});
+  // 6. Tendência de queda no top produto
+  const fc=demandForecast(s);
+  const falling=fc.rows.find(r=>r.trend!==null&&r.trend<-30);
+  if(falling)tips.push({pr:4,t:`📉 **${falling.name}** caiu ${Math.abs(falling.trend).toFixed(0)}% vs as 4 semanas anteriores. Confira preço vs concorrência: "preço médio de ${falling.name}".`});
+  // 7. Caixa sem lançamentos recentes
+  const lastCash=cash.map(c=>c.date).filter(Boolean).sort().pop();
+  if(cash.length&&lastCash&&lastCash<new Date(Date.now()-7*86400000).toISOString().split('T')[0])tips.push({pr:5,t:`📝 Nenhum lançamento no caixa há mais de 7 dias. Caixa desatualizado = decisão no escuro.`});
+  // 8. Sem dicas críticas → reforço positivo
+  if(!tips.length)return '✅ **Analisei seus dados e está tudo saudável!**\n\nSem atrasos, margem ok, estoque em dia. Pra crescer a partir daqui:\n\n• Suba anúncios pra **Premium** nos produtos com margem >30%\n• Expanda o campeão de vendas pra **Shopee** (exportação pronta no Marketplace)\n• Crie **kits/combos** pra subir o ticket médio';
+  tips.sort((a,b)=>a.pr-b.pr);
+  return `🎯 **Analisei seus dados. Prioridades:**\n\n${tips.slice(0,5).map((x,i)=>`${i+1}. ${x.t}`).join('\n\n')}`;
 }
 
 // ============================== PREVISÃO DE DEMANDA ==============================
