@@ -1,5 +1,6 @@
 // FlowOps Knowledge Base v3 — motor NLP local (sem IA externa)
 // Camadas: sinônimos + stemming pt-BR + fuzzy (Levenshtein) + scoring por cobertura.
+import { CALENDAR_HOLIDAYS } from "../features/calendar-holidays.js";
 
 // ============================== NLP CORE ==============================
 
@@ -170,7 +171,35 @@ export const DATA_QUERIES=[
 {p:['resumo','visao geral','como esta','situacao','meu negocio'],fn:(s)=>{const o=s.data.orders||[];const c=s.data.cash||[];const now=new Date();const m=c.filter(x=>x.date&&new Date(x.date).getMonth()===now.getMonth());const i=m.reduce((a,x)=>a+N(x.income),0);const e=m.reduce((a,x)=>a+N(x.expense),0);const td=now.toISOString().split('T')[0];const pend=o.filter(x=>!['Entregue','Despachado'].includes(x.status)).length;const late=o.filter(x=>x.deliveryDate&&x.deliveryDate<td&&!['Entregue'].includes(x.status)).length;const inv=lowStock(s).length;return{t:`📊 **Resumo:**\n\n💰 Mês: R$ ${f(i)} entrada, R$ ${f(e)} saída, **R$ ${f(i-e)} lucro**\n📦 ${pend} pendentes, ${late} atrasados\n🔴 ${inv} estoque crítico\n📋 ${o.length} pedidos, 👥 ${(s.data.leads||[]).length} clientes`,v:'dashboard'}}},
 {p:['gastos material','custo material','compras material'],period:true,fn:(s,p)=>{const m=fp(s.data.materials||[],p,'date');const t=m.reduce((a,x)=>a+N(x.total),0);return{t:`**Gastos materiais ${pl(p)}:** R$ ${f(t)} (${m.length} compras)`,v:'materials'}}},
 {p:['dicas','como melhorar','melhorar meu negocio','conselho','sugestoes','o que posso melhorar','onde melhorar','me ajuda a crescer'],fn:(s)=>({t:businessTips(s),v:'dashboard'}),next:['Previsão de demanda','Lucro do mês','A receber']},
+{p:['proximo feriado','feriado','feriados','emenda'],fn:()=>{const td=new Date().toISOString().split('T')[0];const next=Object.entries(CALENDAR_HOLIDAYS).filter(([d])=>d>=td).sort(([a],[b])=>a.localeCompare(b)).slice(0,3);if(!next.length)return{t:'Não tenho feriados cadastrados pra frente.'};const fmt=d=>{const[y,m,dd]=d.split('-');return`${dd}/${m}/${y}`};const days=Math.ceil((new Date(`${next[0][0]}T00:00:00`)-new Date(`${td}T00:00:00`))/86400000);return{t:`📅 **Próximos feriados:**\n\n${next.map(([d,n])=>`• ${fmt(d)} — ${n}`).join('\n')}\n\n${days<=7?`⚠️ O primeiro é em **${days} dia(s)** — Correios e ML não coletam no feriado, despache antes!`:'💡 Feriado não tem coleta dos Correios/ML — planeje o despacho com antecedência.'}`,v:'calendar'}},next:['Entregar hoje?','Entregar amanhã?']},
 ];
+
+// Série semanal de vendas (pro gráfico inline do assistente)
+export function weeklySales(s,weeks=8){
+  const orders=s.data?.orders||[];
+  const now=new Date();now.setHours(23,59,59,999);
+  const out=[];
+  for(let w=weeks-1;w>=0;w--){
+    const end=new Date(now);end.setDate(end.getDate()-w*7);
+    const start=new Date(end);start.setDate(start.getDate()-7);
+    const rows=orders.filter(o=>{const d=new Date(o.createdAt||o.created_at||'');return !isNaN(d)&&d>start&&d<=end});
+    out.push({label:w===0?'agora':`${w}sem`,total:rows.reduce((a,o)=>a+N(o.charged),0),count:rows.length});
+  }
+  return out;
+}
+
+// Candidatos "você quis dizer?" pra quando nada respondeu (miss)
+export function knowledgeCandidates(query,n=3){
+  const qt=tokenize(query);
+  if(!qt.length)return[];
+  const scored=[];
+  for(const{e,toks}of kbIndex()){
+    let sc=0,hits=0;
+    for(const t of qt){let m=0;for(const kt of toks){const s=tokenSim(t,kt);if(s>m)m=s}if(m>0){sc+=m;hits++}}
+    if(hits)scored.push({e,sc:sc*(hits/qt.length+.3)});
+  }
+  return scored.sort((a,b)=>b.sc-a.sc).slice(0,n).filter(x=>x.sc>=.35).map(x=>x.e.k[0]);
+}
 
 function N(v){return Number(v||0)}
 function f(n){return N(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}

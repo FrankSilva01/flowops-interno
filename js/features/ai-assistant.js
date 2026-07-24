@@ -10,13 +10,21 @@ import {
   searchKnowledge, searchDataQuery, searchEntityQuery, runDataQuery,
   getContextualSuggestions, normalize, tokenize, coverage,
   detectPeriod, isPeriodOnly, buildDailyDigest, searchSmallTalk, pick, searchComposite,
+  weeklySales, knowledgeCandidates,
 } from "../data/knowledge-base.js";
 import { addWatch, removeWatch, describeWatches, checkWatchesDaily, edgeMarketSearch } from "./market-watch.js";
+import { markOrderDelivered } from "./orders.js";
+import { ensureCanEdit } from "../core/permissions.js";
+import { saveData } from "../core/state.js";
+import { nextId } from "../core/dom.js";
+import { persist } from "../data/remote.js";
+import { render } from "../core/router.js";
 
 let chatHistory = [];
 let isOpen = false;
 let lastDataResult = null;      // p/ follow-up "e essa semana?"
 let lastEntity = null;          // p/ correferência: { name, query } → "e da Maria?"
+let voiceReplyPending = false;  // pergunta veio por voz → responde falando também
 let learnedCache = null;        // respostas aprendidas (org)
 let aiAnswersOk = true;         // tabela ai_custom_answers disponível?
 let aiLogOk = true;             // tabela ai_interactions disponível?
@@ -127,6 +135,25 @@ function addBot(text, action, source, meta = null, persist = true, followups = n
   }
   chatHistory.push({ role: "bot", text });
   if (persist) saveHistory();
+  // Pergunta falada → resposta falada (speechSynthesis nativo, pt-BR)
+  if (voiceReplyPending) { voiceReplyPending = false; speakText(text); }
+}
+
+// Fala a resposta em voz alta (sem serviço externo). Remove markdown/emoji.
+function speakText(text) {
+  try {
+    if (!window.speechSynthesis) return;
+    const clean = String(text)
+      .replace(/\*\*/g, "")
+      .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, "")
+      .replace(/R\$\s*/g, "reais ")
+      .slice(0, 400);
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(clean);
+    u.lang = "pt-BR";
+    u.rate = 1.05;
+    window.speechSynthesis.speak(u);
+  } catch (e) { /* voz é opcional */ }
 }
 
 function addUser(text, persist = true) {
@@ -197,6 +224,9 @@ async function processQuery(query) {
     return;
   }
 
+  // CAMADA 0.45: AÇÕES pelo chat (sempre com confirmação explícita)
+  if (await tryAction(trimmed)) return;
+
   // CAMADA 0.5: follow-up de período ("e essa semana?")
   if (lastDataResult?.dq?.period && isPeriodOnly(trimmed)) {
     const period = detectPeriod(trimmed);
@@ -244,6 +274,48 @@ async function processQuery(query) {
   const cepMatch = qn0.match(/\bcep\s*(\d{5})\s*-?\s*(\d{3})\b/);
   if (cepMatch) {
     await answerExternal(query, { query: `${cepMatch[1]}${cepMatch[2]}`, mode: "cep" }, "Consultando CEP...", "CEP");
+    return;
+  }
+
+  // CAMADA 0.68: gráfico inline ("gráfico de vendas", "evolução das vendas")
+  if (/(grafico|evolucao|historico|curva)/.test(qn0) && /(venda|faturamento|encomenda|pedido)/.test(qn0)) {
+    const series = weeklySales(state, 8);
+    if (series.some(x => x.total > 0)) {
+      addChartMessage(series, "Vendas por semana (últimas 8)");
+      logInteraction(query, "data", "grafico vendas");
+      addBot("Cada barra é uma semana (passe o mouse pra ver o valor). Quer a análise? Pergunte **\"como melhorar?\"**.", { view: "reports" }, "Seus dados", null, true, ["Como melhorar?", "Previsão de demanda"]);
+    } else {
+      addBot("Ainda não há vendas nas últimas 8 semanas pra desenhar o gráfico.");
+    }
+    return;
+  }
+
+  // CAMADA 0.69: "meu preço tá bom?" — compara seu anúncio com a mediana do ML
+  if (/(meu preco|meus precos|meu anuncio)/.test(qn0) && /(bom|ok|competitivo|justo|certo|caro|barato|analisa|compara)/.test(qn0)) {
+    const listings = (state.data.marketplaceListings || []).filter(l => Number(l.price) > 0 && l.title);
+    if (!listings.length) { addBot("Não achei anúncios com preço cadastrado. Conecte o Mercado Livre em **Marketplace → Integrações**.", { view: "marketplace" }); return; }
+    let target = listings.find(l => qn0.includes(normalize(l.title).slice(0, 25))) ||
+      listings.find(l => normalize(l.title).split(" ").filter(w => w.length > 3).some(w => qn0.includes(w)));
+    if (!target && listings.length === 1) target = listings[0];
+    if (!target) {
+      addBot("Qual anúncio você quer analisar?", null, null, null, true,
+        listings.slice(0, 3).map(l => `meu preço de ${String(l.title).slice(0, 40)} tá bom?`));
+      return;
+    }
+    showTyping("Comparando com o mercado...");
+    const market = await edgeMarketSearch(String(target.title).slice(0, 60));
+    hideTyping();
+    const median = Number(market?.stats?.median || 0);
+    const fmt = n => n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (!(median > 0)) { addBot(`Não consegui puxar o mercado agora (função externa indisponível). Seu preço atual: **R$ ${fmt(Number(target.price))}**.`); return; }
+    const price = Number(target.price);
+    const diff = (price - median) / median * 100;
+    const verdict = diff > 15 ? `🔺 **${diff.toFixed(0)}% acima da mediana.** Ou seu diferencial justifica, ou você está perdendo conversão — confira as visitas do anúncio.`
+      : diff < -15 ? `🔻 **${Math.abs(diff).toFixed(0)}% abaixo da mediana.** Se está vendendo bem, há espaço pra subir o preço e ganhar margem.`
+      : `✅ **Na faixa do mercado** (${diff >= 0 ? "+" : ""}${diff.toFixed(0)}% vs mediana). Preço competitivo.`;
+    const text = `**${String(target.title).slice(0, 60)}**\n\nSeu preço: **R$ ${fmt(price)}**\nMediana do ML: R$ ${fmt(median)} (${market.stats.sample} anúncios)\n\n${verdict}`;
+    const interaction = logInteraction(query, "market", text);
+    addBot(text, { view: "marketplace" }, "Análise de preço (ML tempo real)", { query, layer: "market", interaction }, true, [`vigiar preço de ${String(target.title).slice(0, 40)}`, "Como melhorar?"]);
     return;
   }
 
@@ -330,13 +402,117 @@ async function processQuery(query) {
     return;
   }
 
-  // MISS: registra e oferece ensinar
+  // MISS: registra, sugere aproximações ("você quis dizer?") e oferece ensinar
   logInteraction(query, "miss", null);
-  addBot("Não encontrei resposta. 🤔\n\n• Reformule a pergunta\n• Veja as sugestões abaixo\n• Use o **Suporte** pra falar com a equipe", { view: "support" });
+  const guesses = knowledgeCandidates(query, 3);
+  addBot(guesses.length
+    ? "Não achei uma resposta exata. 🤔 **Você quis dizer:**"
+    : "Não encontrei resposta. 🤔\n\n• Reformule a pergunta\n• Use o **Suporte** pra falar com a equipe",
+  guesses.length ? null : { view: "support" }, null, null, true,
+  guesses.length ? guesses.map(g => `como funciona ${g}?`) : null);
   if (state.canEdit) offerTeach(query);
 }
 
 function escapeRegex(s) { return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+
+// ============================== AÇÕES PELO CHAT ==============================
+// Toda ação exige: permissão de edição + confirmação explícita (botões).
+
+function confirmBox(summary, onConfirm) {
+  const c = byId("aiMsgs"); if (!c) return;
+  const d = document.createElement("div");
+  d.className = "ai-teach";
+  d.innerHTML = `<label>⚡ Confirmar ação</label><div style="font-size:12px;line-height:1.6">${fmtText(summary)}</div><div class="ai-teach-b"><button type="button" class="tcancel">Cancelar</button><button type="button" class="tsave">Confirmar</button></div>`;
+  c.appendChild(d); c.scrollTop = c.scrollHeight;
+  d.querySelector(".tcancel").addEventListener("click", () => { d.remove(); addBot("Ação cancelada. Nada foi alterado. 👍"); });
+  d.querySelector(".tsave").addEventListener("click", async () => {
+    d.remove();
+    try { await onConfirm(); } catch (e) { addBot("Não consegui executar a ação agora. Tente pela tela correspondente."); }
+  });
+}
+
+// Detecta e prepara ações. Retorna true se a mensagem era uma ação.
+async function tryAction(text) {
+  const qn = normalize(text);
+
+  // --- marcar pedido como entregue ---
+  const deliver = qn.match(/^(?:marca|marcar|conclui|concluir|finaliza|finalizar)\s+(?:o\s+|a\s+)?(?:pedido\s+|encomenda\s+)?(.{2,60}?)\s+como\s+entregue\s*$/) ||
+    qn.match(/^entregar?\s+(?:o\s+)?pedido\s+(.{2,60})$/);
+  if (deliver) {
+    if (!ensureCanEdit()) return true;
+    const term = deliver[1].trim();
+    const open = state.data.orders.filter(o => o.status !== "Entregue");
+    const matches = open.filter(o =>
+      normalize(o.orderCode || "").includes(term) || term.includes(normalize(o.orderCode || "x-none")) ||
+      normalize(o.description || "").includes(term) || term.includes(normalize(o.description || "x-none")));
+    if (!matches.length) { addBot(`Não achei pedido aberto parecido com **"${term}"**. Veja a lista em Encomendas.`, { view: "orders" }); return true; }
+    if (matches.length > 1) {
+      addBot(`Achei ${matches.length} pedidos. Qual deles?`, null, null, null, true,
+        matches.slice(0, 3).map(o => `marcar ${o.orderCode || o.description} como entregue`));
+      return true;
+    }
+    const item = matches[0];
+    confirmBox(`Marcar **${item.orderCode || item.id} — ${item.description}** como **Entregue**?\nIsso atualiza histórico, produção e o pagamento no caixa.`, async () => {
+      const r = await markOrderDelivered(item.id, "ai-assistant");
+      addBot(r.message, r.ok ? { view: "orders" } : null, "Ação executada");
+    });
+    return true;
+  }
+
+  // --- lançar entrada/saída no caixa ---
+  // Parse sobre texto com acentos removidos MAS pontuação preservada: o
+  // normalize() global apaga a vírgula e quebraria "42,50" em "42 50".
+  const qc = String(text).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, " ").trim();
+  const cash = qc.match(/^lanca(?:r|)\s+(entrada|saida)\s+(?:de\s+)?(?:r\$\s*)?(\d+(?:\.\d{3})*(?:[.,]\d{1,2})?)\s*(?:reais\s*)?(?:\s*(?:em|na|no|categoria|de)\s+)?(.*)$/);
+  if (cash) {
+    if (!ensureCanEdit()) return true;
+    const type = cash[1] === "entrada" ? "Entrada" : "Saída";
+    const rawNum = cash[2];
+    const amount = Number(rawNum.includes(",") ? rawNum.replace(/\./g, "").replace(",", ".") : rawNum);
+    if (!(amount > 0)) { addBot("Não entendi o valor. Ex.: **lançar entrada de 150 em vendas**"); return true; }
+    const category = (cash[3] || "").trim() || (type === "Entrada" ? "Vendas" : "Outros");
+    const fmt = n => n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    confirmBox(`Lançar **${type} de R$ ${fmt(amount)}** na categoria **"${category}"** com a data de hoje?`, async () => {
+      const item = {
+        id: nextId("CX", state.data.cash),
+        date: new Date().toISOString().split("T")[0],
+        type,
+        category: category.charAt(0).toUpperCase() + category.slice(1),
+        description: "Lançado pelo assistente",
+        method: "",
+        income: type === "Entrada" ? amount : 0,
+        expense: type === "Saída" ? amount : 0,
+      };
+      state.data.cash.push(item);
+      await persist("cash", item);
+      await recordAudit("create", "cash_entry", item.id, null, null, { type, amount, category }, "ai-assistant");
+      saveData();
+      render();
+      addBot(`✅ ${type} de **R$ ${fmt(amount)}** lançada em "${item.category}" (${item.id}).`, { view: "cash" }, "Ação executada");
+    });
+    return true;
+  }
+  return false;
+}
+
+// ============================== GRÁFICO INLINE ==============================
+// SVG gerado só com números do state — sem lib, sem HTML externo.
+function addChartMessage(series, title) {
+  const c = byId("aiMsgs"); if (!c) return;
+  const max = Math.max(...series.map(x => x.total), 1);
+  const W = 300, H = 110, pad = 4, bw = Math.floor((W - pad * 2) / series.length) - 4;
+  const bars = series.map((x, i) => {
+    const h = Math.max(2, Math.round((x.total / max) * (H - 34)));
+    const bx = pad + i * (bw + 4);
+    return `<rect x="${bx}" y="${H - 22 - h}" width="${bw}" height="${h}" rx="2" fill="#0EA5E9" opacity="${0.45 + 0.55 * (x.total / max)}"><title>R$ ${x.total.toFixed(2)} (${x.count} pedidos)</title></rect><text x="${bx + bw / 2}" y="${H - 10}" text-anchor="middle" font-size="8" fill="#8896a6">${x.label}</text>`;
+  }).join("");
+  const d = document.createElement("div");
+  d.className = "ai-m bot";
+  d.innerHTML = `<strong>${html(title)}</strong><br><svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px;margin-top:6px" role="img" aria-label="${html(title)}">${bars}</svg>`;
+  c.appendChild(d); c.scrollTop = c.scrollHeight;
+  chatHistory.push({ role: "bot", text: title });
+  saveHistory();
+}
 
 // Entrada por voz — Web Speech API do navegador (pt-BR), sem serviço externo.
 // O botão só aparece quando o navegador suporta (Chrome/Edge/Android).
@@ -358,7 +534,7 @@ function setupVoiceInput(panel) {
       recog.onresult = (e) => {
         const text = e.results?.[0]?.[0]?.transcript || "";
         const input = byId("aiIn");
-        if (text && input) { input.value = text; send(); }
+        if (text && input) { voiceReplyPending = true; input.value = text; send(); }
       };
       recog.onend = () => { listening = false; mic.classList.remove("listening"); };
       recog.onerror = () => { listening = false; mic.classList.remove("listening"); };
@@ -401,7 +577,7 @@ async function handleCommand(cmd) {
   if (c === "limpar") { clearChat(); return; }
   if (c === "ensinar") {
     if (!state.canEdit) { addBot("Apenas usuários com permissão de edição podem me ensinar."); return; }
-    offerTeach("");
+    offerTeach(rest.replace(/^\S+\s*/, ""));
     return;
   }
   if (c === "vigiar") {
@@ -410,7 +586,27 @@ async function handleCommand(cmd) {
     addBot(r.message, r.ok ? { view: "marketplace" } : null, "Vigilância de preços");
     return;
   }
-  addBot("**Comandos:**\n\n• **/ajuda** — esta lista\n• **/ensinar** — cadastrar uma resposta nova (admins)\n• **/vigiar [produto]** — alerta quando a concorrência baixar o preço\n• **/limpar** — limpar a conversa\n\n**O que sei fazer:**\n\n• Dados: \"lucro do mês\", \"atrasados\", \"pedidos do [cliente]\" — e combinadas: \"lucro e atrasados\"\n• Continuação: \"e essa semana?\" · \"e da Maria?\" · \"por quê?\" (explico o cálculo)\n• Análise: \"como melhorar?\" · \"previsão de demanda\" · \"o que comprar\"\n• Mercado: \"preço médio de [produto]\" · \"vigiar preço de X\" · \"tendências do ML\"\n• Externo: \"cotação do dólar\" · \"cep 01310-100\" · \"o que é PLA?\"\n• Sistema: \"como criar encomenda\", \"como funciona o kanban\"\n• 🎤 Voz: clique no microfone e fale (Chrome/Edge/celular)\n• Aprendo com 👍/👎 e com respostas ensinadas");
+  if (c === "misses" || c === "duvidas") {
+    if (!state.canEdit) { addBot("Apenas usuários com permissão de edição veem as perguntas sem resposta."); return; }
+    if (!aiLogOk || !state.supabase || !state.organizationId) { addBot("Registro de interações indisponível (rode a migração ai_assistant_learning)."); return; }
+    try {
+      const { data, error } = await state.supabase
+        .from("ai_interactions")
+        .select("query, query_normalized, created_at")
+        .eq("organization_id", state.organizationId)
+        .eq("result_type", "miss")
+        .order("created_at", { ascending: false })
+        .limit(30);
+      if (error) throw error;
+      const seen = new Set(); const uniq = [];
+      for (const row of data || []) { if (!seen.has(row.query_normalized)) { seen.add(row.query_normalized); uniq.push(row); } if (uniq.length >= 8) break; }
+      if (!uniq.length) { addBot("Nenhuma pergunta sem resposta registrada. 🎉 A equipe está encontrando tudo!"); return; }
+      addBot(`🧠 **Perguntas que eu não soube responder** (${uniq.length} recentes):\n\n${uniq.map((r, i) => `${i + 1}. "${r.query}"`).join("\n")}\n\nClique numa opção abaixo pra me ensinar a resposta:`, null, "Cérebro da IA", null, true,
+        uniq.slice(0, 3).map(r => `/ensinar ${r.query.slice(0, 50)}`));
+    } catch (e) { addBot("Não consegui carregar as perguntas agora."); }
+    return;
+  }
+  addBot("**Comandos:**\n\n• **/ajuda** — esta lista\n• **/ensinar** — cadastrar resposta nova · **/misses** — o que eu não soube responder\n• **/vigiar [produto]** — alerta quando a concorrência baixar o preço\n• **/limpar** — limpar a conversa\n\n**O que sei fazer:**\n\n• Dados: \"lucro do mês\", \"atrasados\", \"pedidos do [cliente]\" — e combinadas: \"lucro e atrasados\"\n• 📊 Gráfico: \"gráfico de vendas\" (últimas 8 semanas)\n• ⚡ Ações (com confirmação): \"marcar [pedido] como entregue\" · \"lançar entrada de 150 em vendas\"\n• Continuação: \"e essa semana?\" · \"e da Maria?\" · \"por quê?\" (explico o cálculo)\n• Análise: \"como melhorar?\" · \"previsão de demanda\" · \"meu preço tá bom?\"\n• Mercado: \"preço médio de [produto]\" · \"vigiar preço de X\" · \"tendências do ML\"\n• Externo: \"cotação do dólar\" · \"cep 01310-100\" · \"próximo feriado\" · \"o que é PLA?\"\n• Sistema: \"como criar encomenda\", \"como funciona o kanban\"\n• 🎤 Voz: clique no microfone e fale — falou, eu respondo falando\n• Aprendo com 👍/👎 e com respostas ensinadas");
 }
 
 // ============================== APRENDIZADO (reforço) ==============================

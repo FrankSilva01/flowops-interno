@@ -427,6 +427,27 @@ export function bindOrderDrawer() {
   });
 }
 
+// Marca um pedido como Entregue com TODOS os efeitos do fluxo do drawer
+// (pagamento padrão, sync com caixa, histórico, auditoria). Usado pelo
+// assistente IA (ação por chat, com confirmação prévia do usuário).
+export async function markOrderDelivered(id, source = "ai-assistant") {
+  const item = state.data.orders.find((row) => row.id === id);
+  if (!item) return { ok: false, message: "Pedido não encontrado." };
+  const previousStatus = normalizeOrderStatus(item.status);
+  if (previousStatus === "Entregue") return { ok: false, message: `**${item.orderCode || item.id}** já está marcado como Entregue.` };
+  const previousOrder = structuredClone(item);
+  item.status = "Entregue";
+  item.productionStage = "Entregue";
+  applyDeliveredPaymentDefault(item);
+  item.history = appendHistory(item.history, [{ field: "Status", from: previousStatus, to: "Entregue" }]);
+  await persist("orders", item);
+  await syncOrderPaymentCash(item, previousOrder);
+  await recordAudit("update", "order", item.id, item.orderCode, { status: previousStatus }, { status: "Entregue" }, source);
+  saveData();
+  render();
+  return { ok: true, message: `✅ **${item.orderCode || item.id} — ${item.description}** marcado como **Entregue** (era "${previousStatus}"). Histórico e caixa atualizados.` };
+}
+
 export function renderOrderReferences(item) {
   if (!item.stlLink && !item.referenceImageUrl) return "";
   const stlLink = safeUrl(item.stlLink);
