@@ -6,6 +6,7 @@
 //   → { ok, answer, source, url? }
 
 import { createClient } from "supabase";
+import { authorizeOrganizationRequest, OrganizationAuthorizationError } from "./authorization.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -68,7 +69,7 @@ async function marketSearch(term: string, organizationId: string) {
     .select("access_token")
     .eq("organization_id", organizationId)
     .eq("marketplace", "Mercado Livre")
-    .eq("status", "connected")
+    .eq("connection_status", "connected")
     .maybeSingle();
   if (!account?.access_token) return json({ ok: false, error: "conta ML nao conectada" }, { status: 404 });
 
@@ -142,7 +143,7 @@ async function trendsSearch(organizationId: string) {
     .select("access_token")
     .eq("organization_id", organizationId)
     .eq("marketplace", "Mercado Livre")
-    .eq("status", "connected")
+    .eq("connection_status", "connected")
     .maybeSingle();
   if (!account?.access_token) return json({ ok: false, error: "conta ML nao conectada" }, { status: 404 });
   const res = await fetch("https://api.mercadolibre.com/trends/MLB", {
@@ -167,12 +168,22 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const term = String(body.query || "").trim().slice(0, 120);
     if (!term) return json({ ok: false, error: "query obrigatoria" }, { status: 400 });
-    if (body.mode === "market") return await marketSearch(term, String(body.organization_id || ""));
+    const organizationId = String(body.organization_id || "");
+    if (body.mode === "market") {
+      await authorizeOrganizationRequest(req, organizationId, adminClient());
+      return await marketSearch(term, organizationId);
+    }
     if (body.mode === "currency") return await currencySearch(term);
     if (body.mode === "cep") return await cepSearch(term);
-    if (body.mode === "trends") return await trendsSearch(String(body.organization_id || ""));
+    if (body.mode === "trends") {
+      await authorizeOrganizationRequest(req, organizationId, adminClient());
+      return await trendsSearch(organizationId);
+    }
     return await webSearch(term);
   } catch (error) {
+    if (error instanceof OrganizationAuthorizationError) {
+      return json({ ok: false, error: error.message }, { status: error.status });
+    }
     return json({ ok: false, error: String(error) }, { status: 500 });
   }
 });

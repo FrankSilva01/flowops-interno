@@ -40,6 +40,9 @@ verify_jwt = true
 [functions.amazon-sync]
 verify_jwt = true
 
+[functions.ai-web-search]
+verify_jwt = true
+
 [api]
 enabled = true
 # Port to use for the API URL.
