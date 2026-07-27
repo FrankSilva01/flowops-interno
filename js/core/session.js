@@ -8,6 +8,7 @@ import { getSubscriptionAccessStatus } from "../features/subscription.js";
 import { loadMarketplaces } from "../features/marketplace.js";
 import { loadListingAnalytics, loadSellerMetrics, loadListingFeeSync } from "../features/marketplace-analytics.js";
 import { loadRemoteData, subscribeRemote, flushOfflineQueue } from "../data/remote.js";
+import { clearOfflineData } from "./offline-queue.js";
 
 export async function setupBackend() {
   const config = window.SUPABASE_CONFIG || {};
@@ -366,8 +367,8 @@ export async function enterOnlineApp(user) {
       subscribeRemote();
       bindSubscriptionWatcher();
       // Escritas guardadas offline numa sessão anterior sincronizam agora
-      const flushed = await flushOfflineQueue().catch(() => 0);
-      if (flushed > 0) showAppMessage("Sincronizado", `${flushed} alteração(ões) feitas offline foram enviadas ao banco.`, "success");
+      const flushResult = await flushOfflineQueue().catch(() => ({ flushed: 0, failed: [], pending: [] }));
+      if (flushResult.flushed > 0) showAppMessage("Sincronizado", `${flushResult.flushed} alteração(ões) feitas offline foram enviadas ao banco.`, "success");
     }
     render();
     surfaceMlOauthResult();
@@ -485,7 +486,9 @@ export async function getApprovedUser(email) {
 }
 
 export async function logout() {
+  const organizationId = state.organizationId;
   if (state.supabase) await state.supabase.auth.signOut();
+  clearOfflineData(organizationId);
   localStorage.removeItem("printflow-direct-data");
   localStorage.removeItem("calendarCustomEvents");
   Object.keys(localStorage).filter((key) => key.startsWith("calendarCustomEvents:")).forEach((key) => localStorage.removeItem(key));
@@ -507,15 +510,18 @@ function bindConnectivityListeners() {
   window.addEventListener("online", async () => {
     state.online = true;
     try {
-      const flushed = await flushOfflineQueue();
-      if (flushed > 0) {
-        showAppMessage("Sincronizado", `${flushed} alteração(ões) feitas offline foram enviadas ao banco.`, "success");
+      const flushResult = await flushOfflineQueue();
+      if (flushResult.flushed > 0) {
+        const failureNote = flushResult.failed.length ? ` ${flushResult.failed.length} alteração(ões) precisam de revisão.` : "";
+        showAppMessage("Sincronizado", `${flushResult.flushed} alteração(ões) feitas offline foram enviadas ao banco.${failureNote}`, flushResult.failed.length ? "warning" : "success");
         render();
+      } else if (flushResult.failed.length || flushResult.pending.length) {
+        showAppMessage("Sincronização pendente", `${flushResult.pending.length} alteração(ões) aguardam nova tentativa e ${flushResult.failed.length} precisam de revisão.`, "warning");
       } else {
         showAppMessage("Conexão restabelecida", "Você está online novamente.", "success");
       }
     } catch (e) {
-      showAppMessage("Conexão restabelecida", "Você está online novamente.", "success");
+      showAppMessage("Falha ao sincronizar", "A conexão voltou, mas não foi possível atualizar a fila offline.", "error");
     }
   });
 }

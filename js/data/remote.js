@@ -1,5 +1,5 @@
 import { state, saveData, normalizeOrderStatus } from "../core/state.js";
-import { enqueueWrite, readQueue, replaceQueue } from "../core/offline-queue.js";
+import { appendDeadLetters, enqueueWrite, processOfflineEntries, readQueue, replaceQueue } from "../core/offline-queue.js";
 import { render } from "../core/router.js";
 import { subscriptionFallbackFromOrganization } from "../features/subscription.js";
 import { loadCalendarEvents } from "../features/calendar-persistence.js";
@@ -17,8 +17,9 @@ export async function persist(kind, item) {
     // Fila offline: só quando a sessão JA carregou do banco (remoteLoaded) e a
     // queda é de conectividade — nunca enfileira dados de sessão não carregada.
     if (!state.online && state.supabase && state.remoteLoaded && state.organizationId) {
-      const queued = enqueueWrite(state.organizationId, { op: "persist", kind, itemId: item?.id, item });
-      return { persisted: false, queued };
+      const queueResult = enqueueWrite(state.organizationId, { op: "persist", kind, itemId: item?.id, item });
+      if (!queueResult.stored) throw queueResult.error || new Error("Não foi possível guardar a alteração offline.");
+      return { persisted: false, queued: queueResult.stored, error: queueResult.error };
     }
     return { persisted: false };
   }
@@ -31,13 +32,10 @@ export async function persist(kind, item) {
 // Reaplica só as da organização logada; falhas param o flush e ficam na fila.
 export async function flushOfflineQueue() {
   const orgId = state.organizationId;
-  if (!orgId || !state.online || !state.supabase || !state.remoteLoaded) return 0;
+  if (!orgId || !state.online || !state.supabase || !state.remoteLoaded) return { flushed: 0, pending: [], failed: [] };
   const queue = readQueue(orgId);
-  if (!queue.length) return 0;
-  let flushed = 0;
-  const remaining = [...queue];
-  for (const entry of queue) {
-    try {
+  if (!queue.length) return { flushed: 0, pending: [], failed: [] };
+  const result = await processOfflineEntries(queue, async (entry) => {
       if (entry.op === "persist") {
         const { error } = await state.supabase.from(tableName(entry.kind)).upsert(toRemote(entry.kind, entry.item));
         if (error) throw error;
@@ -45,14 +43,13 @@ export async function flushOfflineQueue() {
         const { error } = await state.supabase.from(tableName(entry.kind)).delete().eq("id", entry.itemId).eq("organization_id", orgId);
         if (error) throw error;
       }
-      remaining.shift();
-      flushed += 1;
-    } catch (e) {
-      break; // mantém o restante na fila pra próxima tentativa
-    }
+  });
+  const pendingResult = replaceQueue(orgId, result.pending);
+  const failedResult = appendDeadLetters(orgId, result.failed);
+  if (!pendingResult.stored || !failedResult.stored) {
+    throw pendingResult.error || failedResult.error || new Error("Falha ao atualizar a fila offline.");
   }
-  replaceQueue(orgId, remaining);
-  return flushed;
+  return result;
 }
 
 // Busca TODAS as linhas em paginas de 1000 (limite padrao do PostgREST).
@@ -74,8 +71,9 @@ async function fetchAllRows(build) {
 export async function removeRemote(kind, id) {
   if (!state.online || !state.supabase || !state.remoteLoaded) {
     if (!state.online && state.supabase && state.remoteLoaded && state.organizationId) {
-      const queued = enqueueWrite(state.organizationId, { op: "remove", kind, itemId: id });
-      return { persisted: false, queued };
+      const queueResult = enqueueWrite(state.organizationId, { op: "remove", kind, itemId: id });
+      if (!queueResult.stored) throw queueResult.error || new Error("Não foi possível guardar a exclusão offline.");
+      return { persisted: false, queued: queueResult.stored, error: queueResult.error };
     }
     return { persisted: false };
   }
