@@ -11,6 +11,7 @@ import {
   renderMarketplaces, loadMarketplaces, marketplaceRequest, resizeImageFileForStorefront,
 } from "./marketplace.js";
 import { normalizeMarketplaceChannel, marketplaceDisplayName } from "./marketplace-channel.js";
+import { getProductPublicationReadiness } from "./product-publication-readiness.js";
 import {
   calculatePriceSuggestion,
   classifyProfitability,
@@ -648,6 +649,10 @@ export async function saveProduct(event) {
   const previous = state.products.find((item) => item.id === id) || null;
   const name = String(data.get("name") || "").trim();
   if (!name) return;
+  const submitButton = byId("productSubmitBtn");
+  if (submitButton?.disabled) return;
+  if (submitButton) submitButton.disabled = true;
+  try {
   const category = String(data.get("category") || "").trim() || null;
   const sku = String(data.get("sku") || "").trim() || nextProductSku(category, name);
   const price = number(data.get("price"));
@@ -655,26 +660,6 @@ export async function saveProduct(event) {
   const rawCost = String(data.get("costPrice") || "").trim();
   const listingValue = String(data.get("listingLink") || "");
   const selectedChannels = CREATABLE_MARKETPLACES.filter((channel) => Boolean(data.get(MARKETPLACE_CHECKBOX_NAMES[channel])));
-  const linkedMarketplace = normalizeMarketplaceChannel(listingValue.split(":")[0] || "");
-  const mlTitleError = (selectedChannels.includes("mercado-livre") || linkedMarketplace === "mercado-livre") ? validateMlProductTitle(name) : "";
-  if (mlTitleError) {
-    message.textContent = mlTitleError;
-    return;
-  }
-  if (selectedChannels.includes("mercado-livre") && !isMarketplaceAccountConnected("mercado-livre")) {
-    message.textContent = "Conecte o Mercado Livre em Integrações antes de publicar. Para salvar apenas no catálogo, desmarque Mercado Livre.";
-    return;
-  }
-  const channelsWithAutomaticPublication = selectedChannels.filter((channel) =>
-    channel === "mercado-livre" && isMarketplaceAccountConnected(channel)
-  );
-  // So exige as 3 fotos quando o cadastro vai CRIAR um anuncio novo (mesmo
-  // padrao do Mercado Livre) - vincular a um anuncio ja existente reaproveita
-  // as fotos que ja estao la, entao nao entra nessa exigencia.
-  if (!listingValue && channelsWithAutomaticPublication.length && productUploadedImages.length < 3) {
-    message.textContent = `Adicione pelo menos 3 fotos do produto para publicar no Mercado Livre (${productUploadedImages.length} de 3).`;
-    return;
-  }
   const payload = {
     organization_id: state.organizationId,
     sku,
@@ -732,17 +717,17 @@ export async function saveProduct(event) {
       results.push(`${marketplaceDisplayName(channel)}: já publicado anteriormente.`);
       continue;
     }
-    if (channel !== "mercado-livre") {
-      results.push(`${marketplaceDisplayName(channel)}: integração ainda não disponível para criação automática. Cadastre manualmente por enquanto.`);
-      continue;
-    }
-    if (!isMarketplaceAccountConnected(channel)) {
-      results.push("Mercado Livre: conta não conectada. Conecte em Integrações antes de publicar.");
-      continue;
-    }
     const mlCategoryId = String(data.get("mlCategoryId") || "").trim() || null;
-    if (!mlCategoryId) {
-      results.push("Mercado Livre: categoria não especificada. O anúncio será criado sem categoria definida — você pode editá-lo depois no Mercado Livre.");
+    const readiness = getProductPublicationReadiness({
+      channel,
+      name,
+      connected: isMarketplaceAccountConnected(channel),
+      categoryId: mlCategoryId,
+      imageCount: productUploadedImages.length,
+      linked: false,
+    });
+    if (readiness.status !== "ready") {
+      results.push(`${marketplaceDisplayName(channel)}: publicação pendente — ${readiness.blockers.join(", ")}.`);
       continue;
     }
     try {
@@ -785,6 +770,9 @@ export async function saveProduct(event) {
   renderMarketplaces();
   byId("productDialog").close();
   showAppMessage("Produto salvo", results.join(" "), results.some((line) => line.includes("sucesso")) ? "success" : "info");
+  } finally {
+    if (submitButton) submitButton.disabled = false;
+  }
 }
 
 async function syncProductListingLink(productId, listingValue) {
@@ -2241,28 +2229,8 @@ function validateProductStep(step) {
       return true;
 
     case 3:
-      // Marketplace é opcional: sem seleção, o produto será salvo apenas no catálogo.
-      if (form.elements.publish_ml.checked && !isMarketplaceAccountConnected("mercado-livre")) {
-        showAppMessage(
-          "Mercado Livre não conectado",
-          "Conecte sua conta em Marketplace > Integrações antes de publicar. Para salvar apenas no catálogo, desmarque Mercado Livre.",
-          "error"
-        );
-        return false;
-      }
-      if (form.elements.publish_ml.checked) {
-        const titleError = validateMlProductTitle(form.elements.name.value);
-        if (titleError) {
-          showAppMessage("Nome incompleto para Mercado Livre", titleError, "error");
-          form.elements.name.focus();
-          return false;
-        }
-      }
-      if (form.elements.publish_ml.checked && !form.elements.mlCategoryId.value.trim()) {
-        showAppMessage("Campo obrigatório", "Por favor, selecione a categoria do Mercado Livre.", "error");
-        form.elements.mlCategoryId.focus();
-        return false;
-      }
+      // Requisitos do marketplace orientam a publicação, mas nunca bloqueiam o catálogo.
+      updateMlProductTitleHint();
       return true;
 
     default:

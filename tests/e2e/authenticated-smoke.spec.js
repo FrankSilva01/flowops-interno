@@ -5,6 +5,16 @@ const password = process.env.FLOWOPS_E2E_PASSWORD;
 const tenantName = process.env.FLOWOPS_E2E_TENANT_NAME;
 const forbiddenText = process.env.FLOWOPS_E2E_FORBIDDEN_TEXT;
 
+async function openMarketplaceCatalog(page) {
+  const marketplaceTab = page.locator('[data-view="marketplace"]');
+  await marketplaceTab.click();
+  const catalogArea = page.locator('[data-marketplace-area="catalog"]');
+  await expect(catalogArea).toBeVisible();
+  await catalogArea.click();
+  await expect(page.locator('[data-marketplace-area-views="catalog"]')).toBeVisible();
+  await expect(page.locator("#openCatalogProductDialogBtn")).toBeVisible();
+}
+
 test.describe("sessao autenticada", () => {
   test.describe.configure({ mode: "serial", timeout: 60_000 });
   test.skip(!email || !password, "Defina FLOWOPS_E2E_EMAIL e FLOWOPS_E2E_PASSWORD.");
@@ -37,8 +47,8 @@ test.describe("sessao autenticada", () => {
   test("abre cadastro de produto como drawer lateral responsivo", async ({ page }, testInfo) => {
     const marketplaceTab = page.locator('[data-view="marketplace"]');
     test.skip(!(await marketplaceTab.isVisible()), "Marketplace indisponivel para este perfil.");
-    await marketplaceTab.click();
-    await page.locator('[data-action="open-product-dialog"]').click();
+    await openMarketplaceCatalog(page);
+    await page.locator("#openCatalogProductDialogBtn").click();
     const dialog = page.locator("#productDialog");
     await expect(dialog).toBeVisible();
     const layout = await dialog.evaluate((element) => {
