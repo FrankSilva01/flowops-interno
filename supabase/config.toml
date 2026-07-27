@@ -23,7 +23,7 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.public-onboarding]
-verify_jwt = true
+verify_jwt = false
 
 [functions.saas-admin]
 verify_jwt = false
