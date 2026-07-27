@@ -26,6 +26,20 @@ O frontend pode ser republicado pelo deploy anterior do Netlify. Edge Functions 
 
 Executar backup manual antes de mudancas de schema de alto risco. Trimestralmente, restaurar um backup em homologacao, conferir contagens por tabela e registrar data, duracao, divergencias e responsavel.
 
+### Autenticacao da manutencao agendada
+
+O cron `3daft-daily-maintenance` chama a Edge Function `system-maintenance`, que exige um JWT de operador. O token deve existir no Supabase Vault de produção com o nome `flowops_system_maintenance_token`; nunca inclua o valor em SQL, commits ou logs.
+
+Antes de aplicar `20260727090000_secure_system_maintenance_cron.sql`:
+
+1. Obtenha a chave `service_role` vigente pelo canal administrativo autorizado.
+2. No SQL Editor protegido, crie o segredo com `select vault.create_secret('<valor>', 'flowops_system_maintenance_token');`. Se o nome já existir, use `vault.update_secret` pelo identificador retornado pelo Vault.
+3. Aplique a migration e confirme que `cron.job` contém apenas um job chamado `3daft-daily-maintenance`.
+4. Invoque `system-maintenance` manualmente com `{"action":"scheduled"}` e o mesmo token no cabeçalho `Authorization`, sem imprimir a credencial.
+5. Confirme em `backup_runs` um registro recente com `status = 'success'` e execute o workflow `Staging restore drill`.
+
+Se o segredo estiver ausente, a migration falha de forma explícita e preserva o job anterior. Uma resposta `401` ou `403` da Edge Function indica token ausente, expirado ou incompatível com a verificação JWT.
+
 ## Segredos
 
 Rotacionar imediatamente qualquer segredo exposto. Conferir Mercado Livre, Mercado Pago, Focus NFe, Brevo e Supabase. Nunca registrar tokens, autorizacao, senhas ou payloads sem redacao.
