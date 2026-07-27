@@ -24,7 +24,12 @@ async function loadPlans() {
     state.plans = result.plans || [];
     renderPlans();
   } catch (error) {
-    byId("plansGrid").innerHTML = `<p class="loading-state">${escapeHtml(error.message)}</p>`;
+    byId("plansGrid").innerHTML = `
+      <div class="loading-state">
+        <p>${escapeHtml(error.message)}</p>
+        <button class="button secondary" type="button" data-retry-plans>Tentar novamente</button>
+      </div>`;
+    document.querySelector("[data-retry-plans]")?.addEventListener("click", loadPlans);
   }
 }
 
