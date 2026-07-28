@@ -7,6 +7,7 @@ const remoteBaseUrl = process.env.FLOWOPS_REMOTE_E2E_URL;
 
 export default defineConfig({
   testDir: "./tests/e2e",
+  outputDir: process.env.FLOWOPS_PLAYWRIGHT_OUTPUT_DIR || "test-results",
   timeout: 30_000,
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? "github" : "list",

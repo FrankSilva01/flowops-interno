@@ -13,7 +13,7 @@ O workflow `Production health` verifica Netlify, paginas legais e Edge Functions
 ## Deploy
 
 1. Rodar `npm test`, `npm run release:gate` e `git diff --check`.
-2. Configurar no Netlify `FLOWOPS_E2E_EMAIL`, `FLOWOPS_E2E_PASSWORD`, `FLOWOPS_E2E_TENANT_NAME`, `FLOWOPS_E2E_FORBIDDEN_TEXT`, `SUPABASE_SERVICE_ROLE_KEY`, `FLOWOPS_SUPABASE_ANON_KEY` e as credenciais `FLOWOPS_RLS_USER_1/2_EMAIL/PASSWORD`; sem toda a evidencia autenticada, privada e de isolamento o build falha antes da publicacao.
+2. Configurar no Netlify `FLOWOPS_E2E_EMAIL`, `FLOWOPS_E2E_PASSWORD`, `FLOWOPS_E2E_TENANT_NAME`, `FLOWOPS_E2E_FORBIDDEN_TEXT`, `FLOWOPS_E2E_MARKETPLACE_ITEM_ID`, `FLOWOPS_E2E_MARKETPLACE_ORDER_ID`, `FLOWOPS_E2E_LOGISTICS_ORDER_ID`, `FLOWOPS_E2E_TRACKING_TOKEN`, `FLOWOPS_E2E_REALTIME_ORDER_ID`, `SUPABASE_SERVICE_ROLE_KEY`, `FLOWOPS_SUPABASE_ANON_KEY` e as credenciais `FLOWOPS_RLS_USER_1/2_EMAIL/PASSWORD`; sem toda a evidencia autenticada, privada e de isolamento o build falha antes da publicacao.
 3. Aplicar migracoes com `supabase db push --linked`.
 4. Implantar apenas as Edge Functions alteradas e conferir `verify_jwt` em `supabase/config.toml`.
 5. Fazer push do frontend e confirmar `app.js?v=` e `flowops-v` no Netlify.
@@ -48,6 +48,8 @@ Rotacionar imediatamente qualquer segredo exposto. Conferir Mercado Livre, Merca
 
 O workflow `Production health` verifica aplicação, páginas legais, Edge Functions e, quando o segredo `SUPABASE_SERVICE_ROLE_KEY` está configurado no GitHub, se o último backup terminou com sucesso há no máximo oito dias.
 
-O workflow `Authenticated quality` exige `FLOWOPS_E2E_EMAIL`, `FLOWOPS_E2E_PASSWORD`, `FLOWOPS_E2E_TENANT_NAME` e `FLOWOPS_E2E_FORBIDDEN_TEXT` para validar identificação e isolamento do tenant em desktop e mobile.
+O workflow `Authenticated quality` exige as credenciais, identificação do tenant e fixtures listadas em `docs/GITHUB_PRIVATE_WORKFLOWS.md`. Ele valida desktop e mobile, sincronização Mercado Livre, automação logística, rastreio público e realtime entre duas sessões. O relatório JSON identifica cada cenário obrigatório e transforma qualquer `skip` em falha.
+
+Os relatórios operacionais e do Playwright são gravados no diretório temporário do runner, fora da raiz publicada pelo Netlify.
 
 O workflow `Staging restore drill` exige `FLOWOPS_STAGING_URL`, `FLOWOPS_STAGING_ANON_KEY`, `FLOWOPS_STAGING_ADMIN_EMAIL` e `FLOWOPS_STAGING_ADMIN_PASSWORD`. A execução agendada apenas exporta e simula; a restauração real só ocorre quando `apply_restore` é marcado em uma execução manual. O `release:gate` exige as mesmas variáveis e executa o drill antes de permitir publicação.

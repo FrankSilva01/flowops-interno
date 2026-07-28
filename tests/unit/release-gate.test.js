@@ -97,6 +97,11 @@ test("release gate rejects every missing authenticated, isolation, and staging v
   assert.match(`${result.stdout}${result.stderr}`, /FLOWOPS_STAGING_ANON_KEY/);
   assert.match(`${result.stdout}${result.stderr}`, /FLOWOPS_STAGING_ADMIN_EMAIL/);
   assert.match(`${result.stdout}${result.stderr}`, /FLOWOPS_STAGING_ADMIN_PASSWORD/);
+  assert.match(`${result.stdout}${result.stderr}`, /FLOWOPS_E2E_MARKETPLACE_ITEM_ID/);
+  assert.match(`${result.stdout}${result.stderr}`, /FLOWOPS_E2E_MARKETPLACE_ORDER_ID/);
+  assert.match(`${result.stdout}${result.stderr}`, /FLOWOPS_E2E_LOGISTICS_ORDER_ID/);
+  assert.match(`${result.stdout}${result.stderr}`, /FLOWOPS_E2E_TRACKING_TOKEN/);
+  assert.match(`${result.stdout}${result.stderr}`, /FLOWOPS_E2E_REALTIME_ORDER_ID/);
 });
 
 test("release gate rejects remote E2E targeting before it can be used as release evidence", () => {
@@ -120,6 +125,7 @@ test("release gate executes the full local candidate, authenticated, private, RL
   assert.deepEqual(evidenceSteps[1].args, ["test"]);
   assert.match(gate.output, /Full candidate regression suite/);
   assert.match(gate.output, /Authenticated desktop and mobile E2E/);
+  assert.match(gate.output, /Marketplace, logistics, tracking and realtime/);
   assert.match(gate.output, /Private production health/);
   assert.match(gate.output, /RLS tenant isolation audit/);
   assert.match(gate.output, /Staging restore drill/);
@@ -130,4 +136,16 @@ test("Netlify publication invokes the fail-closed release gate", async () => {
   const netlifyConfig = await readFile(new URL("../../netlify.toml", import.meta.url), "utf8");
 
   assert.match(netlifyConfig, /^\[build\][\s\S]*^\s*command\s*=\s*"npm run release:gate"\s*$/m);
+});
+
+test("release evidence is written outside the Netlify publish root", async () => {
+  const health = await readFile(new URL("../../scripts/operational-health.mjs", import.meta.url), "utf8");
+  const gate = await readFile(new URL("../../scripts/release-gate.mjs", import.meta.url), "utf8");
+  const playwright = await readFile(new URL("../../playwright.config.js", import.meta.url), "utf8");
+
+  assert.doesNotMatch(health, /["']output\/operational-health\.json["']/);
+  assert.match(health, /tmpdir\(\)/);
+  assert.match(gate, /FLOWOPS_RELEASE_EVIDENCE_DIR/);
+  assert.match(gate, /delete evidenceEnvironment\.FLOWOPS_CAPTURE_VISUALS/);
+  assert.match(playwright, /FLOWOPS_PLAYWRIGHT_OUTPUT_DIR/);
 });

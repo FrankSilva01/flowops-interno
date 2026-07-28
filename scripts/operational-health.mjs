@@ -1,8 +1,10 @@
 import { mkdir, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 const appUrl = (process.env.FLOWOPS_APP_URL || "https://rainbow-lokum-1fad14.netlify.app").replace(/\/$/, "");
 const supabaseUrl = (process.env.FLOWOPS_SUPABASE_URL || "https://djvrhvzjvnyensbobtby.supabase.co").replace(/\/$/, "");
-const reportPath = process.env.FLOWOPS_HEALTH_REPORT || "output/operational-health.json";
+const reportPath = process.env.FLOWOPS_HEALTH_REPORT || join(tmpdir(), "flowops-operational-health", "operational-health.json");
 const report = { checkedAt: new Date().toISOString(), appUrl, supabaseUrl, status: "healthy", checks: [] };
 
 async function check(name, action, remediation) {

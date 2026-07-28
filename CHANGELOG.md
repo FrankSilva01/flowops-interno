@@ -3,8 +3,9 @@
 ## [1.2.1] - 2026-07-28 (FlowOps Next phase one release safety)
 
 ### Changed
-- Service worker cache bumped to `flowops-v63` while retaining the single bundled `/css/flowops.css` asset.
+- Service worker cache remains on the current `flowops-v67` release while retaining the single bundled `/css/flowops.css` asset.
 - Added release regression coverage for the FlowOps Next shell, Orders and Reference Library modules.
+- Release publication now requires machine-readable proof that authenticated and integration scenarios passed without skips; operational reports stay outside the Netlify publish root.
 
 ### Release regression checks
 - Existing marketplace listings remain visible and keep their operational actions after the release.

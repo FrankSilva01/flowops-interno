@@ -28,7 +28,7 @@ test.describe("sessao autenticada", () => {
     await page.waitForTimeout(1_500);
   });
 
-  test("navega pelos modulos sem vazamento ou rolagem lateral", async ({ page }, testInfo) => {
+  test("@release:authenticated-shell navega pelos modulos sem vazamento ou rolagem lateral", async ({ page }, testInfo) => {
     if (process.env.FLOWOPS_CAPTURE_VISUALS) {
       await page.screenshot({ path: `output/playwright/dashboard-${testInfo.project.name}.png`, fullPage: true });
     }
@@ -44,7 +44,7 @@ test.describe("sessao autenticada", () => {
     if (forbiddenText) await expect(page.locator("body")).not.toContainText(forbiddenText);
   });
 
-  test("abre cadastro de produto como drawer lateral responsivo", async ({ page }, testInfo) => {
+  test("@release:marketplace-product-drawer abre cadastro de produto como drawer lateral responsivo", async ({ page }, testInfo) => {
     const marketplaceTab = page.locator('[data-view="marketplace"]');
     test.skip(!(await marketplaceTab.isVisible()), "Marketplace indisponivel para este perfil.");
     await openMarketplaceCatalog(page);
@@ -68,7 +68,7 @@ test.describe("sessao autenticada", () => {
     }
   });
 
-  test("abre nova encomenda em drawer organizado", async ({ page }, testInfo) => {
+  test("@release:order-create-drawer abre nova encomenda em drawer organizado", async ({ page }, testInfo) => {
     await page.goto("/#orders");
     await expect(page.locator("#appView")).toBeVisible();
     await page.locator("#openOrderCreateBtn").click();
@@ -86,7 +86,7 @@ test.describe("sessao autenticada", () => {
     if (process.env.FLOWOPS_CAPTURE_VISUALS) await page.screenshot({ path: `output/playwright/order-create-drawer-${testInfo.project.name}.png` });
   });
 
-  test("orders mantem lista FlowOps Next e acoes operacionais", async ({ page }) => {
+  test("@release:orders mantem lista FlowOps Next e acoes operacionais", async ({ page }) => {
     await page.goto("/#orders");
     await expect(page.locator("#appView")).toBeVisible();
     await expect(page.locator("#ordersView")).toHaveClass(/flowops-next-orders/);
@@ -127,10 +127,13 @@ test.describe("sessao autenticada", () => {
     await expect(page.locator("#orderCreateDialog")).toBeVisible();
   });
 
-  test("library mostra referencias das encomendas e estado vazio por tipo", async ({ page }) => {
+  test("@release:library mostra referencias das encomendas sem rolagem horizontal", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/#library");
     await expect(page.locator("#appView")).toBeVisible();
     await expect(page.locator("#libraryView")).toHaveClass(/active-view/);
+    const libraryHasOverflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+    expect(libraryHasOverflow, "library criou rolagem horizontal em 390px").toBe(false);
 
     const cards = page.locator("[data-library-asset]");
     test.skip((await cards.count()) === 0, "Nenhuma referencia de encomenda disponivel para validar a biblioteca.");
@@ -147,7 +150,7 @@ test.describe("sessao autenticada", () => {
     await expect(page.locator("#referenceLibraryEmpty")).toBeVisible();
   });
 
-  test("abre exportacao Shopee direta para selecao individual", async ({ page }) => {
+  test("@release:marketplace-shopee-export abre exportacao Shopee direta para selecao individual", async ({ page }) => {
     await page.goto("/#marketplace");
     await expect(page.locator("#appView")).toBeVisible();
     const checkbox = page.locator('[data-action="marketplace-migrate-select"]').first();
@@ -161,7 +164,7 @@ test.describe("sessao autenticada", () => {
     await expect(page.locator("#shopeeTemplateExportSubmit")).toBeEnabled();
   });
 
-  test("performance do marketplace nao cria overflow horizontal em viewports responsivos", async ({ page }) => {
+  test("@release:marketplace-performance performance do marketplace nao cria overflow horizontal em viewports responsivos", async ({ page }) => {
     const viewports = [
       { name: "desktop", width: 1440, height: 900 },
       { name: "tablet", width: 1024, height: 768 },
@@ -205,7 +208,7 @@ test.describe("sessao autenticada", () => {
     await expect(shopee).toHaveClass(/active/);
   });
 
-  test("seleciona encomenda e disponibiliza exclusao administrativa", async ({ page }) => {
+  test("@release:order-bulk-delete seleciona encomenda e disponibiliza exclusao administrativa", async ({ page }) => {
     test.skip((page.viewportSize()?.width || 0) < 720, "Barra de ações em lote validada no layout desktop.");
     await page.goto("/#orders");
     await expect(page.locator("#appView")).toBeVisible();
@@ -216,7 +219,7 @@ test.describe("sessao autenticada", () => {
     await expect(page.locator("#deleteOrdersSelectionBtn")).toBeEnabled();
   });
 
-  test("oferece exclusao individual sem remover ao cancelar", async ({ page }) => {
+  test("@release:order-delete-cancel oferece exclusao individual sem remover ao cancelar", async ({ page }) => {
     await page.goto("/#orders");
     await expect(page.locator("#appView")).toBeVisible();
     const cards = page.locator(".order-card");
@@ -232,7 +235,7 @@ test.describe("sessao autenticada", () => {
     await expect(cards).toHaveCount(countBefore);
   });
 
-  test("renderiza relatorio de marketplaces com classificacao normalizada", async ({ page }, testInfo) => {
+  test("@release:marketplace-report renderiza relatorio de marketplaces com classificacao normalizada", async ({ page }, testInfo) => {
     await page.goto("/#reports");
     await expect(page.locator("#appView")).toBeVisible();
     await page.locator('[data-report-tab="marketplaces"]').click();

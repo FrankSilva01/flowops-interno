@@ -18,10 +18,11 @@ jobs:
       - name: Verify application, functions and latest backup
         env:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          FLOWOPS_HEALTH_REPORT: ${{ runner.temp }}/flowops/operational-health.json
         run: node scripts/operational-health.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: operational-health-report
-          path: output/operational-health.json
+          path: ${{ runner.temp }}/flowops/operational-health.json
           retention-days: 30

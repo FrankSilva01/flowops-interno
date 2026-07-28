@@ -20,6 +20,9 @@ Configure em `Settings > Secrets and variables > Actions`:
 | `FLOWOPS_E2E_EMAIL` / `FLOWOPS_E2E_PASSWORD` | Smoke test autenticado |
 | `FLOWOPS_E2E_TENANT_NAME` | Confirma o tenant esperado no teste |
 | `FLOWOPS_E2E_FORBIDDEN_TEXT` | Confirma que dados de outro tenant não aparecem na UI |
+| `FLOWOPS_E2E_MARKETPLACE_ITEM_ID` / `FLOWOPS_E2E_MARKETPLACE_ORDER_ID` | Fixtures reais para sincronização de anúncio e importação de pedido Mercado Livre |
+| `FLOWOPS_E2E_LOGISTICS_ORDER_ID` / `FLOWOPS_E2E_TRACKING_TOKEN` | Pedido QA com evento automático e rastreio público válido |
+| `FLOWOPS_E2E_REALTIME_ORDER_ID` | Encomenda QA usada na prova reversível entre duas sessões realtime |
 | `FLOWOPS_SUPABASE_ANON_KEY` | Autenticação do teste automatizado de RLS |
 | `FLOWOPS_RLS_USER_1_EMAIL` / `FLOWOPS_RLS_USER_1_PASSWORD` | Usuário QA da empresa A |
 | `FLOWOPS_RLS_USER_2_EMAIL` / `FLOWOPS_RLS_USER_2_PASSWORD` | Usuário QA da empresa B |
@@ -34,9 +37,9 @@ Os dois usuários de RLS devem pertencer a empresas distintas, possuir apenas da
 1. Quality aprovado.
 2. Production health aprovado com as verificações privadas.
 3. RLS tenant isolation aprovado.
-4. Authenticated quality aprovado em desktop e mobile.
+4. Authenticated quality aprovado em desktop e mobile, sem cenários obrigatórios ausentes ou pulados.
 5. Staging restore drill aprovado com `FLOWOPS_STAGING_URL`, `FLOWOPS_STAGING_ANON_KEY`, `FLOWOPS_STAGING_ADMIN_EMAIL` e `FLOWOPS_STAGING_ADMIN_PASSWORD`.
 6. Nenhum job em `dead_letter` sem análise e nenhum erro crítico recente de marketplace.
 7. Planilhas Shopee geradas somente com categoria homogênea, modelo oficial específico, marca, peso, largura, comprimento, altura, SKU, estoque, descrição e pelo menos três imagens válidas.
 
-Falhas operacionais geram `output/operational-health.json`, anexado ao workflow por 30 dias com causa e ação recomendada.
+Falhas operacionais geram `operational-health.json` no diretório temporário do runner, fora da raiz publicada, e o workflow o anexa por 30 dias com causa e ação recomendada.

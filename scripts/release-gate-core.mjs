@@ -13,16 +13,26 @@ export const requiredReleaseVariables = [
   "FLOWOPS_STAGING_ANON_KEY",
   "FLOWOPS_STAGING_ADMIN_EMAIL",
   "FLOWOPS_STAGING_ADMIN_PASSWORD",
+  "FLOWOPS_E2E_MARKETPLACE_ITEM_ID",
+  "FLOWOPS_E2E_MARKETPLACE_ORDER_ID",
+  "FLOWOPS_E2E_LOGISTICS_ORDER_ID",
+  "FLOWOPS_E2E_TRACKING_TOKEN",
+  "FLOWOPS_E2E_REALTIME_ORDER_ID",
 ];
 
-export function createReleaseEvidenceSteps({ nodeCommand, npmCommand, playwrightCli }) {
+export function createReleaseEvidenceSteps({ nodeCommand, npmCommand }) {
   return [
     { name: "Release readiness", command: nodeCommand, args: ["scripts/release-readiness.mjs"] },
     { name: "Full candidate regression suite", command: npmCommand, args: ["test"] },
     {
       name: "Authenticated desktop and mobile E2E",
       command: nodeCommand,
-      args: [playwrightCli, "test", "tests/e2e/authenticated-smoke.spec.js", "--project=desktop", "--project=mobile"],
+      args: ["scripts/playwright-release-evidence.mjs", "--scope=authenticated"],
+    },
+    {
+      name: "Marketplace, logistics, tracking and realtime",
+      command: nodeCommand,
+      args: ["scripts/playwright-release-evidence.mjs", "--scope=integrations"],
     },
     { name: "Private production health", command: nodeCommand, args: ["scripts/operational-health.mjs"] },
     { name: "RLS tenant isolation audit", command: nodeCommand, args: ["scripts/rls-isolation-audit.mjs"] },
