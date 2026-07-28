@@ -21,11 +21,14 @@ test("derives logistics counts, explicit empty labels and prioritized actions", 
   const events = [{ order_id: "PED-4", status: "Problema na entrega", message: "Endereco incompleto" }];
   const ordersOriginal = structuredClone(orders);
   const rowsOriginal = structuredClone(rows);
-
-  const model = buildLogisticsPresentation(orders, rows, {
+  const eventsOriginal = structuredClone(events);
+  const options = {
     events,
     now: new Date("2026-07-28T12:00:00Z"),
-  });
+  };
+  const optionsOriginal = structuredClone(options);
+
+  const model = buildLogisticsPresentation(orders, rows, options);
 
   assert.deepEqual(model.summary, {
     total: 5,
@@ -42,12 +45,14 @@ test("derives logistics counts, explicit empty labels and prioritized actions", 
   assert.equal(model.items.find((item) => item.orderId === "PED-5").statusLabel, "Entregue");
   assert.deepEqual(orders, ordersOriginal);
   assert.deepEqual(rows, rowsOriginal);
+  assert.deepEqual(events, eventsOriginal);
+  assert.deepEqual(options, optionsOriginal);
 });
 
 test("uses explicit logistics labels and marketplace action for missing tracking", () => {
   const order = { id: "PED-7", marketplaceOrderCode: "ML-7" };
   const item = buildLogisticsPresentation([order], [], {
-    now: new Date("2026-07-28T12:00:00Z"),
+    now: "2026-07-28",
   }).items[0];
 
   assert.equal(item.order, order);
@@ -56,4 +61,28 @@ test("uses explicit logistics labels and marketplace action for missing tracking
   assert.equal(item.carrierLabel, "Mercado Livre vinculado");
   assert.equal(item.estimatedDeliveryLabel, "Sem previsao");
   assert.equal(item.nextAction.label, "Buscar rastreio ML");
+});
+
+test("requires a valid caller-provided logistics date and uses local-date rollover", () => {
+  assert.throws(
+    () => buildLogisticsPresentation([], [], {}),
+    /valid.*date|now/i,
+  );
+  assert.throws(
+    () => buildLogisticsPresentation([], [], { now: "not-a-date" }),
+    /valid.*date|now/i,
+  );
+
+  const item = buildLogisticsPresentation([
+    { id: "PED-LOCAL" },
+  ], [{
+    order_id: "PED-LOCAL",
+    status: "Postado",
+    tracking_code: "BR-LOCAL",
+    estimated_delivery_date: "2026-07-28",
+  }], {
+    now: new Date("2026-07-29T02:00:00Z"),
+  }).items[0];
+
+  assert.equal(item.isLate, false);
 });

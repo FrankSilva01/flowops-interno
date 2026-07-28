@@ -16,21 +16,41 @@ function dateOnly(value) {
   return match ? match[0] : null;
 }
 
-function currentDateOnly(now) {
-  const date = now instanceof Date && !Number.isNaN(now.getTime()) ? now : new Date();
-  return date.toISOString().slice(0, 10);
+function formatLocalDate(date) {
+  return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0"), String(date.getDate()).padStart(2, "0")].join("-");
+}
+
+function currentDateOnly(value) {
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) throw new TypeError("A valid operational date is required in options.now");
+    return formatLocalDate(value);
+  }
+  if (typeof value === "string") {
+    const dateOnlyValue = value.match(/^\d{4}-\d{2}-\d{2}$/)?.[0];
+    if (dateOnlyValue) {
+      const [year, month, day] = dateOnlyValue.split("-").map(Number);
+      const candidate = new Date(Date.UTC(year, month - 1, day));
+      if (candidate.getUTCFullYear() === year && candidate.getUTCMonth() === month - 1 && candidate.getUTCDate() === day) {
+        return dateOnlyValue;
+      }
+    } else {
+      const date = new Date(value);
+      if (!Number.isNaN(date.getTime())) return formatLocalDate(date);
+    }
+  }
+  throw new TypeError("A valid operational date is required in options.now");
 }
 
 function hasMarketplaceSource(order) {
   return Boolean(order?.marketplaceOrderCode || order?.marketplaceCode);
 }
 
-function isLate(logistics, now) {
+function isLate(logistics, operationalDate) {
   const status = normalizeStatus(logistics?.status);
   const estimate = dateOnly(logistics?.estimated_delivery_date);
   return Boolean(
     estimate
-    && estimate < currentDateOnly(now)
+    && estimate < operationalDate
     && status !== "Entregue"
     && status !== "Devolvido",
   );
@@ -50,9 +70,9 @@ function getNextAction(order, logistics, late) {
   return { rank: 7, tone: "neutral", label: "Revisar", detail: "Abra o rastreio para conferir os dados." };
 }
 
-function buildItem(order, logistics, events, now) {
+function buildItem(order, logistics, events, operationalDate) {
   const status = normalizeStatus(logistics?.status);
-  const late = isLate(logistics, now);
+  const late = isLate(logistics, operationalDate);
   const orderEvents = events.filter((event) => (event.order_id || event.orderId) === order.id);
   const nextAction = getNextAction(order, logistics, late);
   return {
@@ -80,13 +100,14 @@ function buildItem(order, logistics, events, now) {
 }
 
 export function buildLogisticsPresentation(orders = [], logisticsRows = [], options = {}) {
+  const operationalDate = currentDateOnly(options?.now);
   const sourceOrders = Array.isArray(orders) ? orders : [];
   const sourceRows = Array.isArray(logisticsRows) ? logisticsRows : [];
   const sourceEvents = Array.isArray(options.events) ? options.events : [];
   const rowByOrderId = new Map(sourceRows.map((row) => [row.order_id || row.orderId, row]));
   const items = sourceOrders
     .filter((order) => order && order.status !== "Orcamento" && order.status !== "Orçamento")
-    .map((order) => buildItem(order, rowByOrderId.get(order.id) || null, sourceEvents, options.now))
+    .map((order) => buildItem(order, rowByOrderId.get(order.id) || null, sourceEvents, operationalDate))
     .sort((left, right) => left.actionRank - right.actionRank);
 
   const summary = {

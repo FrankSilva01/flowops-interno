@@ -7,8 +7,6 @@ const DEFAULT_STAGES = [
   { key: "delivered", label: "Entregue" },
 ];
 
-const APPROVED_QUOTE_STAGES = new Set(["Aprovado", "Convertido em encomenda"]);
-
 function asText(value, fallback) {
   return value == null || String(value).trim() === "" ? fallback : String(value);
 }
@@ -48,23 +46,44 @@ function dateOnly(value) {
   return match ? match[0] : null;
 }
 
-function currentDateOnly(now) {
-  const date = now instanceof Date && !Number.isNaN(now.getTime()) ? now : new Date();
-  return date.toISOString().slice(0, 10);
+function formatLocalDate(date) {
+  return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0"), String(date.getDate()).padStart(2, "0")].join("-");
 }
 
-function isLate(order, stage, now) {
+function currentDateOnly(value) {
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) throw new TypeError("A valid operational date is required in options.now");
+    return formatLocalDate(value);
+  }
+  if (typeof value === "string") {
+    const dateOnlyValue = value.match(/^\d{4}-\d{2}-\d{2}$/)?.[0];
+    if (dateOnlyValue) {
+      const [year, month, day] = dateOnlyValue.split("-").map(Number);
+      const candidate = new Date(Date.UTC(year, month - 1, day));
+      if (candidate.getUTCFullYear() === year && candidate.getUTCMonth() === month - 1 && candidate.getUTCDate() === day) {
+        return dateOnlyValue;
+      }
+    } else {
+      const date = new Date(value);
+      if (!Number.isNaN(date.getTime())) return formatLocalDate(date);
+    }
+  }
+  throw new TypeError("A valid operational date is required in options.now");
+}
+
+function isLate(order, stage, operationalDate) {
   const deliveryDate = dateOnly(order.deliveryDate);
   return Boolean(
     deliveryDate
-    && deliveryDate < currentDateOnly(now)
+    && deliveryDate < operationalDate
     && order.status !== "Entregue"
     && stage !== "Entregue",
   );
 }
 
 function isEligible(order) {
-  return !order.quoteStage || APPROVED_QUOTE_STAGES.has(order.quoteStage);
+  const quoteStage = String(order.quoteStage || "").trim();
+  return !quoteStage || quoteStage === "Convertido em encomenda";
 }
 
 function buildOrderItem(order, stage, stageDefinition, now) {
@@ -87,6 +106,7 @@ function buildOrderItem(order, stage, stageDefinition, now) {
 }
 
 export function buildProductionPresentation(orders = [], options = {}) {
+  const operationalDate = currentDateOnly(options?.now);
   const sourceOrders = Array.isArray(orders) ? orders : [];
   const configuredStages = Array.isArray(options.stages) && options.stages.length
     ? options.stages.map(normalizeStageDefinition)
@@ -108,7 +128,7 @@ export function buildProductionPresentation(orders = [], options = {}) {
     if (!column) return;
 
     const stageDefinition = { key: column.key, label: column.label };
-    const item = buildOrderItem(order, normalizedStage, stageDefinition, options.now);
+    const item = buildOrderItem(order, normalizedStage, stageDefinition, operationalDate);
     column.orders.push(item);
     summary.total += 1;
     const category = stageCategory(normalizedStage) || configuredCategory(column.key);
