@@ -11897,6 +11897,16 @@ dialog::backdrop { background: rgba(2,6,12,.66); backdrop-filter: blur(2px); }
     overflow-x: auto !important;
   }
 
+  .flowops-next-shell:not(.sidebar-collapsed) .flowops-next-sidebar {
+    width: 100% !important;
+    padding: 6px 8px !important;
+  }
+
+  .flowops-next-sidebar > :not(.flowops-next-nav),
+  .flowops-next-shell:not(.sidebar-collapsed) .flowops-next-sidebar > :not(.flowops-next-nav) {
+    display: none !important;
+  }
+
   .flowops-next-sidebar .sidebar-head,
   .flowops-next-sidebar .sidebar-group-label {
     display: none !important;
@@ -11913,6 +11923,16 @@ dialog::backdrop { background: rgba(2,6,12,.66); backdrop-filter: blur(2px); }
 
   .flowops-next-sidebar .tab {
     flex: 0 0 38px;
+  }
+
+  .flowops-next-shell:not(.sidebar-collapsed) .flowops-next-sidebar .tab {
+    width: 36px !important;
+    justify-content: center !important;
+    padding: 0 !important;
+  }
+
+  .flowops-next-shell:not(.sidebar-collapsed) .flowops-next-sidebar .nav-label {
+    display: none !important;
   }
 
   .flowops-next-workspace {

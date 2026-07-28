@@ -13,7 +13,7 @@ const contentTypes = {
   ".woff2": "font/woff2"
 };
 
-async function openLocalApp(page) {
+async function openLocalApp(page, sidebarPreference) {
   await page.route("http://flowops.local/**", async (route) => {
     const requestUrl = new URL(route.request().url());
     const requestPath = requestUrl.pathname === "/" ? "/index.html" : decodeURIComponent(requestUrl.pathname);
@@ -26,6 +26,11 @@ async function openLocalApp(page) {
       return route.fulfill({ status: 404 });
     }
   });
+  if (sidebarPreference != null) {
+    await page.addInitScript((preference) => {
+      localStorage.setItem("flowops-sidebar-collapsed", preference);
+    }, sidebarPreference);
+  }
   await page.goto("http://flowops.local/");
 }
 
@@ -80,21 +85,41 @@ test("shell FlowOps Next expande a navegacao compacta no desktop", async ({ page
   expect(toggleAppearance.legacyIcon).toBe("none");
 });
 
-test("shell FlowOps Next usa navegacao inferior no mobile", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await openLocalApp(page);
-  await page.evaluate(() => {
-    document.querySelector("#onlineLogin")?.setAttribute("hidden", "");
-    document.querySelector("#appView").hidden = false;
-  });
+for (const preference of ["true", "false"]) {
+  test(`shell FlowOps Next usa navegacao inferior para preferencia persistida ${preference}`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openLocalApp(page, preference);
+    await page.evaluate(() => {
+      document.querySelector("#onlineLogin")?.setAttribute("hidden", "");
+      document.querySelector("#appView").hidden = false;
+    });
 
-  const sidebar = page.locator(".sidebar");
-  await expect(sidebar).toHaveClass(/flowops-next-sidebar/);
-  await expect(sidebar).toHaveCSS("position", "fixed");
-  const bottomGap = await sidebar.evaluate((element) => Math.abs(window.innerHeight - element.getBoundingClientRect().bottom));
-  expect(bottomGap).toBeLessThanOrEqual(1);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(false);
-});
+    const app = page.locator("#appView");
+    const sidebar = page.locator(".sidebar");
+    if (preference === "true") await expect(app).toHaveClass(/sidebar-collapsed/);
+    else await expect(app).not.toHaveClass(/sidebar-collapsed/);
+    await expect(sidebar).toHaveClass(/flowops-next-sidebar/);
+    await expect(sidebar).toHaveCSS("position", "fixed");
+    await expect(page.locator(".flowops-next-nav")).toBeVisible();
+
+    const metrics = await sidebar.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      const visibleNonNavigation = [...element.children]
+        .filter((child) => !child.matches(".flowops-next-nav"))
+        .filter((child) => getComputedStyle(child).display !== "none")
+        .map((child) => child.className || child.id);
+      return {
+        bottomGap: Math.abs(window.innerHeight - rect.bottom),
+        visibleNonNavigation,
+        width: rect.width
+      };
+    });
+    expect(metrics.width).toBeCloseTo(390, 0);
+    expect(metrics.bottomGap).toBeLessThanOrEqual(1);
+    expect(metrics.visibleNonNavigation).toEqual([]);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(false);
+  });
+}
 
 test("seletor da encomenda permanece dentro do card", async ({ page }) => {
   await page.goto("/");
