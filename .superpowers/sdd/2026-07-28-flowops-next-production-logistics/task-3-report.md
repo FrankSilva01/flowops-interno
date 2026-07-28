@@ -36,3 +36,19 @@ Result: 4 failed / 0 passed as expected because the FlowOps Next markup, present
 ## Remaining Concern
 
 The authenticated desktop and mobile Playwright checks require `FLOWOPS_E2E_EMAIL` and `FLOWOPS_E2E_PASSWORD`. Without those private credentials, the new scenario is present and discovered but did not validate persisted tenant data, public link state, or a real timeline in this worktree.
+
+## Fix Round 1: Read-only Marketplace Sync
+
+### RED
+
+Added a behavioral regression to `tests/unit/logistics-next.test.js` that renders Logistics with `state.canEdit = false`, then opens the drawer. It verifies that both `#syncAllMlShipmentsBtn` and `#logisticsSyncMlButton` are disabled.
+
+Command: `node --test tests/unit/logistics-next.test.js`
+
+Result before the fix: 5 passed, 1 failed. The failure confirmed that the page-level `#syncAllMlShipmentsBtn` remained enabled after `renderLogistics()` for a read-only user.
+
+### GREEN
+
+`renderLogistics()` now applies the existing mutation-control routine on every render. The routine also disables `#syncAllMlShipmentsBtn`, using the same `state.canEdit` boundary as the drawer controls. The router's existing `ensureCanEdit()` check for `sync-all-ml-shipments` remains unchanged as defense in depth.
+
+Focused verification: `node --test tests/unit/logistics-next.test.js tests/unit/logistics-presentation.test.js tests/unit/ui-contracts.test.js` passed with 11 tests and 0 failures. `npm run check` validated 68 JavaScript files.

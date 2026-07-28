@@ -123,6 +123,7 @@ function renderFlowOpsNextRow(item) {
 export function renderLogistics() {
   const target = byId("logisticsTable");
   if (!target) return;
+  setLogisticsMutationControlsDisabled(state.canEdit);
   const { presentation, items } = getFilteredLogisticsPresentation();
   renderOperationalSummary("logisticsView", "logisticsPageSummary", [
     ["Aguardando envio", presentation.summary.waiting, "sem despacho ainda", "amber"],
@@ -198,6 +199,8 @@ function setLogisticsMutationControlsDisabled(canEdit) {
   }
   const syncButton = byId("logisticsSyncMlButton");
   if (syncButton) syncButton.disabled = disabled;
+  const syncAllButton = byId("syncAllMlShipmentsBtn");
+  if (syncAllButton) syncAllButton.disabled = disabled;
 }
 
 export async function copyPublicTrackingLink(orderId) {

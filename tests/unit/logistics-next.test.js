@@ -2,6 +2,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
+globalThis.window = globalThis.window || { location: { hash: "" } };
+globalThis.localStorage = globalThis.localStorage || { getItem: () => null, setItem: () => {} };
+
+const { state } = await import("../../js/core/state.js");
+const { renderLogistics, openLogisticsDialog } = await import("../../js/features/logistics.js");
+
 const indexHtml = new URL("../../index.html", import.meta.url);
 const logisticsSource = new URL("../../js/features/logistics.js", import.meta.url);
 const logisticsCss = new URL("../../css/flowops.css", import.meta.url);
@@ -55,6 +61,66 @@ test("Logistics Next source does not introduce mojibake into operational labels"
   const source = await readFile(logisticsSource, "utf8");
 
   assert.doesNotMatch(source, /\u00c3/);
+});
+
+test("Read-only logistics disables page and drawer marketplace synchronization controls", () => {
+  const originalDocument = globalThis.document;
+  const originalData = state.data;
+  const originalCanEdit = state.canEdit;
+  const originalLogistics = state.orderLogistics;
+  const originalEvents = state.logisticsEvents;
+  const originalSearch = state.logisticsSearch;
+  const originalStatusFilter = state.logisticsStatusFilter;
+  const syncAllButton = { disabled: false };
+  const syncShipmentButton = { disabled: false, dataset: {} };
+  const logisticsForm = {
+    elements: {
+      orderId: { value: "" }, carrier: { value: "" }, trackingCode: { value: "" }, status: { value: "" }, estimatedDeliveryDate: { value: "" },
+    },
+    querySelectorAll: () => [],
+  };
+  const eventForm = { elements: { orderId: { value: "" } }, querySelectorAll: () => [] };
+  const elements = {
+    logisticsView: {},
+    logisticsPageSummary: { innerHTML: "" },
+    logisticsActionBoard: { innerHTML: "" },
+    logisticsTable: { innerHTML: "" },
+    syncAllMlShipmentsBtn: syncAllButton,
+    logisticsForm,
+    logisticsEventForm: eventForm,
+    logisticsSyncMlButton: syncShipmentButton,
+    copyPublicTrackingLinkButton: { disabled: false, dataset: {} },
+    logisticsDialogTitle: { textContent: "" },
+    logisticsTimeline: { innerHTML: "" },
+    logisticsDialog: { showModal: () => {} },
+  };
+  globalThis.document = {
+    getElementById: (id) => elements[id] || null,
+    querySelectorAll: () => [],
+  };
+  state.canEdit = false;
+  state.data = { ...state.data, orders: [] };
+  state.orderLogistics = [];
+  state.logisticsEvents = [];
+  state.logisticsSearch = "";
+  state.logisticsStatusFilter = "all";
+
+  try {
+    renderLogistics();
+    assert.equal(syncAllButton.disabled, true);
+
+    state.data = { ...state.data, orders: [{ id: "PED-READ-ONLY", orderCode: "PED-READ-ONLY", status: "Entregue" }] };
+    openLogisticsDialog("PED-READ-ONLY");
+    assert.equal(syncShipmentButton.disabled, true);
+  } finally {
+    globalThis.document = originalDocument;
+    state.data = originalData;
+    state.canEdit = originalCanEdit;
+    state.orderLogistics = originalLogistics;
+    state.logisticsEvents = originalEvents;
+    state.logisticsSearch = originalSearch;
+    state.logisticsStatusFilter = originalStatusFilter;
+  }
 });
 
 test("Logistics stacks table rows on mobile without adding page-level list overflow", async () => {
