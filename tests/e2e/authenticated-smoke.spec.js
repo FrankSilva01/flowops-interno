@@ -170,6 +170,26 @@ test.describe("sessao autenticada", () => {
     await expect(page.locator("#orderDrawer")).toHaveClass(/open/);
   });
 
+  test("@release:logistics-next shows persisted tracking, drawer controls, and timeline without mobile overflow", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/#logistics");
+    await expect(page.locator("#appView")).toBeVisible();
+    await expect(page.locator("#logisticsPageSummary")).toBeVisible();
+    await expect(page.locator("#logisticsSyncStatus")).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1), "logistics created page overflow at 390px").toBe(false);
+
+    const rows = page.locator("#logisticsTable tr");
+    test.skip((await rows.count()) === 0, "No logistics orders are available for drawer validation.");
+    const firstRow = rows.first();
+    await expect(firstRow.locator("[data-action=\"open-logistics\"]")).toBeVisible();
+    await firstRow.locator("[data-action=\"open-logistics\"]").click();
+
+    const dialog = page.locator("#logisticsDialog");
+    await expect(dialog).toBeVisible();
+    await expect(dialog.locator("#copyPublicTrackingLinkButton")).toBeVisible();
+    await expect(dialog.locator("#logisticsTimeline")).toBeVisible();
+  });
+
   test("@release:marketplace-shopee-export abre exportacao Shopee direta para selecao individual", async ({ page }) => {
     await page.goto("/#marketplace");
     await expect(page.locator("#appView")).toBeVisible();

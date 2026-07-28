@@ -597,10 +597,10 @@
           </section>
         </section>
 
-        <section id="logisticsView" class="view">
-          <div id="logisticsPageSummary" class="operational-summary-grid"></div>
-          <div id="logisticsActionBoard" class="logistics-action-board"></div>
-          <div class="filter-bar">
+        <section id="logisticsView" class="view flowops-next-logistics">
+          <section id="logisticsPageSummary" class="operational-summary-grid logistics-next-summary" aria-label="Resumo da logística"></section>
+          <section id="logisticsActionBoard" class="logistics-action-board logistics-next-attention" aria-label="Atenção na logística"></section>
+          <div class="filter-bar logistics-next-controls">
             <label>
               Buscar
               <input id="logisticsSearch" type="search" placeholder="Código, cliente ou descrição" />
@@ -620,10 +620,10 @@
               </select>
             </label>
             <button id="syncAllMlShipmentsBtn" class="secondary-btn" type="button" data-action="sync-all-ml-shipments">Atualizar rastreios ML</button>
-            <span id="logisticsSyncStatus" class="form-hint"></span>
+            <span id="logisticsSyncStatus" class="form-hint logistics-next-sync-status" aria-live="polite"></span>
           </div>
-          <div class="table-wrap">
-            <table>
+          <div class="table-wrap logistics-next-list">
+            <table class="logistics-next-table">
               <thead>
                 <tr>
                   <th>Encomenda</th><th>Produto / arquivos</th><th>Situação</th><th>Rastreio</th><th>Previsão</th><th>Próxima ação</th><th></th>
@@ -2298,7 +2298,7 @@
         <button class="primary-btn" type="submit">Salvar configurações</button>
       </form>
     </dialog>
-    <dialog id="logisticsDialog" class="history-dialog marketplace-dialog drawer-dialog">
+    <dialog id="logisticsDialog" class="history-dialog marketplace-dialog drawer-dialog logistics-next-drawer">
       <div class="drawer-header">
         <div>
           <span class="order-code">Logística</span>
@@ -2307,44 +2307,56 @@
         </div>
         <button class="icon-btn" type="button" data-close-dialog="logisticsDialog" aria-label="Fechar">×</button>
       </div>
-      <form id="logisticsForm" class="login-form drawer-body">
-        <input name="orderId" type="hidden" />
-        <label>Transportadora<input name="carrier" placeholder="Ex: Correios, Jadlog, Loggi" /></label>
-        <label>Código de rastreio<input name="trackingCode" placeholder="Código informado pela transportadora" /></label>
-        <label>Status
-          <select name="status">
-            <option>Aguardando envio</option>
-            <option>Postado</option>
-            <option>Em trânsito</option>
-            <option>Saiu para entrega</option>
-            <option>Entregue</option>
-            <option>Problema na entrega</option>
-            <option>Devolvido</option>
-          </select>
-        </label>
-        <label>Previsão de entrega<input name="estimatedDeliveryDate" type="date" /></label>
-        <button class="primary-btn" type="submit">Salvar rastreio</button>
-        <button class="secondary-btn" type="button" id="logisticsSyncMlButton" data-action="sync-ml-shipment">Buscar status no Mercado Livre</button>
-        <button class="secondary-btn" type="button" id="copyPublicTrackingLinkButton" data-action="copy-public-tracking">Copiar link para o cliente</button>
-      </form>
-      <div class="panel-head subhead"><h3>Adicionar evento na timeline</h3></div>
-      <form id="logisticsEventForm" class="compact-form drawer-body">
-        <input name="orderId" type="hidden" />
-        <select name="eventStatus">
-          <option value="">Sem mudança de status</option>
-          <option>Aguardando envio</option>
-          <option>Postado</option>
-          <option>Em trânsito</option>
-          <option>Saiu para entrega</option>
-          <option>Entregue</option>
-          <option>Problema na entrega</option>
-          <option>Devolvido</option>
-        </select>
-        <input name="eventMessage" placeholder="Observação (opcional)" />
-        <button class="secondary-btn" type="submit">Adicionar evento</button>
-      </form>
-      <div class="panel-head subhead"><h3>Timeline de rastreio</h3></div>
-      <div id="logisticsTimeline" class="stack-list drawer-body"></div>
+      <div class="drawer-body logistics-next-drawer-body">
+        <form id="logisticsForm" class="login-form logistics-next-drawer-form">
+          <input name="orderId" type="hidden" />
+          <section class="logistics-next-drawer-section" aria-labelledby="logisticsDeliveryFieldsTitle">
+            <div class="panel-head subhead"><h3 id="logisticsDeliveryFieldsTitle">Dados da entrega</h3></div>
+            <label>Transportadora<input name="carrier" placeholder="Ex: Correios, Jadlog, Loggi" /></label>
+            <label>Código de rastreio<input name="trackingCode" placeholder="Código informado pela transportadora" /></label>
+            <label>Status
+              <select name="status">
+                <option>Aguardando envio</option>
+                <option>Postado</option>
+                <option>Em trânsito</option>
+                <option>Saiu para entrega</option>
+                <option>Entregue</option>
+                <option>Problema na entrega</option>
+                <option>Devolvido</option>
+              </select>
+            </label>
+            <label>Previsão de entrega<input name="estimatedDeliveryDate" type="date" /></label>
+            <button class="primary-btn" type="submit">Salvar rastreio</button>
+          </section>
+          <section class="logistics-next-drawer-section" aria-labelledby="logisticsSyncTitle">
+            <div class="panel-head subhead"><h3 id="logisticsSyncTitle">Sincronização e link público</h3></div>
+            <button class="secondary-btn" type="button" id="logisticsSyncMlButton" data-action="sync-ml-shipment">Buscar status no Mercado Livre</button>
+            <button class="secondary-btn" type="button" id="copyPublicTrackingLinkButton" data-action="copy-public-tracking">Copiar link para o cliente</button>
+          </section>
+        </form>
+        <section class="logistics-next-drawer-section" aria-labelledby="logisticsEventTitle">
+          <div class="panel-head subhead"><h3 id="logisticsEventTitle">Adicionar evento na timeline</h3></div>
+          <form id="logisticsEventForm" class="compact-form logistics-next-event-form">
+            <input name="orderId" type="hidden" />
+            <select name="eventStatus">
+              <option value="">Sem mudança de status</option>
+              <option>Aguardando envio</option>
+              <option>Postado</option>
+              <option>Em trânsito</option>
+              <option>Saiu para entrega</option>
+              <option>Entregue</option>
+              <option>Problema na entrega</option>
+              <option>Devolvido</option>
+            </select>
+            <input name="eventMessage" placeholder="Observação (opcional)" />
+            <button class="secondary-btn" type="submit">Adicionar evento</button>
+          </form>
+        </section>
+        <section class="logistics-next-drawer-section" aria-labelledby="logisticsTimelineTitle">
+          <div class="panel-head subhead"><h3 id="logisticsTimelineTitle">Timeline de rastreio</h3></div>
+          <div id="logisticsTimeline" class="stack-list logistics-next-timeline"></div>
+        </section>
+      </div>
     </dialog>
     <dialog id="leadDialog" class="history-dialog lead-dialog">
       <div class="panel-head">
