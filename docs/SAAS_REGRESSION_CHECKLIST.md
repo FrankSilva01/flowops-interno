@@ -58,7 +58,15 @@ Antes dos testes manuais, execute `npm test` e confirme que o workflow `Quality`
 - Confirmar que o app recarrega em `?force=<versao>`.
 - No console, confirmar que `document.querySelector('script[type="module"]').src` aponta para a versao atual.
 
-## 6. Gates tecnicos
+## 6. Regressao de release FlowOps Next
+
+- Em `Marketplace > Anuncios`, abrir um anuncio existente e confirmar que preco, estoque, status, acoes de ver e editar continuam disponiveis.
+- Sincronizar uma venda de teste e confirmar que o pedido importado aparece em `Encomendas`, preserva o codigo externo e pode ser aberto sem duplicacao.
+- Para um pedido vinculado, executar a sincronizacao em `Logistica` e confirmar que o status e a fonte do rastreio continuam corretos.
+- Abrir o link publico de rastreio do pedido em uma janela anonima e confirmar que a pagina carrega sem sessao, mostra o status esperado e nao interpreta texto externo como HTML.
+- Com duas sessoes autenticadas da mesma empresa, alterar um pedido ou anuncio de teste em uma sessao e confirmar a atualizacao em tempo real na outra sem recarregar a pagina.
+
+## 7. Gates tecnicos
 
 ```powershell
 node --check js/app.js

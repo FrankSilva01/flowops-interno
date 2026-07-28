@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.2.1] - 2026-07-28 (FlowOps Next phase one release safety)
+
+### Changed
+- Service worker cache bumped to `flowops-v63` while retaining the single bundled `/css/flowops.css` asset.
+- Added release regression coverage for the FlowOps Next shell, Orders and Reference Library modules.
+
+### Release regression checks
+- Existing marketplace listings remain visible and keep their operational actions after the release.
+- Imported marketplace orders remain available in Orders with their references and selection actions.
+- Logistics synchronization preserves the linked order tracking status and source.
+- Public tracking remains available without an authenticated session and escapes external tracking data.
+- Realtime refresh is checked from a second authenticated session after operational updates.
+
 ## [1.2.0] - 2026-07-20 (Auditoria: segurança, dados, marketplace, OAuth ML)
 
 ### 🔒 Segurança (SQL/RLS aplicado em produção — `sql/2026-07-17_multitenant_hardening.sql`)
