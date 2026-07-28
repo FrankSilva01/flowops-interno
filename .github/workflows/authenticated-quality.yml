@@ -7,7 +7,7 @@ jobs:
   authenticated-smoke:
     runs-on: ubuntu-latest
     env:
-      FLOWOPS_BASE_URL: https://rainbow-lokum-1fad14.netlify.app
+      FLOWOPS_REMOTE_E2E_URL: https://rainbow-lokum-1fad14.netlify.app
       FLOWOPS_E2E_EMAIL: ${{ secrets.FLOWOPS_E2E_EMAIL }}
       FLOWOPS_E2E_PASSWORD: ${{ secrets.FLOWOPS_E2E_PASSWORD }}
       FLOWOPS_E2E_TENANT_NAME: ${{ secrets.FLOWOPS_E2E_TENANT_NAME }}

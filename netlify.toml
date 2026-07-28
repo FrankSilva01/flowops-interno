@@ -1,3 +1,7 @@
+[build]
+  command = "npm run release:gate"
+  publish = "."
+
 [[headers]]
   for = "/*"
   [headers.values]

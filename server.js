@@ -1,85 +1,76 @@
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
+import { createServer } from "node:http";
+import { readFile } from "node:fs/promises";
+import { extname, resolve, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const PORT = 8080;
-const DIR = __dirname;
+const projectRoot = fileURLToPath(new URL("./", import.meta.url));
+const mimeTypes = {
+  ".css": "text/css; charset=utf-8",
+  ".html": "text/html; charset=utf-8",
+  ".jpeg": "image/jpeg",
+  ".jpg": "image/jpeg",
+  ".js": "application/javascript; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".png": "image/png",
+  ".svg": "image/svg+xml",
+  ".woff": "font/woff",
+  ".woff2": "font/woff2",
+};
 
-const server = http.createServer((req, res) => {
-  let urlPath = req.url.split('?')[0]; // Remove query string
-  let filePath = path.join(DIR, urlPath === '/' ? 'index.html' : urlPath);
-  
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
-  
-  // Prevent directory traversal
-  if (!filePath.startsWith(DIR)) {
-    res.writeHead(403);
-    res.end('Forbidden');
-    return;
-  }
+function getFilePath(requestUrl, rootDirectory) {
+  const normalizedRoot = resolve(rootDirectory);
+  const pathname = decodeURIComponent(new URL(requestUrl, "http://127.0.0.1").pathname);
+  const requestedPath = pathname === "/" ? "/index.html" : pathname;
+  const filePath = resolve(normalizedRoot, `.${requestedPath}`);
 
-  fs.stat(filePath, (err, stats) => {
-    if (err) {
-      // Try index.html for SPA routing
-      filePath = path.join(DIR, 'index.html');
-      fs.stat(filePath, (err) => {
-        if (err) {
-          res.writeHead(404);
-          res.end('Not found');
-          return;
-        }
-        serveFile(filePath);
-      });
+  if (filePath !== normalizedRoot && !filePath.startsWith(`${normalizedRoot}${sep}`)) return null;
+  return filePath;
+}
+
+export function createStaticServer({ rootDirectory = projectRoot } = {}) {
+  return createServer(async (request, response) => {
+    response.setHeader("Access-Control-Allow-Origin", "*");
+    response.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+
+    if (request.method === "OPTIONS") {
+      response.writeHead(204);
+      response.end();
       return;
     }
-    
-    if (stats.isDirectory()) {
-      filePath = path.join(filePath, 'index.html');
+
+    if (!["GET", "HEAD"].includes(request.method || "")) {
+      response.writeHead(405, { Allow: "GET, HEAD, OPTIONS" });
+      response.end();
+      return;
     }
-    
-    serveFile(filePath);
-  });
 
-  function serveFile(filePath) {
-    const ext = path.extname(filePath);
-    const mimeTypes = {
-      '.html': 'text/html; charset=utf-8',
-      '.js': 'application/javascript; charset=utf-8',
-      '.css': 'text/css; charset=utf-8',
-      '.json': 'application/json',
-      '.png': 'image/png',
-      '.jpg': 'image/jpeg',
-      '.jpeg': 'image/jpeg',
-      '.gif': 'image/gif',
-      '.svg': 'image/svg+xml',
-      '.woff': 'font/woff',
-      '.woff2': 'font/woff2',
-      '.ttf': 'font/ttf'
-    };
+    const filePath = getFilePath(request.url || "/", rootDirectory);
+    if (!filePath) {
+      response.writeHead(403);
+      response.end("Forbidden");
+      return;
+    }
 
-    const contentType = mimeTypes[ext] || 'application/octet-stream';
-
-    fs.readFile(filePath, (err, data) => {
-      if (err) {
-        console.error(`❌ ${req.url} -> ${filePath} (${err.code})`);
-        res.writeHead(404);
-        res.end('Not found');
-        return;
-      }
-      console.log(`✅ ${req.url} -> ${ext || 'file'}`);
-      res.writeHead(200, {
-        'Content-Type': contentType,
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
+    try {
+      const body = await readFile(filePath);
+      response.writeHead(200, {
+        "Cache-Control": "no-store",
+        "Content-Type": mimeTypes[extname(filePath)] || "application/octet-stream",
       });
-      res.end(data);
-    });
-  }
-});
+      response.end(request.method === "HEAD" ? undefined : body);
+    } catch {
+      response.writeHead(404);
+      response.end("Not found");
+    }
+  });
+}
 
-server.listen(PORT, () => {
-  console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
-});
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const host = process.env.HOST || "127.0.0.1";
+  const port = Number(process.env.PORT || 8080);
+  const server = createStaticServer();
+
+  server.listen(port, host, () => {
+    console.log(`FlowOps local server listening at http://${host}:${port}`);
+  });
+}

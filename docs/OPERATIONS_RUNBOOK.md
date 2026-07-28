@@ -12,11 +12,12 @@ O workflow `Production health` verifica Netlify, paginas legais e Edge Functions
 
 ## Deploy
 
-1. Rodar `npm test` e `git diff --check`.
-2. Aplicar migracoes com `supabase db push --linked`.
-3. Implantar apenas as Edge Functions alteradas e conferir `verify_jwt` em `supabase/config.toml`.
-4. Fazer push do frontend e confirmar `app.js?v=` e `flowops-v` no Netlify.
-5. Executar `Production health` manualmente e o checklist de regressao.
+1. Rodar `npm test`, `npm run release:gate` e `git diff --check`.
+2. Configurar no Netlify `FLOWOPS_E2E_EMAIL`, `FLOWOPS_E2E_PASSWORD` e `SUPABASE_SERVICE_ROLE_KEY`; sem os tres secrets o build falha antes da publicacao.
+3. Aplicar migracoes com `supabase db push --linked`.
+4. Implantar apenas as Edge Functions alteradas e conferir `verify_jwt` em `supabase/config.toml`.
+5. Fazer push do frontend e confirmar `app.js?v=` e `flowops-v` no Netlify.
+6. Executar `Production health` manualmente e o checklist de regressao.
 
 ## Rollback
 
