@@ -11,6 +11,8 @@ import {
   mlRedirectUri,
 } from "../_shared/marketplace.ts";
 import { adoptCachedMarketplaceDocument, archiveMarketplaceDocument, recordMarketplaceDocumentDownload, verifyMarketplaceDocument } from "../_shared/marketplace-documents.ts";
+import { marketplaceAccountLinkStatus } from "../_shared/marketplace-oauth-tenant.mjs";
+import { publicErrorMessage } from "../_shared/public-error.js";
 
 Deno.serve(async (req) => {
   applyCors(req);
@@ -195,7 +197,7 @@ Deno.serve(async (req) => {
       actorEmail,
       rawPayload: { error: error.message || String(error) },
     }).catch(() => {});
-    return json({ ok: false, error: error.message || String(error) }, { status: 500 });
+    return json({ ok: false, error: publicErrorMessage(error, "Nao foi possivel concluir a operacao.") }, { status: 500 });
   }
 });
 
@@ -339,6 +341,24 @@ async function handleMlCallback(url: URL) {
     const me = await meResponse.json().catch(() => ({}));
     const sellerId = String(token.user_id || me.id || "");
 
+    const { data: linkedAccounts, error: linkedAccountError } = await supabase
+      .from("marketplace_accounts")
+      .select("organization_id")
+      .eq("marketplace", "Mercado Livre")
+      .eq("external_seller_id", sellerId)
+      .limit(1);
+    if (linkedAccountError) throw linkedAccountError;
+    const linkStatus = marketplaceAccountLinkStatus(linkedAccounts?.[0]?.organization_id || null, stateRow.organization_id);
+    if (linkStatus === "already_linked") {
+      await consumeOauthState(supabase, stateHash);
+      await logSync("Mercado Livre", "oauth-connect", "error", "Conta Mercado Livre ja vinculada a outra empresa", {
+        organizationId: stateRow.organization_id,
+        actorEmail: stateRow.requested_by || "Sistema",
+        rawPayload: { seller_id: sellerId, reason: "already_linked" },
+      }).catch(() => {});
+      return oauthRedirect(returnUrl, { ml_status: linkStatus });
+    }
+
     const record = {
       marketplace: "Mercado Livre",
       organization_id: stateRow.organization_id,
@@ -376,10 +396,10 @@ async function handleMlCallback(url: URL) {
       actorEmail: stateRow.requested_by || "Sistema",
       rawPayload: { seller_id: sellerId },
     }).catch(() => {});
-    return oauthRedirect(returnUrl, { ml_connected: "1" });
+    return oauthRedirect(returnUrl, { ml_status: linkStatus });
   } catch (error) {
     await consumeOauthState(supabase, stateHash).catch(() => {});
-    return oauthRedirect(returnUrl, { ml_error: error instanceof Error ? error.message : String(error) });
+    return oauthRedirect(returnUrl, { ml_error: publicErrorMessage(error, "Nao foi possivel conectar ao Mercado Livre.") });
   }
 }
 

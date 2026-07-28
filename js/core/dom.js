@@ -1,4 +1,5 @@
 import { state } from "./state.js";
+import { appMessageBrand } from "./app-message-brand.js";
 
 export function byId(id) {
   return document.getElementById(id);
@@ -204,6 +205,8 @@ export function showAppMessage(title, message, tone = "info") {
   }
   byId("appMessageTitle").textContent = title;
   byId("appMessageText").textContent = message;
+  const brand = byId("appMessageBrand");
+  if (brand) brand.textContent = appMessageBrand(state.organizationName);
   dialog.dataset.tone = tone;
   if (!dialog.open) dialog.showModal();
 }

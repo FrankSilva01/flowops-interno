@@ -387,14 +387,22 @@ export async function enterOnlineApp(user) {
 // resultado e limpa a query da URL.
 function surfaceMlOauthResult() {
   const params = new URLSearchParams(window.location.search);
-  if (params.has("ml_connected")) {
+  const status = params.get("ml_status");
+  if (status === "connected" || status === "reconnected" || params.has("ml_connected")) {
     showAppMessage("Mercado Livre", "Conta conectada com sucesso.", "success");
+  } else if (status === "already_linked") {
+    showAppMessage(
+      "Conta Mercado Livre já conectada",
+      "Esta conta do Mercado Livre já pertence a outra empresa no FlowOps. Saia da conta atual do Mercado Livre e autorize a conta correta desta empresa.",
+      "warning",
+    );
   } else if (params.has("ml_error")) {
     showAppMessage("Mercado Livre", `Não foi possível conectar: ${params.get("ml_error")}`, "error");
   } else {
     return;
   }
   params.delete("ml_connected");
+  params.delete("ml_status");
   params.delete("ml_error");
   const clean = window.location.pathname + (params.toString() ? `?${params}` : "") + window.location.hash;
   window.history.replaceState({}, "", clean);
