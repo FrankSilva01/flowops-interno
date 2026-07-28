@@ -19,7 +19,13 @@ const mimeTypes = {
 
 function getFilePath(requestUrl, rootDirectory) {
   const normalizedRoot = resolve(rootDirectory);
-  const pathname = decodeURIComponent(new URL(requestUrl, "http://127.0.0.1").pathname);
+  let pathname;
+  try {
+    pathname = decodeURIComponent(new URL(requestUrl, "http://127.0.0.1").pathname);
+  } catch {
+    return null;
+  }
+  if (pathname.split("/").some((segment) => segment.startsWith("."))) return null;
   const requestedPath = pathname === "/" ? "/index.html" : pathname;
   const filePath = resolve(normalizedRoot, `.${requestedPath}`);
 
@@ -29,9 +35,6 @@ function getFilePath(requestUrl, rootDirectory) {
 
 export function createStaticServer({ rootDirectory = projectRoot } = {}) {
   return createServer(async (request, response) => {
-    response.setHeader("Access-Control-Allow-Origin", "*");
-    response.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
-
     if (request.method === "OPTIONS") {
       response.writeHead(204);
       response.end();
