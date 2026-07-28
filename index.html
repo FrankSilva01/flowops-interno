@@ -391,12 +391,12 @@
           <div id="reportsContent"></div>
         </section>
 
-        <section id="ordersView" class="view">
-          <div class="orders-command-bar">
+        <section id="ordersView" class="view flowops-next-orders">
+          <div class="orders-command-bar flowops-next-orders-command">
             <div><strong>Operação de pedidos</strong><small>Cadastre uma encomenda e acompanhe produção e entrega na lista abaixo.</small></div>
             <button id="openOrderCreateBtn" class="primary-btn" type="button"><i class="ti ti-plus" aria-hidden="true"></i> Nova encomenda</button>
           </div>
-          <dialog id="orderCreateDialog" class="drawer-dialog order-create-dialog">
+          <dialog id="orderCreateDialog" class="drawer-dialog order-create-dialog flowops-next-order-create">
             <div class="drawer-header">
               <div><span class="order-code">Encomendas</span><h3 id="orderCreateDialogTitle">Nova encomenda</h3><small>Preencha o essencial e complemente a produção quando necessário.</small></div>
               <button class="icon-btn" type="button" data-close-dialog="orderCreateDialog" aria-label="Fechar"><i class="ti ti-x"></i></button>
@@ -477,7 +477,7 @@
             <div class="order-form-actions"><button id="cancelOrderEditBtn" class="secondary-btn" type="button">Cancelar</button><button id="orderSubmitBtn" class="primary-btn" type="submit">Salvar encomenda</button></div>
           </form>
           </dialog>
-          <div class="orders-toolbar">
+          <div class="orders-toolbar flowops-next-orders-toolbar">
             <input id="ordersSearchInput" type="search" class="orders-search-input" placeholder="Buscar encomenda..." aria-label="Buscar encomenda" />
             <div class="orders-status-pills" id="ordersStatusPills">
               <button type="button" class="filter-chip active" data-order-status-pill="all">Todas</button>
@@ -543,7 +543,7 @@
               </select>
             </label>
           </div>
-          <div id="ordersBulkToolbar" class="orders-bulk-toolbar" hidden>
+          <div id="ordersBulkToolbar" class="orders-bulk-toolbar flowops-next-orders-bulk" hidden>
             <label class="orders-bulk-select-all"><input id="ordersSelectAll" type="checkbox" /> <span id="ordersBulkCount">0 selecionadas</span></label>
             <select id="ordersBulkField" aria-label="Campo para atualização em lote">
               <option value="">Alterar campo</option>
@@ -557,12 +557,12 @@
             <button id="clearOrdersSelectionBtn" class="secondary-btn compact" type="button">Limpar seleção</button>
             <button id="deleteOrdersSelectionBtn" class="secondary-btn compact danger" type="button"><i class="ti ti-trash" aria-hidden="true"></i> Excluir</button>
           </div>
-          <div id="ordersGrid" class="orders-grid">
-            <div id="ordersCardList" class="orders-card-list"></div>
-            <aside id="orderDetailPanel" class="order-detail-card"></aside>
+          <div id="ordersGrid" class="orders-grid flowops-next-orders-grid">
+            <div id="ordersCardList" class="orders-card-list flowops-next-orders-list"></div>
+            <aside id="orderDetailPanel" class="order-detail-card flowops-next-order-detail"></aside>
           </div>
-          <div class="table-wrap" id="ordersTableWrap" hidden>
-            <table>
+          <div class="table-wrap flowops-next-orders-table-wrap" id="ordersTableWrap" hidden>
+            <table class="flowops-next-orders-table">
               <thead>
                 <tr>
                   <th class="order-select-column"><span class="sr-only">Selecionar</span></th><th>Pedido</th><th>Cód. Marketplace</th><th>Qtd.</th><th>Material</th><th>SLA</th><th>Entrega</th><th>Prioridade</th><th>Etapa</th><th>Responsável</th><th>Status</th><th>Valor</th><th>Recebido</th><th></th>

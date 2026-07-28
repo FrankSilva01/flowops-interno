@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 globalThis.localStorage = { getItem: () => null, setItem() {}, removeItem() {} };
 globalThis.window = { location: { hash: "" }, SUPABASE_CONFIG: {} };
 
-const { buildOrderPresentation } = await import("../../js/features/orders.js");
+const { buildOrderPresentation, renderOrderCard } = await import("../../js/features/orders.js");
 
 test("builds a safe display model without changing the real order", () => {
   const order = {
@@ -45,4 +45,25 @@ test("uses safe fallbacks for incomplete orders", () => {
     imageUrl: "",
     stlUrl: ""
   });
+});
+
+test("renders a FlowOps Next card with the real order identity and reference", () => {
+  const order = {
+    id: "PED-42",
+    orderCode: "FO-2026-0042",
+    client: "Marina Almeida",
+    description: "Busto personalizado",
+    quantity: 2,
+    material: "Resina",
+    referenceImageUrl: "https://cdn.test/orders/ped-42.jpg",
+    status: "A preparar"
+  };
+
+  const markup = renderOrderCard(order, null);
+
+  assert.match(markup, /flowops-next-order-card/);
+  assert.match(markup, /class="flowops-next-order-id">PED-42</);
+  assert.match(markup, /class="flowops-next-order-client"[^>]*>[\s\S]*Marina Almeida/);
+  assert.match(markup, /Busto personalizado/);
+  assert.match(markup, /src="https:\/\/cdn\.test\/orders\/ped-42\.jpg"/);
 });

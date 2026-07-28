@@ -84,11 +84,15 @@ function renderOrderDetailPanel(item) {
   ];
   const timelineEvents = (item.history || []).slice(0, 5);
   target.innerHTML = `
-    <div class="drawer-header">
+    <div class="drawer-header flowops-next-order-detail-header">
       <div>
         <span class="order-code">${html(getOrderCode(item))}</span>
         <h3>${html(item.description)}</h3>
-        <small>${html(getMarketplaceLabel(item))}</small>
+        <div class="flowops-next-order-detail-meta">
+          <span class="flowops-next-order-id">${html(item.id)}</span>
+          <small>${html(getMarketplaceLabel(item))}</small>
+          ${item.status !== "Orçamento" ? renderLogisticsBadge(item.id) : ""}
+        </div>
       </div>
     </div>
     <div class="drawer-body">
@@ -170,7 +174,7 @@ function renderOrderTableRow(item) {
     `;
 }
 
-function renderOrderCard(item, selectedOrder) {
+export function renderOrderCard(item, selectedOrder) {
   const priority = getOrderPriority(item);
   const status = normalizeOrderStatus(item.status);
   const marketplaceLabel = getMarketplaceLabel(item);
@@ -183,17 +187,19 @@ function renderOrderCard(item, selectedOrder) {
   const thumbUrl = safeUrl(item.referenceImageUrl) || safeUrl(productAssets.imageUrl);
   const stlLink = safeUrl(item.stlLink) || safeUrl(productAssets.stlLink);
   return `
-    <article class="order-card ${edgeClass} ${selectedClass}" data-action="select-order" data-id="${html(item.id)}" tabindex="0" role="button" aria-label="Ver detalhes de ${html(getOrderCode(item))}">
+    <article class="order-card flowops-next-order-card ${edgeClass} ${selectedClass}" data-action="select-order" data-id="${html(item.id)}" tabindex="0" role="button" aria-label="Ver detalhes de ${html(getOrderCode(item))}">
       <label class="order-card-select" title="Selecionar para ação em lote"><input class="order-select-checkbox" type="checkbox" data-order-select="${html(item.id)}" aria-label="Selecionar ${html(getOrderCode(item))}" ${state.selectedOrderIds.includes(item.id) ? "checked" : ""} /></label>
       <div class="order-card-thumb">
         ${thumbUrl ? `<img src="${html(thumbUrl)}" alt="" loading="lazy" />` : `<i class="ti ti-package" aria-hidden="true"></i>`}
       </div>
       <div class="order-card-main">
-        <div class="order-card-row1">
+        <div class="order-card-row1 flowops-next-order-card-heading">
+          <span class="flowops-next-order-id">${html(item.id)}</span>
           <span class="order-code">${html(getOrderCode(item))}</span>
           <strong class="order-card-title">${html(item.description)}</strong>
         </div>
         <div class="order-card-row2">
+          <span class="flowops-next-order-client"><i class="ti ti-user" aria-hidden="true"></i> ${html(item.client || "Cliente não informado")}</span>
           <span><i class="ti ti-package" aria-hidden="true"></i> ${Number(item.quantity || 1)}x</span>
           <span>${html(item.material || "Material não informado")}</span>
           <span><i class="ti ti-clock" aria-hidden="true"></i> ${item.deliveryDate ? formatDate(item.deliveryDate) : "Sem data"}</span>

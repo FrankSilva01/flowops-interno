@@ -86,6 +86,47 @@ test.describe("sessao autenticada", () => {
     if (process.env.FLOWOPS_CAPTURE_VISUALS) await page.screenshot({ path: `output/playwright/order-create-drawer-${testInfo.project.name}.png` });
   });
 
+  test("orders mantem lista FlowOps Next e acoes operacionais", async ({ page }) => {
+    await page.goto("/#orders");
+    await expect(page.locator("#appView")).toBeVisible();
+    await expect(page.locator("#ordersView")).toHaveClass(/flowops-next-orders/);
+
+    const cards = page.locator(".flowops-next-order-card");
+    test.skip((await cards.count()) === 0, "Nenhuma encomenda disponivel para validar a lista.");
+    const firstCard = cards.first();
+    const orderCode = (await firstCard.locator(".order-code").textContent())?.trim() || "";
+    await expect(firstCard.locator(".flowops-next-order-id")).toBeVisible();
+
+    await page.locator("#ordersSearchInput").fill(orderCode);
+    await expect(firstCard).toBeVisible();
+    await page.locator("#ordersSearchInput").fill("");
+
+    const preparingFilter = page.locator('[data-order-status-pill="A preparar"]');
+    await preparingFilter.click();
+    await expect(preparingFilter).toHaveClass(/active/);
+    await page.locator('[data-order-status-pill="all"]').click();
+
+    await page.locator("#ordersViewTableBtn").click();
+    await expect(page.locator("#ordersTableWrap")).toBeVisible();
+    await page.locator("#ordersViewCardsBtn").click();
+    await expect(page.locator("#ordersGrid")).toBeVisible();
+
+    await firstCard.click();
+    const detail = page.locator("#orderDetailPanel.flowops-next-order-detail");
+    await expect(detail).toContainText(orderCode);
+    await detail.locator('[data-action="edit-order-modal"]').click();
+    await expect(page.locator("#orderEditDialog")).toBeVisible();
+    await page.locator('#orderEditDialog [data-close-dialog="orderEditDialog"]').click();
+
+    const checkbox = firstCard.locator(".order-select-checkbox");
+    await checkbox.click({ force: true, noWaitAfter: true });
+    await expect(page.locator("#ordersBulkCount")).toContainText("1 selecionada");
+    await expect(page.locator("#deleteOrdersSelectionBtn")).toBeEnabled();
+
+    await page.locator("#openOrderCreateBtn").click();
+    await expect(page.locator("#orderCreateDialog")).toBeVisible();
+  });
+
   test("abre exportacao Shopee direta para selecao individual", async ({ page }) => {
     await page.goto("/#marketplace");
     await expect(page.locator("#appView")).toBeVisible();
