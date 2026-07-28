@@ -42,4 +42,8 @@ Os dois usuários de RLS devem pertencer a empresas distintas, possuir apenas da
 6. Nenhum job em `dead_letter` sem análise e nenhum erro crítico recente de marketplace.
 7. Planilhas Shopee geradas somente com categoria homogênea, modelo oficial específico, marca, peso, largura, comprimento, altura, SKU, estoque, descrição e pelo menos três imagens válidas.
 
+O gate de publicação exige o candidato local, rejeita `FLOWOPS_REMOTE_E2E_URL` e bloqueia sem todas as credenciais e fixtures listadas. A evidência Playwright é válida somente com zero cenários obrigatórios ausentes, pulados ou falhos. `production-next` e `logistics-next` devem passar em desktop e mobile; `production-transition`, `marketplace-sync`, `logistics-automation`, `public-tracking` e `realtime-two-session` devem passar no projeto desktop de integrações.
+
+`production-transition` altera a etapa persistida da encomenda QA, comprova a atualização por realtime em uma segunda sessão e restaura os metadados e a data originais no cleanup, inclusive quando a asserção falha. A logística e seus eventos devem pertencer à organização ativa, e `public-tracking` deve responder somente com o token público, sem sessão autenticada.
+
 Falhas operacionais geram `operational-health.json` no diretório temporário do runner, fora da raiz publicada, e o workflow o anexa por 30 dias com causa e ação recomendada.

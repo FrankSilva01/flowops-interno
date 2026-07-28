@@ -57,18 +57,46 @@ test("rejects missing and failed required scenarios", () => {
   assert.ok(evidence.missing.includes("marketplace-sync:desktop"));
 });
 
-test("release integration spec covers live marketplace, logistics, tracking and two-session realtime evidence", async () => {
+test("requires production transition and redesigned production and logistics evidence", () => {
+  const required = Object.fromEntries(REQUIRED_RELEASE_SCENARIOS.map((scenario) => [scenario.id, {
+    scope: scenario.scope,
+    projects: scenario.projects,
+  }]));
+
+  assert.deepEqual(required["production-transition"], { scope: "integrations", projects: ["desktop"] });
+  assert.deepEqual(required["logistics-automation"], { scope: "integrations", projects: ["desktop"] });
+  assert.deepEqual(required["public-tracking"], { scope: "integrations", projects: ["desktop"] });
+  assert.deepEqual(required["realtime-two-session"], { scope: "integrations", projects: ["desktop"] });
+  assert.deepEqual(required["production-next"], { scope: "authenticated", projects: ["desktop", "mobile"] });
+  assert.deepEqual(required["logistics-next"], { scope: "authenticated", projects: ["desktop", "mobile"] });
+});
+
+test("release integration spec covers production transition, marketplace, logistics, tracking and two-session realtime evidence", async () => {
   const source = await readFile(new URL("../e2e/release-integrations.spec.js", import.meta.url), "utf8");
 
-  for (const id of ["marketplace-sync", "logistics-automation", "public-tracking", "realtime-two-session"]) {
+  for (const id of ["production-transition", "marketplace-sync", "logistics-automation", "public-tracking", "realtime-two-session"]) {
     assert.match(source, new RegExp(`@release:${id}\\b`));
   }
+  assert.match(source, /productionOrderId:\s*process\.env\.FLOWOPS_E2E_REALTIME_ORDER_ID/);
+  assert.match(source, /notes:\s*JSON\.stringify\(\{\s*\.\.\.originalMetadata,\s*productionStage:\s*nextStage\s*\}\)/);
+  assert.match(source, /contextB/);
+  assert.match(source, /originalCaptured\s*=\s*true/);
+  assert.match(source, /finally\s*\{[\s\S]*if\s*\(originalCaptured\)[\s\S]*notes:\s*originalNotes[\s\S]*contextB\.close\(\)/);
   assert.match(source, /marketplace-sync[^\n]*action=sync/);
   assert.match(source, /order_logistics/);
   assert.match(source, /logistics_events/);
   assert.match(source, /public-tracking/);
   assert.match(source, /browser\.newContext/);
   assert.match(source, /updated_at/);
+});
+
+test("redesigned production and logistics evidence targets the seeded orders", async () => {
+  const source = await readFile(new URL("../e2e/authenticated-smoke.spec.js", import.meta.url), "utf8");
+
+  assert.match(source, /productionOrderId\s*=\s*process\.env\.FLOWOPS_E2E_REALTIME_ORDER_ID/);
+  assert.match(source, /logisticsOrderId\s*=\s*process\.env\.FLOWOPS_E2E_LOGISTICS_ORDER_ID/);
+  assert.match(source, /\.production-next-card\[data-id="\$\{productionOrderId\}"\]/);
+  assert.match(source, /\[data-action="open-logistics"\]\[data-id="\$\{logisticsOrderId\}"\]/);
 });
 
 test("Library release scenario asserts direct 390px horizontal overflow", async () => {

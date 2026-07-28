@@ -4,6 +4,8 @@ const email = process.env.FLOWOPS_E2E_EMAIL;
 const password = process.env.FLOWOPS_E2E_PASSWORD;
 const tenantName = process.env.FLOWOPS_E2E_TENANT_NAME;
 const forbiddenText = process.env.FLOWOPS_E2E_FORBIDDEN_TEXT;
+const productionOrderId = process.env.FLOWOPS_E2E_REALTIME_ORDER_ID;
+const logisticsOrderId = process.env.FLOWOPS_E2E_LOGISTICS_ORDER_ID;
 
 async function openMarketplaceCatalog(page) {
   const marketplaceTab = page.locator('[data-view="marketplace"]');
@@ -151,6 +153,7 @@ test.describe("sessao autenticada", () => {
   });
 
   test("@release:production-next shows the compact summary, keeps overflow in the board, and opens the order drawer", async ({ page }) => {
+    test.skip(!productionOrderId, "Configure FLOWOPS_E2E_REALTIME_ORDER_ID for production evidence.");
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/#production");
     await expect(page.locator("#appView")).toBeVisible();
@@ -161,16 +164,16 @@ test.describe("sessao autenticada", () => {
     expect(await boardScroll.evaluate((element) => element.scrollWidth > element.clientWidth + 1), "kanban should scroll inside its board").toBe(true);
     expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1), "production created page overflow at 390px").toBe(false);
 
-    const cards = page.locator(".production-next-card");
-    test.skip((await cards.count()) === 0, "No production orders are available for card and drawer validation.");
-    const firstCard = cards.first();
-    const orderCode = (await firstCard.locator(".order-code").textContent())?.trim() || "";
-    await expect(firstCard).toContainText(orderCode);
-    await firstCard.click();
+    const seededCard = page.locator(`.production-next-card[data-id="${productionOrderId}"]`);
+    await expect(seededCard).toBeVisible();
+    const orderCode = (await seededCard.locator(".order-code").textContent())?.trim() || "";
+    await expect(seededCard).toContainText(orderCode);
+    await seededCard.click();
     await expect(page.locator("#orderDrawer")).toHaveClass(/open/);
   });
 
   test("@release:logistics-next shows persisted tracking, drawer controls, and timeline without mobile overflow", async ({ page }) => {
+    test.skip(!logisticsOrderId, "Configure FLOWOPS_E2E_LOGISTICS_ORDER_ID for logistics evidence.");
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/#logistics");
     await expect(page.locator("#appView")).toBeVisible();
@@ -178,11 +181,9 @@ test.describe("sessao autenticada", () => {
     await expect(page.locator("#logisticsSyncStatus")).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1), "logistics created page overflow at 390px").toBe(false);
 
-    const rows = page.locator("#logisticsTable tr");
-    test.skip((await rows.count()) === 0, "No logistics orders are available for drawer validation.");
-    const firstRow = rows.first();
-    await expect(firstRow.locator("[data-action=\"open-logistics\"]")).toBeVisible();
-    await firstRow.locator("[data-action=\"open-logistics\"]").click();
+    const seededOrderButton = page.locator(`#logisticsTable [data-action="open-logistics"][data-id="${logisticsOrderId}"]`);
+    await expect(seededOrderButton).toBeVisible();
+    await seededOrderButton.click();
 
     const dialog = page.locator("#logisticsDialog");
     await expect(dialog).toBeVisible();

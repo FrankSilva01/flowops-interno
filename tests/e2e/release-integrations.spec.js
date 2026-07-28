@@ -5,6 +5,7 @@ const fixtures = {
   password: process.env.FLOWOPS_E2E_PASSWORD,
   marketplaceItemId: process.env.FLOWOPS_E2E_MARKETPLACE_ITEM_ID,
   marketplaceOrderId: process.env.FLOWOPS_E2E_MARKETPLACE_ORDER_ID,
+  productionOrderId: process.env.FLOWOPS_E2E_REALTIME_ORDER_ID,
   logisticsOrderId: process.env.FLOWOPS_E2E_LOGISTICS_ORDER_ID,
   trackingToken: process.env.FLOWOPS_E2E_TRACKING_TOKEN,
   realtimeOrderId: process.env.FLOWOPS_E2E_REALTIME_ORDER_ID,
@@ -42,6 +43,78 @@ test.describe("release integration evidence", () => {
   test.beforeEach(async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "desktop", "Release integration evidence runs once on desktop.");
     await login(page);
+  });
+
+  test("@release:production-transition persists a production stage and propagates it to a second session", async ({ browser, page: pageA }) => {
+    const contextB = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+    let originalNotes;
+    let originalUpdatedAt = "";
+    let originalCaptured = false;
+
+    try {
+      const pageB = await contextB.newPage();
+      await login(pageB);
+      const original = await pageA.evaluate(async (orderId) => {
+        const { state } = await import("/js/core/state.js");
+        const { data, error } = await state.supabase
+          .from("orders")
+          .select("notes,updated_at")
+          .eq("organization_id", state.organizationId)
+          .eq("id", orderId)
+          .single();
+        if (error) throw error;
+        return data;
+      }, fixtures.productionOrderId);
+      originalNotes = original.notes;
+      originalUpdatedAt = original.updated_at || "";
+      originalCaptured = true;
+
+      let originalMetadata;
+      try {
+        originalMetadata = JSON.parse(originalNotes || "{}");
+      } catch {
+        throw new Error(`Production fixture ${fixtures.productionOrderId} has invalid order metadata.`);
+      }
+      if (!originalMetadata || Array.isArray(originalMetadata) || typeof originalMetadata !== "object") {
+        throw new Error(`Production fixture ${fixtures.productionOrderId} has invalid order metadata.`);
+      }
+
+      const nextStage = originalMetadata.productionStage === "Imprimindo" ? "Em fila" : "Imprimindo";
+      const marker = new Date(Date.now() + 1_000).toISOString();
+      await pageA.evaluate(async ({ marker, nextStage, orderId, originalMetadata }) => {
+        const { state } = await import("/js/core/state.js");
+        const { error } = await state.supabase
+          .from("orders")
+          .update({
+            notes: JSON.stringify({ ...originalMetadata, productionStage: nextStage }),
+            updated_at: marker,
+          })
+          .eq("organization_id", state.organizationId)
+          .eq("id", orderId);
+        if (error) throw error;
+      }, { marker, nextStage, orderId: fixtures.productionOrderId, originalMetadata });
+
+      await expect.poll(() => pageB.evaluate(async ({ nextStage, orderId }) => {
+        const { state } = await import("/js/core/state.js");
+        return state.data.orders.some((item) => String(item.id) === orderId && item.productionStage === nextStage);
+      }, { nextStage, orderId: fixtures.productionOrderId }), { timeout: 20_000 }).toBe(true);
+    } finally {
+      try {
+        if (originalCaptured) {
+          await pageA.evaluate(async ({ originalNotes, originalUpdatedAt, orderId }) => {
+            const { state } = await import("/js/core/state.js");
+            const { error } = await state.supabase
+              .from("orders")
+              .update({ notes: originalNotes, updated_at: originalUpdatedAt })
+              .eq("organization_id", state.organizationId)
+              .eq("id", orderId);
+            if (error) throw error;
+          }, { originalNotes, originalUpdatedAt, orderId: fixtures.productionOrderId });
+        }
+      } finally {
+        await contextB.close();
+      }
+    }
   });
 
   test("@release:marketplace-sync synchronizes Mercado Livre listings and imports", async ({ page }) => {
@@ -92,29 +165,29 @@ test.describe("release integration evidence", () => {
         state.supabase.from("logistics_events").select("*").eq("organization_id", state.organizationId).eq("order_id", orderId).order("occurred_at", { ascending: false }),
       ]);
       if (logisticsError || eventsError) throw logisticsError || eventsError;
-      return { logistics: logistics || [], events: events || [] };
+      return { organizationId: state.organizationId, logistics: logistics || [], events: events || [] };
     }, fixtures.logisticsOrderId);
 
     expect(evidence.logistics).toHaveLength(1);
     expect(evidence.logistics[0].status).toBeTruthy();
     expect(evidence.logistics[0].tracking_code).toBeTruthy();
+    expect(evidence.logistics.every((item) => String(item.organization_id) === evidence.organizationId)).toBe(true);
     expect(evidence.events.length).toBeGreaterThan(0);
+    expect(evidence.events.every((item) => String(item.organization_id) === evidence.organizationId)).toBe(true);
     expect(evidence.events.some((event) => /mercado|marketplace|webhook|automat/i.test(`${event.source || ""} ${event.message || ""}`))).toBe(true);
   });
 
-  test("@release:public-tracking returns the seeded logistics timeline without authentication", async ({ page }) => {
+  test("@release:public-tracking returns the seeded logistics timeline without authentication", async ({ page, request }) => {
     const context = await appContext(page);
-    const result = await page.evaluate(async ({ anonKey, supabaseUrl, token }) => {
-      const response = await fetch(`${supabaseUrl}/functions/v1/public-tracking?token=${encodeURIComponent(token)}`, {
-        headers: { apikey: anonKey },
-      });
-      return { status: response.status, body: await response.json() };
-    }, { anonKey: context.anonKey, supabaseUrl: context.supabaseUrl, token: fixtures.trackingToken });
+    const response = await request.get(`${context.supabaseUrl}/functions/v1/public-tracking?token=${encodeURIComponent(fixtures.trackingToken)}`, {
+      headers: { apikey: context.anonKey },
+    });
+    const body = await response.json();
 
-    expect(result.status).toBe(200);
-    expect(String(result.body.id)).toBe(fixtures.logisticsOrderId);
-    expect(result.body.logistics?.tracking_code).toBeTruthy();
-    expect(result.body.events?.length).toBeGreaterThan(0);
+    expect(response.status()).toBe(200);
+    expect(String(body.id)).toBe(fixtures.logisticsOrderId);
+    expect(body.logistics?.tracking_code).toBeTruthy();
+    expect(body.events?.length).toBeGreaterThan(0);
   });
 
   test("@release:realtime-two-session propagates an order update between browser sessions", async ({ browser, page: pageA }) => {
@@ -143,13 +216,17 @@ test.describe("release integration evidence", () => {
         return state.data.orders.some((item) => String(item.id) === orderId && item.updatedAt === marker);
       }, { marker, orderId: fixtures.realtimeOrderId }), { timeout: 20_000 }).toBe(true);
     } finally {
-      if (originalUpdatedAt) {
-        await pageA.evaluate(async ({ originalUpdatedAt: timestamp, orderId }) => {
-          const { state } = await import("/js/core/state.js");
-          await state.supabase.from("orders").update({ updated_at: timestamp }).eq("organization_id", state.organizationId).eq("id", orderId);
-        }, { originalUpdatedAt, orderId: fixtures.realtimeOrderId }).catch(() => {});
+      try {
+        if (originalUpdatedAt) {
+          await pageA.evaluate(async ({ originalUpdatedAt: timestamp, orderId }) => {
+            const { state } = await import("/js/core/state.js");
+            const { error } = await state.supabase.from("orders").update({ updated_at: timestamp }).eq("organization_id", state.organizationId).eq("id", orderId);
+            if (error) throw error;
+          }, { originalUpdatedAt, orderId: fixtures.realtimeOrderId });
+        }
+      } finally {
+        await contextB.close();
       }
-      await contextB.close();
     }
   });
 });
