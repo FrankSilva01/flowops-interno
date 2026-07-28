@@ -14,6 +14,19 @@ import { createNotification } from "./notifications.js";
 import { renderLogisticsBadge } from "./logistics.js";
 import { getProductForOrder, getProductAssetInfo, renderProductionAssetShortcut } from "./product-assets.js";
 
+export function buildOrderPresentation(order = {}) {
+  return {
+    order,
+    orderId: order.id || "",
+    orderCode: order.orderCode || order.id || "",
+    client: order.client || "Cliente n\u00e3o informado",
+    title: order.description || "Encomenda sem descri\u00e7\u00e3o",
+    productId: order.productId || "",
+    imageUrl: safeUrl(order.referenceImageUrl),
+    stlUrl: safeUrl(order.stlLink)
+  };
+}
+
 export function renderOrders() {
   const rows = sortOrders(filterOrders(filterRows(state.data.orders, ["orderCode", "marketplaceOrderCode", "description", "client", "material", "status", "responsible", "productionStage", "stlLink", "referenceImageUrl", "internalNotes", "tags"])));
   state.selectedOrderIds = (state.selectedOrderIds || []).filter((id) => state.data.orders.some((item) => item.id === id));
