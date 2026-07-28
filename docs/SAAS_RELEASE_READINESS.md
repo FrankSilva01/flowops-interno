@@ -23,6 +23,9 @@ Configure em `Settings > Secrets and variables > Actions`:
 | `FLOWOPS_SUPABASE_ANON_KEY` | Autenticação do teste automatizado de RLS |
 | `FLOWOPS_RLS_USER_1_EMAIL` / `FLOWOPS_RLS_USER_1_PASSWORD` | Usuário QA da empresa A |
 | `FLOWOPS_RLS_USER_2_EMAIL` / `FLOWOPS_RLS_USER_2_PASSWORD` | Usuário QA da empresa B |
+| `FLOWOPS_STAGING_URL` | URL do projeto Supabase de staging usada no drill de restore |
+| `FLOWOPS_STAGING_ANON_KEY` | Chave anon do projeto de staging |
+| `FLOWOPS_STAGING_ADMIN_EMAIL` / `FLOWOPS_STAGING_ADMIN_PASSWORD` | Conta administrativa exclusiva para o drill de staging |
 
 Os dois usuários de RLS devem pertencer a empresas distintas, possuir apenas dados fictícios e permanecer ativos. Não reutilize contas de clientes.
 
@@ -32,7 +35,7 @@ Os dois usuários de RLS devem pertencer a empresas distintas, possuir apenas da
 2. Production health aprovado com as verificações privadas.
 3. RLS tenant isolation aprovado.
 4. Authenticated quality aprovado em desktop e mobile.
-5. Staging restore drill aprovado.
+5. Staging restore drill aprovado com `FLOWOPS_STAGING_URL`, `FLOWOPS_STAGING_ANON_KEY`, `FLOWOPS_STAGING_ADMIN_EMAIL` e `FLOWOPS_STAGING_ADMIN_PASSWORD`.
 6. Nenhum job em `dead_letter` sem análise e nenhum erro crítico recente de marketplace.
 7. Planilhas Shopee geradas somente com categoria homogênea, modelo oficial específico, marca, peso, largura, comprimento, altura, SKU, estoque, descrição e pelo menos três imagens válidas.
 

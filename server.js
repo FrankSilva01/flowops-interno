@@ -25,6 +25,7 @@ function getFilePath(requestUrl, rootDirectory) {
   } catch {
     return null;
   }
+  if (pathname.includes("\\")) return null;
   if (pathname.split("/").some((segment) => segment.startsWith("."))) return null;
   const requestedPath = pathname === "/" ? "/index.html" : pathname;
   const filePath = resolve(normalizedRoot, `.${requestedPath}`);

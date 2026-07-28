@@ -50,4 +50,4 @@ O workflow `Production health` verifica aplicação, páginas legais, Edge Funct
 
 O workflow `Authenticated quality` exige `FLOWOPS_E2E_EMAIL`, `FLOWOPS_E2E_PASSWORD`, `FLOWOPS_E2E_TENANT_NAME` e `FLOWOPS_E2E_FORBIDDEN_TEXT` para validar identificação e isolamento do tenant em desktop e mobile.
 
-O workflow `Staging restore drill` exige `FLOWOPS_STAGING_ANON_KEY`, `FLOWOPS_STAGING_ADMIN_EMAIL` e `FLOWOPS_STAGING_ADMIN_PASSWORD`. A execução agendada apenas exporta e simula; a restauração real só ocorre quando `apply_restore` é marcado em uma execução manual.
+O workflow `Staging restore drill` exige `FLOWOPS_STAGING_URL`, `FLOWOPS_STAGING_ANON_KEY`, `FLOWOPS_STAGING_ADMIN_EMAIL` e `FLOWOPS_STAGING_ADMIN_PASSWORD`. A execução agendada apenas exporta e simula; a restauração real só ocorre quando `apply_restore` é marcado em uma execução manual. O `release:gate` exige as mesmas variáveis e executa o drill antes de permitir publicação.

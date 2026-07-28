@@ -5,15 +5,35 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import playwrightConfig from "../../playwright.config.js";
 import { createStaticServer } from "../../server.js";
+import { createReleaseEvidenceSteps, requiredReleaseVariables, runReleaseGate } from "../../scripts/release-gate-core.mjs";
 
 const workspaceRoot = fileURLToPath(new URL("../../", import.meta.url));
 
-function runReleaseGate(environment) {
+function runReleaseGateProcess(environment) {
   return spawnSync(process.execPath, ["scripts/release-gate.mjs"], {
     cwd: workspaceRoot,
     env: { PATH: process.env.PATH, ...environment },
     encoding: "utf8",
   });
+}
+
+function completeReleaseEnvironment(overrides = {}) {
+  return Object.fromEntries(requiredReleaseVariables.map((name) => [name, `test-${name.toLowerCase()}`]).concat(Object.entries(overrides)));
+}
+
+function runReleaseGateInMemory(environment, evidenceSteps) {
+  const output = [];
+  const executed = [];
+  const passed = runReleaseGate({
+    environment,
+    evidenceSteps,
+    execute: (step) => {
+      executed.push(step.name);
+      return false;
+    },
+    write: (message) => output.push(message),
+  });
+  return { executed, output: output.join("\n"), passed };
 }
 
 test("local Playwright tests start the current worktree server", () => {
@@ -50,7 +70,7 @@ test("local server denies dotfiles and encoded traversal without wildcard CORS",
 
   try {
     const { port } = server.address();
-    for (const path of ["/.env", "/.git/config", "/%2eenv", "/..%2f.env"]) {
+    for (const path of ["/.env", "/.git/config", "/%2eenv", "/..%2f.env", "/%5c.git", "/%5c.env", "/%5c..%5cpackage.json"]) {
       const response = await fetch(`http://127.0.0.1:${port}${path}`);
       assert.equal(response.status, 403, path);
       assert.equal(response.headers.get("access-control-allow-origin"), null, path);
@@ -60,8 +80,8 @@ test("local server denies dotfiles and encoded traversal without wildcard CORS",
   }
 });
 
-test("release gate rejects missing authenticated tenant and isolation evidence variables", () => {
-  const result = runReleaseGate({
+test("release gate rejects every missing authenticated, isolation, and staging variable", () => {
+  const result = runReleaseGateProcess({
     FLOWOPS_E2E_EMAIL: "qa@example.test",
     FLOWOPS_E2E_PASSWORD: "test-password",
     SUPABASE_SERVICE_ROLE_KEY: "test-service-key",
@@ -73,29 +93,37 @@ test("release gate rejects missing authenticated tenant and isolation evidence v
   assert.match(`${result.stdout}${result.stderr}`, /FLOWOPS_SUPABASE_ANON_KEY/);
   assert.match(`${result.stdout}${result.stderr}`, /FLOWOPS_RLS_USER_1_EMAIL/);
   assert.match(`${result.stdout}${result.stderr}`, /FLOWOPS_RLS_USER_2_PASSWORD/);
+  assert.match(`${result.stdout}${result.stderr}`, /FLOWOPS_STAGING_URL/);
+  assert.match(`${result.stdout}${result.stderr}`, /FLOWOPS_STAGING_ANON_KEY/);
+  assert.match(`${result.stdout}${result.stderr}`, /FLOWOPS_STAGING_ADMIN_EMAIL/);
+  assert.match(`${result.stdout}${result.stderr}`, /FLOWOPS_STAGING_ADMIN_PASSWORD/);
 });
 
-test("release gate fails when supplied credentials cannot produce authenticated, health, and RLS evidence", () => {
-  const result = runReleaseGate({
-    FLOWOPS_E2E_EMAIL: "qa@example.test",
-    FLOWOPS_E2E_PASSWORD: "test-password",
-    FLOWOPS_E2E_TENANT_NAME: "Test tenant",
-    FLOWOPS_E2E_FORBIDDEN_TEXT: "Other tenant",
-    SUPABASE_SERVICE_ROLE_KEY: "test-service-key",
-    FLOWOPS_SUPABASE_ANON_KEY: "test-anon-key",
-    FLOWOPS_RLS_USER_1_EMAIL: "tenant-a@example.test",
-    FLOWOPS_RLS_USER_1_PASSWORD: "test-password-a",
-    FLOWOPS_RLS_USER_2_EMAIL: "tenant-b@example.test",
-    FLOWOPS_RLS_USER_2_PASSWORD: "test-password-b",
-    FLOWOPS_APP_URL: "http://127.0.0.1:1",
-    FLOWOPS_REMOTE_E2E_URL: "http://127.0.0.1:1",
-    FLOWOPS_SUPABASE_URL: "http://127.0.0.1:1",
-  });
+test("release gate rejects remote E2E targeting before it can be used as release evidence", () => {
+  const result = runReleaseGateProcess(completeReleaseEnvironment({ FLOWOPS_REMOTE_E2E_URL: "https://old-deployment.example.test" }));
 
-  assert.notEqual(result.status, 0, `${result.stdout}${result.stderr}`);
-  assert.match(`${result.stdout}${result.stderr}`, /Authenticated desktop and mobile E2E/);
-  assert.match(`${result.stdout}${result.stderr}`, /Private production health/);
-  assert.match(`${result.stdout}${result.stderr}`, /RLS tenant isolation audit/);
+  assert.notEqual(result.status, 0);
+  assert.match(`${result.stdout}${result.stderr}`, /FLOWOPS_REMOTE_E2E_URL/);
+});
+
+test("release gate executes the full local candidate, authenticated, private, RLS, and staging evidence and fails on evidence failure", () => {
+  const evidenceSteps = createReleaseEvidenceSteps({
+    nodeCommand: "node",
+    npmCommand: "npm",
+    playwrightCli: "playwright",
+  });
+  const gate = runReleaseGateInMemory(completeReleaseEnvironment(), evidenceSteps);
+
+  assert.equal(gate.passed, false);
+  assert.deepEqual(gate.executed, evidenceSteps.map((step) => step.name));
+  assert.equal(evidenceSteps[1].command, "npm");
+  assert.deepEqual(evidenceSteps[1].args, ["test"]);
+  assert.match(gate.output, /Full candidate regression suite/);
+  assert.match(gate.output, /Authenticated desktop and mobile E2E/);
+  assert.match(gate.output, /Private production health/);
+  assert.match(gate.output, /RLS tenant isolation audit/);
+  assert.match(gate.output, /Staging restore drill/);
+  assert.match(gate.output, /required evidence failed/);
 });
 
 test("Netlify publication invokes the fail-closed release gate", async () => {
