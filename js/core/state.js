@@ -92,7 +92,7 @@ function loadStringArray(key) {
 
 export function getInitialView() {
   const allowed = [
-    "dashboard", "orders", "production", "logistics", "cash", "materials", "reports",
+    "dashboard", "orders", "library", "production", "logistics", "cash", "materials", "reports",
     "leads", "subscription", "calendar", "notifications", "support", "whatsnew",
     "marketplace", "logs", "fiscal", "settings", "approvals"
   ];
@@ -283,6 +283,9 @@ export const state = {
     orderMarketplace: "all",
     orderFocus: "all",
     orderQuote: "all",
+    libraryType: "all",
+    libraryOrder: "",
+    libraryClient: "",
     productionMaterial: "all",
     productionStatus: "all",
     productionMarketplace: "all",

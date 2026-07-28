@@ -1,0 +1,155 @@
+/* FlowOps Next library: read-only references derived from orders. */
+.flowops-next-library {
+  min-width: 0;
+}
+
+.reference-library-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.reference-library-header h3 {
+  margin: 2px 0 0;
+  color: var(--next-text, var(--text));
+  font-size: 20px;
+}
+
+.reference-library-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.reference-library-filters label {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+  color: var(--next-muted, var(--muted));
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.reference-library-filters select {
+  min-width: 0;
+  border: 1px solid var(--next-line, var(--line));
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: var(--next-text, var(--text));
+  background: var(--next-surface, var(--panel));
+}
+
+.reference-library-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 12px;
+}
+
+.reference-library-card {
+  display: grid;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--next-line, var(--line));
+  border-radius: 6px;
+  background: var(--next-surface, var(--panel));
+}
+
+.reference-library-preview {
+  display: grid;
+  min-height: 148px;
+  place-items: center;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--next-bg, var(--canvas)) 72%, var(--next-surface, var(--panel)));
+}
+
+.reference-library-preview img {
+  display: block;
+  width: 100%;
+  height: 148px;
+  object-fit: cover;
+}
+
+.reference-library-preview-model i {
+  color: var(--next-accent, var(--teal));
+  font-size: 42px;
+}
+
+.reference-library-card-content {
+  display: grid;
+  min-width: 0;
+  gap: 8px;
+  padding: 12px;
+}
+
+.reference-library-card-meta {
+  display: flex;
+  min-width: 0;
+  gap: 6px;
+  color: var(--next-muted, var(--muted));
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.reference-library-card-meta span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reference-library-card h3,
+.reference-library-card p {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.reference-library-card h3 {
+  color: var(--next-text, var(--text));
+  font-size: 15px;
+}
+
+.reference-library-card p {
+  color: var(--next-muted, var(--muted));
+  font-size: 13px;
+}
+
+.reference-library-card .secondary-btn {
+  justify-self: start;
+}
+
+.reference-library-empty {
+  display: grid;
+  min-height: 180px;
+  grid-column: 1 / -1;
+  place-items: center;
+  align-content: center;
+  gap: 7px;
+  border: 1px dashed var(--next-line, var(--line));
+  border-radius: 6px;
+  padding: 20px;
+  color: var(--next-muted, var(--muted));
+  text-align: center;
+}
+
+.reference-library-empty i {
+  color: var(--next-accent, var(--teal));
+  font-size: 28px;
+}
+
+.reference-library-empty strong {
+  color: var(--next-text, var(--text));
+}
+
+.reference-library-empty span {
+  max-width: 440px;
+  font-size: 13px;
+}
+
+@media (max-width: 640px) {
+  .reference-library-filters {
+    grid-template-columns: 1fr;
+  }
+}

@@ -127,6 +127,26 @@ test.describe("sessao autenticada", () => {
     await expect(page.locator("#orderCreateDialog")).toBeVisible();
   });
 
+  test("library mostra referencias das encomendas e estado vazio por tipo", async ({ page }) => {
+    await page.goto("/#library");
+    await expect(page.locator("#appView")).toBeVisible();
+    await expect(page.locator("#libraryView")).toHaveClass(/active-view/);
+
+    const cards = page.locator("[data-library-asset]");
+    test.skip((await cards.count()) === 0, "Nenhuma referencia de encomenda disponivel para validar a biblioteca.");
+    const firstCard = cards.first();
+    const orderCode = await firstCard.getAttribute("data-library-order-code");
+    await expect(firstCard).toContainText(orderCode || "");
+    await expect(firstCard.locator('a[target="_blank"]')).toHaveAttribute("rel", /noopener/);
+
+    await page.locator("#libraryTypeFilter").evaluate((element) => {
+      element.insertAdjacentHTML("beforeend", '<option value="missing">Tipo inexistente</option>');
+      element.value = "missing";
+      element.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    await expect(page.locator("#referenceLibraryEmpty")).toBeVisible();
+  });
+
   test("abre exportacao Shopee direta para selecao individual", async ({ page }) => {
     await page.goto("/#marketplace");
     await expect(page.locator("#appView")).toBeVisible();

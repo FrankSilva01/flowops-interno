@@ -87,6 +87,7 @@ import {
   showCalculatorSuggestion, getSuggestionForListing, syncFeeCalculatorFull, setMarketplacePerformanceSection, moveMarketplacePerformanceSection,
 } from "../features/marketplace-analytics.js";
 import { marketplaceAreaForView, routeSelectedMarketplaceListingEdit } from "../features/marketplace-navigation.js";
+import { renderReferenceLibrary } from "../features/reference-library.js";
 
 const APP_VERSION = "263";
 
@@ -204,6 +205,12 @@ export function bindEvents() {
   bindFilter("orderMarketplaceFilter", "orderMarketplace");
   bindFilter("orderFocusFilter", "orderFocus");
   bindFilter("orderQuoteFilter", "orderQuote");
+  document.querySelectorAll("[data-library-filter]").forEach((element) => {
+    element.addEventListener("change", (event) => {
+      state.filters[event.target.dataset.libraryFilter] = event.target.value;
+      renderReferenceLibrary();
+    });
+  });
   bindFilter("materialTypeFilter", "materialType");
   bindFilter("materialSort", "materialSort");
   bindFilter("logTypeFilter", "logType");
@@ -597,7 +604,7 @@ export function bindEvents() {
 }
 
 export function setView(view, replace = false) {
-  const allowed = ["dashboard", "orders", "production", "logistics", "cash", "materials", "reports", "leads", "subscription", "calendar", "notifications", "support", "whatsnew", "logs", "fiscal", ...(hasCapability("manage_marketplaces") ? ["marketplace"] : []), ...(state.isAdmin ? ["approvals"] : [])];
+  const allowed = ["dashboard", "orders", "library", "production", "logistics", "cash", "materials", "reports", "leads", "subscription", "calendar", "notifications", "support", "whatsnew", "logs", "fiscal", ...(hasCapability("manage_marketplaces") ? ["marketplace"] : []), ...(state.isAdmin ? ["approvals"] : [])];
   if (!allowed.includes(view)) view = "dashboard";
   state.view = view;
   localStorage.setItem("3daft-active-view", view);
@@ -613,6 +620,7 @@ export function setView(view, replace = false) {
   byId("viewTitle").textContent = {
     dashboard: "Dashboard",
     orders: "Encomendas",
+    library: "Biblioteca de referências",
     production: "Produção",
     logistics: "Logística",
     cash: "Fluxo de caixa",
@@ -629,7 +637,7 @@ export function setView(view, replace = false) {
     fiscal: "Fiscal e Documentos",
     approvals: "Gestão de usuários"
   }[view];
-  byId("globalSearch").hidden = ["dashboard", "reports", "approvals", "notifications", "subscription", "support", "whatsnew", "orders"].includes(view);
+  byId("globalSearch").hidden = ["dashboard", "reports", "approvals", "notifications", "subscription", "support", "whatsnew", "orders", "library"].includes(view);
   if (view === "approvals") renderActiveUsers();
   if (!byId("appView")?.hidden) render();
 }
@@ -653,6 +661,9 @@ export function render() {
     case "materials":
       renderTables();
       renderSettingsData();
+      break;
+    case "library":
+      renderReferenceLibrary();
       break;
     case "reports":
       renderReports();
