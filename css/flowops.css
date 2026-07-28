@@ -3436,6 +3436,12 @@ html[data-theme="dark"] .api-error-detail {
   color: #ffd5d2;
 }
 
+html[data-theme="dark"] .api-status.error {
+  border-color: #8b4640;
+  background: #4a2522;
+  color: #ffd2ce;
+}
+
 html[data-theme="dark"] .api-kind,
 html[data-theme="dark"] .api-log-changes span {
   border-color: #536170;

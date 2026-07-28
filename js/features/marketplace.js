@@ -22,6 +22,7 @@ import {
   validateShopeeListing,
 } from "./shopee-template-export.js";
 import { groupShopeeCategorySuggestions } from "./shopee-category-mapping.js";
+import { mlOAuthStatusFeedback } from "./marketplace-oauth-message.js";
 import {
   defaultMarketplaceViewForArea,
   marketplaceAreaForView,
@@ -2211,12 +2212,6 @@ export function getMarketplaceStatusFromHash() {
 
 export function showMarketplaceOAuthStatus(status) {
   if (!status) return;
-  const messages = {
-    connected: ["Mercado Livre conectado", "A conta foi autorizada com sucesso. Os anuncios e vendas serao sincronizados apenas para esta empresa.", "success"],
-    reconnected: ["Mercado Livre reconectado", "Os tokens desta empresa foram atualizados com sucesso.", "success"],
-    already_linked: ["Conta Mercado Livre ja conectada", "Esta conta Mercado Livre ja esta conectada em outra empresa no FlowOps. Para conectar outra conta, saia da conta atual do Mercado Livre ou use uma janela anonima e tente novamente.", "warning"],
-    error: ["Mercado Livre", "Nao foi possivel concluir a conexao. Tente novamente pela aba Integracoes.", "error"],
-  };
-  const [title, message, tone] = messages[status] || messages.error;
-  showAppMessage(title, message, tone);
+  const feedback = mlOAuthStatusFeedback(status);
+  showAppMessage(feedback.title, feedback.message, feedback.tone);
 }

@@ -14,3 +14,28 @@ export function mlOAuthErrorMessage(code) {
   }
   return "Não foi possível concluir a conexão com o Mercado Livre. Tente novamente; se persistir, entre em contato com o suporte.";
 }
+
+export function mlOAuthStatusFeedback(status) {
+  const messages = {
+    connected: {
+      title: "Mercado Livre conectado",
+      message: "A conta foi autorizada com sucesso e será sincronizada somente com esta empresa.",
+      tone: "success",
+    },
+    reconnected: {
+      title: "Mercado Livre reconectado",
+      message: "A autorização foi renovada com sucesso para esta empresa.",
+      tone: "success",
+    },
+    already_linked: {
+      title: "Não foi possível autorizar esta conta",
+      message: "Saia da sessão atual do Mercado Livre e tente novamente com a conta correta para este ambiente.",
+      tone: "warning",
+    },
+  };
+  return messages[status] || {
+    title: "Não foi possível conectar ao Mercado Livre",
+    message: "Tente novamente pela área de Configurações do Marketplace.",
+    tone: "error",
+  };
+}

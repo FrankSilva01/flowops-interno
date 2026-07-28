@@ -351,10 +351,9 @@ async function handleMlCallback(url: URL) {
     const linkStatus = marketplaceAccountLinkStatus(linkedAccounts?.[0]?.organization_id || null, stateRow.organization_id);
     if (linkStatus === "already_linked") {
       await consumeOauthState(supabase, stateHash);
-      await logSync("Mercado Livre", "oauth-connect", "error", "Conta Mercado Livre ja vinculada a outra empresa", {
+      await logSync("Mercado Livre", "oauth-connect", "error", "Nao foi possivel autorizar a conta informada", {
         organizationId: stateRow.organization_id,
         actorEmail: stateRow.requested_by || "Sistema",
-        rawPayload: { seller_id: sellerId, reason: "already_linked" },
       }).catch(() => {});
       return oauthRedirect(returnUrl, { ml_status: linkStatus });
     }

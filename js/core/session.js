@@ -9,7 +9,7 @@ import { loadMarketplaces } from "../features/marketplace.js";
 import { loadListingAnalytics, loadSellerMetrics, loadListingFeeSync } from "../features/marketplace-analytics.js";
 import { loadRemoteData, subscribeRemote, flushOfflineQueue } from "../data/remote.js";
 import { clearOfflineData } from "./offline-queue.js";
-import { mlOAuthErrorMessage } from "../features/marketplace-oauth-message.js";
+import { mlOAuthErrorMessage, mlOAuthStatusFeedback } from "../features/marketplace-oauth-message.js";
 
 export async function setupBackend() {
   const config = window.SUPABASE_CONFIG || {};
@@ -389,14 +389,9 @@ export async function enterOnlineApp(user) {
 function surfaceMlOauthResult() {
   const params = new URLSearchParams(window.location.search);
   const status = params.get("ml_status");
-  if (status === "connected" || status === "reconnected" || params.has("ml_connected")) {
-    showAppMessage("Mercado Livre", "Conta conectada com sucesso.", "success");
-  } else if (status === "already_linked") {
-    showAppMessage(
-      "Conta Mercado Livre já conectada",
-      "Esta conta do Mercado Livre já pertence a outra empresa no FlowOps. Saia da conta atual do Mercado Livre e autorize a conta correta desta empresa.",
-      "warning",
-    );
+  if (["connected", "reconnected", "already_linked"].includes(status) || params.has("ml_connected")) {
+    const feedback = mlOAuthStatusFeedback(status || "connected");
+    showAppMessage(feedback.title, feedback.message, feedback.tone);
   } else if (params.has("ml_error")) {
     showAppMessage("Não foi possível conectar ao Mercado Livre", mlOAuthErrorMessage(params.get("ml_error")), "error");
   } else {
