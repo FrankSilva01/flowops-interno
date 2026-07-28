@@ -40,6 +40,8 @@ button, input { font: inherit; }
 .button:hover { background: var(--brand-dark); border-color: var(--brand-dark); }
 .button.small { min-height: 40px; padding-inline: 16px; }
 .button.secondary { background: transparent; color: white; border-color: #789099; }
+.dialog-actions .button.secondary { background: white; color: var(--deep); border-color: #789099; }
+.dialog-actions .button.secondary:hover { background: var(--soft); color: var(--deep); border-color: var(--brand); }
 .button.light { background: white; color: var(--deep); border-color: white; }
 .button.full { width: 100%; }
 .eyebrow { margin: 0 0 12px; color: var(--brand); font-size: 12px; font-weight: 850; letter-spacing: 0; }

@@ -11,6 +11,7 @@ import {
   syncMercadoPagoPayment,
 } from "../_shared/subscription-billing.ts";
 import { normalizeProviderSubscriptionStatus } from "../_shared/subscription-lifecycle.mjs";
+import { isMissingMercadoPagoPlan } from "../_shared/mercado-pago-plan-recovery.mjs";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -81,13 +82,38 @@ async function createCheckoutResponse(
     }).eq("code", plan.code);
   }
   if (!mercadoPagoPlanId) throw new Error("Plano ainda nao sincronizado com o Mercado Pago.");
-  const subscription = await createMercadoPagoSubscription({
-    planId: mercadoPagoPlanId,
+  const subscriptionInput = (planId: string) => ({
+    planId,
     organizationId: actor.organizationId,
     planCode: plan.code,
     payerEmail: actor.email,
     reason: `Assinatura FlowOps - ${plan.name}`,
   });
+  let subscription;
+  try {
+    subscription = await createMercadoPagoSubscription(subscriptionInput(mercadoPagoPlanId));
+  } catch (error) {
+    if (!isMissingMercadoPagoPlan(error)) throw error;
+    planSync = await syncMercadoPagoPlan({
+      id: null,
+      code: plan.code,
+      name: plan.name,
+      amount: Number(plan.price_monthly),
+      currency: plan.currency,
+      active: plan.active,
+    });
+    mercadoPagoPlanId = planSync.id;
+    if (!mercadoPagoPlanId) throw new Error("Nao foi possivel recriar o plano no Mercado Pago.");
+    const { error: planUpdateError } = await admin.from("subscription_plans").update({
+      mercado_pago_plan_id: mercadoPagoPlanId,
+      mercado_pago_init_point: planSync.init_point || null,
+      mercado_pago_status: planSync.status || "active",
+      mercado_pago_synced_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }).eq("code", plan.code);
+    if (planUpdateError) throw planUpdateError;
+    subscription = await createMercadoPagoSubscription(subscriptionInput(mercadoPagoPlanId));
+  }
   const now = new Date().toISOString();
   const { error: subscriptionError } = await admin
     .from("organization_subscriptions")
