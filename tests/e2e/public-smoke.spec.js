@@ -1,4 +1,33 @@
 import { test, expect } from "@playwright/test";
+import { readFile } from "node:fs/promises";
+import { resolve, extname } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const workspaceRoot = fileURLToPath(new URL("../../", import.meta.url));
+const contentTypes = {
+  ".css": "text/css",
+  ".html": "text/html",
+  ".js": "application/javascript",
+  ".json": "application/json",
+  ".svg": "image/svg+xml",
+  ".woff2": "font/woff2"
+};
+
+async function openLocalApp(page) {
+  await page.route("http://flowops.local/**", async (route) => {
+    const requestUrl = new URL(route.request().url());
+    const requestPath = requestUrl.pathname === "/" ? "/index.html" : decodeURIComponent(requestUrl.pathname);
+    const filePath = resolve(workspaceRoot, `.${requestPath}`);
+    if (!filePath.startsWith(workspaceRoot)) return route.fulfill({ status: 403 });
+    try {
+      const body = await readFile(filePath);
+      return route.fulfill({ body, contentType: contentTypes[extname(filePath)] || "application/octet-stream" });
+    } catch {
+      return route.fulfill({ status: 404 });
+    }
+  });
+  await page.goto("http://flowops.local/");
+}
 
 test("abre login e oferece recuperacao e documentos legais", async ({ page }) => {
   await page.goto("/");
@@ -23,11 +52,12 @@ test("login nao cria rolagem horizontal", async ({ page }) => {
   expect(overflow).toBe(false);
 });
 
-test("menu lateral alterna entre compacto e expandido", async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name === "mobile", "No mobile o menu lateral vira navegacao inferior.");
-  await page.goto("/");
+test("shell FlowOps Next expande a navegacao compacta no desktop", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === "mobile", "O viewport mobile tem navegacao inferior.");
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openLocalApp(page);
   await page.evaluate(() => {
-    document.querySelector("#onlineLogin").hidden = true;
+    document.querySelector("#onlineLogin")?.setAttribute("hidden", "");
     const app = document.querySelector("#appView");
     app.hidden = false;
     app.classList.add("sidebar-collapsed");
@@ -35,6 +65,8 @@ test("menu lateral alterna entre compacto e expandido", async ({ page }, testInf
 
   const app = page.locator("#appView");
   const sidebar = page.locator(".sidebar");
+  await expect(app).toHaveClass(/flowops-next-shell/);
+  await expect(sidebar).toHaveClass(/flowops-next-sidebar/);
   await expect(sidebar).toHaveCSS("width", "56px");
   await page.locator("#sidebarToggle").click();
   await expect(app).not.toHaveClass(/sidebar-collapsed/);
@@ -46,6 +78,22 @@ test("menu lateral alterna entre compacto e expandido", async ({ page }, testInf
   }));
   expect(toggleAppearance.icon).toContain("‹");
   expect(toggleAppearance.legacyIcon).toBe("none");
+});
+
+test("shell FlowOps Next usa navegacao inferior no mobile", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openLocalApp(page);
+  await page.evaluate(() => {
+    document.querySelector("#onlineLogin")?.setAttribute("hidden", "");
+    document.querySelector("#appView").hidden = false;
+  });
+
+  const sidebar = page.locator(".sidebar");
+  await expect(sidebar).toHaveClass(/flowops-next-sidebar/);
+  await expect(sidebar).toHaveCSS("position", "fixed");
+  const bottomGap = await sidebar.evaluate((element) => Math.abs(window.innerHeight - element.getBoundingClientRect().bottom));
+  expect(bottomGap).toBeLessThanOrEqual(1);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(false);
 });
 
 test("seletor da encomenda permanece dentro do card", async ({ page }) => {
