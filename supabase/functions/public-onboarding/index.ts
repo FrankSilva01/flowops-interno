@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 import { sendQueuedEmail } from "../_shared/email.ts";
 import { clientIp, corsHeadersFor } from "../_shared/http.ts";
 import { enforceRateLimit } from "../_shared/rate-limit.ts";
+import { publicErrorMessage } from "../_shared/public-error.js";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -199,13 +200,13 @@ Deno.serve(async (req) => {
 
       const now = new Date().toISOString();
       const results = await Promise.all([
-        admin.from("organization_members").insert({
+        admin.from("organization_members").upsert({
           organization_id: organizationId, user_email: email, role: "Administrador", status: "active", updated_at: now,
-        }),
-        admin.from("approved_users").insert({
+        }, { onConflict: "organization_id,user_email" }),
+        admin.from("approved_users").upsert({
           organization_id: organizationId, email, role: "Administrador", approved_at: now,
-        }),
-        admin.from("organization_subscriptions").insert({
+        }, { onConflict: "email" }),
+        admin.from("organization_subscriptions").upsert({
           organization_id: organizationId,
           plan_code: plan.code,
           status: paid ? "trial" : "free",
@@ -215,7 +216,7 @@ Deno.serve(async (req) => {
           current_period_start: now,
           current_period_end: trialEnd,
           metadata: { source: "landing_page", card_required: false },
-        }),
+        }, { onConflict: "organization_id" }),
       ]);
       const rowError = results.find((item) => item.error)?.error;
       if (rowError) throw rowError;
@@ -254,13 +255,24 @@ Deno.serve(async (req) => {
       }, 201);
     } catch (error) {
       if (createdUserId) await admin.auth.admin.deleteUser(createdUserId).catch(() => null);
-      if (organizationId) await admin.from("organizations").delete().eq("id", organizationId);
+      if (organizationId) await rollbackOrganization(admin, organizationId);
       throw error;
     }
   } catch (error) {
-    return respond({ ok: false, error: error instanceof Error ? error.message : String(error) }, 500);
+    return respond({ ok: false, error: publicErrorMessage(error, "Nao foi possivel criar a empresa.") }, 500);
   }
 });
+
+async function rollbackOrganization(admin: ReturnType<typeof createClient>, organizationId: string) {
+  await admin.from("organization_members").delete().eq("organization_id", organizationId);
+  await admin.from("approved_users").delete().eq("organization_id", organizationId);
+  await admin.from("organization_subscriptions").delete().eq("organization_id", organizationId);
+  await admin.from("public_signup_events").delete().eq("organization_id", organizationId);
+  await admin.from("platform_notifications").delete().eq("organization_id", organizationId);
+  await admin.from("saas_email_delivery_logs").delete().eq("organization_id", organizationId);
+  await admin.from("saas_email_outbox").delete().eq("organization_id", organizationId);
+  await admin.from("organizations").delete().eq("id", organizationId);
+}
 
 async function listPlans(admin: ReturnType<typeof createClient>) {
   const { data, error } = await admin.from("subscription_plans")

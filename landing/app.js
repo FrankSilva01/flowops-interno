@@ -1,3 +1,5 @@
+import { publicErrorMessage } from "./error-message.js";
+
 const config = window.FLOWOPS_CONFIG || {};
 const state = { plans: [], selectedPlan: null, credentials: null };
 const byId = (id) => document.getElementById(id);
@@ -20,13 +22,13 @@ async function loadPlans() {
   try {
     const response = await fetch(config.ONBOARDING_URL, { headers: { apikey: config.SUPABASE_ANON_KEY } });
     const result = await response.json();
-    if (!response.ok || !result.ok) throw new Error(result.error || "Não foi possível carregar os planos.");
+    if (!response.ok || !result.ok) throw new Error(publicErrorMessage(result.error, "Não foi possível carregar os planos."));
     state.plans = result.plans || [];
     renderPlans();
   } catch (error) {
     byId("plansGrid").innerHTML = `
       <div class="loading-state">
-        <p>${escapeHtml(error.message)}</p>
+        <p>${escapeHtml(publicErrorMessage(error, "Não foi possível carregar os planos."))}</p>
         <button class="button secondary" type="button" data-retry-plans>Tentar novamente</button>
       </div>`;
     document.querySelector("[data-retry-plans]")?.addEventListener("click", loadPlans);
@@ -98,12 +100,12 @@ async function submitSignup(event) {
       body: JSON.stringify(payload),
     });
     const result = await response.json().catch(() => ({}));
-    if (!response.ok || !result.ok) throw new Error(result.error || "Não foi possível criar a empresa.");
+    if (!response.ok || !result.ok) throw new Error(publicErrorMessage(result.error, "Não foi possível criar a empresa."));
     state.credentials = { email: values.email, password: values.password };
     byId("signupDialog").close();
     showSuccess(result);
   } catch (error) {
-    message.textContent = error.message;
+    message.textContent = publicErrorMessage(error, "Não foi possível criar a empresa.");
   } finally {
     button.disabled = false;
     button.textContent = "Criar minha empresa";
@@ -142,12 +144,12 @@ async function startCheckout(planCode) {
       body: JSON.stringify({ action: "create-checkout", plan_code: planCode }),
     });
     const result = await response.json().catch(() => ({}));
-    if (!response.ok || !result.ok || !result.checkout_url) throw new Error(result.error || "Checkout indisponível.");
+    if (!response.ok || !result.ok || !result.checkout_url) throw new Error(publicErrorMessage(result.error, "Checkout indisponível."));
     window.location.assign(result.checkout_url);
   } catch (error) {
     button.disabled = false;
     button.textContent = "Tentar pagamento novamente";
-    byId("successText").textContent = `Empresa criada, mas o checkout não abriu: ${error.message}. Você pode entrar no FlowOps e ativar o plano em Minha Assinatura.`;
+    byId("successText").textContent = `Empresa criada, mas o checkout não abriu: ${publicErrorMessage(error, "erro inesperado")}. Você pode entrar no FlowOps e ativar o plano em Minha Assinatura.`;
   }
 }
 
