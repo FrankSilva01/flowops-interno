@@ -1,6 +1,9 @@
 import { test, expect } from "@playwright/test";
 import { randomUUID } from "node:crypto";
-import { runReversibleEvidence } from "../../scripts/playwright-release-evidence-core.mjs";
+import {
+  restoreOwnedMutation,
+  runReversibleEvidence,
+} from "../../scripts/playwright-release-evidence-core.mjs";
 
 const CLEANUP_TIMEOUT_MS = 30_000;
 
@@ -92,18 +95,18 @@ async function updatePersistedOrder(page, { expected, notes, orderId, updatedAt 
   return parsePersistedOrder(row, orderId);
 }
 
-async function restorePersistedOrder(page, { orderId, snapshot }) {
+async function restorePersistedOrder(page, { mutation, orderId, snapshot }) {
   const current = await readPersistedOrder(page, orderId);
-  const alreadyOriginal = current.notes === snapshot.notes && current.updatedAt === snapshot.updatedAt;
-  const isOwnMutation = current.notes === snapshot.mutationNotes;
-  if (!alreadyOriginal && !isOwnMutation) {
-    throw new Error(`Order ${orderId} changed outside release evidence; restoration refused.`);
-  }
-  return updatePersistedOrder(page, {
-    expected: current,
-    notes: snapshot.notes,
-    orderId,
-    updatedAt: snapshot.updatedAt,
+  return restoreOwnedMutation({
+    current,
+    mutation,
+    snapshot,
+    restore: (ownedCurrent) => updatePersistedOrder(page, {
+      expected: ownedCurrent,
+      notes: snapshot.notes,
+      orderId,
+      updatedAt: snapshot.updatedAt,
+    }),
   });
 }
 
@@ -181,7 +184,8 @@ test.describe("release integration evidence", () => {
               && item.internalNotes.includes(runMarker));
           }, { mutation, orderId: fixtures.productionOrderId, runMarker }), { timeout: 20_000 }).toBe(true);
         },
-        restore: async (snapshot) => restorePersistedOrder(pageA, {
+        restore: async (snapshot, mutation) => restorePersistedOrder(pageA, {
+          mutation,
           orderId: fixtures.productionOrderId,
           snapshot,
         }),
@@ -316,7 +320,8 @@ test.describe("release integration evidence", () => {
               && item.internalNotes.includes(runMarker));
           }, { mutation, orderId: fixtures.realtimeOrderId, runMarker }), { timeout: 20_000 }).toBe(true);
         },
-        restore: async (snapshot) => restorePersistedOrder(pageA, {
+        restore: async (snapshot, mutation) => restorePersistedOrder(pageA, {
+          mutation,
           orderId: fixtures.realtimeOrderId,
           snapshot,
         }),

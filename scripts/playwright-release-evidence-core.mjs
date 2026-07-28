@@ -65,6 +65,20 @@ async function withTimeout(operation, timeoutMs) {
   }
 }
 
+export async function restoreOwnedMutation({ current, mutation, snapshot, restore }) {
+  const alreadyOriginal = current.notes === snapshot.notes
+    && current.updatedAt === snapshot.updatedAt;
+  const isOwnMutation = Boolean(mutation)
+    && current.notes === mutation.notes
+    && current.updatedAt === mutation.updatedAt;
+
+  if (!alreadyOriginal && !isOwnMutation) {
+    throw new Error("Release evidence restoration conflict: current row is neither the original snapshot nor the owned mutation.");
+  }
+
+  return restore(current, snapshot);
+}
+
 export async function runReversibleEvidence({
   capture,
   verifyBaseline = async () => {},

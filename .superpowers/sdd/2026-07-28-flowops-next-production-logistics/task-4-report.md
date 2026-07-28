@@ -107,3 +107,36 @@ The three code and test-quality findings from `task-4-review.md` are fixed. The 
 ### External blocker
 
 - The seven required `FLOWOPS_E2E_*` variables remain absent. The complete local release gate must still run in the credentialed environment and produce machine-readable authenticated and integration reports with zero missing, skipped, or failed required scenarios before Task 4 can be release-approved.
+
+## Fix Round 2
+
+### Status
+
+The remaining Important finding from `task-4-r1-review.md` is fixed. Cleanup ownership now requires both the unique mutation value and the exact database-returned mutation timestamp/version, preventing a concurrent update from being overwritten.
+
+### RED command
+
+1. `node --test tests/unit/release-evidence.test.js`
+   - RED: 11 passed, 3 failed.
+   - Expected failures: the ownership helper did not exist, a marker-bearing row with a changed timestamp was not behaviorally rejected, and the production/realtime restore callbacks discarded the mutation result.
+
+### GREEN commands
+
+1. `node --test tests/unit/release-evidence.test.js`
+   - GREEN: 14 passed, 0 failed, 0 skipped.
+2. `npm run test:unit`
+   - GREEN: 205 passed, 0 failed, 0 skipped.
+3. `npm run check`
+   - GREEN: 68 JavaScript files validated.
+
+### Changes and self-review
+
+- Added a shared behavioral ownership check that accepts only the exact original snapshot or an exact match on both mutation notes and mutation `updated_at`.
+- Added a regression proving marker-bearing notes with a concurrently changed timestamp report a restoration conflict and perform zero restore writes.
+- Added positive coverage proving an exactly owned mutation and an already-restored exact original row still complete restoration.
+- Production transition and two-session realtime cleanup now pass the database-returned mutation object into restoration; the existing organization-scoped optimistic update still verifies both expected notes and expected timestamp before writing.
+- No production application code, database migration, or Edge Function changed.
+
+### External blocker
+
+- The seven required `FLOWOPS_E2E_*` variables remain absent. Credentialed local-candidate execution remains required with zero missing, skipped, or failed required scenarios; no live release evidence was fabricated in this round.

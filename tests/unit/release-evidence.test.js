@@ -148,6 +148,38 @@ test("reversible evidence gives cleanup an independent timeout and reports resto
   });
 });
 
+test("cleanup refuses marker-bearing notes when the mutation timestamp changed concurrently", async () => {
+  const restoreOwnedMutation = releaseEvidenceCore.restoreOwnedMutation;
+  assert.equal(typeof restoreOwnedMutation, "function");
+  const mutation = { notes: "marker-bearing-notes", updatedAt: "mutation-version" };
+  let writes = 0;
+
+  await assert.rejects(restoreOwnedMutation({
+    current: { ...mutation, updatedAt: "concurrent-version" },
+    mutation,
+    snapshot: { notes: "original-notes", updatedAt: "original-version" },
+    restore: async () => { writes += 1; },
+  }), /restoration conflict/i);
+
+  assert.equal(writes, 0);
+});
+
+test("cleanup restores an exactly owned mutation and accepts the exact original row", async () => {
+  const restoreOwnedMutation = releaseEvidenceCore.restoreOwnedMutation;
+  assert.equal(typeof restoreOwnedMutation, "function");
+  const snapshot = { notes: "original-notes", updatedAt: "original-version" };
+  const mutation = { notes: "marker-bearing-notes", updatedAt: "mutation-version" };
+  const restored = [];
+  const restore = async (current) => {
+    restored.push(current);
+    return snapshot;
+  };
+
+  assert.equal(await restoreOwnedMutation({ current: mutation, mutation, snapshot, restore }), snapshot);
+  assert.equal(await restoreOwnedMutation({ current: snapshot, mutation, snapshot, restore }), snapshot);
+  assert.deepEqual(restored, [mutation, snapshot]);
+});
+
 test("requires production transition and redesigned production and logistics evidence", () => {
   const required = Object.fromEntries(REQUIRED_RELEASE_SCENARIOS.map((scenario) => [scenario.id, {
     scope: scenario.scope,
@@ -177,7 +209,7 @@ test("release integration spec covers production transition, marketplace, logist
     source.indexOf("async function restorePersistedOrder"),
     source.indexOf("async function verifyPersistedRestoration"),
   );
-  assert.match(restoreHelper, /current\.notes === snapshot\.mutationNotes/);
+  assert.match(restoreHelper, /restoreOwnedMutation/);
   assert.match(restoreHelper, /updatePersistedOrder/);
   assert.match(source, /marketplace-sync[^\n]*action=sync/);
   assert.match(source, /order_logistics/);
@@ -196,6 +228,7 @@ test("release integration spec covers production transition, marketplace, logist
   assert.match(productionSection, /item\.updatedAt === mutation\.updatedAt/);
   assert.match(productionSection, /item\.internalNotes\.includes\(runMarker\)/);
   assert.match(productionSection, /testInfo\.setTimeout\(testInfo\.timeout \+ cleanupTimeoutMs\)/);
+  assert.match(productionSection, /restore:\s*async \(snapshot, mutation\)/);
 
   const realtimeSection = source.slice(source.indexOf("@release:realtime-two-session"));
   assert.match(realtimeSection, /verifyBaseline:\s*async/);
@@ -203,6 +236,7 @@ test("release integration spec covers production transition, marketplace, logist
   assert.match(realtimeSection, /item\.updatedAt === mutation\.updatedAt/);
   assert.match(realtimeSection, /item\.internalNotes\.includes\(runMarker\)/);
   assert.match(realtimeSection, /verifyPersistedRestoration/);
+  assert.match(realtimeSection, /restore:\s*async \(snapshot, mutation\)/);
 });
 
 test("redesigned production and logistics evidence targets the seeded orders", async () => {
