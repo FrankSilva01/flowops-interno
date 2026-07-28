@@ -12259,3 +12259,137 @@ dialog::backdrop { background: rgba(2,6,12,.66); backdrop-filter: blur(2px); }
   }
 }
 
+/* FlowOps Next production board: scroll stays inside the operational board. */
+.flowops-next-production {
+  min-width: 0;
+  width: 100%;
+}
+
+.production-next-summary {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.production-next-summary article {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  border: 1px solid var(--next-line, var(--line));
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--next-surface, var(--panel));
+}
+
+.production-next-summary span,
+.production-next-summary small {
+  color: var(--next-muted, var(--muted));
+  font-size: 12px;
+}
+
+.production-next-summary strong {
+  color: var(--next-text, var(--text));
+  font-size: 20px;
+}
+
+.production-next-board {
+  min-width: 0;
+  width: 100%;
+}
+
+.production-next-board-scroll {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  padding-bottom: 8px;
+  scrollbar-gutter: stable;
+}
+
+.flowops-next-production .kanban-board {
+  grid-template-columns: repeat(6, 264px);
+  min-width: max-content;
+  overflow: visible;
+  padding-bottom: 0;
+}
+
+.flowops-next-production .kanban-column {
+  min-height: 500px;
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--next-surface, var(--panel));
+}
+
+.production-next-card {
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+  border-radius: 8px;
+}
+
+.production-next-card-thumb {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--next-line, var(--line));
+  border-radius: 8px;
+  background: var(--next-bg, var(--canvas));
+  color: var(--next-muted, var(--muted));
+}
+
+.production-next-card-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.production-next-card-progress {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 5px;
+  color: var(--next-muted, var(--muted));
+  font-size: 12px;
+}
+
+.production-next-card-progress i {
+  display: block;
+  width: 100%;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--next-line, var(--line));
+}
+
+.production-next-card-progress i::before {
+  display: block;
+  width: var(--production-progress);
+  height: 100%;
+  content: "";
+  background: var(--next-accent, var(--teal));
+}
+
+.flowops-next-production-drawer {
+  width: min(420px, 100vw);
+}
+
+@media (max-width: 760px) {
+  .production-next-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .production-next-summary article:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .flowops-next-production .kanban-board {
+    grid-template-columns: repeat(6, 248px);
+  }
+
+  .flowops-next-production-drawer .drawer-footer {
+    flex-wrap: wrap;
+  }
+}
+

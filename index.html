@@ -586,10 +586,15 @@
           <div id="referenceLibraryGrid" class="reference-library-grid"></div>
         </section>
 
-        <section id="productionView" class="view">
+        <section id="productionView" class="view flowops-next-production">
           <div id="productionQuoteSummary" class="production-quote-summary"></div>
+          <section id="productionStageSummary" class="production-next-summary" aria-label="Resumo da producao"></section>
           <div id="kanbanFilters" class="kanban-filters"></div>
-          <div id="kanbanBoard" class="kanban-board"></div>
+          <section class="production-next-board" aria-label="Quadro de producao">
+            <div class="production-next-board-scroll">
+              <div id="kanbanBoard" class="kanban-board"></div>
+            </div>
+          </section>
         </section>
 
         <section id="logisticsView" class="view">
@@ -1841,7 +1846,7 @@
     </main>
 
     <div id="orderDrawerOverlay" class="drawer-overlay" hidden></div>
-    <aside id="orderDrawer" class="order-drawer" aria-hidden="true">
+    <aside id="orderDrawer" class="order-drawer flowops-next-production-drawer" aria-hidden="true">
       <div class="drawer-header">
         <div>
           <span class="order-code" id="orderDrawerCode">PED-0000</span>

@@ -150,6 +150,26 @@ test.describe("sessao autenticada", () => {
     await expect(page.locator("#referenceLibraryEmpty")).toBeVisible();
   });
 
+  test("@release:production-next shows the compact summary, keeps overflow in the board, and opens the order drawer", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/#production");
+    await expect(page.locator("#appView")).toBeVisible();
+    await expect(page.locator("#productionStageSummary")).toBeVisible();
+
+    const boardScroll = page.locator(".production-next-board-scroll");
+    await expect(boardScroll).toBeVisible();
+    expect(await boardScroll.evaluate((element) => element.scrollWidth > element.clientWidth + 1), "kanban should scroll inside its board").toBe(true);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1), "production created page overflow at 390px").toBe(false);
+
+    const cards = page.locator(".production-next-card");
+    test.skip((await cards.count()) === 0, "No production orders are available for card and drawer validation.");
+    const firstCard = cards.first();
+    const orderCode = (await firstCard.locator(".order-code").textContent())?.trim() || "";
+    await expect(firstCard).toContainText(orderCode);
+    await firstCard.click();
+    await expect(page.locator("#orderDrawer")).toHaveClass(/open/);
+  });
+
   test("@release:marketplace-shopee-export abre exportacao Shopee direta para selecao individual", async ({ page }) => {
     await page.goto("/#marketplace");
     await expect(page.locator("#appView")).toBeVisible();

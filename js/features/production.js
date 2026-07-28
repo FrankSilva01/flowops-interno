@@ -1,6 +1,7 @@
-import { state, PRODUCTION_STAGES, PRIORITY_OPTIONS, STATUS_OPTIONS, normalizeStage, normalizeOrderStatus } from "../core/state.js";
-import { byId, html, formatDate, uniqueValues, filterRows } from "../core/dom.js";
+import { state, PRODUCTION_STAGES, PRIORITY_OPTIONS, STATUS_OPTIONS, normalizeOrderStatus } from "../core/state.js";
+import { byId, html, safeUrl, formatDate, uniqueValues, filterRows } from "../core/dom.js";
 import { bindActions } from "../core/router.js";
+import { buildProductionPresentation } from "./production-presentation.js";
 import {
   sortOrders, getOrderPriority, getMarketplaceLabel, getOrderCode, getOrderMarketplaceChannel,
   renderSlaBadge, renderInlineSelect, updateOrderInline,
@@ -18,7 +19,14 @@ export function renderProduction() {
   renderKanbanFilters();
   const board = byId("kanbanBoard");
   if (!board) return;
-  renderProductionSummary();
+  const presentation = buildProductionPresentation(
+    sortOrders(filterProductionOrders(filterRows(
+      state.data.orders,
+      ["orderCode", "marketplaceOrderCode", "description", "client", "material", "status", "responsible", "productionStage", "internalNotes", "tags"],
+    ))).filter(isProductionEligible),
+    { stages: PRODUCTION_STAGES, now: new Date() },
+  );
+  renderProductionSummary(presentation);
   const pendingQuotes = state.data.orders.filter((item) => item.quoteStage && !isProductionEligible(item));
   byId("productionQuoteSummary").innerHTML = pendingQuotes.length ? `
     <div class="quote-summary-card">
@@ -26,19 +34,15 @@ export function renderProduction() {
       <button class="secondary-btn" type="button" data-action="open-quotes">Ver orçamentos</button>
     </div>
   ` : "";
-  board.innerHTML = PRODUCTION_STAGES.map((stage) => {
-    const orders = sortOrders(filterProductionOrders(
-      filterRows(state.data.orders, ["orderCode", "marketplaceOrderCode", "description", "client", "material", "status", "responsible", "productionStage", "internalNotes", "tags"]),
-    ))
-      .filter(isProductionEligible)
-      .filter((item) => normalizeStage(item.productionStage || item.status) === stage);
+  board.innerHTML = presentation.columns.map((column) => {
+    const orders = column.orders;
     return `
-      <section class="kanban-column" data-stage="${html(stage)}">
+      <section class="kanban-column production-next-column" data-stage="${html(column.label)}">
         <div class="kanban-head">
-          <h3>${html(stage)}</h3>
+          <h3>${html(column.label)}</h3>
           <span>${orders.length}</span>
         </div>
-        <div class="kanban-dropzone" data-stage="${html(stage)}">
+        <div class="kanban-dropzone" data-stage="${html(column.label)}">
           ${orders.map(renderKanbanCard).join("") || `<div class="empty-chart">Sem pedidos</div>`}
         </div>
       </section>
@@ -63,26 +67,18 @@ export function filterProductionOrders(rows) {
   });
 }
 
-export function renderProductionSummary() {
-  const view = byId("productionView");
-  if (!view) return;
-  let target = byId("productionStageSummary");
-  if (!target) {
-    target = document.createElement("section");
-    target.id = "productionStageSummary";
-    target.className = "production-stage-summary";
-    view.prepend(target);
-  }
-  const eligible = state.data.orders.filter(isProductionEligible);
-  const late = eligible.filter((item) => getOrderPriority(item).key === "late").length;
-  const inTime = eligible.length ? Math.max(0, Math.round(((eligible.length - late) / eligible.length) * 100)) : 100;
+export function renderProductionSummary(presentation) {
+  const target = byId("productionStageSummary");
+  if (!target || !presentation) return;
+  const { summary } = presentation;
   target.innerHTML = `
-    <article class="production-sla"><span>SLA geral</span><strong>${inTime}%</strong><small>${late} atrasado${late === 1 ? "" : "s"}</small></article>
-    ${PRODUCTION_STAGES.map((stage) => {
-      const count = eligible.filter((item) => normalizeStage(item.productionStage || item.status) === stage).length;
-      const width = eligible.length ? Math.max(4, Math.round((count / eligible.length) * 100)) : 4;
-      return `<article><span>${html(stage)}</span><strong>${count}</strong><i style="--stage-progress:${width}%"></i></article>`;
-    }).join("")}
+    ${[
+      ["Pedidos", summary.total, "em producao"],
+      ["Em fila", summary.queued, "aguardando inicio"],
+      ["Produzindo", summary.producing, "em execucao"],
+      ["Revisao", summary.review, "pos-processo"],
+      ["Atrasados", summary.late, "prioridade operacional"],
+    ].map(([label, count, detail]) => `<article><span>${label}</span><strong>${count}</strong><small>${detail}</small></article>`).join("")}
   `;
 }
 
@@ -91,12 +87,19 @@ export function isProductionEligible(item) {
   return ["Aprovado", "Convertido em encomenda"].includes(item.quoteStage);
 }
 
-export function renderKanbanCard(item) {
+export function renderKanbanCard(presentationItem) {
+  const item = presentationItem.order || presentationItem;
   const priority = getOrderPriority(item);
   const status = normalizeOrderStatus(item.status);
   const marketplaceLabel = getMarketplaceLabel(item);
+  const imageUrl = safeUrl(item.referenceImageUrl);
+  const stageIndex = Math.max(0, PRODUCTION_STAGES.indexOf(presentationItem.stageLabel || item.productionStage));
+  const progress = Math.round(((stageIndex + 1) / PRODUCTION_STAGES.length) * 100);
   return `
-    <article class="kanban-card" draggable="${state.canEdit}" data-id="${html(item.id)}" data-action="open-order-drawer" tabindex="0" role="button" aria-label="Ver detalhes de ${html(getOrderCode(item))}">
+    <article class="kanban-card production-next-card" draggable="${state.canEdit}" data-id="${html(item.id)}" data-action="open-order-drawer" tabindex="0" role="button" aria-label="Ver detalhes de ${html(getOrderCode(item))}">
+      <div class="production-next-card-thumb">
+        ${imageUrl ? `<img src="${html(imageUrl)}" alt="" loading="lazy" />` : `<i class="ti ti-package" aria-hidden="true"></i>`}
+      </div>
       <div class="kanban-card-head">
         <span class="order-code">${html(getOrderCode(item))}</span>
         ${state.canEdit ? `<button class="icon-btn compact" type="button" data-action="edit-order-modal" data-id="${html(item.id)}">Editar</button>` : ""}
@@ -104,6 +107,10 @@ export function renderKanbanCard(item) {
       <strong>${html(item.description)}</strong>
       <small>${html(item.client || "Cliente não informado")}</small>
       <small>${item.deliveryDate ? formatDate(item.deliveryDate) : "Sem data"} • ${html(item.material || "Material não informado")}</small>
+      <div class="production-next-card-progress" aria-label="Progresso: ${html(presentationItem.stageLabel || item.productionStage || "Em fila")}">
+        <span>${html(presentationItem.stageLabel || item.productionStage || "Em fila")}</span>
+        <i style="--production-progress:${progress}%"></i>
+      </div>
       ${renderSlaBadge(item)}
       <div class="marketplace-code-line">
         <span><small>${html(marketplaceLabel)}</small><strong>${html(item.marketplaceOrderCode || "Sem código")}</strong></span>
