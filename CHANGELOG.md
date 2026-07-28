@@ -4,8 +4,14 @@
 
 ### Changed
 - Service worker cache remains on the current `flowops-v67` release while retaining the single bundled `/css/flowops.css` asset.
+- Completed the FlowOps Next Production and Logistics interface phase, including mandatory authenticated release-evidence contracts for production transition, production/logistics views, marketplace logistics, public tracking and two-session realtime.
 - Added release regression coverage for the FlowOps Next shell, Orders and Reference Library modules.
 - Release publication now requires machine-readable proof that authenticated and integration scenarios passed without skips; operational reports stay outside the Netlify publish root.
+
+### Release status
+- The 2026-07-28 release candidate is not approved: the fail-closed `npm run release:gate` stopped before private validation because required QA, Supabase, RLS, staging and production/logistics fixture credentials are unavailable.
+- Public regression evidence passed, but authenticated desktop/mobile screenshots for Production and Logistics, private health, RLS isolation and the staging restore drill were not run and cannot be represented as release evidence.
+- No `sw.js` cache advance, deployment or push was performed; `flowops-v67` remains the current cache version.
 
 ### Release regression checks
 - Existing marketplace listings remain visible and keep their operational actions after the release.
