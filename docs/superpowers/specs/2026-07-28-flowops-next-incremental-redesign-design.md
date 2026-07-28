@@ -87,4 +87,3 @@ Falhas de carregamento exibirao estados de erro com tentativa de recarga, sem su
 - Nenhum dado de uma organizacao aparece em outra.
 - Todas as telas principais funcionam sem rolagem horizontal em breakpoints suportados.
 - O sistema continua responsivo e utilizavel em mobile.
-
