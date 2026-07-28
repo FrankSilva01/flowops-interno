@@ -1,7 +1,9 @@
 import { state, PRODUCTION_STAGES, PRIORITY_OPTIONS, STATUS_OPTIONS, normalizeOrderStatus } from "../core/state.js";
 import { byId, html, safeUrl, formatDate, uniqueValues, filterRows } from "../core/dom.js";
 import { bindActions } from "../core/router.js";
-import { buildProductionPresentation } from "./production-presentation.js";
+import { buildProductionPresentation, isProductionEligible } from "./production-presentation.js";
+
+export { isProductionEligible };
 import {
   sortOrders, getOrderPriority, getMarketplaceLabel, getOrderCode, getOrderMarketplaceChannel,
   renderSlaBadge, renderInlineSelect, updateOrderInline,
@@ -80,11 +82,6 @@ export function renderProductionSummary(presentation) {
       ["Atrasados", summary.late, "prioridade operacional"],
     ].map(([label, count, detail]) => `<article><span>${label}</span><strong>${count}</strong><small>${detail}</small></article>`).join("")}
   `;
-}
-
-export function isProductionEligible(item) {
-  if (!item.quoteStage) return true;
-  return ["Aprovado", "Convertido em encomenda"].includes(item.quoteStage);
 }
 
 export function renderKanbanCard(presentationItem) {

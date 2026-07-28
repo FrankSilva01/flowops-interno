@@ -81,7 +81,7 @@ function isLate(order, stage, operationalDate) {
   );
 }
 
-function isEligible(order) {
+export function isProductionEligible(order) {
   const quoteStage = String(order.quoteStage || "").trim();
   return !quoteStage || quoteStage === "Convertido em encomenda";
 }
@@ -118,7 +118,7 @@ export function buildProductionPresentation(orders = [], options = {}) {
   }));
   const summary = { total: 0, queued: 0, producing: 0, review: 0, ready: 0, late: 0 };
 
-  sourceOrders.filter((order) => order && isEligible(order)).forEach((order) => {
+  sourceOrders.filter((order) => order && isProductionEligible(order)).forEach((order) => {
     const normalizedStage = normalizeStage(order.productionStage || order.status);
     const column = columns.find((candidate) => (
       candidate.key === normalizedStage
