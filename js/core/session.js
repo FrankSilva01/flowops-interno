@@ -9,6 +9,7 @@ import { loadMarketplaces } from "../features/marketplace.js";
 import { loadListingAnalytics, loadSellerMetrics, loadListingFeeSync } from "../features/marketplace-analytics.js";
 import { loadRemoteData, subscribeRemote, flushOfflineQueue } from "../data/remote.js";
 import { clearOfflineData } from "./offline-queue.js";
+import { mlOAuthErrorMessage } from "../features/marketplace-oauth-message.js";
 
 export async function setupBackend() {
   const config = window.SUPABASE_CONFIG || {};
@@ -397,7 +398,7 @@ function surfaceMlOauthResult() {
       "warning",
     );
   } else if (params.has("ml_error")) {
-    showAppMessage("Mercado Livre", `Não foi possível conectar: ${params.get("ml_error")}`, "error");
+    showAppMessage("Não foi possível conectar ao Mercado Livre", mlOAuthErrorMessage(params.get("ml_error")), "error");
   } else {
     return;
   }
