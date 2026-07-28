@@ -2,7 +2,7 @@
 
 ## Status
 
-Complete. The machine-readable gate now requires production transition, production Next, and logistics Next evidence while retaining marketplace synchronization, logistics automation, public tracking, and two-session realtime evidence.
+Implementation complete; release evidence remains incomplete until the credentialed local-candidate gate runs with zero required skips. The machine-readable gate requires production transition, production Next, and logistics Next evidence while retaining marketplace synchronization, logistics automation, public tracking, and two-session realtime evidence.
 
 ## RED commands
 
@@ -57,3 +57,53 @@ Complete. The machine-readable gate now requires production transition, producti
 ## Concerns
 
 - Live authenticated integration execution was not possible because all seven `FLOWOPS_E2E_*` release fixture variables are absent from this session. Playwright discovery and all local unit/gate checks passed, but the production Supabase transition, realtime delivery, logistics rows, marketplace synchronization, and public token response still require the credentialed release environment.
+
+## Fix Round 1
+
+### Status
+
+The three code and test-quality findings from `task-4-review.md` are fixed. The credentialed local-candidate execution remains an external blocker and no runtime evidence was fabricated.
+
+### RED commands
+
+1. `node --test tests/unit/release-evidence.test.js`
+   - RED: 8 passed, 2 failed.
+   - Expected failures: a later duplicate pass overwrote an earlier failed or skipped execution for the same scenario and project.
+2. `node --test tests/unit/release-evidence.test.js`
+   - RED: 10 passed, 2 failed.
+   - Expected failures: the reversible evidence cleanup API with behavioral failure injection and an independent timeout budget did not exist.
+3. `node --test tests/unit/release-evidence.test.js`
+   - RED: 11 passed, 1 failed.
+   - Expected failure: production and realtime scenarios had no UUID marker, second-session baseline, affected-row result, or persisted restoration readback contract.
+4. `node --test tests/unit/release-evidence.test.js`
+   - RED: 11 passed, 1 failed.
+   - Expected failure: restoration accepted any row retaining the run marker instead of only the exact planned mutation or exact original row.
+
+### GREEN commands
+
+1. `node --test tests/unit/release-evidence.test.js`
+   - GREEN after each cycle; final focused file result: 12 passed, 0 failed, 0 skipped.
+2. `node --test tests/unit/release-evidence.test.js tests/unit/release-gate.test.js`
+   - GREEN: 20 passed, 0 failed, 0 skipped.
+3. `npm run test:unit`
+   - GREEN: 203 passed, 0 failed, 0 skipped.
+4. `npm run check`
+   - GREEN: 68 JavaScript files validated.
+5. `npx playwright test tests/e2e/authenticated-smoke.spec.js tests/e2e/release-integrations.spec.js --list`
+   - GREEN: 36 tests discovered across desktop and mobile projects.
+6. `npm test`
+   - GREEN exit status: 68 JavaScript files validated, 203 unit tests passed, and 29 public E2E tests passed.
+   - 37 credential-dependent or project-inapplicable E2E cases skipped. Required skips remain release-blocking in `playwright-release-evidence.mjs`.
+
+### Changes and self-review
+
+- Duplicate scenario/project executions now retain the worst status with `failed > skipped > passed`, independent of report ordering.
+- Reversible evidence cleanup runs from `finally`, receives a separate 30-second budget, restores after injected post-mutation assertion failure, and reports combined evidence/restoration failures.
+- Mutation and restoration updates are organization-scoped, optimistic against the expected notes and timestamp, and require an affected row through `select("id,notes,updated_at").single()`.
+- Cleanup accepts only the exact UUID-tagged mutation or exact original snapshot, then reads the row again and verifies exact notes, timestamp, stage, and internal notes.
+- Both mutable realtime scenarios establish the second-session baseline before mutation and require the database-returned timestamp plus a per-run UUID marker before passing.
+- Changed in this round: `scripts/playwright-release-evidence-core.mjs`, `tests/unit/release-evidence.test.js`, `tests/e2e/release-integrations.spec.js`, and this report.
+
+### External blocker
+
+- The seven required `FLOWOPS_E2E_*` variables remain absent. The complete local release gate must still run in the credentialed environment and produce machine-readable authenticated and integration reports with zero missing, skipped, or failed required scenarios before Task 4 can be release-approved.

@@ -1,4 +1,5 @@
 const RELEASE_ID_PATTERN = /@release:([a-z0-9-]+)/i;
+const STATUS_SEVERITY = { passed: 0, skipped: 1, failed: 2 };
 
 export const REQUIRED_RELEASE_SCENARIOS = [
   { id: "authenticated-shell", scope: "authenticated", projects: ["desktop", "mobile"] },
@@ -50,6 +51,67 @@ function executionStatus(execution) {
   return "failed";
 }
 
+async function withTimeout(operation, timeoutMs) {
+  let timeout;
+  try {
+    return await Promise.race([
+      operation,
+      new Promise((_, reject) => {
+        timeout = setTimeout(() => reject(new Error(`Cleanup timed out after ${timeoutMs}ms.`)), timeoutMs);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+export async function runReversibleEvidence({
+  capture,
+  verifyBaseline = async () => {},
+  mutate,
+  verifyMutation,
+  restore,
+  verifyRestoration,
+  onCleanupStart = () => {},
+  cleanupTimeoutMs = 30_000,
+}) {
+  let snapshot;
+  let mutation;
+  let mutationStarted = false;
+  let primaryError;
+
+  try {
+    snapshot = await capture();
+    await verifyBaseline(snapshot);
+    mutationStarted = true;
+    mutation = await mutate(snapshot);
+    await verifyMutation(snapshot, mutation);
+  } catch (error) {
+    primaryError = error;
+  } finally {
+    if (mutationStarted) {
+      try {
+        onCleanupStart(cleanupTimeoutMs);
+        await withTimeout(Promise.resolve().then(async () => {
+          const restored = await restore(snapshot, mutation);
+          await verifyRestoration(snapshot, restored, mutation);
+        }), cleanupTimeoutMs);
+      } catch (cleanupError) {
+        if (primaryError) {
+          throw new AggregateError(
+            [primaryError, cleanupError],
+            `Release evidence failed and restoration failed: ${cleanupError.message}`,
+          );
+        }
+        throw new Error(`Release evidence restoration failed: ${cleanupError.message}`, { cause: cleanupError });
+      }
+    }
+  }
+
+  if (primaryError) throw primaryError;
+  return mutation;
+}
+
 export function validatePlaywrightReleaseReport(report, { scope } = {}) {
   const required = REQUIRED_RELEASE_SCENARIOS.filter((scenario) => !scope || scenario.scope === scope);
   const observed = new Map();
@@ -59,7 +121,10 @@ export function validatePlaywrightReleaseReport(report, { scope } = {}) {
     if (!id) continue;
     for (const execution of executionsForSpec(spec)) {
       if (!execution.project) continue;
-      observed.set(`${id}:${execution.project}`, executionStatus(execution));
+      const key = `${id}:${execution.project}`;
+      const status = executionStatus(execution);
+      const previous = observed.get(key);
+      if (!previous || STATUS_SEVERITY[status] > STATUS_SEVERITY[previous]) observed.set(key, status);
     }
   }
 
