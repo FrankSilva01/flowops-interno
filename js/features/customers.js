@@ -5,6 +5,7 @@ import { ensureCanEdit } from "../core/permissions.js";
 import { loadRemoteData } from "../data/remote.js";
 import { getOrderCode, startOrderEdit } from "./orders.js";
 import { recordAudit } from "./logs.js";
+import { buildCustomersModel, buildLeadsPipeline } from "./commercial-presentation.js";
 
 export function renderLeads() {
   const target = byId("leadsList");
@@ -276,16 +277,72 @@ export function renderLeadsTab() {
 
   const contatosPanel = byId("contatosPanel");
   const whatsappPanel = byId("whatsappPanel");
+  const pipelinePanel = byId("leadsPipelinePanel");
+
+  renderLeadsNextSummary();
+  const show = (el, on) => { if (el) el.style.display = on ? "block" : "none"; };
+  show(contatosPanel, activeTab === "contatos");
+  show(pipelinePanel, activeTab === "pipeline");
+  show(whatsappPanel, activeTab === "whatsapp");
 
   if (activeTab === "whatsapp") {
-    contatosPanel.style.display = "none";
-    whatsappPanel.style.display = "block";
     renderWhatsappInLeads();
+  } else if (activeTab === "pipeline") {
+    renderLeadsPipeline();
   } else {
-    contatosPanel.style.display = "block";
-    whatsappPanel.style.display = "none";
     renderLeads();
   }
+}
+
+// FlowOps Next: faixa de resumo comercial (dados reais via buildCustomersModel).
+function renderLeadsNextSummary() {
+  const target = byId("leadsNextSummary");
+  if (!target) return;
+  const { summary } = buildCustomersModel(state.leads, state.data.orders, {});
+  const cards = [
+    ["Clientes ativos", summary.ativos, "convertidos e recorrentes"],
+    ["Leads em aberto", summary.leadsEmAberto, "novos e em negociação"],
+    ["Orçamentos em aberto", summary.orcamentosEmAberto, "aguardando decisão"],
+    ["Recorrência", `${summary.recorrencia}%`, "clientes com 2+ pedidos"],
+  ];
+  target.innerHTML = cards.map(([label, value, hint]) => `
+    <div class="commercial-next-kpi">
+      <span class="kpi-label">${html(label)}</span>
+      <strong class="kpi-value">${html(String(value))}</strong>
+      <small class="kpi-hint">${html(hint)}</small>
+    </div>`).join("");
+}
+
+// FlowOps Next: pipeline de leads por status real (kanban), preservando os data-action.
+function renderLeadsPipeline() {
+  const target = byId("leadsPipelinePanel");
+  if (!target) return;
+  const { columns, summary } = buildLeadsPipeline(state.leads, { now: new Date() });
+  if (!summary.total) {
+    target.innerHTML = `<div class="empty-state"><strong>Nenhum lead cadastrado</strong><span>Cadastre um lead para vê-lo no pipeline.</span></div>`;
+    return;
+  }
+  target.innerHTML = `
+    <div class="leads-next-board-scroll">
+      <div class="leads-next-pipeline">
+        ${columns.map((col) => `
+          <div class="leads-next-column" data-stage="${html(col.stage)}">
+            <div class="leads-next-column-head"><span>${html(col.stage)}</span><em>${col.count}</em></div>
+            <div class="leads-next-column-body">
+              ${col.cards.map((card) => `
+                <article class="leads-next-card" data-action="select-lead" data-id="${html(card.id)}" tabindex="0" role="button" aria-label="Selecionar ${html(card.name)}">
+                  <strong>${html(card.name)}</strong>
+                  <small>${html(card.origin)}</small>
+                  <div class="leads-next-card-foot">
+                    <span>${card.lastContact ? formatDateTime(card.lastContact) : "Sem contato"}</span>
+                    <button class="secondary-btn" type="button" data-action="edit-lead" data-id="${html(card.id)}">Abrir</button>
+                  </div>
+                </article>`).join("") || `<div class="empty-state compact"><span>Sem leads</span></div>`}
+            </div>
+          </div>`).join("")}
+      </div>
+    </div>`;
+  bindActions();
 }
 
 function renderWhatsappInLeads() {

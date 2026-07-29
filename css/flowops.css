@@ -12552,3 +12552,74 @@ dialog::backdrop { background: rgba(2,6,12,.66); backdrop-filter: blur(2px); }
   }
 }
 
+
+/* ===== SOURCE: 23-flowops-next-commercial.css ===== */
+/* FlowOps Next — Comercial (Clientes, Leads, pipeline). Escopo: .flowops-next-commercial. */
+
+.flowops-next-commercial .commercial-next-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+  margin: 8px 0 14px;
+}
+.flowops-next-commercial .commercial-next-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--next-surface);
+  border: 1px solid var(--next-line);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+.flowops-next-commercial .commercial-next-kpi .kpi-label { color: var(--next-muted); font-size: 12.5px; }
+.flowops-next-commercial .commercial-next-kpi .kpi-value { color: var(--next-text); font-size: 24px; font-weight: 800; line-height: 1.1; }
+.flowops-next-commercial .commercial-next-kpi .kpi-hint { color: var(--next-muted); font-size: 11.5px; }
+
+/* Pipeline (kanban por status). O board é dono da rolagem; a página não estoura. */
+.flowops-next-commercial .leads-next-board-scroll { overflow-x: auto; overflow-y: hidden; padding-bottom: 6px; }
+.flowops-next-commercial .leads-next-pipeline {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  min-width: min-content;
+}
+.flowops-next-commercial .leads-next-column {
+  flex: 0 0 260px;
+  max-width: 260px;
+  background: var(--next-surface);
+  border: 1px solid var(--next-line);
+  border-radius: 14px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.flowops-next-commercial .leads-next-column-head {
+  display: flex; align-items: center; justify-content: space-between;
+  font-weight: 700; color: var(--next-text); font-size: 13.5px;
+  padding: 2px 4px;
+}
+.flowops-next-commercial .leads-next-column-head em {
+  font-style: normal; background: var(--next-accent); color: #04211c;
+  border-radius: 999px; padding: 1px 9px; font-size: 12px; font-weight: 800;
+}
+.flowops-next-commercial .leads-next-column-body { display: flex; flex-direction: column; gap: 9px; min-height: 24px; }
+.flowops-next-commercial .leads-next-card {
+  display: flex; flex-direction: column; gap: 4px;
+  background: var(--next-bg);
+  border: 1px solid var(--next-line);
+  border-radius: 12px;
+  padding: 11px 12px;
+  cursor: pointer;
+}
+.flowops-next-commercial .leads-next-card:hover { border-color: var(--next-accent); }
+.flowops-next-commercial .leads-next-card strong { color: var(--next-text); font-size: 13.5px; }
+.flowops-next-commercial .leads-next-card small { color: var(--next-muted); font-size: 12px; }
+.flowops-next-commercial .leads-next-card-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 4px; gap: 8px; color: var(--next-muted); font-size: 11.5px;
+}
+
+@media (max-width: 640px) {
+  .flowops-next-commercial .leads-next-column { flex-basis: 82vw; max-width: 82vw; }
+}
