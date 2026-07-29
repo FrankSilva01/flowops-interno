@@ -350,26 +350,17 @@
 
         </section>
 
-        <section id="reportsView" class="view">
+        <section id="reportsView" class="view flowops-next-reports">
           <p class="view-subtitle">Análises completas do seu negócio. Gere, exporte e acompanhe dados importantes.</p>
-          <div class="report-tabs" role="tablist" aria-label="Relatórios">
-            <button class="active" type="button" data-report-tab="overview">Visão geral</button>
-            <button type="button" data-report-tab="financial">Financeiro</button>
-            <button type="button" data-report-tab="production">Produção</button>
-            <button type="button" data-report-tab="commercial">Comercial</button>
-            <button type="button" data-report-tab="marketplaces">Marketplaces</button>
-            <label class="report-more-label">Mais relatórios
-              <select id="reportMoreSelect" aria-label="Abrir outro relatório">
-                <option value="">Selecionar</option>
-                <option value="logistics">Logística</option>
-                <option value="pricing">Inteligência comercial</option>
-                <option value="products">Produtos</option>
-                <option value="materials">Materiais</option>
-                <option value="clients">Clientes</option>
-                <option value="stock">Estoque</option>
-                <option value="quality">Qualidade dos dados</option>
-              </select>
-            </label>
+          <div class="reports-navigation panel">
+            <div class="report-group-tabs" role="tablist" aria-label="Grupos de relatórios">
+              <button class="active" type="button" role="tab" data-report-group="overview" aria-selected="true" tabindex="0">Visão geral</button>
+              <button type="button" role="tab" data-report-group="commercial" aria-selected="false" tabindex="-1">Comercial</button>
+              <button type="button" role="tab" data-report-group="operation" aria-selected="false" tabindex="-1">Operação</button>
+              <button type="button" role="tab" data-report-group="finance" aria-selected="false" tabindex="-1">Financeiro</button>
+              <button type="button" role="tab" data-report-group="stock" aria-selected="false" tabindex="-1">Estoque</button>
+            </div>
+            <div id="reportSecondaryTabs" class="report-secondary-tabs" role="tablist" aria-label="Relatórios do grupo"></div>
           </div>
           <section class="panel report-filter-panel">
             <label>Período

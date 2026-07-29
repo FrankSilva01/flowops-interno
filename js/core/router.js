@@ -28,6 +28,7 @@ import { renderQuotes } from "../features/quotes.js";
 import { renderConversations } from "../features/conversations.js";
 import { renderClientPortal } from "../features/client-portal.js";
 import { renderReports } from "../features/reports.js";
+import { reportsForGroup } from "../features/reports-navigation.js";
 import { renderLogs, recordAudit, applyHistoryRange } from "../features/logs.js";
 import {
   renderApprovals, renderActiveUsers, renderResponsibleOptions, loadAndRenderApprovals,
@@ -250,21 +251,37 @@ export function bindEvents() {
     state.topProductsPeriod = event.target.value;
     renderTopProducts();
   });
-  document.querySelectorAll("[data-report-tab]").forEach((button) => {
-    button.addEventListener("click", () => {
-      state.reportTab = button.dataset.reportTab;
-      state.reportTablePage = 1;
-      if (byId("reportMoreSelect")) byId("reportMoreSelect").value = "";
-      document.querySelectorAll("[data-report-tab]").forEach((item) => item.classList.toggle("active", item === button));
-      renderReports();
-    });
-  });
-  byId("reportMoreSelect")?.addEventListener("change", (event) => {
-    if (!event.target.value) return;
-    state.reportTab = event.target.value;
+  const activateReport = (tab) => {
+    state.reportTab = tab;
     state.reportTablePage = 1;
-    document.querySelectorAll("[data-report-tab]").forEach((item) => item.classList.remove("active"));
     renderReports();
+  };
+  const activateReportGroup = (group) => {
+    const reports = reportsForGroup(group);
+    activateReport(reports[0]?.key || "overview");
+  };
+  const navigateReportTabs = (event, selector, activate) => {
+    if (!["ArrowRight", "ArrowLeft", "Home", "End"].includes(event.key)) return;
+    const tabs = [...document.querySelectorAll(selector)].filter((tab) => !tab.hidden);
+    if (!tabs.length) return;
+    event.preventDefault();
+    const current = Math.max(0, tabs.indexOf(event.target.closest(selector)));
+    const index = event.key === "Home" ? 0
+      : event.key === "End" ? tabs.length - 1
+        : (current + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+    activate(tabs[index]);
+    requestAnimationFrame(() => document.querySelectorAll(selector)[index]?.focus());
+  };
+  document.querySelectorAll("[data-report-group]").forEach((button) => {
+    button.addEventListener("click", () => activateReportGroup(button.dataset.reportGroup));
+    button.addEventListener("keydown", (event) => navigateReportTabs(event, "[data-report-group]", (tab) => activateReportGroup(tab.dataset.reportGroup)));
+  });
+  byId("reportSecondaryTabs")?.addEventListener("click", (event) => {
+    const tab = event.target.closest("[data-report-tab]");
+    if (tab) activateReport(tab.dataset.reportTab);
+  });
+  byId("reportSecondaryTabs")?.addEventListener("keydown", (event) => {
+    navigateReportTabs(event, "#reportSecondaryTabs [data-report-tab]", (tab) => activateReport(tab.dataset.reportTab));
   });
   byId("reportPeriodFilter")?.addEventListener("change", (event) => {
     state.reportPeriod = event.target.value;

@@ -12904,3 +12904,86 @@ dialog::backdrop { background: rgba(2,6,12,.66); backdrop-filter: blur(2px); }
   .materials-next-kpis { grid-template-columns: 1fr; }
   .materials-next-supplier { align-items: flex-start; }
 }
+/* SOURCE: css/27-flowops-next-reports.css */
++/* FlowOps Next: Relatorios */
+#reportsView.flowops-next-reports {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+#reportsView.flowops-next-reports .reports-navigation {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  margin-bottom: 14px;
+}
+
+#reportsView.flowops-next-reports .report-group-tabs,
+#reportsView.flowops-next-reports .report-secondary-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+#reportsView.flowops-next-reports .report-group-tabs button,
+#reportsView.flowops-next-reports .report-secondary-tabs button {
+  min-height: 40px;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+#reportsView.flowops-next-reports .report-group-tabs button.active {
+  background: var(--accent);
+  color: var(--accent-contrast, #fff);
+}
+
+#reportsView.flowops-next-reports .report-secondary-tabs {
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+#reportsView.flowops-next-reports .report-secondary-tabs button.active {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+#reportsView.flowops-next-reports .report-main-grid,
+#reportsView.flowops-next-reports .report-kpi-grid,
+#reportsView.flowops-next-reports .report-tab-grid {
+  min-width: 0;
+  max-width: 100%;
+}
+
+#reportsView.flowops-next-reports .report-table-card {
+  min-width: 0;
+}
+
+#reportsView.flowops-next-reports .report-table-card .table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+#reportsView.flowops-next-reports .report-table-card table {
+  min-width: 720px;
+}
+
+@media (max-width: 720px) {
+  #reportsView.flowops-next-reports .report-filter-panel {
+    grid-template-columns: 1fr;
+  }
+
+  #reportsView.flowops-next-reports .report-filter-actions,
+  #reportsView.flowops-next-reports .panel-head,
+  #reportsView.flowops-next-reports .panel-head-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  #reportsView.flowops-next-reports .report-filter-actions button,
+  #reportsView.flowops-next-reports .panel-head-actions button {
+    width: 100%;
+  }
+}

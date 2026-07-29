@@ -7,15 +7,30 @@ import { normalizeText } from "../core/importer.js";
 import { reportPricingDefinition } from "./pricing.js";
 import { renderDataQualityReport } from "./data-quality.js";
 import { marketplaceSalesForReport, reportMarketplaceRows } from "./report-marketplace-data.js";
+import { groupForReport, reportsForGroup } from "./reports-navigation.js";
 
 export { marketplaceSalesForReport, reportMarketplaceRows } from "./report-marketplace-data.js";
+
+export function renderReportNavigation() {
+  const activeGroup = groupForReport(state.reportTab);
+  document.querySelectorAll("[data-report-group]").forEach((button) => {
+    const active = button.dataset.reportGroup === activeGroup;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-selected", String(active));
+    button.tabIndex = active ? 0 : -1;
+  });
+  const secondary = byId("reportSecondaryTabs");
+  if (!secondary) return;
+  secondary.innerHTML = reportsForGroup(activeGroup).map((report) => {
+    const active = report.key === state.reportTab;
+    return `<button type="button" role="tab" data-report-tab="${html(report.key)}" aria-selected="${active}" tabindex="${active ? 0 : -1}" class="${active ? "active" : ""}">${html(report.label)}</button>`;
+  }).join("");
+}
 
 export function renderReports() {
   const content = byId("reportsContent");
   if (!content) return;
-  const primaryTabs = new Set(["overview", "financial", "production", "commercial", "marketplaces"]);
-  document.querySelectorAll("[data-report-tab]").forEach((item) => item.classList.toggle("active", item.dataset.reportTab === state.reportTab));
-  if (byId("reportMoreSelect")) byId("reportMoreSelect").value = primaryTabs.has(state.reportTab) ? "" : state.reportTab;
+  renderReportNavigation();
   const filterPanel = document.querySelector(".report-filter-panel");
   if (filterPanel) filterPanel.hidden = state.reportTab === "quality";
   const rows = getReportRows();
