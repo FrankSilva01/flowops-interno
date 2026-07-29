@@ -6,6 +6,7 @@ const page = readFileSync(new URL("../../index.html", import.meta.url), "utf8");
 const marketplace = readFileSync(new URL("../../js/features/marketplace.js", import.meta.url), "utf8");
 const router = readFileSync(new URL("../../js/core/router.js", import.meta.url), "utf8");
 const styles = readFileSync(new URL("../../css/flowops.css", import.meta.url), "utf8");
+const authenticatedSmoke = readFileSync(new URL("../e2e/authenticated-smoke.spec.js", import.meta.url), "utf8");
 
 test("expoe quatro areas primarias e preserva as oito views existentes", () => {
   for (const area of ["products", "orders", "channels", "performance"]) {
@@ -18,11 +19,24 @@ test("expoe quatro areas primarias e preserva as oito views existentes", () => {
 
 test("associa tabs e paineis do Marketplace para leitores de tela", () => {
   assert.match(page, /id="marketplaceAreaTabProducts"[^>]*role="tab"[^>]*aria-controls="marketplaceAreaViewsProducts"/);
+  assert.match(page, /id="marketplaceAreaViewsProducts"[^>]*role="tabpanel"[^>]*aria-labelledby="marketplaceAreaTabProducts"[^>]*aria-hidden="false"/);
+  for (const [area, tab] of [["Orders", "Orders"], ["Channels", "Channels"], ["Performance", "Performance"]]) {
+    assert.match(page, new RegExp(`id="marketplaceAreaViews${area}"[^>]*role="tabpanel"[^>]*aria-labelledby="marketplaceAreaTab${tab}"[^>]*aria-hidden="true"[^>]*hidden`));
+  }
   assert.match(page, /id="marketplaceViewTabListings"[^>]*role="tab"[^>]*aria-controls="marketplaceListingsView"/);
   assert.match(page, /id="marketplaceListingsView"[^>]*role="tabpanel"[^>]*aria-labelledby="marketplaceViewTabListings"/);
   assert.match(marketplace, /button\.setAttribute\("tabindex", active \? "0" : "-1"\)/);
+  assert.match(marketplace, /group\.setAttribute\("aria-hidden", String\(!active\)\)/);
   assert.match(router, /marketplaceAreaForKey/);
   assert.match(router, /marketplaceViewForKey/);
+});
+
+test("smoke autenticado usa as quatro areas atuais do Marketplace", () => {
+  for (const area of ["products", "orders", "channels", "performance"]) {
+    assert.match(authenticatedSmoke, new RegExp(`data-marketplace-area="${area}"`));
+  }
+  assert.doesNotMatch(authenticatedSmoke, /data-marketplace-area="(?:operation|catalog)"/);
+  assert.doesNotMatch(authenticatedSmoke, /data-marketplace-area-views="catalog"/);
 });
 
 test("mantem busca e canal visiveis e recolhe filtros avancados", () => {

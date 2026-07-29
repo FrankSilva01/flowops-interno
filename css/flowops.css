@@ -8725,6 +8725,10 @@ button,
   margin: 0;
 }
 
+.marketplace-secondary-tablist {
+  display: contents;
+}
+
 .marketplace-advanced-filters {
   position: relative;
   flex: 0 0 auto;

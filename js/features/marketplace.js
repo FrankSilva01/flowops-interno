@@ -1660,7 +1660,9 @@ export function setMarketplaceView(view) {
     button.setAttribute("tabindex", active ? "0" : "-1");
   });
   document.querySelectorAll("[data-marketplace-area-views]").forEach((group) => {
-    group.hidden = group.dataset.marketplaceAreaViews !== area;
+    const active = group.dataset.marketplaceAreaViews === area;
+    group.hidden = !active;
+    group.setAttribute("aria-hidden", String(!active));
   });
   const marketplaceChannelFilters = byId("marketplaceChannelFilters");
   if (marketplaceChannelFilters) {

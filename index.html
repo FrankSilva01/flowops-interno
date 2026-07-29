@@ -1079,21 +1079,29 @@
             <button id="marketplaceAreaTabPerformance" class="view-tab" type="button" role="tab" aria-controls="marketplaceAreaViewsPerformance" aria-selected="false" tabindex="-1" data-marketplace-area="performance"><i class="ti ti-chart-line" aria-hidden="true"></i>Desempenho</button>
           </div>
           <div class="marketplace-secondary-tabs" aria-label="Visões do Marketplace">
-            <div id="marketplaceAreaViewsProducts" role="tablist" aria-labelledby="marketplaceAreaTabProducts" data-marketplace-area-views="products">
+            <div id="marketplaceAreaViewsProducts" role="tabpanel" aria-labelledby="marketplaceAreaTabProducts" aria-hidden="false" data-marketplace-area-views="products">
+              <div class="marketplace-secondary-tablist" role="tablist" aria-label="Produtos">
               <button id="marketplaceViewTabStorefront" class="view-tab active" type="button" role="tab" aria-controls="marketplaceStorefrontView" aria-selected="true" tabindex="0" data-marketplace-view="storefront">Catálogo mestre</button>
               <button id="marketplaceViewTabListings" class="view-tab" type="button" role="tab" aria-controls="marketplaceListingsView" aria-selected="false" tabindex="-1" data-marketplace-view="listings">Anúncios</button>
               <button id="marketplaceViewTabQuestions" class="view-tab" type="button" role="tab" aria-controls="marketplaceMLQuestionsView" aria-selected="false" tabindex="-1" data-marketplace-view="ml-questions">Perguntas</button>
+              </div>
             </div>
-            <div id="marketplaceAreaViewsOrders" role="tablist" aria-labelledby="marketplaceAreaTabOrders" data-marketplace-area-views="orders" hidden>
+            <div id="marketplaceAreaViewsOrders" role="tabpanel" aria-labelledby="marketplaceAreaTabOrders" aria-hidden="true" data-marketplace-area-views="orders" hidden>
+              <div class="marketplace-secondary-tablist" role="tablist" aria-label="Pedidos">
               <button id="marketplaceViewTabSales" class="view-tab" type="button" role="tab" aria-controls="marketplaceSalesView" aria-selected="false" tabindex="-1" data-marketplace-view="sales">Pedidos importados</button>
+              </div>
             </div>
-            <div id="marketplaceAreaViewsChannels" role="tablist" aria-labelledby="marketplaceAreaTabChannels" data-marketplace-area-views="channels" hidden>
+            <div id="marketplaceAreaViewsChannels" role="tabpanel" aria-labelledby="marketplaceAreaTabChannels" aria-hidden="true" data-marketplace-area-views="channels" hidden>
+              <div class="marketplace-secondary-tablist" role="tablist" aria-label="Canais">
               <button id="marketplaceViewTabIntegrations" class="view-tab" type="button" role="tab" aria-controls="marketplaceIntegrationsView" aria-selected="false" tabindex="-1" data-marketplace-view="integrations">Integrações</button>
               <button id="marketplaceViewTabApiLogs" class="view-tab" type="button" role="tab" aria-controls="marketplaceApiLogsView" aria-selected="false" tabindex="-1" data-marketplace-view="api-logs">Atividade e logs</button>
               <button id="marketplaceViewTabBackup" class="view-tab" type="button" role="tab" aria-controls="marketplaceBackupView" aria-selected="false" tabindex="-1" data-marketplace-view="backup">Diagnóstico e backup</button>
+              </div>
             </div>
-            <div id="marketplaceAreaViewsPerformance" role="tablist" aria-labelledby="marketplaceAreaTabPerformance" data-marketplace-area-views="performance" hidden>
+            <div id="marketplaceAreaViewsPerformance" role="tabpanel" aria-labelledby="marketplaceAreaTabPerformance" aria-hidden="true" data-marketplace-area-views="performance" hidden>
+              <div class="marketplace-secondary-tablist" role="tablist" aria-label="Desempenho">
               <button id="marketplaceViewTabIntelligence" class="view-tab" type="button" role="tab" aria-controls="marketplaceIntelligenceView" aria-selected="false" tabindex="-1" data-marketplace-view="intelligence">Resumo e análises</button>
+              </div>
             </div>
           </div>
 

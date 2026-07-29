@@ -10,10 +10,10 @@ const logisticsOrderId = process.env.FLOWOPS_E2E_LOGISTICS_ORDER_ID;
 async function openMarketplaceCatalog(page) {
   const marketplaceTab = page.locator('[data-view="marketplace"]');
   await marketplaceTab.click();
-  const catalogArea = page.locator('[data-marketplace-area="catalog"]');
-  await expect(catalogArea).toBeVisible();
-  await catalogArea.click();
-  await expect(page.locator('[data-marketplace-area-views="catalog"]')).toBeVisible();
+  const productsArea = page.locator('[data-marketplace-area="products"]');
+  await expect(productsArea).toBeVisible();
+  await productsArea.click();
+  await expect(page.locator('[data-marketplace-area-views="products"]')).toBeVisible();
   await expect(page.locator("#openCatalogProductDialogBtn")).toBeVisible();
 }
 
@@ -226,24 +226,29 @@ test.describe("sessao autenticada", () => {
     }
   });
 
-  test("mantem filtros de canal somente na Operacao do Marketplace", async ({ page }) => {
+  test("mantem filtros de canal somente em Produtos do Marketplace", async ({ page }) => {
     await page.goto("/#marketplace");
     await expect(page.locator("#appView")).toBeVisible();
-    const operationArea = page.locator('[data-marketplace-area="operation"]');
-    const catalogArea = page.locator('[data-marketplace-area="catalog"]');
-    test.skip(!(await operationArea.isVisible()) || !(await catalogArea.isVisible()), "Marketplace indisponivel para este perfil.");
+    const marketplaceTab = page.locator('[data-view="marketplace"]');
+    test.skip(!(await marketplaceTab.isVisible()), "Marketplace indisponivel para este perfil.");
+    const productsArea = page.locator('[data-marketplace-area="products"]');
+    const ordersArea = page.locator('[data-marketplace-area="orders"]');
+    const channelsArea = page.locator('[data-marketplace-area="channels"]');
+    const performanceArea = page.locator('[data-marketplace-area="performance"]');
 
-    await operationArea.click();
+    await productsArea.click();
     const filters = page.locator("#marketplaceChannelFilters");
     const shopee = filters.locator('[data-channel="shopee"]');
     await shopee.click();
     await expect(shopee).toHaveClass(/active/);
 
-    await catalogArea.click();
-    await expect(filters).toBeHidden();
-    expect(await filters.locator("button").evaluateAll((buttons) => buttons.every((button) => button.disabled))).toBe(true);
+    for (const area of [ordersArea, channelsArea, performanceArea]) {
+      await area.click();
+      await expect(filters).toBeHidden();
+      expect(await filters.locator("button").evaluateAll((buttons) => buttons.every((button) => button.disabled))).toBe(true);
+    }
 
-    await operationArea.click();
+    await productsArea.click();
     await expect(filters).toBeVisible();
     expect(await filters.locator("button").evaluateAll((buttons) => buttons.every((button) => !button.disabled))).toBe(true);
     await expect(shopee).toHaveClass(/active/);
