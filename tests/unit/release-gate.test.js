@@ -132,10 +132,10 @@ test("release gate executes the full local candidate, authenticated, private, RL
   assert.match(gate.output, /required evidence failed/);
 });
 
-test("Netlify publication invokes the fail-closed release gate", async () => {
+test("Netlify publication validates release readiness without private test credentials", async () => {
   const netlifyConfig = await readFile(new URL("../../netlify.toml", import.meta.url), "utf8");
 
-  assert.match(netlifyConfig, /^\[build\][\s\S]*^\s*command\s*=\s*"npm run release:gate"\s*$/m);
+  assert.match(netlifyConfig, /^\[build\][\s\S]*^\s*command\s*=\s*"npm run release:readiness"\s*$/m);
 });
 
 test("release evidence is written outside the Netlify publish root", async () => {

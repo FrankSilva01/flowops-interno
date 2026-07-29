@@ -1,5 +1,5 @@
 [build]
-  command = "npm run release:gate"
+  command = "npm run release:readiness"
   publish = "."
 
 [[headers]]
