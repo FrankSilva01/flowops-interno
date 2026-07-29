@@ -26,8 +26,8 @@ test("buildFinanceModel derives chronological cash, daily totals and receivables
   });
   assert.deepEqual(model.rows.map((row) => row.id), ["CX-1", "CX-2", "CX-3"]);
   assert.deepEqual(model.dailySeries, [
-    { date: "2026-07-01", income: 100, expense: 0, balance: 100 },
-    { date: "2026-07-03", income: 40, expense: 35, balance: 5 },
+    { date: "2026-07-01", income: 100, expense: 0, balance: 100, complete: true },
+    { date: "2026-07-03", income: 40, expense: 35, balance: 5, complete: true },
   ]);
   assert.deepEqual(model.receivables, [
     { order: orders[0], amount: 150 },
@@ -53,4 +53,44 @@ test("buildFinanceModel preserves incomplete records without inventing values", 
   assert.deepEqual(model.rows, cash);
   assert.deepEqual(model.dailySeries, []);
   assert.deepEqual(model.receivables, [{ order: orders[0], amount: null }]);
+});
+
+test("buildFinanceModel accepts numeric strings but preserves invalid monetary values as null", () => {
+  const numericStringModel = buildFinanceModel({
+    cash: [{ date: "2026-07-02", income: " 120.5 ", expense: "20.5" }],
+    orders: [{ charged: "100", received: " 25 " }],
+  });
+
+  assert.deepEqual(numericStringModel.summary, {
+    income: 120.5,
+    expense: 20.5,
+    balance: 100,
+    receivable: 75,
+  });
+
+  for (const invalid of ["   ", true, false, {}, [], Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
+    const model = buildFinanceModel({
+      cash: [{ date: "2026-07-02", income: invalid, expense: 0 }],
+      orders: [{ charged: invalid, received: 0 }],
+    });
+
+    assert.equal(model.summary.income, null);
+    assert.equal(model.summary.balance, null);
+    assert.equal(model.summary.receivable, null);
+    assert.equal(model.receivables[0].amount, null);
+  }
+});
+
+test("buildFinanceModel retains dated partial cash series without claiming an unknown side is zero", () => {
+  const model = buildFinanceModel({
+    cash: [
+      { date: "2026-07-02", income: 100, expense: null },
+      { date: "2026-07-03", income: null, expense: 25 },
+    ],
+  });
+
+  assert.deepEqual(model.dailySeries, [
+    { date: "2026-07-02", income: 100, expense: null, balance: null, complete: false },
+    { date: "2026-07-03", income: null, expense: 25, balance: null, complete: false },
+  ]);
 });

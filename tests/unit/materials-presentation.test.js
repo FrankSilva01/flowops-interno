@@ -52,3 +52,32 @@ test("buildMaterialsModel keeps incomplete business data explicit and does not f
   assert.deepEqual(model.purchases, purchases);
   assert.deepEqual(model.inventory, inventory);
 });
+
+test("buildMaterialsModel accepts numeric strings and preserves invalid numeric data as null", () => {
+  const numericStringModel = buildMaterialsModel({
+    purchases: [{ supplier: "Resinas Sul", quantity: " 2 ", unitCost: "25" }],
+    inventory: [{ quantity: "2", minimum_quantity: " 2 ", unit_cost: "25" }],
+  });
+
+  assert.deepEqual(numericStringModel.summary, {
+    purchaseTotal: 50,
+    purchaseCount: 1,
+    averageTicket: 50,
+    inventoryCount: 1,
+    lowStockCount: 1,
+    estimatedStockValue: 50,
+  });
+
+  for (const invalid of ["  ", false, {}, [], Number.NaN, Number.NEGATIVE_INFINITY]) {
+    const model = buildMaterialsModel({
+      purchases: [{ supplier: "Resinas Sul", quantity: invalid, unitCost: 25 }],
+      inventory: [{ quantity: 2, minimum_quantity: invalid, unit_cost: 25 }],
+    });
+
+    assert.equal(model.summary.purchaseTotal, null);
+    assert.equal(model.summary.averageTicket, null);
+    assert.equal(model.suppliers[0].total, null);
+    assert.equal(model.summary.lowStockCount, null);
+    assert.equal(model.summary.estimatedStockValue, 50);
+  }
+});

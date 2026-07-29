@@ -1,6 +1,7 @@
 function numberValue(value) {
-  if (value === null || value === undefined || value === "") return null;
-  const number = Number(value);
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  if (typeof value !== "string" || value.trim() === "") return null;
+  const number = Number(value.trim());
   return Number.isFinite(number) ? number : null;
 }
 

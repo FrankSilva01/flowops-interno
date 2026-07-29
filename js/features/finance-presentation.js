@@ -1,6 +1,7 @@
 function moneyValue(value) {
-  if (value === null || value === undefined || value === "") return null;
-  const number = Number(value);
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  if (typeof value !== "string" || value.trim() === "") return null;
+  const number = Number(value.trim());
   return Number.isFinite(number) ? number : null;
 }
 
@@ -20,14 +21,36 @@ function buildDailySeries(rows) {
   for (const row of rows) {
     const income = moneyValue(row?.income);
     const expense = moneyValue(row?.expense);
-    if (!validDate(row?.date) || income === null || expense === null) continue;
-    const total = grouped.get(row.date) || { date: row.date, income: 0, expense: 0, balance: 0 };
-    total.income += income;
-    total.expense += expense;
-    total.balance += income - expense;
+    if (!validDate(row?.date) || (income === null && expense === null)) continue;
+    const total = grouped.get(row.date) || {
+      date: row.date,
+      income: 0,
+      expense: 0,
+      incomeKnown: false,
+      expenseKnown: false,
+      complete: true,
+    };
+    if (income === null) total.complete = false;
+    else {
+      total.income += income;
+      total.incomeKnown = true;
+    }
+    if (expense === null) total.complete = false;
+    else {
+      total.expense += expense;
+      total.expenseKnown = true;
+    }
     grouped.set(row.date, total);
   }
-  return [...grouped.values()].sort((left, right) => left.date.localeCompare(right.date));
+  return [...grouped.values()]
+    .sort((left, right) => left.date.localeCompare(right.date))
+    .map((total) => ({
+      date: total.date,
+      income: total.incomeKnown ? total.income : null,
+      expense: total.expenseKnown ? total.expense : null,
+      balance: total.complete ? total.income - total.expense : null,
+      complete: total.complete,
+    }));
 }
 
 export function buildFinanceModel({ cash = [], orders = [] } = {}) {
