@@ -72,7 +72,7 @@ test("requires a valid caller-provided production date and uses local-date rollo
     { id: "PED-LOCAL", productionStage: "Pronto", deliveryDate: "2026-07-28" },
   ], {
     stages: ["Pronto"],
-    now: new Date("2026-07-29T02:00:00Z"),
+    now: new Date(2026, 6, 28, 23, 0, 0),
   }).columns[0].orders[0];
 
   assert.equal(item.isLate, false);

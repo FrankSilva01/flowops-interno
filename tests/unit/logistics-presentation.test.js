@@ -81,7 +81,7 @@ test("requires a valid caller-provided logistics date and uses local-date rollov
     tracking_code: "BR-LOCAL",
     estimated_delivery_date: "2026-07-28",
   }], {
-    now: new Date("2026-07-29T02:00:00Z"),
+    now: new Date(2026, 6, 28, 23, 0, 0),
   }).items[0];
 
   assert.equal(item.isLate, false);
