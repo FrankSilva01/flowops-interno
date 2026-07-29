@@ -1,5 +1,5 @@
 import { state, money } from "../core/state.js";
-import { byId, html, formatDateTime, renderOperationalSummary, showAppConfirm } from "../core/dom.js";
+import { byId, html, formatDateTime, showAppConfirm } from "../core/dom.js";
 import { bindActions, setView, render } from "../core/router.js";
 import { ensureCanEdit } from "../core/permissions.js";
 import { loadRemoteData } from "../data/remote.js";
@@ -17,14 +17,6 @@ export function renderLeads() {
     const originMatch = state.leadOriginFilter === "all" || lead.origin === state.leadOriginFilter;
     return searchMatch && statusMatch && originMatch;
   });
-  const opportunities = rows.filter((lead) => ["Novo", "Em negociação"].includes(lead.status));
-  const linkedOrders = rows.flatMap(getLeadOrders);
-  renderOperationalSummary("leadsView", "leadsPageSummary", [
-    ["Clientes", rows.filter((lead) => ["Convertido", "Cliente recorrente"].includes(lead.status)).length, "base ativa", "green"],
-    ["Leads novos", rows.filter((lead) => lead.status === "Novo").length, "aguardando contato", "blue"],
-    ["Oportunidades", opportunities.length, money.format(linkedOrders.reduce((sum, item) => sum + Number(item.charged || 0), 0)), "amber"],
-    ["Pedidos originados", linkedOrders.length, "vinculados aos contatos", "purple"],
-  ]);
   const selectedLead = rows.find((lead) => lead.id === state.selectedLeadId) || rows[0];
   const cards = rows.map((lead) => {
     const linkedOrders = getLeadOrders(lead);

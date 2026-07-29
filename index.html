@@ -96,7 +96,7 @@
       <section class="workspace flowops-next-workspace">
         <header class="topbar flowops-next-topbar">
           <div class="topbar-title">
-            <p class="eyebrow">Operação</p>
+            <p id="viewGroup" class="eyebrow">Início</p>
             <h2 id="viewTitle">Dashboard</h2>
           </div>
           <div class="topbar-search">
@@ -601,7 +601,10 @@
 
         <section id="logisticsView" class="view flowops-next-logistics">
           <section id="logisticsPageSummary" class="operational-summary-grid logistics-next-summary" aria-label="Resumo da logística"></section>
-          <section id="logisticsActionBoard" class="logistics-action-board logistics-next-attention" aria-label="Atenção na logística"></section>
+          <details class="logistics-attention-details">
+            <summary><span><strong>Atenção operacional</strong><small>Atrasos, rastreios ausentes e ocorrências</small></span><i class="ti ti-chevron-down" aria-hidden="true"></i></summary>
+            <section id="logisticsActionBoard" class="logistics-action-board logistics-next-attention" aria-label="Atenção na logística"></section>
+          </details>
           <div class="filter-bar logistics-next-controls">
             <label>
               Buscar

@@ -128,8 +128,7 @@ export function renderLogistics() {
   renderOperationalSummary("logisticsView", "logisticsPageSummary", [
     ["Aguardando envio", presentation.summary.waiting, "sem despacho ainda", "amber"],
     [LOGISTICS_STATUSES[2], presentation.summary.moving, "a caminho do cliente", "blue"],
-    ["Atrasados", presentation.summary.late, "passaram da previsao", "red"],
-    ["Com problema", presentation.summary.problem, "exigem tratamento", "red"],
+    ["Em risco", presentation.summary.late + presentation.summary.problem, "atrasos ou ocorrencias", "red"],
     ["Entregues", presentation.summary.delivered, "concluidos", "green"],
   ]);
   renderFlowOpsNextActionBoard(items);

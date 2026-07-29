@@ -709,6 +709,14 @@ export function setView(view, replace = false) {
     backup: "Backup e diagnóstico",
     approvals: "Gestão de usuários"
   }[view];
+  byId("viewGroup").textContent = {
+    dashboard: "Início",
+    leads: "Comercial", quotes: "Comercial", conversas: "Comercial", portal: "Comercial",
+    orders: "Operação", library: "Operação", production: "Operação", logistics: "Operação", calendar: "Operação",
+    cash: "Gestão", materials: "Gestão", marketplace: "Gestão", fiscal: "Gestão", reports: "Gestão",
+    subscription: "Administração", logs: "Administração", approvals: "Administração", backup: "Administração",
+    notifications: "Plataforma", support: "Plataforma", whatsnew: "Plataforma",
+  }[view] || "FlowOps";
   byId("globalSearch").hidden = ["dashboard", "reports", "approvals", "notifications", "subscription", "support", "whatsnew", "orders", "library", "quotes", "conversas", "portal"].includes(view);
   if (view === "approvals") renderActiveUsers();
   if (!byId("appView")?.hidden) render();
