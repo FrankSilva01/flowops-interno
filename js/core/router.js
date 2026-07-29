@@ -501,8 +501,16 @@ export function bindEvents() {
   document.querySelectorAll("[data-notification-filter]").forEach((button) => {
     button.addEventListener("click", () => {
       state.notificationFilter = button.dataset.notificationFilter || "all";
+      state.notificationPage = 1;
       renderNotifications();
     });
+  });
+  document.addEventListener("click", (event) => {
+    const pageButton = event.target.closest("[data-notification-page]");
+    if (!pageButton || pageButton.disabled) return;
+    state.notificationPage = Number(pageButton.dataset.notificationPage || 1);
+    renderNotifications();
+    byId("notificationsPageList")?.scrollIntoView({ block: "start" });
   });
   byId("leadSearch").addEventListener("input", (event) => {
     state.leadSearch = event.target.value.trim().toLowerCase();

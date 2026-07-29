@@ -257,6 +257,8 @@ export const state = {
   selectedLeadId: null,
   notificationFilter: "all",
   notificationLimit: 20,
+  notificationPage: 1,
+  notificationPageSize: 10,
   topProductsPeriod: "30",
   theme: ["light", "dark"].includes(localStorage.getItem("3daft-theme")) ? localStorage.getItem("3daft-theme") : "dark",
   ordersViewMode: ["cards", "table"].includes(localStorage.getItem("3daft-orders-view-mode")) ? localStorage.getItem("3daft-orders-view-mode") : "cards",

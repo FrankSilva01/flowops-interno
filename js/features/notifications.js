@@ -10,6 +10,7 @@ import { demandForecast, normalize as kbNormalize } from "../data/knowledge-base
 import { setMarketplaceView } from "./marketplace.js";
 import { checkLogisticsDelays } from "./logistics.js";
 import { generateSuggestions } from "./pricing.js";
+import { paginateItems } from "./platform-modules.js";
 
 export async function createNotification(type, title, message, relatedEntity, relatedEntityId, priority = "normal", roleTarget = "all") {
   if (!state.supabase) return;
@@ -163,7 +164,9 @@ export function renderNotifications() {
   if (openAllBtn) openAllBtn.textContent = visible.length ? `Ver todas (${visible.length})` : "Ver todas";
   const pageList = byId("notificationsPageList");
   if (pageList) {
-    pageList.innerHTML = visible.length ? groupNotifications(visible).map((group) => `
+    const pagination = paginateItems(visible, state.notificationPage, state.notificationPageSize);
+    state.notificationPage = pagination.page;
+    pageList.innerHTML = pagination.total ? groupNotifications(pagination.items).map((group) => `
       <details class="notification-group" open>
         <summary><span>${html(group.label)}</span><span class="notification-group-count">${group.items.length}</span></summary>
         <div class="notification-group-list">
@@ -179,6 +182,15 @@ export function renderNotifications() {
         </div>
       </details>
     `).join("") : `<div class="empty-chart">Nenhuma notificação para este filtro.</div>`;
+    const paginationTarget = byId("notificationsPagePagination");
+    if (paginationTarget) {
+      paginationTarget.hidden = pagination.totalPages <= 1;
+      paginationTarget.innerHTML = pagination.totalPages > 1 ? `
+        <button type="button" class="secondary-btn" data-notification-page="${pagination.page - 1}" ${pagination.page === 1 ? "disabled" : ""} aria-label="Página anterior"><i class="ti ti-chevron-left" aria-hidden="true"></i></button>
+        <span>Página ${pagination.page} de ${pagination.totalPages} · ${pagination.total} notificações</span>
+        <button type="button" class="secondary-btn" data-notification-page="${pagination.page + 1}" ${pagination.page === pagination.totalPages ? "disabled" : ""} aria-label="Próxima página"><i class="ti ti-chevron-right" aria-hidden="true"></i></button>
+      ` : "";
+    }
   }
   bindActions();
 }
