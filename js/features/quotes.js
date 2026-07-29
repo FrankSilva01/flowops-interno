@@ -32,7 +32,7 @@ export function renderQuotes() {
   const summaryEl = byId("quotesNextSummary");
   if (summaryEl) {
     const kpis = [
-      ["Em aberto", String(summary.emAberto), money(summary.emAbertoValor)],
+      ["Em aberto", String(summary.emAberto), money.format(summary.emAbertoValor)],
       ["Aguardando cliente", String(summary.aguardandoCliente), "resposta pendente"],
       ["Aprovados", `${summary.aprovadosPct}%`, "do total de orçamentos"],
     ];
@@ -55,9 +55,17 @@ export function renderQuotes() {
       <td data-label="Cliente">${html(row.client)}</td>
       <td data-label="Versão">${html(String(row.version))}</td>
       <td data-label="Validade">${html(fmtDate(row.validade))}</td>
-      <td data-label="Valor">${money(row.valor)}</td>
+      <td data-label="Valor">${money.format(row.valor)}</td>
       <td data-label="Status"><span class="quotes-next-status" data-stage="${html(row.status)}">${html(row.status)}</span></td>
     </tr>`).join("");
 
   bindActions();
+  tableBody.querySelectorAll(".quotes-next-row").forEach((row) => {
+    row.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        row.click();
+      }
+    });
+  });
 }

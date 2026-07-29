@@ -28,6 +28,9 @@ test("client-portal.js usa buildPortalPreview e o contrato público de tracking"
   assert.match(portal, /function renderClientPortal\(/);
   // reusa o link público existente, sem inventar contrato novo
   assert.match(portal, /data-action=["']copy-public-tracking["']/);
+  assert.match(portal, /Percentual pago/);
+  assert.doesNotMatch(portal, />Progresso</);
+  assert.match(portal, /money\.format\(/);
 });
 
 test("CSS portal-next concatenado sob o escopo comercial", () => {

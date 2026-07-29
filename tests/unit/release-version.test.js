@@ -10,7 +10,7 @@ test("ships the current cache with the consolidated FlowOps stylesheet once", as
   const cacheName = serviceWorker.match(/const CACHE_NAME = "([^"]+)";/)?.[1];
   const staticAssets = [...serviceWorker.matchAll(/^\s*"([^"]+)",$/gm)].map(([, asset]) => asset);
 
-  assert.equal(cacheName, "flowops-v68");
+  assert.equal(cacheName, "flowops-v67");
   assert.equal(staticAssets.filter((asset) => asset === "/css/flowops.css").length, 1);
   assert.equal(staticAssets.includes("/css/21-flowops-next-orders.css"), false);
   assert.equal(staticAssets.includes("/css/22-flowops-next-library.css"), false);

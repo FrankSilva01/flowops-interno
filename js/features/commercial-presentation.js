@@ -94,7 +94,7 @@ export function buildQuotesModel(orders = [], filters = {}) {
       client: o.client || "Sem cliente",
       version: o.quoteVersion || "—",
       validade: o.quoteValidUntil || o.dueDate || "—",
-      valor: Number(o.total || 0),
+      valor: Number(o.charged || 0),
       status: o.quoteStage,
     }));
 
@@ -103,7 +103,7 @@ export function buildQuotesModel(orders = [], filters = {}) {
   const aprovados = quotes.filter((o) => o.quoteStage === "Aprovado").length;
   const summary = {
     emAberto: abertos.length,
-    emAbertoValor: abertos.reduce((sum, o) => sum + Number(o.total || 0), 0),
+    emAbertoValor: abertos.reduce((sum, o) => sum + Number(o.charged || 0), 0),
     aguardandoCliente: quotes.filter((o) => o.quoteStage === "Aguardando cliente").length,
     aprovadosPct: quotes.length ? Math.round((aprovados / quotes.length) * 100) : 0,
     prazoMedio: null, // sem campo de data de aprovação persistido -> exibir "—"
@@ -128,13 +128,13 @@ export function buildConversationsModel(source) {
 
 export function buildPortalPreview(order) {
   if (!order) return null;
-  const total = Number(order.total || 0);
+  const total = Number(order.charged || 0);
   const recebido = Number(order.received || 0);
   return {
     titulo: order.description || order.orderCode || "Pedido",
     etapaAtual: order.productionStage || order.stage || "—",
     pagamento: { recebido, total },
-    progresso: total > 0 ? Math.min(1, recebido / total) : 0,
+    percentualPago: total > 0 ? Math.min(1, recebido / total) : 0,
     link: null, // gerado sob demanda pelo contrato de tracking.html
   };
 }

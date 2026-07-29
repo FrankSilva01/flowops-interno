@@ -16,10 +16,10 @@ const LEADS = [
   { id: "l4", name: "Studio Aurora", status: "Convertido", origin: "Manual", last_contact_at: "2026-07-24" },
 ];
 const ORDERS = [
-  { id: "o1", orderCode: "PED-0258", client: "Laura Mendes", total: 780, quoteStage: "Aprovado" },
-  { id: "o2", orderCode: "PED-0100", client: "Laura Mendes", total: 300, quoteStage: "" },
-  { id: "o3", orderCode: "ORC-0185", client: "Empresa Orion", total: 1850, quoteStage: "Orçamento enviado" },
-  { id: "o4", orderCode: "ORC-0182", client: "Ateliê Nuvem", total: 2400, quoteStage: "Aguardando cliente" },
+  { id: "o1", orderCode: "PED-0258", client: "Laura Mendes", charged: 780, quoteStage: "Aprovado" },
+  { id: "o2", orderCode: "PED-0100", client: "Laura Mendes", charged: 300, quoteStage: "" },
+  { id: "o3", orderCode: "ORC-0185", client: "Empresa Orion", charged: 1850, quoteStage: "Orçamento enviado" },
+  { id: "o4", orderCode: "ORC-0182", client: "Ateliê Nuvem", charged: 2400, quoteStage: "Aguardando cliente" },
 ];
 
 test("LEAD_STATUSES são os status reais do CRM (sem inventar colunas do protótipo)", () => {
@@ -66,6 +66,8 @@ test("buildQuotesModel usa só orders com quoteStage e formata linhas reais", ()
   assert.equal(model.rows.length, 3); // exclui o de quoteStage ""
   assert.equal(model.rows.every((r) => r.orderCode && r.status), true);
   assert.equal(model.summary.emAberto >= 2, true);
+  assert.equal(model.rows.find((row) => row.id === "o3").valor, 1850);
+  assert.equal(model.summary.emAbertoValor, 4250);
   assert.deepEqual(ORDERS, snapshot);
 });
 
@@ -76,8 +78,10 @@ test("buildConversationsModel devolve estado vazio sem dados (nunca fabrica)", (
 
 test("buildPortalPreview usa dados do pedido e fallback explícito quando ausente", () => {
   assert.equal(buildPortalPreview(null), null);
-  const p = buildPortalPreview({ orderCode: "PED-0258", client: "Laura Mendes", productionStage: "Produzindo", total: 780, received: 300, description: "Lembranças" });
+  const p = buildPortalPreview({ orderCode: "PED-0258", client: "Laura Mendes", productionStage: "Produzindo", charged: 780, received: 300, description: "Lembranças" });
   assert.equal(p.etapaAtual, "Produzindo");
   assert.equal(p.pagamento.recebido, 300);
   assert.equal(p.pagamento.total, 780);
+  assert.equal(p.percentualPago, 300 / 780);
+  assert.equal("progresso" in p, false);
 });

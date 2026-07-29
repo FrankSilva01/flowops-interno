@@ -101,6 +101,29 @@
 }
 .flowops-next-commercial .quotes-next-empty { text-align: center; color: var(--next-muted); padding: 26px 14px; }
 
+@media (max-width: 640px) {
+  .flowops-next-commercial .quotes-next-table-scroll { overflow-x: visible; }
+  .flowops-next-commercial .quotes-next-table { min-width: 0; border: 0; background: transparent; }
+  .flowops-next-commercial .quotes-next-table thead { display: none; }
+  .flowops-next-commercial .quotes-next-table,
+  .flowops-next-commercial .quotes-next-table tbody,
+  .flowops-next-commercial .quotes-next-table tr,
+  .flowops-next-commercial .quotes-next-table td { display: block; width: 100%; }
+  .flowops-next-commercial .quotes-next-row {
+    margin-bottom: 10px; padding: 8px 12px;
+    background: var(--next-surface); border: 1px solid var(--next-line); border-radius: 12px;
+  }
+  .flowops-next-commercial .quotes-next-table td {
+    display: grid; grid-template-columns: minmax(88px, .7fr) minmax(0, 1fr); gap: 10px;
+    padding: 7px 0; border-bottom: 1px solid var(--next-line);
+    overflow-wrap: anywhere;
+  }
+  .flowops-next-commercial .quotes-next-table td:last-child { border-bottom: 0; }
+  .flowops-next-commercial .quotes-next-table td::before {
+    content: attr(data-label); color: var(--next-muted); font-size: 11px; font-weight: 700;
+  }
+}
+
 /* Conversas (view conversas) — shell inbox + thread, mesmo escopo comercial. */
 .flowops-next-commercial .conversas-next-shell {
   display: grid; grid-template-columns: 300px 1fr; gap: 14px;

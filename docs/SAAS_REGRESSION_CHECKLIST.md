@@ -34,7 +34,7 @@ Antes dos testes manuais, execute `npm test` e confirme que o workflow `Quality`
 - Conversas: sem canal conectado, exibe estado vazio (nenhuma conversa fabricada).
 - Portal do cliente: selecionar encomenda mostra etapa/pagamento/progresso reais; "Copiar link" desabilita quando o rastreio publico esta off e copia o link de `tracking.html` quando ativo.
 - Agenda: layout e paineis laterais em tokens (sem cores hardcoded); navegar mes/hoje, marcar/editar/excluir evento e os contadores do Resumo/Total continuam corretos; realtime entre duas sessoes.
-- Regressao offline: apos deploy, primeiro load com rede depois offline (F5) serve o app pelo cache `flowops-v68`.
+- Regressao offline do candidato: validar o bundle sem avançar o cache `flowops-v67`; o próximo número só será definido após o gate credenciado aprovar a publicação.
 
 ## 3. Marketplace
 

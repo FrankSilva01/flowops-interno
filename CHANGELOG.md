@@ -6,7 +6,7 @@
 - Módulo Comercial migrado para o shell FlowOps Next: `Clientes e Leads` ganhou faixa de resumo e aba **Pipeline** (kanban pelos 5 status reais), e novas views **Orçamentos** (derivada de `orders` com `quoteStage`), **Conversas** (shell inbox/thread com estado vazio) e **Portal do cliente** (preview via `buildPortalPreview` + reuso do link público de `tracking.html`).
 - **Agenda** (`#calendarView`) reskinada para tokens `--next-*`, removendo estilos inline hardcoded dos painéis laterais; IDs, agregação multi-fonte (vendas/pedidos/logística/caixa) e realtime/init preservados.
 - Helpers de apresentação puros (`commercial-presentation.js`, `calendar-presentation.js`) cobrem toda a lógica; nenhuma tabela/estado paralelo introduzido — cada linha de orçamento reusa `open-order-drawer`.
-- Service worker avançado para `flowops-v68`, mantendo o único bundle `/css/flowops.css` (fontes `20`–`24` concatenados, não listados em STATIC_ASSETS).
+- Service worker mantido em `flowops-v67` enquanto o candidato não possui evidência privada completa; o bundle único `/css/flowops.css` já contém as fontes `20`–`24` sem incluí-las separadamente em STATIC_ASSETS.
 
 ### Release status
 - Candidato de release **não aprovado para publicação automática**: o gate fail-closed (`npm run release:gate`/`release:readiness`) exige prova de que os cenários autenticados e de integração passaram sem skips, e as credenciais de QA/Supabase/RLS/staging não estão disponíveis neste ambiente.

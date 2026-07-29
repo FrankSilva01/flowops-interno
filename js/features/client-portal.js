@@ -1,5 +1,5 @@
-// FlowOps Next — view Portal do cliente. Preview do que o cliente vê (etapa,
-// pagamento, progresso) via buildPortalPreview, e compartilhamento do link
+// FlowOps Next — view Portal do cliente. Preview do que o cliente vê (etapa e
+// pagamento) via buildPortalPreview, e compartilhamento do link
 // público REUSANDO o contrato existente de tracking.html (data-action=
 // copy-public-tracking, tratado no router). Não altera o contrato público.
 import { state, money } from "../core/state.js";
@@ -33,7 +33,7 @@ export function renderClientPortal() {
 
   const order = orders.find((o) => o.id === activeId);
   const model = buildPortalPreview(order);
-  const pct = Math.round((model.progresso || 0) * 100);
+  const pct = Math.round((model.percentualPago || 0) * 100);
   const hasToken = Boolean(order.public_tracking_token) && order.public_tracking_enabled !== false;
 
   preview.innerHTML = `
@@ -46,9 +46,9 @@ export function renderClientPortal() {
         <div class="portal-next-progress-bar" style="width:${pct}%"></div>
       </div>
       <dl class="portal-next-pay">
-        <div><dt>Recebido</dt><dd>${money(model.pagamento.recebido)}</dd></div>
-        <div><dt>Total</dt><dd>${money(model.pagamento.total)}</dd></div>
-        <div><dt>Progresso</dt><dd>${pct}%</dd></div>
+        <div><dt>Recebido</dt><dd>${money.format(model.pagamento.recebido)}</dd></div>
+        <div><dt>Total</dt><dd>${money.format(model.pagamento.total)}</dd></div>
+        <div><dt>Percentual pago</dt><dd>${pct}%</dd></div>
       </dl>
       <div class="portal-next-actions">
         <button class="primary-btn" type="button" data-action="copy-public-tracking" data-id="${html(order.id)}" ${hasToken ? "" : "disabled"}>Copiar link do cliente</button>

@@ -31,8 +31,15 @@ test("quotes.js deriva de orders com quoteStage e reusa o drawer de encomenda", 
   assert.match(quotes, /buildQuotesModel/);
   assert.match(quotes, /function renderQuotes\(/);
   assert.match(quotes, /data-action=["']open-order-drawer["']/);
+  assert.match(quotes, /money\.format\(/);
+  assert.doesNotMatch(quotes, /\bmoney\(/);
+  assert.match(quotes, /addEventListener\(["']keydown["']/);
+  assert.match(quotes, /event\.key === ["']Enter["']/);
+  assert.match(quotes, /event\.key === ["'] ["']/);
 });
 
 test("CSS quotes-next concatenado sob o escopo comercial", () => {
   assert.match(css, /\.flowops-next-commercial \.quotes-next-table/);
+  assert.match(css, /@media \(max-width: 640px\)[\s\S]*\.quotes-next-table[\s\S]*min-width:\s*0/);
+  assert.match(css, /\.quotes-next-table thead[\s\S]*display:\s*none/);
 });
