@@ -6,6 +6,9 @@ import { ensureCanEdit } from "../core/permissions.js";
 import { persist } from "../data/remote.js";
 import { buildFinanceModel } from "./finance-presentation.js";
 
+const CASH_PAGE_SIZE = 10;
+let cashPage = 1;
+
 function financeNumber(value) {
   if (typeof value === "number") return Number.isFinite(value) ? value : null;
   if (typeof value !== "string" || value.trim() === "") return null;
@@ -24,6 +27,29 @@ export function buildFinanceNextModel({ cash = [], orders = [] } = {}) {
     ...model,
     receivables: model.receivables.filter((item) => item.amount !== null && item.amount > 0),
   };
+}
+
+export function paginateCashRows(rows, requestedPage = 1, pageSize = CASH_PAGE_SIZE) {
+  const total = rows.length;
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
+  const page = Math.min(Math.max(1, Number(requestedPage) || 1), pageCount);
+  return { rows: rows.slice((page - 1) * pageSize, page * pageSize), page, pageCount, total };
+}
+
+function renderCashPagination(result) {
+  const target = byId("cashPagination");
+  if (!target) return;
+  target.innerHTML = result.pageCount <= 1 ? "" : `
+    <span>${result.total} lançamentos</span>
+    <div>
+      <button type="button" data-cash-page="${result.page - 1}" ${result.page <= 1 ? "disabled" : ""} aria-label="Página anterior">Anterior</button>
+      <span>Página ${result.page} de ${result.pageCount}</span>
+      <button type="button" data-cash-page="${result.page + 1}" ${result.page >= result.pageCount ? "disabled" : ""} aria-label="Próxima página">Próxima</button>
+    </div>`;
+  target.querySelectorAll("[data-cash-page]").forEach((button) => button.addEventListener("click", () => {
+    cashPage = Number(button.dataset.cashPage) || 1;
+    renderCash();
+  }));
 }
 
 function renderFinanceKpis(summary) {
@@ -85,14 +111,21 @@ export function renderCash() {
   let running = 0;
   let runningKnown = true;
   const rows = filterCash(filterRows([...model.rows], ["description", "category", "type"]));
-  renderFinanceKpis(model.summary);
-  renderDailySeries(model.dailySeries);
-  renderReceivables(model.receivables);
-  byId("cashTable").innerHTML = rows.map((entry) => {
+  const rowsWithBalance = rows.map((entry) => {
     const income = financeNumber(entry.income);
     const expense = financeNumber(entry.expense);
     if (income === null || expense === null) runningKnown = false;
     if (runningKnown) running = roundMoney(running + income - expense);
+    return { ...entry, runningBalance: runningKnown ? running : null };
+  });
+  const page = paginateCashRows(rowsWithBalance, cashPage);
+  cashPage = page.page;
+  renderFinanceKpis(model.summary);
+  renderDailySeries(model.dailySeries);
+  renderReceivables(model.receivables);
+  byId("cashTable").innerHTML = page.rows.map((entry) => {
+    const income = financeNumber(entry.income);
+    const expense = financeNumber(entry.expense);
     return `
       <tr>
         <td data-label="Data">${html(formatDate(entry.date) || "Não informado")}</td>
@@ -101,7 +134,7 @@ export function renderCash() {
         <td data-label="Descrição"><strong>${html(entry.description || "Não informado")}</strong><small>${html(entry.method || "")}</small></td>
         <td class="money-in" data-label="Entrada">${html(formatFinanceAmount(income))}</td>
         <td class="money-out" data-label="Saída">${html(formatFinanceAmount(expense))}</td>
-        <td data-label="Saldo">${html(runningKnown ? formatFinanceAmount(running) : "Não informado")}</td>
+        <td data-label="Saldo">${html(formatFinanceAmount(entry.runningBalance))}</td>
         <td data-label="Ações">
           ${state.canEdit ? `<button class="icon-btn" type="button" data-action="edit-cash" data-id="${entry.id}">Editar</button>
           <button class="icon-btn danger" type="button" data-action="delete-cash" data-id="${entry.id}">Excluir</button>` : "-"}
@@ -109,6 +142,7 @@ export function renderCash() {
       </tr>
     `;
   }).join("");
+  renderCashPagination(page);
   bindActions();
 }
 
@@ -183,10 +217,25 @@ export function setFinanceTab(tab) {
     const active = button.dataset.financeTab === activeTab;
     button.classList.toggle("active", active);
     button.setAttribute("aria-selected", String(active));
+    button.tabIndex = active ? 0 : -1;
   });
   ["overview", "ledger", "receivables"].forEach((name) => {
     byId(`finance${name[0].toUpperCase()}${name.slice(1)}Pane`).hidden = name !== activeTab;
   });
+}
+
+export function handleFinanceTabKeydown(event) {
+  if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+  const tabs = [...document.querySelectorAll("[data-finance-tab]")];
+  if (!tabs.length) return;
+  event.preventDefault();
+  const current = Math.max(0, tabs.indexOf(event.currentTarget));
+  const nextIndex = event.key === "Home" ? 0
+    : event.key === "End" ? tabs.length - 1
+      : (current + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+  const next = tabs[nextIndex];
+  setFinanceTab(next.dataset.financeTab);
+  next.focus();
 }
 
 export function revealCashForm() {

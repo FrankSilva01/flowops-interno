@@ -719,17 +719,17 @@
           </header>
           <section id="financeKpis" class="finance-next-kpis" aria-label="Resumo financeiro"></section>
           <div class="finance-next-tabs" role="tablist" aria-label="Financeiro">
-            <button class="active" type="button" role="tab" aria-selected="true" aria-controls="financeOverviewPane" data-finance-tab="overview">Visão geral</button>
-            <button type="button" role="tab" aria-selected="false" aria-controls="financeLedgerPane" data-finance-tab="ledger">Lançamentos</button>
-            <button type="button" role="tab" aria-selected="false" aria-controls="financeReceivablesPane" data-finance-tab="receivables">A receber</button>
+            <button id="financeOverviewTab" class="active" type="button" role="tab" aria-selected="true" aria-controls="financeOverviewPane" data-finance-tab="overview">Visão geral</button>
+            <button id="financeLedgerTab" type="button" role="tab" aria-selected="false" aria-controls="financeLedgerPane" data-finance-tab="ledger" tabindex="-1">Lançamentos</button>
+            <button id="financeReceivablesTab" type="button" role="tab" aria-selected="false" aria-controls="financeReceivablesPane" data-finance-tab="receivables" tabindex="-1">A receber</button>
           </div>
-          <section id="financeOverviewPane" class="finance-next-pane" role="tabpanel">
+          <section id="financeOverviewPane" class="finance-next-pane" role="tabpanel" aria-labelledby="financeOverviewTab">
             <div class="finance-next-section-head"><h4>Entradas e saídas por dia</h4></div>
             <div id="financeDailySeries" class="finance-next-daily-series"></div>
             <div class="finance-next-section-head"><h4>Recebimentos pendentes</h4></div>
             <div id="financeOverviewReceivables" class="finance-next-receivables"></div>
           </section>
-          <section id="financeLedgerPane" class="finance-next-pane" role="tabpanel" hidden>
+          <section id="financeLedgerPane" class="finance-next-pane" role="tabpanel" aria-labelledby="financeLedgerTab" hidden>
           <div class="filter-bar">
             <label>
               Tipo
@@ -761,8 +761,9 @@
               <tbody id="cashTable"></tbody>
             </table>
           </div>
+          <nav id="cashPagination" class="finance-next-pagination" aria-label="Paginação dos lançamentos"></nav>
           </section>
-          <section id="financeReceivablesPane" class="finance-next-pane" role="tabpanel" hidden>
+          <section id="financeReceivablesPane" class="finance-next-pane" role="tabpanel" aria-labelledby="financeReceivablesTab" hidden>
             <div class="finance-next-section-head"><h4>Encomendas pendentes</h4></div>
             <div id="financeReceivablesList" class="finance-next-receivables"></div>
           </section>

@@ -77,4 +77,6 @@ export function updateEditAccess() {
   });
   byId("importBtn").hidden = !state.canEdit;
   byId("newLeadBtn").hidden = !state.canEdit;
+  const newCashEntryBtn = byId("newCashEntryBtn");
+  if (newCashEntryBtn) newCashEntryBtn.hidden = !state.canEdit;
 }
