@@ -19,7 +19,7 @@ import {
 import { renderProduction } from "../features/production.js";
 import { renderCash, saveCash, startCashEdit, cancelCashEdit, setFinanceTab, revealCashForm, handleFinanceTabKeydown } from "../features/cash.js";
 import {
-  setMaterialsTab, clearMaterialFilters, clearInventoryFilters, saveMaterial, cancelMaterialEdit,
+  setMaterialsTab, bindMaterialsTabs, clearMaterialFilters, clearInventoryFilters, saveMaterial, cancelMaterialEdit,
   saveInventoryItem, renderMaterials, renderInventory, resetInventoryForm, materialCashId,
   startInventoryEdit, startMaterialEdit,
 } from "../features/materials.js";
@@ -338,8 +338,18 @@ export function bindEvents() {
   document.querySelectorAll("[data-quick-action]").forEach((button) => {
     button.addEventListener("click", () => openQuickAction(button.dataset.quickAction));
   });
-  document.querySelectorAll("[data-materials-tab]").forEach((button) => {
-    button.addEventListener("click", () => setMaterialsTab(button.dataset.materialsTab));
+  bindMaterialsTabs();
+  byId("newMaterialPurchaseBtn").addEventListener("click", () => {
+    if (!ensureCanEdit()) return;
+    setMaterialsTab("purchases");
+    byId("materialForm").scrollIntoView({ behavior: "smooth", block: "center" });
+    byId("materialForm").elements.supplier.focus();
+  });
+  byId("newInventoryItemBtn").addEventListener("click", () => {
+    if (!ensureCanEdit()) return;
+    setMaterialsTab("inventory");
+    byId("inventoryForm").scrollIntoView({ behavior: "smooth", block: "center" });
+    byId("inventoryForm").elements.name.focus();
   });
   bindTextFilter("materialSearchFilter", "materialSearch", renderMaterials);
   bindTextFilter("materialSupplierFilter", "materialSupplier", renderMaterials);

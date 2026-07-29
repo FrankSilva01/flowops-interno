@@ -769,12 +769,21 @@
           </section>
         </section>
 
-        <section id="materialsView" class="view">
-          <div class="materials-tabs" role="tablist" aria-label="Materiais">
-            <button class="active" type="button" data-materials-tab="purchases">Compras e financeiro</button>
-            <button type="button" data-materials-tab="inventory">Estoque e insumos</button>
+        <section id="materialsView" class="view flowops-next-materials">
+          <header class="materials-next-header">
+            <div><p class="eyebrow">Materiais</p><h3>Estoque e compras</h3><span>Controle insumos, reposição e compras sem perder a integração com o caixa.</span></div>
+            <div class="materials-next-actions">
+              <button id="newInventoryItemBtn" class="primary-btn" type="button">Novo insumo</button>
+              <button id="newMaterialPurchaseBtn" class="secondary-btn" type="button">Nova compra</button>
+            </div>
+          </header>
+          <div id="materialsNextKpis" class="materials-next-kpis" aria-label="Indicadores de materiais"></div>
+          <div class="materials-tabs" role="tablist" aria-label="Materiais e estoque">
+            <button id="materialsInventoryTab" class="active" type="button" role="tab" aria-selected="true" aria-controls="materialsInventoryPane" tabindex="0" data-materials-tab="inventory">Estoque</button>
+            <button id="materialsPurchasesTab" type="button" role="tab" aria-selected="false" aria-controls="materialsPurchasesPane" tabindex="-1" data-materials-tab="purchases">Compras</button>
+            <button id="materialsSuppliersTab" type="button" role="tab" aria-selected="false" aria-controls="materialsSuppliersPane" tabindex="-1" data-materials-tab="suppliers">Fornecedores</button>
           </div>
-          <div id="materialsPurchasesPane" class="materials-pane active">
+          <div id="materialsPurchasesPane" class="materials-pane" role="tabpanel" aria-labelledby="materialsPurchasesTab" hidden>
           <div class="section-heading">
             <div><p class="eyebrow">Financeiro</p><h3>Compras de materiais</h3></div>
             <span>As compras continuam gerando saída automática no fluxo de caixa.</span>
@@ -819,7 +828,7 @@
             <button id="materialSubmitBtn" class="primary-btn" type="submit">Salvar material</button>
             <button id="cancelMaterialEditBtn" class="secondary-btn" type="button" hidden>Cancelar edição</button>
           </form>
-          <div class="table-wrap">
+          <div class="table-wrap materials-next-table-scroll">
             <table>
               <thead>
                 <tr>
@@ -831,7 +840,7 @@
           </div>
           </div>
 
-          <div id="materialsInventoryPane" class="materials-pane">
+          <div id="materialsInventoryPane" class="materials-pane active" role="tabpanel" aria-labelledby="materialsInventoryTab">
           <div class="panel inventory-panel">
             <div class="panel-head">
               <div><h3>Estoque e insumos</h3><span>Controle quantidades e defina o ponto de reposição de cada item.</span></div>
@@ -856,7 +865,7 @@
               <label>Fornecedor<input id="inventorySupplierFilter" type="search" placeholder="Todos" /></label>
               <button id="clearInventoryFiltersBtn" class="secondary-btn" type="button">Limpar filtros</button>
             </div>
-            <div class="table-wrap">
+            <div class="table-wrap materials-next-table-scroll">
               <table>
                 <thead>
                   <tr><th>Item</th><th>Categoria</th><th>Quantidade</th><th>Mínimo</th><th>Custo estimado</th><th>Status</th><th></th></tr>
@@ -865,6 +874,12 @@
               </table>
             </div>
           </div>
+          </div>
+          <div id="materialsSuppliersPane" class="materials-pane" role="tabpanel" aria-labelledby="materialsSuppliersTab" hidden>
+            <div class="panel">
+              <div class="panel-head"><div><h3>Fornecedores</h3><span>Resumo calculado exclusivamente a partir das compras registradas.</span></div></div>
+              <div id="materialsSuppliersList" class="materials-next-suppliers"></div>
+            </div>
           </div>
         </section>
 

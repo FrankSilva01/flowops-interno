@@ -1,16 +1,77 @@
 import { state, money, saveData } from "../core/state.js";
-import { byId, html, formatDate, countBy, nextId, number, filterRows, showAppMessage, renderOperationalSummary } from "../core/dom.js";
+import { byId, html, formatDate, nextId, number, filterRows, showAppMessage } from "../core/dom.js";
 import { bindActions, render } from "../core/router.js";
 import { ensureCanEdit } from "../core/permissions.js";
 import { persist } from "../data/remote.js";
 import { ensureOperationalNotifications } from "./notifications.js";
+import { buildMaterialsModel } from "./materials-presentation.js";
+
+const MATERIALS_TABS = ["inventory", "purchases", "suppliers"];
 
 export function setMaterialsTab(tab) {
+  const selected = MATERIALS_TABS.includes(tab) ? tab : "inventory";
   document.querySelectorAll("[data-materials-tab]").forEach((button) => {
-    button.classList.toggle("active", button.dataset.materialsTab === tab);
+    const active = button.dataset.materialsTab === selected;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-selected", String(active));
+    button.tabIndex = active ? 0 : -1;
   });
-  byId("materialsPurchasesPane").classList.toggle("active", tab === "purchases");
-  byId("materialsInventoryPane").classList.toggle("active", tab === "inventory");
+  for (const name of MATERIALS_TABS) {
+    const pane = byId(`materials${name[0].toUpperCase()}${name.slice(1)}Pane`);
+    const active = name === selected;
+    pane.classList.toggle("active", active);
+    pane.hidden = !active;
+  }
+}
+
+export function bindMaterialsTabs() {
+  const tabs = [...document.querySelectorAll("[data-materials-tab]")];
+  for (const button of tabs) {
+    button.addEventListener("click", () => setMaterialsTab(button.dataset.materialsTab));
+    button.addEventListener("keydown", (event) => {
+      const current = tabs.indexOf(button);
+      let next = current;
+      if (event.key === "ArrowRight") next = (current + 1) % tabs.length;
+      else if (event.key === "ArrowLeft") next = (current - 1 + tabs.length) % tabs.length;
+      else if (event.key === "Home") next = 0;
+      else if (event.key === "End") next = tabs.length - 1;
+      else return;
+      event.preventDefault();
+      setMaterialsTab(tabs[next].dataset.materialsTab);
+      tabs[next].focus();
+    });
+  }
+}
+
+export function formatMaterialsAmount(value) {
+  return typeof value === "number" && Number.isFinite(value) ? money.format(value) : "Não informado";
+}
+
+export function buildMaterialsNextModel({ purchases = state.data.materials, inventory = state.inventoryItems } = {}) {
+  return buildMaterialsModel({ purchases, inventory });
+}
+
+function renderMaterialsChrome() {
+  const model = buildMaterialsNextModel();
+  const low = model.summary.lowStockCount;
+  const healthy = low === null ? null : model.summary.inventoryCount - low;
+  const kpis = [
+    ["Itens em estoque", model.summary.inventoryCount, "insumos cadastrados", "teal"],
+    ["Estoque saudável", healthy ?? "Não informado", "acima do mínimo", "green"],
+    ["Atenção", low ?? "Não informado", "no mínimo ou abaixo", "amber"],
+    ["Valor estimado", formatMaterialsAmount(model.summary.estimatedStockValue), "quantidade × custo informado", "blue"],
+  ];
+  byId("materialsNextKpis").innerHTML = kpis.map(([label, value, detail, tone]) => `
+    <article class="materials-next-kpi ${tone}"><span>${html(label)}</span><strong>${html(value)}</strong><small>${html(detail)}</small></article>
+  `).join("");
+  byId("newMaterialPurchaseBtn").hidden = !state.canEdit;
+  byId("newInventoryItemBtn").hidden = !state.canEdit;
+  byId("materialsSuppliersList").innerHTML = model.suppliers.length ? model.suppliers.map((supplier) => `
+    <article class="materials-next-supplier">
+      <div><strong>${html(supplier.supplier)}</strong><small>${supplier.purchaseCount} compra${supplier.purchaseCount === 1 ? "" : "s"}</small></div>
+      <span>${formatMaterialsAmount(supplier.total)}</span>
+    </article>
+  `).join("") : `<div class="empty-state"><strong>Nenhum fornecedor encontrado</strong><span>Registre uma compra para formar este resumo.</span></div>`;
 }
 
 export function clearMaterialFilters() {
@@ -41,27 +102,18 @@ export function clearInventoryFilters() {
 
 export function renderMaterials() {
   const rows = sortMaterials(filterMaterials(filterRows(state.data.materials, ["supplier", "type", "spec"])));
-  const total = rows.reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.unitCost || 0), 0);
-  const suppliers = countBy(rows, (item) => item.supplier || "Não informado");
-  const topSupplier = Object.entries(suppliers).sort((a, b) => b[1] - a[1])[0]?.[0] || "-";
-  renderOperationalSummary("materialsView", "materialsPageSummary", [
-    ["Gastos no período", money.format(total), "compras registradas", "teal"],
-    ["Compras realizadas", rows.length, "itens cadastrados", "blue"],
-    ["Ticket médio", money.format(rows.length ? total / rows.length : 0), "por compra", "purple"],
-    ["Fornecedor principal", topSupplier, "maior frequência", "amber"],
-    ["Previsão de gastos", money.format(total), "baseada no histórico", "teal"],
-  ]);
+  renderMaterialsChrome();
   byId("materialsTable").innerHTML = rows.map((item) => {
     const total = Number(item.quantity || 0) * Number(item.unitCost || 0);
     return `
       <tr>
-        <td>${formatDate(item.date)}</td>
-        <td>${html(item.supplier)}</td>
-        <td>${html(item.type)}</td>
-        <td>${html(item.spec || "-")}</td>
-        <td>${Number(item.quantity || 0).toLocaleString("pt-BR")}</td>
-        <td>${money.format(total)}</td>
-        <td>
+        <td data-label="Data">${formatDate(item.date)}</td>
+        <td data-label="Fornecedor">${html(item.supplier)}</td>
+        <td data-label="Material">${html(item.type)}</td>
+        <td data-label="Especificação">${html(item.spec || "-")}</td>
+        <td data-label="Quantidade">${Number(item.quantity || 0).toLocaleString("pt-BR")}</td>
+        <td data-label="Total">${money.format(total)}</td>
+        <td data-label="Ações">
           ${state.canEdit ? `<button class="icon-btn" type="button" data-action="edit-material" data-id="${item.id}">Editar</button>
           <button class="icon-btn danger" type="button" data-action="delete-material" data-id="${item.id}">Excluir</button>` : "-"}
         </td>
@@ -74,6 +126,7 @@ export function renderMaterials() {
 export function renderInventory() {
   const table = byId("inventoryTable");
   if (!table) return;
+  renderMaterialsChrome();
   const rows = state.inventoryItems.filter((item) => {
     const text = `${item.name || ""} ${item.category || ""} ${item.supplier || ""} ${item.notes || ""}`.toLowerCase();
     const isLow = Number(item.quantity || 0) <= Number(item.minimum_quantity || 0);
@@ -100,13 +153,13 @@ export function renderInventory() {
     const estimated = Number(item.quantity || 0) * Number(item.unit_cost || 0);
     return `
       <tr class="${isLow ? "low-stock-row" : ""}">
-        <td><strong>${html(item.name)}</strong><small>${html(item.supplier || item.notes || "")}</small></td>
-        <td>${html(item.category || "Insumo")}</td>
-        <td>${formatInventoryNumber(item.quantity)} ${html(item.unit || "un.")}</td>
-        <td>${formatInventoryNumber(item.minimum_quantity)} ${html(item.unit || "un.")}</td>
-        <td>${money.format(estimated)}</td>
-        <td><span class="badge ${isLow ? "danger-badge" : "done"}">${isLow ? "Estoque baixo" : "Normal"}</span></td>
-        <td>${state.canEdit ? `<button class="icon-btn" type="button" data-action="edit-inventory" data-id="${html(item.id)}">Editar</button>
+        <td data-label="Item"><strong>${html(item.name)}</strong><small>${html(item.supplier || item.notes || "")}</small></td>
+        <td data-label="Categoria">${html(item.category || "Insumo")}</td>
+        <td data-label="Quantidade">${formatInventoryNumber(item.quantity)} ${html(item.unit || "un.")}</td>
+        <td data-label="Mínimo">${formatInventoryNumber(item.minimum_quantity)} ${html(item.unit || "un.")}</td>
+        <td data-label="Custo estimado">${money.format(estimated)}</td>
+        <td data-label="Status"><span class="badge ${isLow ? "danger-badge" : "done"}">${isLow ? "Estoque baixo" : "Normal"}</span></td>
+        <td data-label="Ações">${state.canEdit ? `<button class="icon-btn" type="button" data-action="edit-inventory" data-id="${html(item.id)}">Editar</button>
           <button class="icon-btn danger" type="button" data-action="delete-inventory" data-id="${html(item.id)}">Excluir</button>` : "-"}</td>
       </tr>`;
   }).join("") : `<tr><td colspan="7">Nenhum insumo cadastrado.</td></tr>`;
