@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.2.2] - 2026-07-29 (FlowOps Next — Comercial e Agenda)
+
+### Changed
+- Módulo Comercial migrado para o shell FlowOps Next: `Clientes e Leads` ganhou faixa de resumo e aba **Pipeline** (kanban pelos 5 status reais), e novas views **Orçamentos** (derivada de `orders` com `quoteStage`), **Conversas** (shell inbox/thread com estado vazio) e **Portal do cliente** (preview via `buildPortalPreview` + reuso do link público de `tracking.html`).
+- **Agenda** (`#calendarView`) reskinada para tokens `--next-*`, removendo estilos inline hardcoded dos painéis laterais; IDs, agregação multi-fonte (vendas/pedidos/logística/caixa) e realtime/init preservados.
+- Helpers de apresentação puros (`commercial-presentation.js`, `calendar-presentation.js`) cobrem toda a lógica; nenhuma tabela/estado paralelo introduzido — cada linha de orçamento reusa `open-order-drawer`.
+- Service worker avançado para `flowops-v68`, mantendo o único bundle `/css/flowops.css` (fontes `20`–`24` concatenados, não listados em STATIC_ASSETS).
+
+### Release status
+- Candidato de release **não aprovado para publicação automática**: o gate fail-closed (`npm run release:gate`/`release:readiness`) exige prova de que os cenários autenticados e de integração passaram sem skips, e as credenciais de QA/Supabase/RLS/staging não estão disponíveis neste ambiente.
+- Cobertura unitária + contratos de UI passaram (suíte 235/235). Screenshots autenticados desktop/mobile das novas views, health privado, isolamento RLS e o drill de restore de staging **não foram executados** e não podem ser representados como evidência de release.
+- Nenhum deploy/push de produção foi feito a partir deste branch; a publicação depende do gate a zero skips em ambiente credenciado.
+
+### Release regression checks
+- Leads preservam `select-lead`/`edit-lead`/`open-lead-order`; salvar/converter lead segue funcionando.
+- Orçamentos derivam apenas de encomendas com `quoteStage`; abrir uma linha abre o drawer da encomenda.
+- Conversas e Portal do cliente exibem estado vazio explícito quando não há dados (nada fabricado).
+- Link público de rastreio continua íntegro (Portal reusa o contrato existente, sem alterá-lo).
+
 ## [1.2.1] - 2026-07-28 (FlowOps Next phase one release safety)
 
 ### Changed

@@ -27,6 +27,15 @@ Antes dos testes manuais, execute `npm test` e confirme que o workflow `Quality`
 - Criar lead e converter/relacionar pedido.
 - Criar material e item de estoque.
 
+## 2b. FlowOps Next — Comercial e Agenda (release 1.2.2)
+
+- Clientes e Leads: alternar abas Contatos / Pipeline / WhatsApp; no Pipeline, os leads aparecem na coluna do status real e `select-lead`/`edit-lead` continuam abrindo.
+- Orcamentos: a tabela mostra apenas encomendas com `quoteStage`; abrir uma linha abre o drawer da encomenda; busca por codigo/cliente filtra.
+- Conversas: sem canal conectado, exibe estado vazio (nenhuma conversa fabricada).
+- Portal do cliente: selecionar encomenda mostra etapa/pagamento/progresso reais; "Copiar link" desabilita quando o rastreio publico esta off e copia o link de `tracking.html` quando ativo.
+- Agenda: layout e paineis laterais em tokens (sem cores hardcoded); navegar mes/hoje, marcar/editar/excluir evento e os contadores do Resumo/Total continuam corretos; realtime entre duas sessoes.
+- Regressao offline: apos deploy, primeiro load com rede depois offline (F5) serve o app pelo cache `flowops-v68`.
+
 ## 3. Marketplace
 
 - Conectar Mercado Livre com usuario correto.
