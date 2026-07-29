@@ -107,11 +107,11 @@ test("mantem o vinculo pendente e informa quando a busca direcionada falha", asy
   assert.match(renderCatalogLinkedListing(link), /Pendente de associa/);
 });
 
-test("filtros de canal pertencem apenas a Operacao e nao alteram o Catalogo", () => {
-  assert.equal(marketplaceChannelFiltersVisible("operation"), true);
-  assert.equal(marketplaceChannelFiltersVisible("catalog"), false);
+test("filtros de canal pertencem apenas a Produtos e nao alteram outras areas", () => {
+  assert.equal(marketplaceChannelFiltersVisible("products"), true);
+  assert.equal(marketplaceChannelFiltersVisible("orders"), false);
+  assert.equal(marketplaceChannelFiltersVisible("channels"), false);
   assert.equal(marketplaceChannelFiltersVisible("performance"), false);
-  assert.equal(marketplaceChannelFiltersVisible("settings"), false);
   assert.match(marketplace, /marketplaceChannelFilters\.hidden\s*=\s*!marketplaceChannelFiltersVisible\(area\)/);
-  assert.match(router, /if \(marketplaceAreaForView\(state\.marketplaceView\) !== "operation"\) return;/);
+  assert.match(router, /if \(marketplaceAreaForView\(state\.marketplaceView\) !== "products"\) return;/);
 });

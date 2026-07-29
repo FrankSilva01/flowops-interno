@@ -1647,13 +1647,17 @@ export function marketplaceSaleStatusClass(status) {
 export function setMarketplaceView(view) {
   state.marketplaceView = ["listings", "storefront", "sales", "integrations", "intelligence", "api-logs", "backup", "ml-questions"].includes(view) ? view : "listings";
   document.querySelectorAll("[data-marketplace-view]").forEach((button) => {
-    button.classList.toggle("active", button.dataset.marketplaceView === state.marketplaceView);
+    const active = button.dataset.marketplaceView === state.marketplaceView;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-selected", String(active));
+    button.setAttribute("tabindex", active ? "0" : "-1");
   });
   const area = marketplaceAreaForView(state.marketplaceView);
   document.querySelectorAll("[data-marketplace-area]").forEach((button) => {
     const active = button.dataset.marketplaceArea === area;
     button.classList.toggle("active", active);
     button.setAttribute("aria-selected", String(active));
+    button.setAttribute("tabindex", active ? "0" : "-1");
   });
   document.querySelectorAll("[data-marketplace-area-views]").forEach((group) => {
     group.hidden = group.dataset.marketplaceAreaViews !== area;
@@ -1665,14 +1669,21 @@ export function setMarketplaceView(view) {
       button.disabled = !marketplaceChannelFiltersVisible(area);
     });
   }
-  byId("marketplaceListingsView").classList.toggle("active", state.marketplaceView === "listings");
-  byId("marketplaceStorefrontView").classList.toggle("active", state.marketplaceView === "storefront");
-  byId("marketplaceSalesView").classList.toggle("active", state.marketplaceView === "sales");
-  byId("marketplaceIntegrationsView").classList.toggle("active", state.marketplaceView === "integrations");
-  byId("marketplaceIntelligenceView").classList.toggle("active", state.marketplaceView === "intelligence");
-  byId("marketplaceApiLogsView").classList.toggle("active", state.marketplaceView === "api-logs");
-  byId("marketplaceBackupView").classList.toggle("active", state.marketplaceView === "backup");
-  byId("marketplaceMLQuestionsView").classList.toggle("active", state.marketplaceView === "ml-questions");
+  const panels = {
+    listings: "marketplaceListingsView",
+    storefront: "marketplaceStorefrontView",
+    sales: "marketplaceSalesView",
+    integrations: "marketplaceIntegrationsView",
+    intelligence: "marketplaceIntelligenceView",
+    "api-logs": "marketplaceApiLogsView",
+    backup: "marketplaceBackupView",
+    "ml-questions": "marketplaceMLQuestionsView",
+  };
+  Object.entries(panels).forEach(([panelView, panelId]) => {
+    const active = panelView === state.marketplaceView;
+    byId(panelId).classList.toggle("active", active);
+    byId(panelId).setAttribute("aria-hidden", String(!active));
+  });
 
 }
 

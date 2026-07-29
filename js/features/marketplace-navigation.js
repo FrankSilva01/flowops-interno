@@ -1,9 +1,11 @@
 export const MARKETPLACE_AREAS = Object.freeze({
-  operation: Object.freeze(["listings", "sales", "ml-questions"]),
-  catalog: Object.freeze(["storefront"]),
+  products: Object.freeze(["storefront", "listings", "ml-questions"]),
+  orders: Object.freeze(["sales"]),
+  channels: Object.freeze(["integrations", "api-logs", "backup"]),
   performance: Object.freeze(["intelligence"]),
-  settings: Object.freeze(["integrations", "api-logs", "backup"]),
 });
+
+const MARKETPLACE_AREA_IDS = Object.keys(MARKETPLACE_AREAS);
 
 export const PERFORMANCE_SECTIONS = ["profitability", "listings", "investment", "reputation"];
 
@@ -18,7 +20,7 @@ export function performanceSectionForKey(currentSection, key) {
 }
 
 export function marketplaceAreaForView(view) {
-  return Object.entries(MARKETPLACE_AREAS).find(([, views]) => views.includes(view))?.[0] || "operation";
+  return Object.entries(MARKETPLACE_AREAS).find(([, views]) => views.includes(view))?.[0] || "products";
 }
 
 export function defaultMarketplaceViewForArea(area) {
@@ -26,7 +28,25 @@ export function defaultMarketplaceViewForArea(area) {
 }
 
 export function marketplaceChannelFiltersVisible(area) {
-  return area === "operation";
+  return area === "products";
+}
+
+function itemForKey(items, currentItem, key) {
+  const currentIndex = items.indexOf(currentItem);
+  const index = currentIndex === -1 ? 0 : currentIndex;
+  if (key === "Home") return items[0];
+  if (key === "End") return items.at(-1);
+  if (key === "ArrowRight") return items[(index + 1) % items.length];
+  if (key === "ArrowLeft") return items[(index - 1 + items.length) % items.length];
+  return null;
+}
+
+export function marketplaceAreaForKey(currentArea, key) {
+  return itemForKey(MARKETPLACE_AREA_IDS, currentArea, key);
+}
+
+export function marketplaceViewForKey(currentView, key) {
+  return itemForKey(MARKETPLACE_AREAS[marketplaceAreaForView(currentView)], currentView, key);
 }
 
 export function isOperationalMarketplaceListing(listing) {

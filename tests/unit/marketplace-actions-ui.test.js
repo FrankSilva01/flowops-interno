@@ -19,7 +19,7 @@ test("operacao leva ao catalogo em vez de abrir cadastro duplicado", () => {
   assert.match(page, /data-action="marketplace-open-catalog"/);
   assert.doesNotMatch(page, /id="openProductDialogBtn"[^>]*data-action="open-product-dialog"/);
   assert.match(router, /action === "marketplace-open-catalog"/);
-  assert.match(router, /setMarketplaceArea\("catalog"\)/);
+  assert.match(router, /setMarketplaceArea\("products"\)/);
   assert.match(marketplace, /operationalMarketplaceListings\(state\.marketplaceListings\)/);
 });
 

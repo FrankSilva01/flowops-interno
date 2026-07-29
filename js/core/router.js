@@ -90,7 +90,12 @@ import {
   openListingDrawer, bindListingDrawer, closeListingDrawer,
   showCalculatorSuggestion, getSuggestionForListing, syncFeeCalculatorFull, setMarketplacePerformanceSection, moveMarketplacePerformanceSection,
 } from "../features/marketplace-analytics.js";
-import { marketplaceAreaForView, routeSelectedMarketplaceListingEdit } from "../features/marketplace-navigation.js";
+import {
+  marketplaceAreaForKey,
+  marketplaceAreaForView,
+  marketplaceViewForKey,
+  routeSelectedMarketplaceListingEdit,
+} from "../features/marketplace-navigation.js";
 import { renderReferenceLibrary } from "../features/reference-library.js";
 
 const APP_VERSION = "263";
@@ -431,6 +436,24 @@ export function bindEvents() {
     if (planButton) await requestPlanChange(planButton.dataset.requestPlan);
     const paymentButton = event.target.closest("[data-payment-action]");
     if (paymentButton) await handlePaymentAction(paymentButton.dataset.paymentAction);
+  });
+  document.addEventListener("keydown", (event) => {
+    const marketplaceAreaButton = event.target.closest("[data-marketplace-area]");
+    if (marketplaceAreaButton) {
+      const area = marketplaceAreaForKey(marketplaceAreaButton.dataset.marketplaceArea, event.key);
+      if (!area) return;
+      event.preventDefault();
+      setMarketplaceArea(area);
+      document.querySelector(`[data-marketplace-area="${area}"]`)?.focus();
+      return;
+    }
+    const marketplaceViewButton = event.target.closest("[data-marketplace-view]");
+    if (!marketplaceViewButton) return;
+    const view = marketplaceViewForKey(marketplaceViewButton.dataset.marketplaceView, event.key);
+    if (!view) return;
+    event.preventDefault();
+    setMarketplaceView(view);
+    document.querySelector(`[data-marketplace-view="${view}"]`)?.focus();
   });
   byId("passwordResetForm").addEventListener("submit", saveRecoveredPassword);
   byId("downgradeForm").addEventListener("submit", submitScheduledDowngrade);
@@ -866,7 +889,7 @@ export function bindActions() {
         return;
       }
       if (action === "marketplace-open-catalog") {
-        setMarketplaceArea("catalog");
+        setMarketplaceArea("products");
         return;
       }
       if (action === "edit-product") {
@@ -1094,7 +1117,7 @@ export function bindActions() {
         return;
       }
       if (action === "marketplace-channel-filter") {
-        if (marketplaceAreaForView(state.marketplaceView) !== "operation") return;
+        if (marketplaceAreaForView(state.marketplaceView) !== "products") return;
         state.marketplaceChannelFilter = button.dataset.channel || "all";
         state.marketplaceListingsPage = 1;
         renderMarketplaces();

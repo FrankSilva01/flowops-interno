@@ -1073,27 +1073,27 @@
 
         <section id="marketplaceView" class="view">
           <div class="view-tabs marketplace-area-tabs" role="tablist" aria-label="Áreas do Marketplace">
-            <button class="view-tab active" type="button" data-marketplace-area="operation"><i class="ti ti-building-store" aria-hidden="true"></i>Operação</button>
-            <button class="view-tab" type="button" data-marketplace-area="catalog"><i class="ti ti-packages" aria-hidden="true"></i>Catálogo</button>
-            <button class="view-tab" type="button" data-marketplace-area="performance"><i class="ti ti-chart-line" aria-hidden="true"></i>Performance</button>
-            <button class="view-tab" type="button" data-marketplace-area="settings"><i class="ti ti-settings" aria-hidden="true"></i>Configurações</button>
+            <button id="marketplaceAreaTabProducts" class="view-tab active" type="button" role="tab" aria-controls="marketplaceAreaViewsProducts" aria-selected="true" tabindex="0" data-marketplace-area="products"><i class="ti ti-packages" aria-hidden="true"></i>Produtos</button>
+            <button id="marketplaceAreaTabOrders" class="view-tab" type="button" role="tab" aria-controls="marketplaceAreaViewsOrders" aria-selected="false" tabindex="-1" data-marketplace-area="orders"><i class="ti ti-receipt" aria-hidden="true"></i>Pedidos</button>
+            <button id="marketplaceAreaTabChannels" class="view-tab" type="button" role="tab" aria-controls="marketplaceAreaViewsChannels" aria-selected="false" tabindex="-1" data-marketplace-area="channels"><i class="ti ti-plug-connected" aria-hidden="true"></i>Canais</button>
+            <button id="marketplaceAreaTabPerformance" class="view-tab" type="button" role="tab" aria-controls="marketplaceAreaViewsPerformance" aria-selected="false" tabindex="-1" data-marketplace-area="performance"><i class="ti ti-chart-line" aria-hidden="true"></i>Desempenho</button>
           </div>
           <div class="marketplace-secondary-tabs" aria-label="Visões do Marketplace">
-            <div data-marketplace-area-views="operation">
-              <button class="view-tab active" type="button" data-marketplace-view="listings">Anúncios</button>
-              <button class="view-tab" type="button" data-marketplace-view="sales">Vendas</button>
-              <button class="view-tab" type="button" data-marketplace-view="ml-questions">Perguntas</button>
+            <div id="marketplaceAreaViewsProducts" role="tablist" aria-labelledby="marketplaceAreaTabProducts" data-marketplace-area-views="products">
+              <button id="marketplaceViewTabStorefront" class="view-tab active" type="button" role="tab" aria-controls="marketplaceStorefrontView" aria-selected="true" tabindex="0" data-marketplace-view="storefront">Catálogo mestre</button>
+              <button id="marketplaceViewTabListings" class="view-tab" type="button" role="tab" aria-controls="marketplaceListingsView" aria-selected="false" tabindex="-1" data-marketplace-view="listings">Anúncios</button>
+              <button id="marketplaceViewTabQuestions" class="view-tab" type="button" role="tab" aria-controls="marketplaceMLQuestionsView" aria-selected="false" tabindex="-1" data-marketplace-view="ml-questions">Perguntas</button>
             </div>
-            <div data-marketplace-area-views="catalog" hidden>
-              <button class="view-tab" type="button" data-marketplace-view="storefront">Produtos e vitrine</button>
+            <div id="marketplaceAreaViewsOrders" role="tablist" aria-labelledby="marketplaceAreaTabOrders" data-marketplace-area-views="orders" hidden>
+              <button id="marketplaceViewTabSales" class="view-tab" type="button" role="tab" aria-controls="marketplaceSalesView" aria-selected="false" tabindex="-1" data-marketplace-view="sales">Pedidos importados</button>
             </div>
-            <div data-marketplace-area-views="performance" hidden>
-              <button class="view-tab" type="button" data-marketplace-view="intelligence">Diagnóstico</button>
+            <div id="marketplaceAreaViewsChannels" role="tablist" aria-labelledby="marketplaceAreaTabChannels" data-marketplace-area-views="channels" hidden>
+              <button id="marketplaceViewTabIntegrations" class="view-tab" type="button" role="tab" aria-controls="marketplaceIntegrationsView" aria-selected="false" tabindex="-1" data-marketplace-view="integrations">Integrações</button>
+              <button id="marketplaceViewTabApiLogs" class="view-tab" type="button" role="tab" aria-controls="marketplaceApiLogsView" aria-selected="false" tabindex="-1" data-marketplace-view="api-logs">Atividade e logs</button>
+              <button id="marketplaceViewTabBackup" class="view-tab" type="button" role="tab" aria-controls="marketplaceBackupView" aria-selected="false" tabindex="-1" data-marketplace-view="backup">Diagnóstico e backup</button>
             </div>
-            <div data-marketplace-area-views="settings" hidden>
-              <button class="view-tab" type="button" data-marketplace-view="integrations">Integrações</button>
-              <button class="view-tab" type="button" data-marketplace-view="api-logs">Logs</button>
-              <button class="view-tab" type="button" data-marketplace-view="backup">Backup</button>
+            <div id="marketplaceAreaViewsPerformance" role="tablist" aria-labelledby="marketplaceAreaTabPerformance" data-marketplace-area-views="performance" hidden>
+              <button id="marketplaceViewTabIntelligence" class="view-tab" type="button" role="tab" aria-controls="marketplaceIntelligenceView" aria-selected="false" tabindex="-1" data-marketplace-view="intelligence">Resumo e análises</button>
             </div>
           </div>
 
@@ -1106,7 +1106,7 @@
             <button class="filter-chip" type="button" data-action="marketplace-channel-filter" data-channel="tiktok-shop">TikTok Shop</button>
           </div>
 
-          <div id="marketplaceListingsView" class="marketplace-subview active">
+          <div id="marketplaceListingsView" class="marketplace-subview" role="tabpanel" aria-labelledby="marketplaceViewTabListings">
             <div class="panel-head">
               <h3>Anúncios sincronizados</h3>
               <div class="inline-actions">
@@ -1132,7 +1132,9 @@
             <div id="marketplaceStatus" class="marketplace-status"></div>
             <div class="marketplace-listing-toolbar">
               <input id="marketplaceListingSearchInput" type="search" placeholder="Buscar anúncio..." aria-label="Buscar anúncio" />
-              <div class="listing-quick-filters">
+              <details id="marketplaceAdvancedFilters" class="marketplace-advanced-filters">
+                <summary class="secondary-btn"><i class="ti ti-adjustments" aria-hidden="true"></i> Filtros avançados</summary>
+                <div class="listing-quick-filters">
                 <label><input type="checkbox" data-listing-filter="noSales" /> Sem vendas</label>
                 <label><input type="checkbox" data-listing-filter="visits100" /> Mais de 100 visitas</label>
                 <label><input type="checkbox" data-listing-filter="questions3" /> Mais de 3 perguntas</label>
@@ -1140,13 +1142,14 @@
                 <label><input type="checkbox" data-listing-filter="marginUnder20" /> Margem &lt; 20%</label>
                 <label><input type="checkbox" data-listing-filter="intentHigh" /> Alta intenção (60+)</label>
                 <label><input type="checkbox" data-listing-filter="intentVeryHigh" /> Muito alta intenção (80+)</label>
-              </div>
+                </div>
+              </details>
             </div>
             <div id="marketplaceListingsGrid" class="marketplace-listings-grid"></div>
             <nav id="marketplaceListingsPagination" class="marketplace-pagination" aria-label="Paginação dos anúncios"></nav>
           </div>
 
-          <div id="marketplaceStorefrontView" class="marketplace-subview">
+          <div id="marketplaceStorefrontView" class="marketplace-subview active" role="tabpanel" aria-labelledby="marketplaceViewTabStorefront">
             <div class="panel-head">
               <div>
                 <h3>Produtos cadastrados</h3>
@@ -1325,7 +1328,7 @@
             </div>
           </div>
 
-          <div id="marketplaceSalesView" class="marketplace-subview">
+          <div id="marketplaceSalesView" class="marketplace-subview" role="tabpanel" aria-labelledby="marketplaceViewTabSales">
             <div class="panel-head">
               <h3>Vendas dos marketplaces</h3>
               <div class="inline-actions">
@@ -1337,7 +1340,7 @@
             <div id="marketplaceSalesGrid" class="marketplace-sales-grid"></div>
           </div>
 
-          <div id="marketplaceIntegrationsView" class="marketplace-subview">
+          <div id="marketplaceIntegrationsView" class="marketplace-subview" role="tabpanel" aria-labelledby="marketplaceViewTabIntegrations">
             <div class="integration-summary-grid">
               <article><span>Última sincronização</span><strong id="integrationLastSync">-</strong></article>
               <article><span>Anúncios sincronizados</span><strong id="integrationListingsCount">0</strong></article>
@@ -1377,7 +1380,7 @@
             </div>
           </div>
 
-          <div id="marketplaceIntelligenceView" class="marketplace-subview">
+          <div id="marketplaceIntelligenceView" class="marketplace-subview" role="tabpanel" aria-labelledby="marketplaceViewTabIntelligence">
             <div class="marketplace-performance-head">
               <div><h3>Performance</h3><small id="analyticsSyncedAtLabel">Ainda não sincronizado</small></div>
               <div class="inline-actions">
@@ -1656,7 +1659,7 @@
             </div>
           </div>
 
-          <div id="marketplaceApiLogsView" class="marketplace-subview">
+          <div id="marketplaceApiLogsView" class="marketplace-subview" role="tabpanel" aria-labelledby="marketplaceViewTabApiLogs">
             <div class="panel-head">
               <div>
                 <h3>Logs API</h3>
@@ -1685,7 +1688,7 @@
             <button id="loadMoreMarketplaceLogsBtn" class="secondary-btn load-more-btn" type="button">Carregar mais</button>
           </div>
 
-          <div id="marketplaceMLQuestionsView" class="marketplace-subview">
+          <div id="marketplaceMLQuestionsView" class="marketplace-subview" role="tabpanel" aria-labelledby="marketplaceViewTabQuestions">
             <div class="panel-head">
               <h3>Perguntas do Mercado Livre</h3>
               <div class="inline-actions">
@@ -1694,7 +1697,7 @@
             <div id="mlQuestionsContainer"></div>
           </div>
 
-          <div id="marketplaceBackupView" class="marketplace-subview">
+          <div id="marketplaceBackupView" class="marketplace-subview" role="tabpanel" aria-labelledby="marketplaceViewTabBackup">
             <div class="panel-head">
               <div><h3>Backup</h3><small>Snapshot semanal privado com registro de execução.</small></div>
               <button id="runBackupBtn" class="secondary-btn" type="button">Executar agora</button>

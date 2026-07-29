@@ -8725,6 +8725,41 @@ button,
   margin: 0;
 }
 
+.marketplace-advanced-filters {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.marketplace-advanced-filters > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 42px;
+  list-style: none;
+}
+
+.marketplace-advanced-filters > summary::-webkit-details-marker {
+  display: none;
+}
+
+.marketplace-advanced-filters .listing-quick-filters {
+  position: absolute;
+  z-index: 12;
+  top: calc(100% + 6px);
+  right: 0;
+  width: min(560px, calc(100vw - 48px));
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+#marketplaceView .table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
 /* ==========================================================================
    Modal com Steps - Cadastro de Produto
    ========================================================================== */
@@ -12254,6 +12289,12 @@ dialog::backdrop { background: rgba(2,6,12,.66); backdrop-filter: blur(2px); }
 }
 
 @media (max-width: 640px) {
+  #marketplaceView {
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: clip;
+  }
+
   .reference-library-filters {
     grid-template-columns: 1fr;
   }

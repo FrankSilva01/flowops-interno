@@ -4,29 +4,43 @@ import {
   MARKETPLACE_AREAS,
   PERFORMANCE_SECTIONS,
   defaultMarketplaceViewForArea,
+  marketplaceAreaForKey,
   operationalMarketplaceListings,
   marketplaceAreaForView,
+  marketplaceViewForKey,
   performanceSectionForKey,
   productListingLinks,
 } from "../../js/features/marketplace-navigation.js";
 
 test("agrupa todas as visoes do Marketplace em quatro areas", () => {
-  assert.deepEqual(Object.keys(MARKETPLACE_AREAS), ["operation", "catalog", "performance", "settings"]);
-  assert.equal(marketplaceAreaForView("listings"), "operation");
-  assert.equal(marketplaceAreaForView("sales"), "operation");
-  assert.equal(marketplaceAreaForView("ml-questions"), "operation");
-  assert.equal(marketplaceAreaForView("storefront"), "catalog");
+  assert.deepEqual(Object.keys(MARKETPLACE_AREAS), ["products", "orders", "channels", "performance"]);
+  assert.equal(marketplaceAreaForView("storefront"), "products");
+  assert.equal(marketplaceAreaForView("listings"), "products");
+  assert.equal(marketplaceAreaForView("ml-questions"), "products");
+  assert.equal(marketplaceAreaForView("sales"), "orders");
+  assert.equal(marketplaceAreaForView("integrations"), "channels");
+  assert.equal(marketplaceAreaForView("api-logs"), "channels");
+  assert.equal(marketplaceAreaForView("backup"), "channels");
   assert.equal(marketplaceAreaForView("intelligence"), "performance");
-  assert.equal(marketplaceAreaForView("integrations"), "settings");
-  assert.equal(marketplaceAreaForView("api-logs"), "settings");
-  assert.equal(marketplaceAreaForView("backup"), "settings");
 });
 
 test("cada area possui uma visao inicial estavel", () => {
-  assert.equal(defaultMarketplaceViewForArea("operation"), "listings");
-  assert.equal(defaultMarketplaceViewForArea("catalog"), "storefront");
+  assert.equal(defaultMarketplaceViewForArea("products"), "storefront");
+  assert.equal(defaultMarketplaceViewForArea("orders"), "sales");
+  assert.equal(defaultMarketplaceViewForArea("channels"), "integrations");
   assert.equal(defaultMarketplaceViewForArea("performance"), "intelligence");
-  assert.equal(defaultMarketplaceViewForArea("settings"), "integrations");
+});
+
+test("navega areas e visoes com as teclas padrao", () => {
+  assert.equal(marketplaceAreaForKey("products", "ArrowRight"), "orders");
+  assert.equal(marketplaceAreaForKey("products", "ArrowLeft"), "performance");
+  assert.equal(marketplaceAreaForKey("channels", "Home"), "products");
+  assert.equal(marketplaceAreaForKey("orders", "End"), "performance");
+  assert.equal(marketplaceAreaForKey("orders", "Enter"), null);
+  assert.equal(marketplaceViewForKey("storefront", "ArrowRight"), "listings");
+  assert.equal(marketplaceViewForKey("storefront", "ArrowLeft"), "ml-questions");
+  assert.equal(marketplaceViewForKey("api-logs", "Home"), "integrations");
+  assert.equal(marketplaceViewForKey("integrations", "End"), "backup");
 });
 
 test("define secoes estaveis para os detalhes de performance", () => {
