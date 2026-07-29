@@ -1,0 +1,47 @@
+/* FlowOps Next — Agenda (view calendar). Escopo: .flowops-next-calendar.
+   Reskin do layout/painéis laterais para tokens --next-*. O grid interno do
+   calendário (#calendarWidget -> .calendar-modern) continua com seu CSS próprio;
+   aqui só o container e as informações laterais. Cores semânticas dos tipos de
+   evento (vendas/entrega/logística/financeiro) preservadas de propósito. */
+
+.flowops-next-calendar .calendar-next-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 24px;
+  width: 100%;
+  align-items: start;
+}
+.flowops-next-calendar .calendar-next-widget { overflow-y: auto; }
+.flowops-next-calendar .calendar-next-side { display: flex; flex-direction: column; gap: 16px; }
+
+.flowops-next-calendar .calendar-next-panel {
+  background: var(--next-surface);
+  border: 1px solid var(--next-line);
+  border-radius: 14px;
+  padding: 18px;
+}
+.flowops-next-calendar .calendar-next-panel--accent { border-left: 3px solid var(--next-accent); }
+.flowops-next-calendar .calendar-next-panel h3 {
+  margin: 0 0 14px;
+  color: var(--next-text);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.flowops-next-calendar .calendar-next-upcoming { display: flex; flex-direction: column; gap: 10px; font-size: 12px; }
+.flowops-next-calendar .calendar-next-muted { color: var(--next-muted); margin: 0; }
+
+.flowops-next-calendar .calendar-next-summary-list { display: flex; flex-direction: column; gap: 8px; font-size: 12.5px; }
+.flowops-next-calendar .calendar-next-summary-row { display: flex; align-items: center; justify-content: space-between; }
+.flowops-next-calendar .calendar-next-summary-row span { color: var(--next-muted); }
+.flowops-next-calendar .calendar-next-summary-row strong { font-weight: 700; color: var(--next-text); }
+.flowops-next-calendar .calendar-next-summary-row .c-sales { color: #00D084; }
+.flowops-next-calendar .calendar-next-summary-row .c-delivery { color: #4CAF50; }
+.flowops-next-calendar .calendar-next-summary-row .c-logistics { color: #ffc107; }
+.flowops-next-calendar .calendar-next-summary-row .c-cash { color: #845ef7; }
+
+.flowops-next-calendar .calendar-next-kpi-value { margin: 5px 0 0; color: var(--next-text); font-size: 24px; font-weight: 800; }
+
+@media (max-width: 900px) {
+  .flowops-next-calendar .calendar-next-layout { grid-template-columns: 1fr; }
+}
