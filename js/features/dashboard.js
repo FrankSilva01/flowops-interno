@@ -158,7 +158,7 @@ export function renderDashboard() {
   const topClient = getTopClient();
   const firstName = String(state.activeUserName || "usuário").trim().split(/\s+/)[0];
   byId("dashboardGreeting").textContent = `Olá, ${firstName}`;
-  byId("dashboardGreetingSummary").textContent = `${openOrders} pedido${openOrders === 1 ? "" : "s"} aguardando produção`;
+  byId("dashboardGreetingSummary").textContent = "Prioridades da sua operação hoje.";
 
   byId("kpiIncome").textContent = money.format(income);
   byId("kpiExpense").textContent = money.format(expense);

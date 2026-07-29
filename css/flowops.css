@@ -8729,7 +8729,11 @@ button,
 .flowops-next-notifications,
 .flowops-next-support,
 .flowops-next-whatsnew,
-.flowops-next-history { display: grid; gap: 12px; min-width: 0; }
+.flowops-next-history { gap: 12px; min-width: 0; }
+.flowops-next-notifications.active-view,
+.flowops-next-support.active-view,
+.flowops-next-whatsnew.active-view,
+.flowops-next-history.active-view { display: grid; }
 .flowops-next-notifications > .panel,
 .flowops-next-support > .panel,
 .flowops-next-whatsnew > .panel,
