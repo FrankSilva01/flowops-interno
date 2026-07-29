@@ -23,8 +23,9 @@ export function renderReportNavigation() {
   if (!secondary) return;
   secondary.innerHTML = reportsForGroup(activeGroup).map((report) => {
     const active = report.key === state.reportTab;
-    return `<button type="button" role="tab" data-report-tab="${html(report.key)}" aria-selected="${active}" tabindex="${active ? 0 : -1}" class="${active ? "active" : ""}">${html(report.label)}</button>`;
+    return `<button id="reportTab-${html(report.key)}" type="button" role="tab" data-report-tab="${html(report.key)}" aria-selected="${active}" aria-controls="reportsContent" tabindex="${active ? 0 : -1}" class="${active ? "active" : ""}">${html(report.label)}</button>`;
   }).join("");
+  byId("reportsContent")?.setAttribute("aria-labelledby", `reportTab-${state.reportTab}`);
 }
 
 export function renderReports() {
@@ -82,10 +83,10 @@ export function renderReports() {
             <button class="secondary-btn" type="button" data-report-export="pdf">Exportar PDF</button>
           </div>
         </div>
-        <table>
+        <div class="table-scroll"><table>
           <thead><tr><th>Data</th><th>Itens</th><th>Entradas</th><th>Saídas</th><th>Lucro</th><th>Pedidos</th><th>Ticket médio</th></tr></thead>
           <tbody>${tableRows.map((item) => `<tr><td>${html(formatReportGroupLabel(item.date))}</td><td>${renderReportItemsCell(item)}</td><td>${money.format(item.income)}</td><td>${money.format(item.expense)}</td><td>${money.format(item.income - item.expense)}</td><td>${item.orders}</td><td>${money.format(item.orders ? item.income / item.orders : 0)}</td></tr>`).join("") || `<tr><td colspan="7">Nenhum dado no período.</td></tr>`}</tbody>
-        </table>
+        </table></div>
       </section>
       <aside class="panel report-insights">
         <h3>Insights do período</h3>

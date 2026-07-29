@@ -41,12 +41,16 @@ test("reports navigation provides ARIA keyboard behavior", () => {
   assert.match(router, /End/);
   assert.match(navigationSource, /aria-selected/);
   assert.match(navigationSource, /tabIndex/);
+  assert.match(html, /id="reportsContent"[^>]+role="tabpanel"/);
+  assert.match(html, /data-report-group="overview"[^>]+aria-controls="reportsContent"/);
 });
 
 test("reports CSS is scoped, bundled once and prevents page-level overflow", () => {
+  assert.doesNotMatch(cssSource, /^\+/);
   assert.match(cssSource, /#reportsView\.flowops-next-reports/);
   assert.match(cssSource, /\.report-table-card\s+\.table-scroll/);
   assert.match(cssSource, /overflow-x:\s*auto/);
   assert.match(cssSource, /max-width:\s*100%/);
   assert.equal((cssBundle.match(/SOURCE: css\/27-flowops-next-reports\.css/g) || []).length, 1);
+  assert.match(reports, /report-table-card[\s\S]*table-scroll/);
 });

@@ -354,11 +354,11 @@
           <p class="view-subtitle">Análises completas do seu negócio. Gere, exporte e acompanhe dados importantes.</p>
           <div class="reports-navigation panel">
             <div class="report-group-tabs" role="tablist" aria-label="Grupos de relatórios">
-              <button class="active" type="button" role="tab" data-report-group="overview" aria-selected="true" tabindex="0">Visão geral</button>
-              <button type="button" role="tab" data-report-group="commercial" aria-selected="false" tabindex="-1">Comercial</button>
-              <button type="button" role="tab" data-report-group="operation" aria-selected="false" tabindex="-1">Operação</button>
-              <button type="button" role="tab" data-report-group="finance" aria-selected="false" tabindex="-1">Financeiro</button>
-              <button type="button" role="tab" data-report-group="stock" aria-selected="false" tabindex="-1">Estoque</button>
+              <button id="reportGroupOverview" class="active" type="button" role="tab" data-report-group="overview" aria-selected="true" aria-controls="reportsContent" tabindex="0">Visão geral</button>
+              <button id="reportGroupCommercial" type="button" role="tab" data-report-group="commercial" aria-selected="false" aria-controls="reportsContent" tabindex="-1">Comercial</button>
+              <button id="reportGroupOperation" type="button" role="tab" data-report-group="operation" aria-selected="false" aria-controls="reportsContent" tabindex="-1">Operação</button>
+              <button id="reportGroupFinance" type="button" role="tab" data-report-group="finance" aria-selected="false" aria-controls="reportsContent" tabindex="-1">Financeiro</button>
+              <button id="reportGroupStock" type="button" role="tab" data-report-group="stock" aria-selected="false" aria-controls="reportsContent" tabindex="-1">Estoque</button>
             </div>
             <div id="reportSecondaryTabs" class="report-secondary-tabs" role="tablist" aria-label="Relatórios do grupo"></div>
           </div>
@@ -383,7 +383,7 @@
               <button id="applyReportFiltersBtn" class="primary-btn" type="button">Aplicar filtros</button>
             </div>
           </section>
-          <div id="reportsContent"></div>
+          <div id="reportsContent" role="tabpanel" aria-labelledby="reportTab-overview"></div>
         </section>
 
         <section id="ordersView" class="view flowops-next-orders">
