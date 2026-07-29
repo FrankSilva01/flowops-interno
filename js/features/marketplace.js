@@ -1645,7 +1645,7 @@ export function marketplaceSaleStatusClass(status) {
 }
 
 export function setMarketplaceView(view) {
-  state.marketplaceView = ["listings", "storefront", "sales", "integrations", "intelligence", "api-logs", "backup", "ml-questions"].includes(view) ? view : "listings";
+  state.marketplaceView = ["listings", "storefront", "sales", "integrations", "intelligence", "api-logs", "ml-questions"].includes(view) ? view : "listings";
   document.querySelectorAll("[data-marketplace-view]").forEach((button) => {
     const active = button.dataset.marketplaceView === state.marketplaceView;
     button.classList.toggle("active", active);
@@ -1678,7 +1678,6 @@ export function setMarketplaceView(view) {
     integrations: "marketplaceIntegrationsView",
     intelligence: "marketplaceIntelligenceView",
     "api-logs": "marketplaceApiLogsView",
-    backup: "marketplaceBackupView",
     "ml-questions": "marketplaceMLQuestionsView",
   };
   Object.entries(panels).forEach(([panelView, panelId]) => {

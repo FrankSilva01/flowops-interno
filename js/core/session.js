@@ -339,6 +339,7 @@ export async function enterOnlineApp(user) {
   if (overlay) overlay.remove();
   byId("appView").hidden = false;
   byId("approvalsTab").hidden = !state.isAdmin;
+  byId("backupTab").hidden = !state.isAdmin;
   byId("marketplaceTab").hidden = !hasCapability("manage_marketplaces");
   setSessionInfo(
     state.activeUserName || user.email || "Usuário online",

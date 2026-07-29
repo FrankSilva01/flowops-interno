@@ -1,7 +1,7 @@
 export const MARKETPLACE_AREAS = Object.freeze({
   products: Object.freeze(["storefront", "listings", "ml-questions"]),
   orders: Object.freeze(["sales"]),
-  channels: Object.freeze(["integrations", "api-logs", "backup"]),
+  channels: Object.freeze(["integrations", "api-logs"]),
   performance: Object.freeze(["intelligence"]),
 });
 

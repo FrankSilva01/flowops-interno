@@ -20,7 +20,6 @@ test("agrupa todas as visoes do Marketplace em quatro areas", () => {
   assert.equal(marketplaceAreaForView("sales"), "orders");
   assert.equal(marketplaceAreaForView("integrations"), "channels");
   assert.equal(marketplaceAreaForView("api-logs"), "channels");
-  assert.equal(marketplaceAreaForView("backup"), "channels");
   assert.equal(marketplaceAreaForView("intelligence"), "performance");
 });
 
@@ -40,7 +39,7 @@ test("navega areas e visoes com as teclas padrao", () => {
   assert.equal(marketplaceViewForKey("storefront", "ArrowRight"), "listings");
   assert.equal(marketplaceViewForKey("storefront", "ArrowLeft"), "ml-questions");
   assert.equal(marketplaceViewForKey("api-logs", "Home"), "integrations");
-  assert.equal(marketplaceViewForKey("integrations", "End"), "backup");
+  assert.equal(marketplaceViewForKey("integrations", "End"), "api-logs");
 });
 
 test("define secoes estaveis para os detalhes de performance", () => {

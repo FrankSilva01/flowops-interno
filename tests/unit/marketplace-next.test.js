@@ -8,13 +8,16 @@ const router = readFileSync(new URL("../../js/core/router.js", import.meta.url),
 const styles = readFileSync(new URL("../../css/flowops.css", import.meta.url), "utf8");
 const authenticatedSmoke = readFileSync(new URL("../e2e/authenticated-smoke.spec.js", import.meta.url), "utf8");
 
-test("expoe quatro areas primarias e preserva as oito views existentes", () => {
+test("expoe quatro areas primarias e mantem somente recursos de marketplace", () => {
   for (const area of ["products", "orders", "channels", "performance"]) {
     assert.match(page, new RegExp(`data-marketplace-area="${area}"`));
   }
-  for (const view of ["storefront", "listings", "ml-questions", "sales", "integrations", "api-logs", "backup", "intelligence"]) {
+  for (const view of ["storefront", "listings", "ml-questions", "sales", "integrations", "api-logs", "intelligence"]) {
     assert.match(page, new RegExp(`data-marketplace-view="${view}"`));
   }
+  assert.doesNotMatch(page, /data-marketplace-view="backup"/);
+  assert.match(page, /id="backupView"[^>]*class="view/);
+  assert.match(page, /data-view="backup"[^>]*title="Backup e diagn[^\"]+"/);
 });
 
 test("associa tabs e paineis do Marketplace para leitores de tela", () => {

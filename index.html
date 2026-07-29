@@ -63,6 +63,7 @@
           <button class="tab" data-view="subscription" title="Minha Assinatura"><span class="nav-icon"><i class="ti ti-credit-card" aria-hidden="true"></i></span><span class="nav-label">Minha Assinatura</span></button>
           <button class="tab" data-view="logs" title="Histórico"><span class="nav-icon"><i class="ti ti-history" aria-hidden="true"></i></span><span class="nav-label">Histórico</span></button>
           <button id="approvalsTab" class="tab" data-view="approvals" title="Gestão de usuários" hidden><span class="nav-icon"><i class="ti ti-shield-check" aria-hidden="true"></i></span><span class="nav-label">Gestão de usuários</span></button>
+          <button id="backupTab" class="tab" data-view="backup" title="Backup e diagnóstico" hidden><span class="nav-icon"><i class="ti ti-database-export" aria-hidden="true"></i></span><span class="nav-label">Backup e diagnóstico</span></button>
 
           <span class="sidebar-group-label">Plataforma</span>
           <button id="sidebarNotificationsBtn" class="tab sidebar-notifications-btn" type="button" title="Notificações"><span class="nav-icon"><i class="ti ti-bell" aria-hidden="true"></i></span><span class="nav-label">Notificações</span><strong id="sidebarNotificationBadge" hidden>0</strong></button>
@@ -158,16 +159,21 @@
               <button class="secondary-btn" type="button" data-quick-action="material">+ Novo material</button>
             </div>
           </div>
-          <div class="dashboard-today-grid">
-            <button class="kpi" type="button" data-tone="success" data-action="view-cash" data-cash-type="Entrada"><span>Entradas</span><strong id="kpiIncome">R$ 0,00</strong></button>
-            <button class="kpi" type="button" data-tone="danger" data-action="view-cash" data-cash-type="Saída"><span>Saídas</span><strong id="kpiExpense">R$ 0,00</strong></button>
-            <button class="kpi" type="button" data-tone="info" data-action="view-cash"><span>Saldo disponível</span><strong id="kpiBalance">R$ 0,00</strong></button>
-            <button class="kpi" type="button" data-tone="purple" data-action="focus-orders" data-focus="receivable"><span>A receber</span><strong id="kpiReceivable">R$ 0,00</strong></button>
+          <div class="dashboard-today-grid dashboard-primary-grid">
             <button class="kpi" type="button" data-tone="info" data-action="view-production"><span>Em produção</span><strong id="kpiOpenOrders">0</strong></button>
+            <button class="kpi" type="button" data-tone="purple" data-action="focus-orders" data-focus="receivable"><span>A receber</span><strong id="kpiReceivable">R$ 0,00</strong></button>
             <button class="kpi" type="button" data-tone="danger" data-action="focus-orders" data-focus="late"><span>Atrasadas</span><strong id="kpiLateOrders">0</strong></button>
             <button class="kpi" type="button" data-tone="success" data-action="view-cash" data-cash-type="Entrada"><span>Recebido no mês</span><strong id="kpiMonthIncome">R$ 0,00</strong></button>
-            <button class="kpi" type="button" data-tone="success" data-action="view-orders"><span>Pedidos no mês</span><strong id="kpiMonthOrders">0</strong></button>
           </div>
+          <details class="dashboard-financial-summary">
+            <summary><span><strong>Resumo financeiro</strong><small>Entradas, saídas, saldo e volume do mês</small></span><i class="ti ti-chevron-down" aria-hidden="true"></i></summary>
+            <div class="dashboard-today-grid dashboard-financial-grid">
+              <button class="kpi" type="button" data-tone="success" data-action="view-cash" data-cash-type="Entrada"><span>Entradas</span><strong id="kpiIncome">R$ 0,00</strong></button>
+              <button class="kpi" type="button" data-tone="danger" data-action="view-cash" data-cash-type="Saída"><span>Saídas</span><strong id="kpiExpense">R$ 0,00</strong></button>
+              <button class="kpi" type="button" data-tone="info" data-action="view-cash"><span>Saldo disponível</span><strong id="kpiBalance">R$ 0,00</strong></button>
+              <button class="kpi" type="button" data-tone="success" data-action="view-orders"><span>Pedidos no mês</span><strong id="kpiMonthOrders">0</strong></button>
+            </div>
+          </details>
 
           <div class="dashboard-work-grid">
             <section class="panel dashboard-priority-panel">
@@ -1126,7 +1132,6 @@
               <div class="marketplace-secondary-tablist" role="tablist" aria-label="Canais">
               <button id="marketplaceViewTabIntegrations" class="view-tab" type="button" role="tab" aria-controls="marketplaceIntegrationsView" aria-selected="false" tabindex="-1" data-marketplace-view="integrations">Integrações</button>
               <button id="marketplaceViewTabApiLogs" class="view-tab" type="button" role="tab" aria-controls="marketplaceApiLogsView" aria-selected="false" tabindex="-1" data-marketplace-view="api-logs">Atividade e logs</button>
-              <button id="marketplaceViewTabBackup" class="view-tab" type="button" role="tab" aria-controls="marketplaceBackupView" aria-selected="false" tabindex="-1" data-marketplace-view="backup">Diagnóstico e backup</button>
               </div>
             </div>
             <div id="marketplaceAreaViewsPerformance" role="tabpanel" aria-labelledby="marketplaceAreaTabPerformance" aria-hidden="true" data-marketplace-area-views="performance" hidden>
@@ -1736,7 +1741,12 @@
             <div id="mlQuestionsContainer"></div>
           </div>
 
-          <div id="marketplaceBackupView" class="marketplace-subview" role="tabpanel" aria-labelledby="marketplaceViewTabBackup">
+        </section>
+
+        <section id="backupView" class="view flowops-next-backup">
+          <div class="backup-view-heading">
+            <div><p class="eyebrow">Plataforma</p><h3>Backup e diagnóstico</h3><small>Proteja os dados da empresa e valide uma restauração antes de aplicá-la.</small></div>
+          </div>
             <div class="panel-head">
               <div><h3>Backup</h3><small>Snapshot semanal privado com registro de execução.</small></div>
               <button id="runBackupBtn" class="secondary-btn" type="button">Executar agora</button>
@@ -1770,7 +1780,6 @@
               <div class="panel-head"><h3>Histórico de backups</h3></div>
               <div id="backupHistoryList" class="stack-list"></div>
             </div>
-          </div>
         </section>
 
         <section id="fiscalView" class="view flowops-next-fiscal">

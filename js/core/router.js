@@ -672,7 +672,7 @@ export function bindEvents() {
 }
 
 export function setView(view, replace = false) {
-  const allowed = ["dashboard", "orders", "library", "production", "logistics", "cash", "materials", "reports", "leads", "quotes", "conversas", "portal", "subscription", "calendar", "notifications", "support", "whatsnew", "logs", "fiscal", ...(hasCapability("manage_marketplaces") ? ["marketplace"] : []), ...(state.isAdmin ? ["approvals"] : [])];
+  const allowed = ["dashboard", "orders", "library", "production", "logistics", "cash", "materials", "reports", "leads", "quotes", "conversas", "portal", "subscription", "calendar", "notifications", "support", "whatsnew", "logs", "fiscal", ...(hasCapability("manage_marketplaces") ? ["marketplace"] : []), ...(state.isAdmin ? ["approvals", "backup"] : [])];
   if (!allowed.includes(view)) view = "dashboard";
   state.view = view;
   localStorage.setItem("3daft-active-view", view);
@@ -706,6 +706,7 @@ export function setView(view, replace = false) {
     marketplace: "Marketplace",
     logs: "Histórico",
     fiscal: "Fiscal e Documentos",
+    backup: "Backup e diagnóstico",
     approvals: "Gestão de usuários"
   }[view];
   byId("globalSearch").hidden = ["dashboard", "reports", "approvals", "notifications", "subscription", "support", "whatsnew", "orders", "library", "quotes", "conversas", "portal"].includes(view);
@@ -752,6 +753,9 @@ export function render() {
       break;
     case "marketplace":
       renderMarketplaces();
+      break;
+    case "backup":
+      renderSettingsData();
       break;
     case "logs":
       renderLogs();

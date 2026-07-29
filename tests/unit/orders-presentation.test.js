@@ -1,10 +1,20 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 
 globalThis.localStorage = { getItem: () => null, setItem() {}, removeItem() {} };
 globalThis.window = { location: { hash: "" }, SUPABASE_CONFIG: {} };
 
 const { buildOrderPresentation, renderOrderCard } = await import("../../js/features/orders.js");
+const stateSource = readFileSync(new URL("../../js/core/state.js", import.meta.url), "utf8");
+const ordersSource = readFileSync(new URL("../../js/features/orders.js", import.meta.url), "utf8");
+const styles = readFileSync(new URL("../../css/flowops.css", import.meta.url), "utf8");
+
+test("usa tabela como visualizacao inicial e oculta a barra em lote sem selecao", () => {
+  assert.match(stateSource, /flowops-next-orders-view-mode"\)\) \? localStorage\.getItem\("flowops-next-orders-view-mode"\) : "table"/);
+  assert.match(ordersSource, /toolbar\.hidden = !state\.canEdit \|\| selected\.length === 0/);
+  assert.match(styles, /\.orders-bulk-toolbar\[hidden\]\s*\{\s*display:\s*none/);
+});
 
 test("builds a safe display model without changing the real order", () => {
   const order = {

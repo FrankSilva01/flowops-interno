@@ -225,7 +225,7 @@ function renderOrdersBulkToolbar(rows) {
   const toolbar = byId("ordersBulkToolbar");
   if (!toolbar) return;
   const selected = state.selectedOrderIds || [];
-  toolbar.hidden = !state.canEdit;
+  toolbar.hidden = !state.canEdit || selected.length === 0;
   byId("ordersBulkCount").textContent = `${selected.length} selecionada${selected.length === 1 ? "" : "s"}`;
   byId("applyOrdersBulkBtn").disabled = selected.length === 0;
   byId("clearOrdersSelectionBtn").disabled = selected.length === 0;
@@ -348,7 +348,7 @@ function bulkFieldLabel(field) {
 
 export function setOrdersViewMode(mode) {
   state.ordersViewMode = mode === "table" ? "table" : "cards";
-  localStorage.setItem("3daft-orders-view-mode", state.ordersViewMode);
+  localStorage.setItem("flowops-next-orders-view-mode", state.ordersViewMode);
   applyOrdersViewMode();
 }
 

@@ -94,7 +94,7 @@ export function getInitialView() {
   const allowed = [
     "dashboard", "orders", "library", "production", "logistics", "cash", "materials", "reports",
     "leads", "subscription", "calendar", "notifications", "support", "whatsnew",
-    "marketplace", "logs", "fiscal", "settings", "approvals"
+    "marketplace", "logs", "fiscal", "settings", "backup", "approvals"
   ];
   const fromHash = getHashRoute();
   if (allowed.includes(fromHash)) return fromHash;
@@ -261,7 +261,7 @@ export const state = {
   notificationPageSize: 10,
   topProductsPeriod: "30",
   theme: ["light", "dark"].includes(localStorage.getItem("3daft-theme")) ? localStorage.getItem("3daft-theme") : "dark",
-  ordersViewMode: ["cards", "table"].includes(localStorage.getItem("3daft-orders-view-mode")) ? localStorage.getItem("3daft-orders-view-mode") : "cards",
+  ordersViewMode: ["cards", "table"].includes(localStorage.getItem("flowops-next-orders-view-mode")) ? localStorage.getItem("flowops-next-orders-view-mode") : "table",
   selectedOrderId: null,
   selectedOrderIds: [],
   dashboardHiddenCards: loadStringArray("3daft-dashboard-hidden"),
