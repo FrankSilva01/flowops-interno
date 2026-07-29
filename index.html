@@ -51,6 +51,7 @@
           <button class="tab" data-view="leads" title="Clientes e Leads"><span class="nav-icon"><i class="ti ti-users" aria-hidden="true"></i></span><span class="nav-label">Clientes e Leads</span></button>
           <button class="tab" data-view="quotes" title="Orçamentos"><span class="nav-icon"><i class="ti ti-file-dollar" aria-hidden="true"></i></span><span class="nav-label">Orçamentos</span></button>
           <button class="tab" data-view="conversas" title="Conversas"><span class="nav-icon"><i class="ti ti-messages" aria-hidden="true"></i></span><span class="nav-label">Conversas</span></button>
+          <button class="tab" data-view="portal" title="Portal do cliente"><span class="nav-icon"><i class="ti ti-external-link" aria-hidden="true"></i></span><span class="nav-label">Portal do cliente</span></button>
           <button class="tab" data-view="cash" title="Fluxo de caixa"><span class="nav-icon"><i class="ti ti-wallet" aria-hidden="true"></i></span><span class="nav-label">Fluxo de caixa</span></button>
           <button class="tab" data-view="materials" title="Materiais"><span class="nav-icon"><i class="ti ti-cube" aria-hidden="true"></i></span><span class="nav-label">Materiais</span></button>
           <button class="tab" data-view="reports" title="Relatórios"><span class="nav-icon"><i class="ti ti-chart-bar" aria-hidden="true"></i></span><span class="nav-label">Relatórios</span></button>
@@ -697,6 +698,17 @@
           <div class="conversas-next-shell">
             <aside class="conversas-next-inbox" id="conversasInbox" aria-label="Conversas"></aside>
             <div class="conversas-next-thread" id="conversasThread"></div>
+          </div>
+        </section>
+
+        <section id="portalView" class="view flowops-next-commercial">
+          <p class="view-subtitle">Portal do cliente — veja o que o cliente acompanha e compartilhe o link</p>
+          <div class="portal-next-shell">
+            <div class="portal-next-config">
+              <label for="portalOrderSelect">Encomenda</label>
+              <select id="portalOrderSelect" class="portal-next-select" aria-label="Selecionar encomenda"></select>
+            </div>
+            <div id="portalPreview" class="portal-next-preview"></div>
           </div>
         </section>
 

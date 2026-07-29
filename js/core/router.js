@@ -26,6 +26,7 @@ import {
 import { renderLeads, renderLeadsTab, openLeadDialog, saveLead, openOrderFromLead, openLeadFile, deleteLeadFile, selectLead } from "../features/customers.js";
 import { renderQuotes } from "../features/quotes.js";
 import { renderConversations } from "../features/conversations.js";
+import { renderClientPortal } from "../features/client-portal.js";
 import { renderReports } from "../features/reports.js";
 import { renderLogs, recordAudit, applyHistoryRange } from "../features/logs.js";
 import {
@@ -606,7 +607,7 @@ export function bindEvents() {
 }
 
 export function setView(view, replace = false) {
-  const allowed = ["dashboard", "orders", "library", "production", "logistics", "cash", "materials", "reports", "leads", "quotes", "conversas", "subscription", "calendar", "notifications", "support", "whatsnew", "logs", "fiscal", ...(hasCapability("manage_marketplaces") ? ["marketplace"] : []), ...(state.isAdmin ? ["approvals"] : [])];
+  const allowed = ["dashboard", "orders", "library", "production", "logistics", "cash", "materials", "reports", "leads", "quotes", "conversas", "portal", "subscription", "calendar", "notifications", "support", "whatsnew", "logs", "fiscal", ...(hasCapability("manage_marketplaces") ? ["marketplace"] : []), ...(state.isAdmin ? ["approvals"] : [])];
   if (!allowed.includes(view)) view = "dashboard";
   state.view = view;
   localStorage.setItem("3daft-active-view", view);
@@ -631,6 +632,7 @@ export function setView(view, replace = false) {
     leads: "Clientes e Leads",
     quotes: "Orçamentos",
     conversas: "Conversas",
+    portal: "Portal do cliente",
     subscription: "Minha Assinatura",
     calendar: "Calendário",
     notifications: "Notificações",
@@ -641,7 +643,7 @@ export function setView(view, replace = false) {
     fiscal: "Fiscal e Documentos",
     approvals: "Gestão de usuários"
   }[view];
-  byId("globalSearch").hidden = ["dashboard", "reports", "approvals", "notifications", "subscription", "support", "whatsnew", "orders", "library", "quotes", "conversas"].includes(view);
+  byId("globalSearch").hidden = ["dashboard", "reports", "approvals", "notifications", "subscription", "support", "whatsnew", "orders", "library", "quotes", "conversas", "portal"].includes(view);
   if (view === "approvals") renderActiveUsers();
   if (!byId("appView")?.hidden) render();
 }
@@ -698,6 +700,9 @@ export function render() {
       break;
     case "conversas":
       renderConversations();
+      break;
+    case "portal":
+      renderClientPortal();
       break;
     case "notifications":
       break;
