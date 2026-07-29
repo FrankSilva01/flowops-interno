@@ -8,6 +8,7 @@ import {
   getUniqueSuppliersFromPurchases, getUniqueClientsFromSales,
   getTotalByMonth, getDASForYear, initFiscalData
 } from "./fiscal-persistence.js";
+import { FISCAL_AREAS, areaForKey, syncFiscalTabs } from "./subscription-fiscal-navigation.js";
 
 export async function renderFiscalDocs() {
   const content = byId("fiscalContainer");
@@ -1029,30 +1030,49 @@ function updateDASSummary() {
 }
 
 export async function renderFiscalTab() {
-  const activeTab = state.fiscalTab || "documentos";
+  const activeTab = syncFiscalTabs(state.fiscalTab || "documentos");
+  state.fiscalTab = activeTab;
+  const content = byId("fiscalContainer");
+  if (content) {
+    content.setAttribute("aria-labelledby", `fiscalTab-${activeTab}`);
+    content.setAttribute("aria-busy", "true");
+    content.innerHTML = `<div class="panel fiscal-state"><span class="loading-state">Carregando ${activeTab === "das" ? "impostos" : "documentos fiscais"}...</span></div>`;
+  }
 
-  // Bind tab buttons
   document.querySelectorAll("[data-fiscal-tab]").forEach(btn => {
-    btn.classList.toggle("active", btn.dataset.fiscalTab === activeTab);
-    btn.addEventListener("click", () => {
+    btn.onclick = () => {
       state.fiscalTab = btn.dataset.fiscalTab;
       renderFiscalTab();
-    });
+    };
+    btn.onkeydown = (event) => {
+      const next = areaForKey(FISCAL_AREAS, btn.dataset.fiscalTab, event.key);
+      if (!next) return;
+      event.preventDefault();
+      state.fiscalTab = next;
+      syncFiscalTabs(next, { focus: true });
+      renderFiscalTab();
+    };
   });
 
-  // Render active tab content
-  switch(activeTab) {
-    case "das":
-      await renderDAS();
-      break;
-    case "compra":
-      await renderPurchaseInvoices();
-      break;
-    case "venda":
-      await renderSalesInvoices();
-      break;
-    case "documentos":
-    default:
-      await renderFiscalDocs();
+  try {
+    switch(activeTab) {
+      case "das":
+        await renderDAS();
+        break;
+      case "compra":
+        await renderPurchaseInvoices();
+        break;
+      case "venda":
+        await renderSalesInvoices();
+        break;
+      case "documentos":
+      default:
+        await renderFiscalDocs();
+    }
+  } catch (error) {
+    if (content) content.innerHTML = `<div class="panel fiscal-state error-state"><strong>Não foi possível carregar esta área fiscal.</strong><span>${html(error?.message || "Tente novamente em instantes.")}</span><button class="secondary-btn" type="button" data-fiscal-retry>Carregar novamente</button></div>`;
+    document.querySelector("[data-fiscal-retry]")?.addEventListener("click", renderFiscalTab);
+  } finally {
+    content?.setAttribute("aria-busy", "false");
   }
 }

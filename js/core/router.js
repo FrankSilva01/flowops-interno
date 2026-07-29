@@ -47,6 +47,7 @@ import {
 import { submitSupportTicket, renderSupportPortal, renderWhatsNew } from "../features/support.js";
 import { renderGovernance } from "../features/governance.js";
 import { renderFiscalDocs, renderDAS, renderPurchaseInvoices, renderSalesInvoices, renderFiscalTab } from "../features/fiscal.js";
+import { bindSubscriptionNavigation } from "../features/subscription-fiscal-navigation.js";
 import { initGlobalSearch } from "./search.js";
 import {
   initializeStorefrontWizard, openStorefrontProductDialog, closeStorefrontProductDialog,
@@ -763,6 +764,7 @@ export function render() {
     case "notifications":
       break;
     case "subscription":
+      bindSubscriptionNavigation();
       renderSubscriptionPortal();
       renderGovernance();
       break;

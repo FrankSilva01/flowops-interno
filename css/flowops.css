@@ -10629,6 +10629,72 @@ html[data-theme="dark"] #searchDropdown::-webkit-scrollbar-thumb:hover {
 .dashboard-priority-list .priority-stock { grid-column: 1 / -1; box-shadow: inset 3px 0 #f59e0b; background: color-mix(in srgb, #f59e0b 7%, var(--panel)); }
 .dashboard-priority-list .priority-subscription { grid-column: 1 / -1; box-shadow: inset 3px 0 #2dd4bf; background: color-mix(in srgb, #2dd4bf 7%, var(--panel)); }
 .dashboard-priority-list .priority-subscription .badge { flex: 0 0 auto; min-width: 72px; max-width: none; overflow: visible; white-space: nowrap; }
+
+/* FlowOps Next: assinatura e fiscal */
+#subscriptionView.flowops-next-subscription,
+#fiscalView.flowops-next-fiscal {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+.next-section-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.next-section-heading h2 { margin: 2px 0 4px; }
+.next-section-heading span { color: var(--muted); }
+
+.subscription-next-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 8px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel);
+}
+
+.subscription-next-tabs .view-tab { flex: 0 0 auto; min-height: 40px; }
+.subscription-next-panel { min-width: 0; }
+.subscription-next-panel[hidden] { display: none !important; }
+
+.fiscal-state,
+.subscription-state {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  min-height: 120px;
+  padding: 20px;
+}
+
+.loading-state { color: var(--muted); }
+.error-state strong { color: var(--danger); }
+
+#fiscalView.flowops-next-fiscal .fiscal-tab-groups {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+#fiscalView.flowops-next-fiscal .table-wrap { max-width: 100%; overflow-x: auto; }
+
+@media (max-width: 600px) {
+  .subscription-next-tabs { align-items: stretch; flex-direction: column; overflow: visible; }
+  .subscription-next-tabs .view-tab { width: 100%; }
+  #subscriptionView.flowops-next-subscription .subscription-premium-hero,
+  #subscriptionView.flowops-next-subscription .subscription-usage-grid,
+  #subscriptionView.flowops-next-subscription .subscription-metrics { grid-template-columns: minmax(0, 1fr); }
+  #subscriptionView.flowops-next-subscription .subscription-card-actions,
+  #subscriptionView.flowops-next-subscription .inline-actions,
+  #fiscalView.flowops-next-fiscal .fiscal-actions,
+  #fiscalView.flowops-next-fiscal .das-actions { align-items: stretch; flex-direction: column; }
+  #subscriptionView.flowops-next-subscription button,
+  #fiscalView.flowops-next-fiscal .fiscal-actions button,
+  #fiscalView.flowops-next-fiscal .das-actions button { max-width: 100%; }
+}
 .dashboard-upcoming-panel .stack-list { padding: 0 14px 14px; }
 
 .dashboard-flow-section {

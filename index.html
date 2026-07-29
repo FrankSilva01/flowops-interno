@@ -910,8 +910,17 @@
           </div>
         </section>
 
-        <section id="subscriptionView" class="view">
-          <div id="subscriptionSummary" class="subscription-summary"></div>
+        <section id="subscriptionView" class="view flowops-next-subscription">
+          <div class="next-section-heading">
+            <div><p class="eyebrow">Conta</p><h2>Minha Assinatura</h2><span>Plano, cobranças e governança da empresa em um só lugar.</span></div>
+          </div>
+          <div class="view-tabs subscription-next-tabs" role="tablist" aria-label="Áreas da assinatura">
+            <button id="subscriptionTab-plan" class="view-tab active" type="button" role="tab" aria-controls="subscriptionPanel-plan" aria-selected="true" data-subscription-area="plan">Plano e uso</button>
+            <button id="subscriptionTab-billing" class="view-tab" type="button" role="tab" aria-controls="subscriptionPanel-billing" aria-selected="false" tabindex="-1" data-subscription-area="billing">Cobranças</button>
+            <button id="subscriptionTab-governance" class="view-tab" type="button" role="tab" aria-controls="subscriptionPanel-governance" aria-selected="false" tabindex="-1" data-subscription-area="governance">Privacidade e governança</button>
+          </div>
+          <div id="subscriptionPanel-plan" class="subscription-next-panel" role="tabpanel" aria-labelledby="subscriptionTab-plan">
+          <div id="subscriptionSummary" class="subscription-summary"><div class="panel subscription-state"><span class="loading-state">Carregando assinatura...</span></div></div>
           <div class="panel">
             <div class="panel-head">
               <div><h3>Alterar plano</h3><span>Solicite upgrade ou downgrade conforme a necessidade da empresa</span></div>
@@ -919,6 +928,8 @@
             <div id="subscriptionPlanOptions" class="subscription-plan-options"></div>
             <p id="subscriptionChangeMessage" class="form-message"></p>
           </div>
+          </div>
+          <div id="subscriptionPanel-billing" class="subscription-next-panel" role="tabpanel" aria-labelledby="subscriptionTab-billing" hidden aria-hidden="true">
           <div class="panel">
             <div class="panel-head"><div><h3>Histórico de cobrança</h3><span>Pagamentos e tentativas da assinatura</span></div></div>
             <div class="table-wrap">
@@ -928,6 +939,8 @@
               </table>
             </div>
           </div>
+          </div>
+          <div id="subscriptionPanel-governance" class="subscription-next-panel" role="tabpanel" aria-labelledby="subscriptionTab-governance" hidden aria-hidden="true">
           <div class="panel governance-panel">
             <div class="panel-head"><div><h3>Privacidade e dados</h3><span>Consentimentos e solicitações relacionadas aos dados da empresa</span></div></div>
             <div id="privacyConsentStatus" class="integration-alert"></div>
@@ -951,6 +964,7 @@
               <button class="secondary-btn" type="button" data-governance-action="save-retention">Salvar retenção</button>
             </div>
             <p class="muted">Solicitações de exclusão passam por análise para preservar documentos fiscais e obrigações legais aplicáveis.</p>
+          </div>
           </div>
         </section>
 
@@ -1758,7 +1772,7 @@
           </div>
         </section>
 
-        <section id="fiscalView" class="view">
+        <section id="fiscalView" class="view flowops-next-fiscal">
           <div class="fiscal-vault-hero">
             <div>
               <p class="eyebrow">Cofre fiscal</p>
@@ -1774,16 +1788,16 @@
           <div class="view-tabs marketplace-tab-groups fiscal-tab-groups" role="tablist" aria-label="Fiscal">
             <div class="marketplace-tab-group">
               <span>Operação</span>
-              <button class="view-tab active" type="button" data-fiscal-tab="documentos">Documentos</button>
-              <button class="view-tab" type="button" data-fiscal-tab="compra">Notas de Compra</button>
-              <button class="view-tab" type="button" data-fiscal-tab="venda">Notas de Venda</button>
+              <button id="fiscalTab-documentos" class="view-tab active" type="button" role="tab" aria-controls="fiscalContainer" aria-selected="true" data-fiscal-tab="documentos">Documentos</button>
+              <button id="fiscalTab-compra" class="view-tab" type="button" role="tab" aria-controls="fiscalContainer" aria-selected="false" tabindex="-1" data-fiscal-tab="compra">Notas de Compra</button>
+              <button id="fiscalTab-venda" class="view-tab" type="button" role="tab" aria-controls="fiscalContainer" aria-selected="false" tabindex="-1" data-fiscal-tab="venda">Notas de Venda</button>
             </div>
             <div class="marketplace-tab-group">
               <span>Impostos</span>
-              <button class="view-tab" type="button" data-fiscal-tab="das">DAS/Impostos</button>
+              <button id="fiscalTab-das" class="view-tab" type="button" role="tab" aria-controls="fiscalContainer" aria-selected="false" tabindex="-1" data-fiscal-tab="das">DAS/Impostos</button>
             </div>
           </div>
-          <div id="fiscalContainer"></div>
+          <div id="fiscalContainer" role="tabpanel" aria-labelledby="fiscalTab-documentos"><div class="panel fiscal-state"><span class="loading-state">Carregando documentos fiscais...</span></div></div>
         </section>
 
         <!-- Modal Documento Fiscal - Compacto -->

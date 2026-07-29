@@ -4,6 +4,7 @@ import { bindActions } from "../core/router.js";
 import { loadRemoteData } from "../data/remote.js";
 import { recordAudit } from "./logs.js";
 import { marketplaceDisplayName } from "./marketplace.js";
+import { friendlyPaymentDetail } from "./subscription-fiscal-navigation.js";
 
 export async function getSubscriptionAccessStatus() {
   try {
@@ -144,14 +145,13 @@ export function renderSubscriptionPortal() {
   const renewalAt = subscription.next_payment_at || subscription.current_period_end;
   const grace = getSubscriptionGraceInfo(subscription, latestPayment);
   const renewalMissed = subscriptionRenewalMissed(subscription, latestPayment);
-  const paymentDetail = subscription.last_payment_reason
+  const paymentDetail = friendlyPaymentDetail(subscription.last_payment_reason
     || latestPayment?.failure_reason
     || latestPayment?.status_detail
     || latestPayment?.metadata?.reason
     || latestPayment?.metadata?.status_detail
     || latestPayment?.metadata?.message
-    || latestPayment?.metadata?.provider_status
-    || "-";
+    || latestPayment?.metadata?.provider_status);
   const lastPaymentAttemptAt = subscription.last_payment_attempt_at
     || latestPayment?.attempted_at
     || latestPayment?.created_at;
@@ -210,7 +210,7 @@ export function renderSubscriptionPortal() {
     const meta = item.metadata || {};
     const rowCardLastFour = meta.card_last_four || meta.last_four || "";
     const rowCardBrand = meta.card_brand || item.payment_method || "";
-    const detail = item.failure_reason || item.status_detail || meta.reason || meta.status_detail || meta.message || meta.provider_status || "-";
+    const detail = friendlyPaymentDetail(item.failure_reason || item.status_detail || meta.reason || meta.status_detail || meta.message || meta.provider_status);
     return `<tr><td>${formatDateTime(item.attempted_at || item.paid_at || item.created_at)}</td><td>${money.format(Number(item.amount || 0))}</td><td><span class="badge ${html(item.status)}">${html(paymentStatusText(item.status))}</span></td><td>${html(item.payment_method || item.provider || "-")}</td><td>${rowCardLastFour ? html(`${rowCardBrand ? `${rowCardBrand} ` : ""}final ${rowCardLastFour}`) : "-"}</td><td>${html(detail)}</td></tr>`;
   }).join("") : `<tr><td colspan="6">Nenhuma cobrança registrada.</td></tr>`;
   renderSubscriptionPlanOptions(plan);
