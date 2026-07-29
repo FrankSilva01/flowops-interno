@@ -1003,17 +1003,30 @@
           </div>
         </section>
 
-        <section id="approvalsView" class="view">
-          <div class="panel user-management">
+        <section id="approvalsView" class="view user-management-next">
+          <div id="userManagementSummary" class="user-management-summary" aria-label="Resumo da gestão de usuários">
+            <article><i class="ti ti-users" aria-hidden="true"></i><span>Usuários ativos</span><strong id="userManagementActiveCount">0</strong><small>acessos liberados</small></article>
+            <article><i class="ti ti-user-check" aria-hidden="true"></i><span>Responsáveis</span><strong id="userManagementResponsibleCount">0</strong><small>disponíveis na operação</small></article>
+            <article><i class="ti ti-clock-check" aria-hidden="true"></i><span>Aprovações</span><strong id="userManagementPendingCount">0</strong><small>aguardando decisão</small></article>
+            <article><i class="ti ti-shield-lock" aria-hidden="true"></i><span>Seu acesso</span><strong id="userManagementCurrentRole">-</strong><small>perfil nesta empresa</small></article>
+          </div>
+
+          <div id="userManagementTabs" class="view-tabs user-management-tabs" role="tablist" aria-label="Áreas da gestão de usuários">
+            <button id="userManagementTabUsers" class="view-tab active" type="button" role="tab" aria-controls="userManagementUsersPanel" aria-selected="true" tabindex="0" data-user-management-section="users"><i class="ti ti-users" aria-hidden="true"></i>Usuários</button>
+            <button id="userManagementTabResponsibles" class="view-tab" type="button" role="tab" aria-controls="userManagementResponsiblesPanel" aria-selected="false" tabindex="-1" data-user-management-section="responsibles"><i class="ti ti-user-check" aria-hidden="true"></i>Responsáveis</button>
+            <button id="userManagementTabApprovals" class="view-tab" type="button" role="tab" aria-controls="userManagementApprovalsPanel" aria-selected="false" tabindex="-1" data-user-management-section="approvals"><i class="ti ti-clock-check" aria-hidden="true"></i>Aprovações <span id="userManagementPendingBadge" class="badge queue">0</span></button>
+          </div>
+
+          <div id="userManagementUsersPanel" class="panel user-management user-management-section" role="tabpanel" aria-labelledby="userManagementTabUsers" data-user-management-panel="users">
             <div class="panel-head">
-              <div><h3>Usuários ativos</h3><span id="userPlanLimit"></span></div>
+              <div><h3>Usuários e acessos</h3><span id="userPlanLimit"></span></div>
               <button id="refreshUsersBtn" class="secondary-btn" type="button">Atualizar</button>
             </div>
             <form id="manualUserForm" class="compact-form user-access-form">
-              <input name="name" placeholder="Nome do usuário" />
-              <input name="email" type="email" placeholder="E-mail para liberar acesso" required />
-              <input name="password" type="password" placeholder="Senha inicial" minlength="6" required />
-              <select name="role">
+              <input name="name" placeholder="Nome do usuário" aria-label="Nome do usuário" />
+              <input name="email" type="email" placeholder="E-mail para liberar acesso" aria-label="E-mail para liberar acesso" required />
+              <input name="password" type="password" placeholder="Senha inicial" aria-label="Senha inicial" minlength="6" required />
+              <select name="role" aria-label="Perfil de acesso">
                 <option value="Operador">Operador</option>
                 <option value="Supervisor">Supervisor</option>
                 <option value="Responsavel">Responsável</option>
@@ -1032,14 +1045,15 @@
                 <tbody id="activeUsersTable"></tbody>
               </table>
             </div>
+            <div id="activeUsersPagination" class="table-pagination" aria-label="Paginação de usuários"></div>
           </div>
-          <div class="panel user-management">
+          <div id="userManagementResponsiblesPanel" class="panel user-management user-management-section" role="tabpanel" aria-labelledby="userManagementTabResponsibles" aria-hidden="true" data-user-management-panel="responsibles" hidden>
             <div class="panel-head">
               <h3>Responsáveis</h3>
               <button id="refreshResponsiblesBtn" class="secondary-btn" type="button">Atualizar</button>
             </div>
             <form id="responsibleForm" class="compact-form">
-              <input name="name" placeholder="Nome do responsável" required />
+              <input name="name" placeholder="Nome do responsável" aria-label="Nome do responsável" required />
               <button class="primary-btn" type="submit">Adicionar</button>
             </form>
             <div class="table-wrap">
@@ -1052,8 +1066,9 @@
                 <tbody id="responsiblesTable"></tbody>
               </table>
             </div>
+            <div id="responsiblesPagination" class="table-pagination" aria-label="Paginação de responsáveis"></div>
           </div>
-          <div class="panel">
+          <div id="userManagementApprovalsPanel" class="panel user-management user-management-section" role="tabpanel" aria-labelledby="userManagementTabApprovals" aria-hidden="true" data-user-management-panel="approvals" hidden>
             <div class="panel-head">
               <h3>Pendentes de aprovação</h3>
               <button id="refreshApprovalsBtn" class="secondary-btn" type="button">Atualizar</button>
@@ -1068,6 +1083,7 @@
                 <tbody id="approvalsTable"></tbody>
               </table>
             </div>
+            <div id="approvalsPagination" class="table-pagination" aria-label="Paginação de aprovações"></div>
           </div>
         </section>
 

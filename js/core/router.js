@@ -34,7 +34,7 @@ import {
   renderApprovals, renderActiveUsers, renderResponsibleOptions, loadAndRenderApprovals,
   loadAndRenderUsers, loadAndRenderResponsibles, createManualUserAccess, saveResponsible,
   approveAccess, rejectAccess, changeUserRole, removeUser, editResponsible, deleteResponsible,
-  renderResponsibles, openMemberPermissions, saveMemberPermissions,
+  renderResponsibles, openMemberPermissions, saveMemberPermissions, setupUserManagementNavigation,
 } from "../features/users.js";
 import {
   renderNotifications, renderTrialBanner, clearVisibleNotifications, markAllNotificationsRead,
@@ -589,6 +589,7 @@ export function bindEvents() {
   });
   byId("manualUserForm").addEventListener("submit", createManualUserAccess);
   byId("responsibleForm").addEventListener("submit", saveResponsible);
+  setupUserManagementNavigation();
   byId("runBackupBtn").addEventListener("click", runManualBackup);
   byId("downloadSystemBackupBtn").addEventListener("click", () => downloadBackupScope("system"));
   byId("downloadStorefrontBackupBtn").addEventListener("click", () => downloadBackupScope("storefront"));

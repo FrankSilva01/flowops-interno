@@ -4,6 +4,78 @@ import { bindActions } from "../core/router.js";
 import { ensureCanAdmin, isAdminRole, isEditorRole } from "../core/permissions.js";
 import { userAccessRequest } from "../core/session.js";
 import { renderLogs } from "./logs.js";
+import { paginateUserManagementRows, userManagementSectionForKey } from "./users-navigation.js";
+
+const userManagementPages = { users: 1, responsibles: 1, approvals: 1 };
+const USER_MANAGEMENT_PAGE_SIZE = 8;
+
+function pendingAccessRequests() {
+  return state.accessRequests.filter((request) => (request.status || "pending") === "pending");
+}
+
+function renderUserManagementSummary() {
+  const values = {
+    userManagementActiveCount: state.activeUsers.length,
+    userManagementResponsibleCount: state.responsibles.length,
+    userManagementPendingCount: pendingAccessRequests().length,
+    userManagementPendingBadge: pendingAccessRequests().length,
+    userManagementCurrentRole: state.activeUserRoleName || (state.isAdmin ? "Administrador" : "Leitura"),
+  };
+  Object.entries(values).forEach(([id, value]) => {
+    const element = byId(id);
+    if (element) element.textContent = String(value);
+  });
+}
+
+function renderUserManagementPagination(containerId, section, result, render) {
+  const container = byId(containerId);
+  if (!container) return;
+  if (result.pages <= 1) {
+    container.innerHTML = "";
+    return;
+  }
+  container.innerHTML = `
+    <button type="button" data-page="${result.page - 1}" aria-label="Página anterior" ${result.page <= 1 ? "disabled" : ""}>‹</button>
+    ${Array.from({ length: result.pages }, (_, index) => index + 1).map((page) => `<button type="button" data-page="${page}" ${page === result.page ? 'aria-current="page"' : ""}>${page}</button>`).join("")}
+    <button type="button" data-page="${result.page + 1}" aria-label="Próxima página" ${result.page >= result.pages ? "disabled" : ""}>›</button>`;
+  container.querySelectorAll("button[data-page]").forEach((button) => button.addEventListener("click", () => {
+    userManagementPages[section] = Number(button.dataset.page);
+    render();
+  }));
+}
+
+export function setUserManagementSection(section, focus = false) {
+  document.querySelectorAll("[data-user-management-section]").forEach((tab) => {
+    const active = tab.dataset.userManagementSection === section;
+    tab.classList.toggle("active", active);
+    tab.setAttribute("aria-selected", String(active));
+    tab.tabIndex = active ? 0 : -1;
+    if (active && focus) tab.focus();
+  });
+  document.querySelectorAll("[data-user-management-panel]").forEach((panel) => {
+    const active = panel.dataset.userManagementPanel === section;
+    panel.hidden = !active;
+    panel.setAttribute("aria-hidden", String(!active));
+  });
+}
+
+export function setupUserManagementNavigation() {
+  const tabs = byId("userManagementTabs");
+  if (!tabs || tabs.dataset.bound === "true") return;
+  tabs.dataset.bound = "true";
+  tabs.addEventListener("click", (event) => {
+    const tab = event.target.closest("[data-user-management-section]");
+    if (tab) setUserManagementSection(tab.dataset.userManagementSection);
+  });
+  tabs.addEventListener("keydown", (event) => {
+    const tab = event.target.closest("[data-user-management-section]");
+    if (!tab) return;
+    const next = userManagementSectionForKey(tab.dataset.userManagementSection, event.key);
+    if (!next) return;
+    event.preventDefault();
+    setUserManagementSection(next, true);
+  });
+}
 
 export function renderApprovals() {
   const table = byId("approvalsTable");
@@ -12,8 +84,9 @@ export function renderApprovals() {
     table.innerHTML = "";
     return;
   }
-  const pending = state.accessRequests.filter((request) => (request.status || "pending") === "pending");
-  table.innerHTML = pending.length ? pending.map((request) => `
+  const result = paginateUserManagementRows(pendingAccessRequests(), userManagementPages.approvals, USER_MANAGEMENT_PAGE_SIZE);
+  userManagementPages.approvals = result.page;
+  table.innerHTML = result.items.length ? result.items.map((request) => `
     <tr>
       <td>${formatDateTime(request.requested_at)}</td>
       <td>${html(request.name || "-")}</td>
@@ -29,6 +102,8 @@ export function renderApprovals() {
       <td colspan="5">Nenhuma solicitação pendente.</td>
     </tr>
   `;
+  renderUserManagementPagination("approvalsPagination", "approvals", result, renderApprovals);
+  renderUserManagementSummary();
   bindActions();
 }
 
@@ -58,7 +133,9 @@ export function renderActiveUsers() {
        "Ao tentar cadastrar, serão exibidas as opções de upgrade."
       : "";
   }
-  table.innerHTML = state.activeUsers.length ? state.activeUsers.map((user) => `
+  const result = paginateUserManagementRows(state.activeUsers, userManagementPages.users, USER_MANAGEMENT_PAGE_SIZE);
+  userManagementPages.users = result.page;
+  table.innerHTML = result.items.length ? result.items.map((user) => `
     <tr>
       <td class="cell-truncate" title="${html(user.email)}">${html(user.email)}</td>
       <td>
@@ -81,13 +158,17 @@ export function renderActiveUsers() {
       <td colspan="4">Nenhum usuário ativo.</td>
     </tr>
   `;
+  renderUserManagementPagination("activeUsersPagination", "users", result, renderActiveUsers);
+  renderUserManagementSummary();
   bindActions();
 }
 
 export function renderResponsibles() {
   const table = byId("responsiblesTable");
   if (!table) return;
-  table.innerHTML = state.responsibles.length ? state.responsibles.map((item) => `
+  const result = paginateUserManagementRows(state.responsibles, userManagementPages.responsibles, USER_MANAGEMENT_PAGE_SIZE);
+  userManagementPages.responsibles = result.page;
+  table.innerHTML = result.items.length ? result.items.map((item) => `
     <tr>
       <td>${html(item.name)}</td>
       <td>
@@ -96,6 +177,8 @@ export function renderResponsibles() {
       </td>
     </tr>
   `).join("") : `<tr><td colspan="2">Nenhum responsável cadastrado.</td></tr>`;
+  renderUserManagementPagination("responsiblesPagination", "responsibles", result, renderResponsibles);
+  renderUserManagementSummary();
   bindActions();
 }
 
@@ -167,19 +250,43 @@ export async function loadResponsibles() {
 }
 
 export async function loadAndRenderResponsibles() {
-  await loadResponsibles();
-  renderResponsibles();
-  renderResponsibleOptions();
+  setUserManagementTableState("responsiblesTable", 2, "Carregando responsáveis...");
+  try {
+    await loadResponsibles();
+    renderResponsibles();
+    renderResponsibleOptions();
+  } catch (error) {
+    setUserManagementTableState("responsiblesTable", 2, "Não foi possível carregar os responsáveis.", true);
+    showAppMessage("Responsáveis indisponíveis", error.message, "error");
+  }
 }
 
 export async function loadAndRenderApprovals() {
-  await loadAccessRequests();
-  renderApprovals();
+  setUserManagementTableState("approvalsTable", 5, "Carregando aprovações...");
+  try {
+    await loadAccessRequests();
+    renderApprovals();
+  } catch (error) {
+    setUserManagementTableState("approvalsTable", 5, "Não foi possível carregar as aprovações.", true);
+    showAppMessage("Aprovações indisponíveis", error.message, "error");
+  }
 }
 
 export async function loadAndRenderUsers() {
-  await loadActiveUsers();
-  renderActiveUsers();
+  setUserManagementTableState("activeUsersTable", 4, "Carregando usuários...");
+  try {
+    await loadActiveUsers();
+    renderActiveUsers();
+  } catch (error) {
+    setUserManagementTableState("activeUsersTable", 4, "Não foi possível carregar os usuários.", true);
+    showAppMessage("Usuários indisponíveis", error.message, "error");
+  }
+}
+
+function setUserManagementTableState(tableId, columns, message, error = false) {
+  const table = byId(tableId);
+  if (!table) return;
+  table.innerHTML = `<tr><td class="user-management-state${error ? " error" : ""}" colspan="${columns}" role="status">${html(message)}</td></tr>`;
 }
 
 export async function approveAccess(email) {
