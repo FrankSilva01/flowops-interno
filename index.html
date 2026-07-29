@@ -712,7 +712,24 @@
           </div>
         </section>
 
-        <section id="cashView" class="view">
+        <section id="cashView" class="view flowops-next-finance">
+          <header class="finance-next-header">
+            <div><p class="eyebrow">Financeiro</p><h3>Fluxo de caixa</h3></div>
+            <button id="newCashEntryBtn" class="primary-btn" type="button">Novo lançamento</button>
+          </header>
+          <section id="financeKpis" class="finance-next-kpis" aria-label="Resumo financeiro"></section>
+          <div class="finance-next-tabs" role="tablist" aria-label="Financeiro">
+            <button class="active" type="button" role="tab" aria-selected="true" aria-controls="financeOverviewPane" data-finance-tab="overview">Visão geral</button>
+            <button type="button" role="tab" aria-selected="false" aria-controls="financeLedgerPane" data-finance-tab="ledger">Lançamentos</button>
+            <button type="button" role="tab" aria-selected="false" aria-controls="financeReceivablesPane" data-finance-tab="receivables">A receber</button>
+          </div>
+          <section id="financeOverviewPane" class="finance-next-pane" role="tabpanel">
+            <div class="finance-next-section-head"><h4>Entradas e saídas por dia</h4></div>
+            <div id="financeDailySeries" class="finance-next-daily-series"></div>
+            <div class="finance-next-section-head"><h4>Recebimentos pendentes</h4></div>
+            <div id="financeOverviewReceivables" class="finance-next-receivables"></div>
+          </section>
+          <section id="financeLedgerPane" class="finance-next-pane" role="tabpanel" hidden>
           <div class="filter-bar">
             <label>
               Tipo
@@ -744,6 +761,11 @@
               <tbody id="cashTable"></tbody>
             </table>
           </div>
+          </section>
+          <section id="financeReceivablesPane" class="finance-next-pane" role="tabpanel" hidden>
+            <div class="finance-next-section-head"><h4>Encomendas pendentes</h4></div>
+            <div id="financeReceivablesList" class="finance-next-receivables"></div>
+          </section>
         </section>
 
         <section id="materialsView" class="view">

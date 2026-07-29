@@ -1,35 +1,108 @@
 import { state, money, saveData } from "../core/state.js";
 import { roundMoney } from "../core/money.js";
-import { byId, html, formatDate, nextId, number, filterRows, renderOperationalSummary } from "../core/dom.js";
+import { byId, html, formatDate, nextId, number, filterRows } from "../core/dom.js";
 import { bindActions, render } from "../core/router.js";
 import { ensureCanEdit } from "../core/permissions.js";
 import { persist } from "../data/remote.js";
+import { buildFinanceModel } from "./finance-presentation.js";
+
+function financeNumber(value) {
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  if (typeof value !== "string" || value.trim() === "") return null;
+  const parsed = Number(value.trim());
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+export function formatFinanceAmount(value) {
+  const amount = financeNumber(value);
+  return amount === null ? "Não informado" : money.format(amount);
+}
+
+export function buildFinanceNextModel({ cash = [], orders = [] } = {}) {
+  const model = buildFinanceModel({ cash, orders });
+  return {
+    ...model,
+    receivables: model.receivables.filter((item) => item.amount !== null && item.amount > 0),
+  };
+}
+
+function renderFinanceKpis(summary) {
+  byId("financeKpis").innerHTML = [
+    ["Saldo atual", summary.balance, "resultado acumulado"],
+    ["Entradas", summary.income, "recebimentos e vendas"],
+    ["Saídas", summary.expense, "custos e despesas"],
+    ["A receber", summary.receivable, "encomendas pendentes"],
+  ].map(([label, value, note]) => `
+    <article class="finance-next-kpi">
+      <span>${html(label)}</span>
+      <strong>${html(formatFinanceAmount(value))}</strong>
+      <small>${html(note)}</small>
+    </article>
+  `).join("");
+}
+
+function renderDailySeries(dailySeries) {
+  const target = byId("financeDailySeries");
+  if (!dailySeries.length) {
+    target.innerHTML = '<p class="finance-next-empty">Nenhum lançamento com data informado.</p>';
+    return;
+  }
+  const knownValues = dailySeries.flatMap((item) => [financeNumber(item.income), financeNumber(item.expense)]).filter((value) => value !== null);
+  const largest = Math.max(...knownValues, 0);
+  const width = (value) => {
+    const amount = financeNumber(value);
+    return amount === null || largest === 0 ? 0 : Math.round((amount / largest) * 100);
+  };
+  target.innerHTML = dailySeries.map((item) => `
+    <article class="finance-next-day">
+      <time datetime="${html(item.date)}">${html(formatDate(item.date))}</time>
+      <div class="finance-next-day-values">
+        <span class="money-in"><i style="--finance-bar-width: ${width(item.income)}%"></i>${html(formatFinanceAmount(item.income))}</span>
+        <span class="money-out"><i style="--finance-bar-width: ${width(item.expense)}%"></i>${html(formatFinanceAmount(item.expense))}</span>
+      </div>
+    </article>
+  `).join("");
+}
+
+function receivablesMarkup(receivables) {
+  if (!receivables.length) return '<p class="finance-next-empty">Nenhuma encomenda com valor pendente.</p>';
+  return receivables.map(({ order, amount }) => `
+    <article class="finance-next-receivable">
+      <strong>${html(order?.orderCode || order?.id || "Não informado")}</strong>
+      <span>${html(formatFinanceAmount(amount))}</span>
+    </article>
+  `).join("");
+}
+
+function renderReceivables(receivables) {
+  const markup = receivablesMarkup(receivables);
+  byId("financeOverviewReceivables").innerHTML = markup;
+  byId("financeReceivablesList").innerHTML = markup;
+}
 
 export function renderCash() {
+  const model = buildFinanceNextModel({ cash: state.data.cash, orders: state.data.orders });
   let running = 0;
-  const rows = filterCash(filterRows([...state.data.cash].sort((a, b) => a.date.localeCompare(b.date)), ["description", "category", "type"]));
-  const income = roundMoney(rows.reduce((sum, item) => sum + Number(item.income || 0), 0));
-  const expense = roundMoney(rows.reduce((sum, item) => sum + Number(item.expense || 0), 0));
-  const receivable = roundMoney(state.data.orders.reduce((sum, item) => sum + Math.max(0, Number(item.charged || 0) - Number(item.received || 0)), 0));
-  renderOperationalSummary("cashView", "cashPageSummary", [
-    ["Saldo atual", money.format(income - expense), "resultado acumulado", "teal"],
-    ["Entradas", money.format(income), "recebimentos e vendas", "green"],
-    ["Saídas", money.format(expense), "custos e despesas", "red"],
-    ["A receber", money.format(receivable), "títulos pendentes", "amber"],
-    ["Lucro líquido", money.format(income - expense), "resultado do período", "blue"],
-  ]);
+  let runningKnown = true;
+  const rows = filterCash(filterRows([...model.rows], ["description", "category", "type"]));
+  renderFinanceKpis(model.summary);
+  renderDailySeries(model.dailySeries);
+  renderReceivables(model.receivables);
   byId("cashTable").innerHTML = rows.map((entry) => {
-    running = roundMoney(running + Number(entry.income || 0) - Number(entry.expense || 0));
+    const income = financeNumber(entry.income);
+    const expense = financeNumber(entry.expense);
+    if (income === null || expense === null) runningKnown = false;
+    if (runningKnown) running = roundMoney(running + income - expense);
     return `
       <tr>
-        <td>${formatDate(entry.date)}</td>
-        <td>${html(entry.type)}</td>
-        <td>${html(entry.category)}</td>
-        <td><strong>${html(entry.description)}</strong><small>${html(entry.method || "")}</small></td>
-        <td class="money-in">${entry.income ? money.format(entry.income) : "-"}</td>
-        <td class="money-out">${entry.expense ? money.format(entry.expense) : "-"}</td>
-        <td>${money.format(running)}</td>
-        <td>
+        <td data-label="Data">${html(formatDate(entry.date) || "Não informado")}</td>
+        <td data-label="Tipo">${html(entry.type || "Não informado")}</td>
+        <td data-label="Categoria">${html(entry.category || "Não informado")}</td>
+        <td data-label="Descrição"><strong>${html(entry.description || "Não informado")}</strong><small>${html(entry.method || "")}</small></td>
+        <td class="money-in" data-label="Entrada">${html(formatFinanceAmount(income))}</td>
+        <td class="money-out" data-label="Saída">${html(formatFinanceAmount(expense))}</td>
+        <td data-label="Saldo">${html(runningKnown ? formatFinanceAmount(running) : "Não informado")}</td>
+        <td data-label="Ações">
           ${state.canEdit ? `<button class="icon-btn" type="button" data-action="edit-cash" data-id="${entry.id}">Editar</button>
           <button class="icon-btn danger" type="button" data-action="delete-cash" data-id="${entry.id}">Excluir</button>` : "-"}
         </td>
@@ -54,14 +127,11 @@ export async function saveCash(event) {
     description: form.get("description").trim(),
     method: form.get("method").trim(),
     income: type === "Entrada" ? amount : 0,
-    expense: type === "Saída" ? amount : 0
+    expense: type === "Saída" ? amount : 0,
   };
   const index = state.data.cash.findIndex((entry) => entry.id === item.id);
-  if (index >= 0) {
-    state.data.cash[index] = item;
-  } else {
-    state.data.cash.push(item);
-  }
+  if (index >= 0) state.data.cash[index] = item;
+  else state.data.cash.push(item);
   await persist("cash", item);
   resetCashForm();
   saveData();
@@ -71,6 +141,7 @@ export async function saveCash(event) {
 export function startCashEdit(id) {
   const item = state.data.cash.find((entry) => entry.id === id);
   if (!item) return;
+  setFinanceTab("ledger");
   const form = byId("cashForm");
   form.elements.id.value = item.id;
   form.elements.date.value = item.date || "";
@@ -104,4 +175,23 @@ export function resetCashForm() {
 export function filterCash(rows) {
   if (state.filters.cashType === "all") return rows;
   return rows.filter((item) => item.type === state.filters.cashType);
+}
+
+export function setFinanceTab(tab) {
+  const activeTab = ["overview", "ledger", "receivables"].includes(tab) ? tab : "overview";
+  document.querySelectorAll("[data-finance-tab]").forEach((button) => {
+    const active = button.dataset.financeTab === activeTab;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-selected", String(active));
+  });
+  ["overview", "ledger", "receivables"].forEach((name) => {
+    byId(`finance${name[0].toUpperCase()}${name.slice(1)}Pane`).hidden = name !== activeTab;
+  });
+}
+
+export function revealCashForm() {
+  setFinanceTab("ledger");
+  const form = byId("cashForm");
+  form.scrollIntoView({ behavior: "smooth", block: "start" });
+  form.elements.date.focus();
 }

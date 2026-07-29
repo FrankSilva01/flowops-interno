@@ -17,7 +17,7 @@ import {
   setOrdersViewMode, openOrderDrawer, closeOrderDrawer, bindOrderDrawer, selectOrder, openOrderCreateDialog,
 } from "../features/orders.js";
 import { renderProduction } from "../features/production.js";
-import { renderCash, saveCash, startCashEdit, cancelCashEdit } from "../features/cash.js";
+import { renderCash, saveCash, startCashEdit, cancelCashEdit, setFinanceTab, revealCashForm } from "../features/cash.js";
 import {
   setMaterialsTab, clearMaterialFilters, clearInventoryFilters, saveMaterial, cancelMaterialEdit,
   saveInventoryItem, renderMaterials, renderInventory, resetInventoryForm, materialCashId,
@@ -203,6 +203,10 @@ export function bindEvents() {
     renderLogs();
   });
   bindFilter("cashTypeFilter", "cashType");
+  document.querySelectorAll("[data-finance-tab]").forEach((button) => {
+    button.addEventListener("click", () => setFinanceTab(button.dataset.financeTab));
+  });
+  byId("newCashEntryBtn")?.addEventListener("click", revealCashForm);
   bindFilter("orderSort", "orderSort");
   bindFilter("orderMaterialFilter", "orderMaterial");
   bindFilter("orderMarketplaceFilter", "orderMarketplace");

@@ -1,0 +1,38 @@
+/* FlowOps Next - finance. Scoped so only the cash view receives this presentation. */
+.flowops-next-finance { min-width: 0; max-width: 100%; }
+.finance-next-header, .finance-next-section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.finance-next-header { margin-bottom: 14px; }
+.finance-next-header h3, .finance-next-section-head h4 { margin: 0; color: var(--next-text, var(--text)); }
+.finance-next-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px; }
+.finance-next-kpi, .finance-next-day, .finance-next-receivable { min-width: 0; border: 1px solid var(--next-line, var(--line)); border-radius: 8px; background: var(--next-surface, var(--panel)); }
+.finance-next-kpi { display: grid; gap: 3px; padding: 10px; }
+.finance-next-kpi span, .finance-next-kpi small, .finance-next-empty, .finance-next-day time { color: var(--next-muted, var(--muted)); font-size: 12px; }
+.finance-next-kpi strong { overflow-wrap: anywhere; color: var(--next-text, var(--text)); font-size: 20px; }
+.finance-next-tabs { display: flex; gap: 4px; margin-bottom: 14px; border-bottom: 1px solid var(--next-line, var(--line)); }
+.finance-next-tabs button { border: 0; border-bottom: 2px solid transparent; padding: 8px 10px; background: transparent; color: var(--next-muted, var(--muted)); cursor: pointer; }
+.finance-next-tabs button.active { border-bottom-color: var(--next-accent, var(--teal)); color: var(--next-text, var(--text)); font-weight: 700; }
+.finance-next-pane { min-width: 0; }
+.finance-next-daily-series, .finance-next-receivables { display: grid; gap: 8px; }
+.finance-next-daily-series { margin: 8px 0 18px; }
+.finance-next-day { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 12px; align-items: center; padding: 9px 10px; }
+.finance-next-day-values { display: grid; gap: 5px; }
+.finance-next-day-values span { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: 12px; }
+.finance-next-day-values i { display: block; width: var(--finance-bar-width); min-width: 0; height: 5px; border-radius: 5px; background: currentColor; }
+.finance-next-receivable { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px; }
+.finance-next-receivable strong, .finance-next-receivable span { overflow-wrap: anywhere; }
+.finance-next-receivable span { color: var(--next-text, var(--text)); font-weight: 700; }
+.flowops-next-finance .table-wrap { max-width: 100%; overflow-x: auto; }
+.flowops-next-finance .table-wrap table { min-width: 760px; }
+
+@media (max-width: 720px) {
+  .finance-next-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .finance-next-header { align-items: flex-start; }
+  .finance-next-header .primary-btn { flex: 0 0 auto; }
+  .flowops-next-finance .table-wrap { overflow-x: visible; }
+  .flowops-next-finance .table-wrap table, .flowops-next-finance .table-wrap tbody { display: grid; width: 100%; min-width: 0; }
+  .flowops-next-finance .table-wrap thead { display: none; }
+  .flowops-next-finance .table-wrap tbody { gap: 8px; }
+  .flowops-next-finance .table-wrap tr { display: grid; gap: 7px; padding: 10px; border: 1px solid var(--next-line, var(--line)); border-radius: 8px; background: var(--next-surface, var(--panel)); }
+  .flowops-next-finance .table-wrap td { display: grid; grid-template-columns: minmax(92px, 35%) minmax(0, 1fr); gap: 8px; min-width: 0; padding: 0; border: 0; overflow-wrap: anywhere; }
+  .flowops-next-finance .table-wrap td::before { content: attr(data-label); color: var(--next-muted, var(--muted)); font-size: 11px; font-weight: 700; }
+}
