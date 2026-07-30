@@ -257,7 +257,7 @@ export function openOrderFromLead(id) {
 }
 
 export function renderLeadsTab() {
-  const activeTab = state.leadsTab || "contatos";
+  const activeTab = state.leadsTab === "whatsapp" ? "whatsapp" : "pipeline";
 
   document.querySelectorAll("[data-leads-tab]").forEach(btn => {
     btn.classList.toggle("active", btn.dataset.leadsTab === activeTab);
@@ -271,9 +271,8 @@ export function renderLeadsTab() {
   const whatsappPanel = byId("whatsappPanel");
   const pipelinePanel = byId("leadsPipelinePanel");
 
-  renderLeadsNextSummary();
   const show = (el, on) => { if (el) el.style.display = on ? "block" : "none"; };
-  show(contatosPanel, activeTab === "contatos");
+  show(contatosPanel, false);
   show(pipelinePanel, activeTab === "pipeline");
   show(whatsappPanel, activeTab === "whatsapp");
 
@@ -281,9 +280,15 @@ export function renderLeadsTab() {
     renderWhatsappInLeads();
   } else if (activeTab === "pipeline") {
     renderLeadsPipeline();
-  } else {
-    renderLeads();
   }
+}
+
+export function renderCustomersPage() {
+  state.leadsTab = "contatos";
+  const contatosPanel = byId("contatosPanel");
+  if (contatosPanel) contatosPanel.style.display = "block";
+  renderLeadsNextSummary();
+  renderLeads();
 }
 
 // FlowOps Next: faixa de resumo comercial (dados reais via buildCustomersModel).

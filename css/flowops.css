@@ -12590,6 +12590,25 @@ dialog::backdrop { background: rgba(2,6,12,.66); backdrop-filter: blur(2px); }
   width: 100%;
 }
 
+.production-next-card-meta {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--next-line, var(--line));
+  color: var(--next-muted, var(--muted));
+  font-size: 11px;
+}
+
+.production-next-card-meta span {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+}
+
 .production-next-card-thumb {
   display: grid;
   width: 44px;
@@ -12663,6 +12682,11 @@ dialog::backdrop { background: rgba(2,6,12,.66); backdrop-filter: blur(2px); }
 }
 
 .logistics-next-summary {
+  margin-bottom: 12px;
+}
+
+.logistics-next-tabs,
+.commercial-next-heading {
   margin-bottom: 12px;
 }
 

@@ -125,6 +125,14 @@ export function renderLogistics() {
   if (!target) return;
   setLogisticsMutationControlsDisabled(state.canEdit);
   const { presentation, items } = getFilteredLogisticsPresentation();
+  const activeTab = state.logisticsTab || "shipments";
+  const visibleItems = activeTab === "tracking"
+    ? items.filter((item) => item.logistics?.tracking_code)
+    : activeTab === "issues"
+      ? items.filter((item) => item.isLate || ["Problema na entrega", "Devolvido"].includes(item.statusLabel))
+      : activeTab === "carriers"
+        ? items.filter((item) => item.logistics?.carrier)
+        : items;
   renderOperationalSummary("logisticsView", "logisticsPageSummary", [
     ["Aguardando envio", presentation.summary.waiting, "sem despacho ainda", "amber"],
     [LOGISTICS_STATUSES[2], presentation.summary.moving, "a caminho do cliente", "blue"],
@@ -133,9 +141,18 @@ export function renderLogistics() {
   ]);
   renderFlowOpsNextActionBoard(items);
   maybeAutoSyncMarketplaceLogistics();
-  target.innerHTML = items.length
-    ? items.map(renderFlowOpsNextRow).join("")
+  target.innerHTML = visibleItems.length
+    ? visibleItems.map(renderFlowOpsNextRow).join("")
     : `<tr><td colspan="7"><div class="empty-state compact"><strong>Nenhuma encomenda encontrada</strong><span>Ajuste os filtros ou aguarde novas encomendas.</span></div></td></tr>`;
+  document.querySelectorAll("[data-logistics-tab]").forEach((button) => {
+    const selected = button.dataset.logisticsTab === activeTab;
+    button.classList.toggle("active", selected);
+    button.setAttribute("aria-selected", String(selected));
+    button.onclick = () => {
+      state.logisticsTab = button.dataset.logisticsTab;
+      renderLogistics();
+    };
+  });
   bindActions();
 }
 

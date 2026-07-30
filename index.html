@@ -20,9 +20,9 @@
     <link rel="preconnect" href="https://api.mercadopago.com" />
     <script src="./theme-init.js?v=200"></script>
     <link rel="stylesheet" href="./assets/tabler-icons/tabler-icons.min.css?v=200" />
-  <link rel="stylesheet" href="./css/flowops.css?v=268" />
+  <link rel="stylesheet" href="./css/flowops.css?v=269" />
     <script src="./supabase-config.js?v=200" defer></script>
-  <script type="module" src="./js/app.js?v=270"></script>
+  <script type="module" src="./js/app.js?v=271"></script>
   </head>
   <body>
     <main id="appView" class="app-shell flowops-next-shell" hidden>
@@ -45,7 +45,8 @@
           <span class="sidebar-group-label">Início</span>
           <button class="tab active" data-view="dashboard" title="Dashboard"><span class="nav-icon"><i class="ti ti-layout-dashboard" aria-hidden="true"></i></span><span class="nav-label">Dashboard</span></button>
           <span class="sidebar-group-label">Comercial</span>
-          <button class="tab" data-view="leads" title="Clientes e Leads"><span class="nav-icon"><i class="ti ti-users" aria-hidden="true"></i></span><span class="nav-label">Clientes e Leads</span></button>
+          <button class="tab" data-view="customers" title="Clientes"><span class="nav-icon"><i class="ti ti-users" aria-hidden="true"></i></span><span class="nav-label">Clientes</span></button>
+          <button class="tab" data-view="leads" title="Leads"><span class="nav-icon"><i class="ti ti-user-search" aria-hidden="true"></i></span><span class="nav-label">Leads</span></button>
           <button class="tab" data-view="quotes" title="Orçamentos"><span class="nav-icon"><i class="ti ti-file-dollar" aria-hidden="true"></i></span><span class="nav-label">Orçamentos</span></button>
           <button class="tab" data-view="conversas" title="Conversas"><span class="nav-icon"><i class="ti ti-messages" aria-hidden="true"></i></span><span class="nav-label">Conversas</span></button>
           <button class="tab" data-view="portal" title="Portal do cliente"><span class="nav-icon"><i class="ti ti-external-link" aria-hidden="true"></i></span><span class="nav-label">Portal do cliente</span></button>
@@ -601,6 +602,12 @@
 
         <section id="logisticsView" class="view flowops-next-logistics">
           <section id="logisticsPageSummary" class="operational-summary-grid logistics-next-summary" aria-label="Resumo da logística"></section>
+          <div class="report-tabs logistics-next-tabs" role="tablist" aria-label="Áreas da logística">
+            <button class="tab active" type="button" data-logistics-tab="shipments">Expedições</button>
+            <button class="tab" type="button" data-logistics-tab="tracking">Rastreamento</button>
+            <button class="tab" type="button" data-logistics-tab="issues">Ocorrências</button>
+            <button class="tab" type="button" data-logistics-tab="carriers">Transportadoras</button>
+          </div>
           <details class="logistics-attention-details">
             <summary><span><strong>Atenção operacional</strong><small>Atrasos, rastreios ausentes e ocorrências</small></span><i class="ti ti-chevron-down" aria-hidden="true"></i></summary>
             <section id="logisticsActionBoard" class="logistics-action-board logistics-next-attention" aria-label="Atenção na logística"></section>
@@ -639,21 +646,15 @@
           </div>
         </section>
 
-        <section id="leadsView" class="view flowops-next-commercial">
-          <div class="report-tabs">
-            <button class="tab active" data-leads-tab="contatos">Contatos</button>
-            <button class="tab" data-leads-tab="pipeline">Pipeline</button>
-            <button class="tab" data-leads-tab="whatsapp">WhatsApp</button>
-          </div>
+        <section id="customersView" class="view flowops-next-commercial">
           <div id="leadsNextSummary" class="commercial-next-summary"></div>
-          <div id="leadsPipelinePanel" class="leads-panel leads-next-pipeline-panel" style="display:none;"></div>
           <div id="contatosPanel" class="leads-panel">
             <div class="panel-head">
               <div>
-                <h3>Clientes e Leads</h3>
+                <h3>Clientes</h3>
                 <small>Contatos da vitrine, marketplaces e atendimento manual.</small>
               </div>
-              <button id="newLeadBtn" class="primary-btn" type="button">Novo lead</button>
+              <button id="newLeadBtn" class="primary-btn" type="button">Novo cliente</button>
             </div>
             <div class="lead-toolbar">
               <input id="leadSearch" type="search" placeholder="Buscar nome, e-mail, WhatsApp ou PED" />
@@ -676,6 +677,18 @@
             </div>
             <div id="leadsList" class="leads-grid"></div>
           </div>
+        </section>
+
+        <section id="leadsView" class="view flowops-next-commercial leads-next-view">
+          <div class="panel-head commercial-next-heading">
+            <div><h3>Pipeline de leads</h3><small>Acompanhe oportunidades até a aprovação do orçamento.</small></div>
+            <button id="newLeadPipelineBtn" class="primary-btn" type="button">Novo lead</button>
+          </div>
+          <div class="report-tabs" role="tablist" aria-label="Leads">
+            <button class="tab active" data-leads-tab="pipeline" type="button">Pipeline</button>
+            <button class="tab" data-leads-tab="whatsapp" type="button">WhatsApp</button>
+          </div>
+          <div id="leadsPipelinePanel" class="leads-panel leads-next-pipeline-panel"></div>
           <div id="whatsappPanel" class="whatsapp-panel" style="display:none;"></div>
         </section>
 

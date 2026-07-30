@@ -1,12 +1,12 @@
-import { state, PRODUCTION_STAGES, PRIORITY_OPTIONS, STATUS_OPTIONS, normalizeOrderStatus } from "../core/state.js";
+import { state, PRODUCTION_STAGES, STATUS_OPTIONS, normalizeOrderStatus } from "../core/state.js";
 import { byId, html, safeUrl, formatDate, uniqueValues, filterRows } from "../core/dom.js";
 import { bindActions } from "../core/router.js";
 import { buildProductionPresentation, isProductionEligible } from "./production-presentation.js";
 
 export { isProductionEligible };
 import {
-  sortOrders, getOrderPriority, getMarketplaceLabel, getOrderCode, getOrderMarketplaceChannel,
-  renderSlaBadge, renderInlineSelect, updateOrderInline,
+  sortOrders, getMarketplaceLabel, getOrderCode, getOrderMarketplaceChannel,
+  renderSlaBadge, updateOrderInline,
 } from "./orders.js";
 // O card do kanban abre o painel deslizante generico (#orderDrawer,
 // data-action="open-order-drawer") em vez de exigir clicar em "Editar"
@@ -15,7 +15,6 @@ import {
 // desse painel deslizante - mas o kanban continua com o deslizante, ja
 // que aqui nao ha uma lista mestre pra acompanhar um painel fixo (o
 // board e a view principal, precisa da largura toda).
-import { getResponsibleNames } from "./users.js";
 
 export function renderProduction() {
   renderKanbanFilters();
@@ -75,19 +74,16 @@ export function renderProductionSummary(presentation) {
   const { summary } = presentation;
   target.innerHTML = `
     ${[
-      ["Pedidos", summary.total, "em producao"],
-      ["Em fila", summary.queued, "aguardando inicio"],
-      ["Produzindo", summary.producing, "em execucao"],
-      ["Revisao", summary.review, "pos-processo"],
-      ["Atrasados", summary.late, "prioridade operacional"],
+      ["Carga atual", summary.total, "tarefas no quadro"],
+      ["Em risco", summary.late, "exigem replanejamento"],
+      ["Em execução", summary.producing, "produzindo agora"],
+      ["No fluxo", summary.total - summary.late, "sem atraso identificado"],
     ].map(([label, count, detail]) => `<article><span>${label}</span><strong>${count}</strong><small>${detail}</small></article>`).join("")}
   `;
 }
 
 export function renderKanbanCard(presentationItem) {
   const item = presentationItem.order || presentationItem;
-  const priority = getOrderPriority(item);
-  const status = normalizeOrderStatus(item.status);
   const marketplaceLabel = getMarketplaceLabel(item);
   const imageUrl = safeUrl(item.referenceImageUrl);
   const stageIndex = Math.max(0, PRODUCTION_STAGES.indexOf(presentationItem.stageLabel || item.productionStage));
@@ -115,10 +111,9 @@ export function renderKanbanCard(presentationItem) {
           <span aria-hidden="true"></span>
         </button>
       </div>
-      <div class="kanban-inline-fields">
-        ${renderInlineSelect("status", item.id, status, STATUS_OPTIONS)}
-        ${renderInlineSelect("priority", item.id, item.priority || priority.label, PRIORITY_OPTIONS, priority.label)}
-        ${renderInlineSelect("responsible", item.id, item.responsible || "", ["", ...getResponsibleNames()], "Responsável")}
+      <div class="production-next-card-meta">
+        <span><i class="ti ti-user" aria-hidden="true"></i>${html(item.responsible || "Sem responsável")}</span>
+        <span><i class="ti ti-calendar" aria-hidden="true"></i>${item.deliveryDate ? formatDate(item.deliveryDate) : "Sem data"}</span>
       </div>
       ${item.internalNotes ? `<small class="internal-note">${html(item.internalNotes)}</small>` : ""}
     </article>

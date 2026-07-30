@@ -23,7 +23,7 @@ import {
   saveInventoryItem, renderMaterials, renderInventory, resetInventoryForm, materialCashId,
   startInventoryEdit, startMaterialEdit,
 } from "../features/materials.js";
-import { renderLeads, renderLeadsTab, openLeadDialog, saveLead, openOrderFromLead, openLeadFile, deleteLeadFile, selectLead } from "../features/customers.js";
+import { renderLeads, renderLeadsTab, renderCustomersPage, openLeadDialog, saveLead, openOrderFromLead, openLeadFile, deleteLeadFile, selectLead } from "../features/customers.js";
 import { renderQuotes } from "../features/quotes.js";
 import { renderConversations } from "../features/conversations.js";
 import { renderClientPortal } from "../features/client-portal.js";
@@ -527,6 +527,7 @@ export function bindEvents() {
   byId("supportTicketForm").addEventListener("submit", submitSupportTicket);
   byId("memberPermissionsForm").addEventListener("submit", saveMemberPermissions);
   byId("newLeadBtn").addEventListener("click", () => openLeadDialog());
+  byId("newLeadPipelineBtn")?.addEventListener("click", () => openLeadDialog());
   byId("leadForm").addEventListener("submit", saveLead);
   byId("orderForm").addEventListener("submit", saveOrder);
   byId("openOrderCreateBtn").addEventListener("click", openOrderCreateDialog);
@@ -672,7 +673,7 @@ export function bindEvents() {
 }
 
 export function setView(view, replace = false) {
-  const allowed = ["dashboard", "orders", "library", "production", "logistics", "cash", "materials", "reports", "leads", "quotes", "conversas", "portal", "subscription", "calendar", "notifications", "support", "whatsnew", "logs", "fiscal", ...(hasCapability("manage_marketplaces") ? ["marketplace"] : []), ...(state.isAdmin ? ["approvals", "backup"] : [])];
+  const allowed = ["dashboard", "orders", "library", "production", "logistics", "cash", "materials", "reports", "customers", "leads", "quotes", "conversas", "portal", "subscription", "calendar", "notifications", "support", "whatsnew", "logs", "fiscal", ...(hasCapability("manage_marketplaces") ? ["marketplace"] : []), ...(state.isAdmin ? ["approvals", "backup"] : [])];
   if (!allowed.includes(view)) view = "dashboard";
   state.view = view;
   localStorage.setItem("3daft-active-view", view);
@@ -694,7 +695,8 @@ export function setView(view, replace = false) {
     cash: "Fluxo de caixa",
     materials: "Materiais",
     reports: "Relatórios",
-    leads: "Clientes e Leads",
+    customers: "Clientes",
+    leads: "Leads",
     quotes: "Orçamentos",
     conversas: "Conversas",
     portal: "Portal do cliente",
@@ -711,7 +713,7 @@ export function setView(view, replace = false) {
   }[view];
   byId("viewGroup").textContent = {
     dashboard: "Início",
-    leads: "Comercial", quotes: "Comercial", conversas: "Comercial", portal: "Comercial",
+    customers: "Comercial", leads: "Comercial", quotes: "Comercial", conversas: "Comercial", portal: "Comercial",
     orders: "Operação", library: "Operação", production: "Operação", logistics: "Operação", calendar: "Operação",
     cash: "Gestão", materials: "Gestão", marketplace: "Gestão", fiscal: "Gestão", reports: "Gestão",
     subscription: "Administração", logs: "Administração", approvals: "Administração", backup: "Administração",
@@ -767,6 +769,9 @@ export function render() {
       break;
     case "logs":
       renderLogs();
+      break;
+    case "customers":
+      renderCustomersPage();
       break;
     case "leads":
       renderLeadsTab();

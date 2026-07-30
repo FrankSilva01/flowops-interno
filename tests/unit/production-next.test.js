@@ -40,15 +40,16 @@ test("Production renders the presentation model with its local operational date"
   assert.match(source, /updateOrderInline\(/);
 });
 
-test("Production cards retain drawer, edit, copy, and inline update controls", async () => {
+test("Production cards retain drawer, edit and copy without compressed inline controls", async () => {
   const source = await readFile(productionSource, "utf8");
 
   for (const action of ["open-order-drawer", "edit-order-modal", "copy-marketplace-code"]) {
     assert.match(source, new RegExp(`data-action=\\"${action}\\"`));
   }
-  assert.match(source, /renderInlineSelect\("status"/);
-  assert.match(source, /renderInlineSelect\("priority"/);
-  assert.match(source, /renderInlineSelect\("responsible"/);
+  assert.match(source, /class="production-next-card-meta"/);
+  assert.doesNotMatch(source, /renderInlineSelect\("status"/);
+  assert.doesNotMatch(source, /renderInlineSelect\("priority"/);
+  assert.doesNotMatch(source, /renderInlineSelect\("responsible"/);
 });
 
 test("Only the production board scroll container owns horizontal overflow", async () => {
@@ -94,7 +95,7 @@ test("approved quotes remain pending while converted quotes enter the production
     assert.match(elements.productionQuoteSummary.innerHTML, /1 orçamento/);
     assert.doesNotMatch(elements.kanbanBoard.innerHTML, /PED-APPROVED/);
     assert.match(elements.kanbanBoard.innerHTML, /PED-CONVERTED/);
-    assert.match(elements.productionStageSummary.innerHTML, /Pedidos<\/span><strong>1<\/strong>/);
+    assert.match(elements.productionStageSummary.innerHTML, /Carga atual<\/span><strong>1<\/strong>/);
   } finally {
     globalThis.document = originalDocument;
     state.data = originalData;

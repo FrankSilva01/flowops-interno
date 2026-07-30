@@ -5,6 +5,7 @@ import test from "node:test";
 const page = readFileSync(new URL("../../index.html", import.meta.url), "utf8");
 const customers = readFileSync(new URL("../../js/features/customers.js", import.meta.url), "utf8");
 const logistics = readFileSync(new URL("../../js/features/logistics.js", import.meta.url), "utf8");
+const production = readFileSync(new URL("../../js/features/production.js", import.meta.url), "utf8");
 const styles = readFileSync(new URL("../../css/flowops.css", import.meta.url), "utf8");
 const router = readFileSync(new URL("../../js/core/router.js", import.meta.url), "utf8");
 
@@ -13,15 +14,35 @@ test("Clientes e Leads possui somente uma faixa de indicadores", () => {
   assert.match(page, /id="leadsNextSummary" class="commercial-next-summary"/);
 });
 
+test("Clientes e Leads sao rotas comerciais distintas como no prototipo", () => {
+  assert.match(page, /data-view="customers"[^>]*>[\s\S]*?Clientes<\/span>/);
+  assert.match(page, /data-view="leads"[^>]*>[\s\S]*?Leads<\/span>/);
+  assert.match(page, /id="customersView"[^>]*class="view[^\"]*flowops-next-commercial/);
+  assert.match(router, /case "customers":[\s\S]*renderCustomersPage\(\)/);
+});
+
 test("cards de producao reservam linhas completas para metadados e controles", () => {
   assert.match(styles, /\.production-next-card > strong,[\s\S]*grid-column:\s*1\s*\/\s*-1/);
   assert.match(styles, /\.production-next-card \.kanban-inline-fields[\s\S]*grid-column:\s*1\s*\/\s*-1/);
+});
+
+test("Producao segue o resumo compacto e edita pelo drawer", () => {
+  const summary = production.match(/renderProductionSummary\(presentation\)[\s\S]*?target\.innerHTML = `[\s\S]*?\$\{\[([\s\S]*?)\]\.map/)?.[1] || "";
+  assert.equal((summary.match(/^      \[/gm) || []).length, 4);
+  const card = production.match(/export function renderKanbanCard[\s\S]*?return `([\s\S]*?)`;\n}/)?.[1] || "";
+  assert.doesNotMatch(card, /renderInlineSelect/);
 });
 
 test("Logistica prioriza quatro KPIs e recolhe alertas secundarios", () => {
   assert.match(page, /<details class="logistics-attention-details">/);
   const summaryCall = logistics.match(/renderOperationalSummary\("logisticsView", "logisticsPageSummary", \[([\s\S]*?)\n  \]\);/)?.[1] || "";
   assert.equal((summaryCall.match(/^    \[/gm) || []).length, 4);
+});
+
+test("Logistica apresenta as quatro areas do prototipo", () => {
+  for (const label of ["Expedições", "Rastreamento", "Ocorrências", "Transportadoras"]) {
+    assert.match(page, new RegExp(`data-logistics-tab="[^"]+"[^>]*>${label}`));
+  }
 });
 
 test("cabecalho e menu identificam o grupo funcional de cada rota", () => {
