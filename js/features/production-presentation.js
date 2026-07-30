@@ -13,8 +13,9 @@ function asText(value, fallback) {
 
 function normalizeStage(value) {
   const stage = asText(value, "Em fila").trim();
-  if (stage === "Acabamento") return "Pós-processo";
   if (stage === "Fatiado") return "Em fila";
+  if (stage === "Imprimindo") return "Produzindo";
+  if (["Pós-processo", "Pintando"].includes(stage)) return "Acabamento";
   return stage;
 }
 
@@ -29,9 +30,9 @@ function normalizeStageDefinition(stage) {
 function stageCategory(stage, configuredKey = "") {
   const value = `${stage} ${configuredKey}`.toLowerCase();
   if (value.includes("queued") || value.includes("fila")) return "queued";
-  if (value.includes("producing") || value.includes("printing") || value.includes("imprim")
-    || value.includes("painting") || value.includes("pint")) return "producing";
-  if (value.includes("review") || value.includes("processo") || value.includes("acabamento")) return "review";
+  if (value.includes("producing") || value.includes("produz") || value.includes("printing") || value.includes("imprim")) return "producing";
+  if (value.includes("review") || value.includes("processo") || value.includes("acabamento")
+    || value.includes("painting") || value.includes("pint")) return "review";
   if (value.includes("ready") || value.includes("pronto")) return "ready";
   return null;
 }

@@ -13214,7 +13214,7 @@ dialog::backdrop { background: rgba(2,6,12,.66); backdrop-filter: blur(2px); }
   .materials-next-supplier { align-items: flex-start; }
 }
 /* SOURCE: css/27-flowops-next-reports.css */
-+/* FlowOps Next: Relatorios */
+/* FlowOps Next: Relatorios */
 #reportsView.flowops-next-reports {
   max-width: 100%;
   overflow-x: clip;
@@ -13493,3 +13493,35 @@ dialog::backdrop { background: rgba(2,6,12,.66); backdrop-filter: blur(2px); }
   .production-next-column { scroll-snap-align: start; }
   .leads-next-pipeline { grid-template-columns: repeat(5, 82vw); }
 }
+/* FlowOps Next: quality module */
+.flowops-next-quality { min-width: 0; }
+.next-page-head { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:16px; }
+.next-page-head h2,.next-page-head p { margin:0; }
+.next-page-head p { color:var(--next-muted, #8aa0b6); margin-top:4px; }
+.quality-summary { margin-bottom:16px; }
+.quality-layout { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(300px,.7fr); gap:16px; }
+.quality-panel { min-width:0; border:1px solid var(--next-line,#26384a); background:var(--next-surface,#111c27); border-radius:6px; padding:16px; }
+.quality-panel header { border-bottom:1px solid var(--next-line,#26384a); padding-bottom:12px; margin-bottom:12px; }
+.quality-panel h3,.quality-panel p { margin:0; }
+.quality-panel p { color:var(--next-muted,#8aa0b6); margin-top:4px; }
+.quality-queue { display:grid; gap:8px; }
+.quality-queue-row { display:grid; grid-template-columns:44px minmax(0,1fr) auto; align-items:center; gap:12px; width:100%; text-align:left; border:1px solid var(--next-line,#26384a); background:var(--next-surface-2,#172431); color:var(--next-text,#f2f6fa); padding:10px; border-radius:5px; }
+.quality-queue-row:hover { border-color:var(--next-accent,#42c8bb); }
+.quality-queue-row span:nth-child(2) { min-width:0; display:grid; gap:4px; }
+.quality-queue-row small { color:var(--next-muted,#8aa0b6); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.quality-thumb { width:44px; height:44px; display:grid; place-items:center; border:1px solid var(--next-line,#26384a); border-radius:5px; overflow:hidden; }
+.quality-thumb img { width:100%; height:100%; object-fit:cover; }
+.quality-priority { color:var(--next-warning,#f6c445); }
+.quality-checklist { align-content:start; }
+.quality-checklist label { display:flex; align-items:center; gap:10px; padding:12px 0; border-bottom:1px solid var(--next-line,#26384a); }
+.quality-checklist-note { padding-top:12px; }
+.quality-empty { min-height:240px; display:grid; place-items:center; align-content:center; gap:8px; color:var(--next-muted,#8aa0b6); text-align:center; }
+.quality-empty i { font-size:36px; color:var(--next-accent,#42c8bb); }
+@media (max-width:900px){.quality-layout{grid-template-columns:1fr}.next-page-head{align-items:flex-start;flex-direction:column}.next-page-head .primary-btn{width:100%}}
+/* FlowOps Next: dashboard composition */
+#dashboardView.active-view>:not(#trialBanner):not(#dashboardNextContent){display:none!important}.dashboard-next-content{display:grid;gap:16px;min-width:0}.next-dashboard-head h1{font-size:26px;margin:0}.next-head-actions{display:flex;gap:8px;flex-wrap:wrap}
+.next-kpi-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--next-line,#26384a);background:var(--next-surface,#111c27);border-radius:6px;overflow:hidden}.next-kpi-strip>button{min-width:0;display:grid;gap:6px;text-align:left;padding:16px;border:0;border-right:1px solid var(--next-line,#26384a);background:transparent;color:var(--next-text,#f2f6fa)}.next-kpi-strip>button:last-child{border-right:0}.next-kpi-strip span,.next-kpi-strip small{color:var(--next-muted,#8aa0b6)}.next-kpi-strip strong{font-size:24px}
+.next-dashboard-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.next-panel{min-width:0;border:1px solid var(--next-line,#26384a);background:var(--next-surface,#111c27);border-radius:6px;padding:16px}.next-panel.span-2{grid-column:span 2}.next-panel>header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}.next-panel h3,.next-panel p{margin:0}.next-panel p{color:var(--next-muted,#8aa0b6);margin-top:3px}.next-panel header button{border:0;background:transparent;color:var(--next-accent,#42c8bb)}
+.next-dashboard-row{display:grid;grid-template-columns:10px minmax(0,1fr) auto;align-items:center;gap:10px;width:100%;padding:11px 0;border:0;border-bottom:1px solid var(--next-line,#26384a);background:transparent;color:var(--next-text,#f2f6fa);text-align:left}.next-dashboard-row:last-child{border-bottom:0}.next-dashboard-row span:nth-child(2){display:grid;gap:3px;min-width:0}.next-dashboard-row small{color:var(--next-muted,#8aa0b6);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.next-dashboard-end{color:var(--next-accent,#42c8bb)}
+.next-capacity{display:grid;grid-template-columns:130px minmax(0,1fr);align-items:center;gap:14px}.next-donut{--value:0;width:120px;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--next-accent,#42c8bb) calc(var(--value)*1%),#253544 0);position:relative}.next-donut:after{content:"";position:absolute;inset:17px;border-radius:50%;background:var(--next-surface,#111c27)}.next-donut strong{z-index:1;font-size:22px}.next-cash-chart{height:180px;display:flex;align-items:flex-end;gap:10px;padding-top:12px}.next-cash-chart>span{height:100%;flex:1;display:flex;align-items:flex-end;gap:3px}.next-cash-chart i{display:block;flex:1;min-width:4px;border-radius:3px 3px 0 0}.next-cash-chart .income{background:var(--next-accent,#42c8bb)}.next-cash-chart .expense{background:#ef6f76}.next-empty{min-height:120px;display:grid;place-items:center;color:var(--next-muted,#8aa0b6)}
+@media(max-width:1100px){.next-kpi-strip{grid-template-columns:repeat(2,1fr)}.next-dashboard-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.next-panel.span-2{grid-column:span 2}}@media(max-width:700px){.next-kpi-strip,.next-dashboard-grid{grid-template-columns:1fr}.next-panel.span-2{grid-column:auto}.next-head-actions,.next-head-actions button{width:100%}.next-capacity{grid-template-columns:1fr}.next-donut{margin:auto}}

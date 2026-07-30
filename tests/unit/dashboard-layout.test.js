@@ -24,3 +24,12 @@ test("menu segue a hierarquia funcional do FlowOps Next", () => {
   assert.ok(page.indexOf(">Operação</span>") < page.indexOf('data-view="orders"'));
   assert.ok(page.indexOf(">Gestão</span>") < page.indexOf('data-view="cash"'));
 });
+
+test("dashboard possui composicao operacional aprovada do prototipo", () => {
+  assert.match(page, /id="dashboardNextContent"/);
+  assert.match(page, /class="next-dashboard-grid"/);
+  assert.match(page, /Ações necessárias/);
+  assert.match(page, /Produção e capacidade/);
+  assert.match(page, /Recebimentos da semana/);
+  assert.match(page, /Estoque crítico/);
+});

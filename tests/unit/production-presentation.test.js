@@ -30,8 +30,8 @@ test("groups eligible orders by normalized stage and derives production counts",
   assert.deepEqual(model.summary, {
     total: 5,
     queued: 1,
-    producing: 2,
-    review: 1,
+    producing: 1,
+    review: 2,
     ready: 1,
     late: 1,
   });

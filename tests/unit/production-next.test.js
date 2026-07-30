@@ -5,7 +5,8 @@ import { readFile } from "node:fs/promises";
 globalThis.window = globalThis.window || { location: { hash: "" } };
 globalThis.localStorage = globalThis.localStorage || { getItem: () => null, setItem: () => {} };
 
-const { state } = await import("../../js/core/state.js");
+const { state, PRODUCTION_STAGES } = await import("../../js/core/state.js");
+const { buildProductionPresentation } = await import("../../js/features/production-presentation.js");
 const { renderProduction } = await import("../../js/features/production.js");
 
 const indexHtml = new URL("../../index.html", import.meta.url);
@@ -28,6 +29,17 @@ test("Production keeps the FlowOps Next board structure and stable filter contra
   assert.match(markup, /class=["'][^"']*\bproduction-next-board\b/);
   assert.match(markup, /class=["'][^"']*\bproduction-next-board-scroll\b/);
   assert.match(markup, /id=["']kanbanBoard["']/);
+});
+
+test("Production uses the five approved prototype columns and maps legacy stages without losing orders", () => {
+  assert.deepEqual(PRODUCTION_STAGES, ["Em fila", "Produzindo", "Acabamento", "Qualidade", "Pronto"]);
+  const presentation = buildProductionPresentation([
+    { id: "A", description: "Printing", productionStage: "Imprimindo", status: "A preparar" },
+    { id: "B", description: "Painting", productionStage: "Pintando", status: "A preparar" },
+    { id: "C", description: "Review", productionStage: "Qualidade", status: "A preparar" },
+  ], { stages: PRODUCTION_STAGES, now: "2026-07-30" });
+
+  assert.deepEqual(presentation.columns.map((column) => column.orders.map((item) => item.id)), [[], ["A"], ["B"], ["C"], []]);
 });
 
 test("Production renders the presentation model with its local operational date", async () => {

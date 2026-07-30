@@ -159,6 +159,7 @@ export function renderDashboard() {
   const firstName = String(state.activeUserName || "usuário").trim().split(/\s+/)[0];
   byId("dashboardGreeting").textContent = `Olá, ${firstName}`;
   byId("dashboardGreetingSummary").textContent = "Prioridades da sua operação hoje.";
+  renderNextDashboard({ income, expense, receivable, openOrders, lateOrders, monthIncome, monthOrders });
 
   byId("kpiIncome").textContent = money.format(income);
   byId("kpiExpense").textContent = money.format(expense);
@@ -232,6 +233,37 @@ export function renderDashboard() {
   renderMarketplaceCommandWidget();
   updateDashboardCollapsibleSummaries({ income, expense, receivable, statusCounts, materialCounts, dailyRows });
   applyDashboardVisibility();
+}
+
+function dashboardRows(rows) {
+  return rows.map((row) => `<button class="next-dashboard-row" type="button" ${row.action || ""}><span class="status-dot ${row.tone || "ok"}"></span><span><strong>${html(row.title)}</strong><small>${html(row.detail)}</small></span><span class="next-dashboard-end">${html(row.end || "")}</span></button>`).join("");
+}
+
+function renderNextDashboard({ income, expense, receivable, openOrders, lateOrders, monthIncome, monthOrders }) {
+  const target = byId("dashboardNextContent");
+  if (!target) return;
+  const firstName = String(state.activeUserName || "usuário").trim().split(/\s+/)[0];
+  const active = state.data.orders.filter((order) => order.status !== "Entregue" && !order.quoteStage);
+  const upcoming = [...active].sort((a, b) => (a.deliveryDate || "9999").localeCompare(b.deliveryDate || "9999")).slice(0, 3);
+  const noDate = active.filter((order) => !order.deliveryDate).length;
+  const noValue = active.filter((order) => !Number(order.charged || 0)).length;
+  const lowStock = state.inventoryItems.filter((item) => Number(item.quantity || 0) <= Number(item.minimum_quantity || 0));
+  const inQuality = active.filter((order) => order.productionStage === "Qualidade").length;
+  const producing = active.filter((order) => !["Em fila", "Pronto", "Entregue"].includes(order.productionStage || "Em fila")).length;
+  const capacity = openOrders ? Math.min(100, Math.round(producing / openOrders * 100)) : 0;
+  const cashRows = state.data.cash.slice().sort((a, b) => String(a.date || "").localeCompare(String(b.date || ""))).slice(-10);
+  const maxCash = Math.max(1, ...cashRows.map((item) => Math.max(Number(item.income || 0), Number(item.expense || 0))));
+
+  target.innerHTML = `<header class="next-page-head next-dashboard-head"><div><h1>Olá, ${html(firstName)}</h1><p>Prioridades da sua operação hoje.</p></div><div class="next-head-actions"><button class="primary-btn" type="button" data-action="new-order"><i class="ti ti-plus"></i> Nova encomenda</button><button class="secondary-btn" type="button" data-action="open-quotes"><i class="ti ti-file-plus"></i> Novo orçamento</button></div></header>
+  <section class="next-kpi-strip"><button data-action="view-orders"><span>Encomendas abertas</span><strong>${openOrders}</strong><small>${lateOrders} em risco</small></button><button data-action="focus-orders" data-focus="receivable"><span>A receber</span><strong>${money.format(receivable)}</strong><small>valores pendentes</small></button><button data-action="view-production"><span>Em produção</span><strong>${producing}</strong><small>${inQuality} em qualidade</small></button><button data-action="view-cash"><span>Recebido no mês</span><strong>${money.format(monthIncome)}</strong><small>${monthOrders} pedidos no mês</small></button></section>
+  <div class="next-dashboard-grid">
+    <section class="next-panel span-2"><header><div><h3>Ações necessárias</h3><p>O que precisa de decisão agora</p></div></header>${dashboardRows([{tone:lateOrders?"risk":"ok",title:`${lateOrders} encomenda(s) em risco`,detail:"Revise prioridades e prazos",end:"Revisar",action:'data-action="focus-orders" data-focus="late"'},{tone:noDate?"warn":"ok",title:`${noDate} encomenda(s) sem prazo`,detail:"Defina datas antes de liberar a produção",end:"Definir",action:'data-action="focus-orders" data-focus="noDate"'},{tone:noValue?"warn":"ok",title:`${noValue} encomenda(s) sem valor`,detail:"Complete os dados financeiros",end:"Completar",action:'data-action="focus-orders" data-focus="noValue"'}])}</section>
+    <section class="next-panel"><header><div><h3>Próximas entregas</h3><p>Pedidos mais próximos do prazo</p></div><button data-action="view-orders">Ver todas</button></header>${dashboardRows(upcoming.map((order)=>({title:order.description||order.orderCode||order.id,detail:`${order.deliveryDate?formatDate(order.deliveryDate):"Sem data"} · ${order.material||"Material não informado"}`,end:order.status,action:`data-action="open-order-drawer" data-id="${html(order.id)}"`})))||'<div class="next-empty">Nenhuma entrega pendente.</div>'}</section>
+    <section class="next-panel"><header><div><h3>Produção e capacidade</h3><p>Distribuição da carga atual</p></div></header><div class="next-capacity"><div class="next-donut" style="--value:${capacity}"><strong>${capacity}%</strong></div>${dashboardRows([{title:"Em execução",detail:"tarefas produzindo agora",end:String(producing)},{title:"Qualidade",detail:"aguardando inspeção",end:String(inQuality)},{title:"Fila",detail:"encomendas abertas",end:String(openOrders)}])}</div></section>
+    <section class="next-panel span-2"><header><div><h3>Recebimentos da semana</h3><p>Entradas e saídas registradas</p></div><strong>${money.format(income-expense)}</strong></header><div class="next-cash-chart">${cashRows.map((item)=>`<span><i class="income" style="height:${Math.max(4,Number(item.income||0)/maxCash*100)}%"></i><i class="expense" style="height:${Math.max(0,Number(item.expense||0)/maxCash*100)}%"></i></span>`).join("")||'<small>Sem lançamentos no período.</small>'}</div></section>
+    <section class="next-panel"><header><div><h3>Estoque crítico</h3><p>Itens abaixo do mínimo</p></div><button data-action="view-materials">Ver estoque</button></header>${dashboardRows(lowStock.slice(0,4).map((item)=>({tone:"warn",title:item.name||"Item",detail:`${formatInventoryNumber(item.quantity)} ${item.unit||"un."} disponíveis`,end:`Mín. ${formatInventoryNumber(item.minimum_quantity)}`})))||'<div class="next-empty">Nenhum item crítico.</div>'}</section>
+  </div>`;
+  bindActions();
 }
 
 export function renderCompanySidebarStatus() {

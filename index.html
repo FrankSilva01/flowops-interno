@@ -20,9 +20,9 @@
     <link rel="preconnect" href="https://api.mercadopago.com" />
     <script src="./theme-init.js?v=200"></script>
     <link rel="stylesheet" href="./assets/tabler-icons/tabler-icons.min.css?v=200" />
-  <link rel="stylesheet" href="./css/flowops.css?v=270" />
+  <link rel="stylesheet" href="./css/flowops.css?v=272" />
     <script src="./supabase-config.js?v=200" defer></script>
-  <script type="module" src="./js/app.js?v=271"></script>
+  <script type="module" src="./js/app.js?v=272"></script>
   </head>
   <body>
     <main id="appView" class="app-shell flowops-next-shell" hidden>
@@ -54,6 +54,7 @@
           <button class="tab" data-view="orders" title="Encomendas"><span class="nav-icon"><i class="ti ti-package" aria-hidden="true"></i></span><span class="nav-label">Encomendas</span></button>
           <button class="tab" data-view="library" title="Biblioteca de referências"><span class="nav-icon"><i class="ti ti-photo" aria-hidden="true"></i></span><span class="nav-label">Biblioteca</span></button>
           <button class="tab" data-view="production" title="Produção"><span class="nav-icon"><i class="ti ti-circles-relation" aria-hidden="true"></i></span><span class="nav-label">Produção</span></button>
+          <button class="tab" data-view="quality" title="Qualidade"><span class="nav-icon"><i class="ti ti-badge-check" aria-hidden="true"></i></span><span class="nav-label">Qualidade</span></button>
           <button class="tab" data-view="logistics" title="Logística"><span class="nav-icon"><i class="ti ti-truck-delivery" aria-hidden="true"></i></span><span class="nav-label">Logística</span></button>
           <button class="tab" data-view="calendar" title="Calendário"><span class="nav-icon"><i class="ti ti-calendar" aria-hidden="true"></i></span><span class="nav-label">Agenda</span></button>
           <span class="sidebar-group-label">Gestão</span>
@@ -89,7 +90,7 @@
         <div class="session-card">
           <span id="activeUserName">Modo teste</span>
           <small id="activeUserRole">Acesso direto sem login</small>
-          <small id="appVersionLabel" class="app-version-label">FlowOps v228</small>
+          <small id="appVersionLabel" class="app-version-label">FlowOps v272</small>
           <button id="logoutBtn" class="ghost-btn" type="button" hidden>Sair</button>
         </div>
       </aside>
@@ -150,6 +151,11 @@
 
         <section id="dashboardView" class="view active-view">
           <div id="trialBanner" class="trial-banner" hidden></div>
+          <div id="dashboardNextContent" class="dashboard-next-content">
+            <div class="next-dashboard-grid" aria-hidden="true">
+              <span>Ações necessárias</span><span>Produção e capacidade</span><span>Recebimentos da semana</span><span>Estoque crítico</span>
+            </div>
+          </div>
           <div class="dashboard-welcome">
             <div>
               <span id="dashboardGreeting">Olá</span>
@@ -431,11 +437,10 @@
             <label>Etapa de produção<select name="productionStage">
               <option value="">Etapa</option>
               <option>Em fila</option>
-              <option>Imprimindo</option>
-              <option>Pós-processo</option>
-              <option>Pintando</option>
+              <option>Produzindo</option>
+              <option>Acabamento</option>
+              <option>Qualidade</option>
               <option>Pronto</option>
-              <option>Entregue</option>
             </select></label>
             <label>Responsável<select name="responsible">
               <option value="">Responsável</option>
@@ -598,6 +603,29 @@
               <div id="kanbanBoard" class="kanban-board"></div>
             </div>
           </section>
+        </section>
+
+        <section id="qualityView" class="view flowops-next-quality">
+          <div class="next-page-head">
+            <div><h2>Qualidade</h2><p>Padronize conferências e reduza retrabalho.</p></div>
+            <button class="primary-btn" type="button" data-action="view-production"><i class="ti ti-layout-kanban" aria-hidden="true"></i> Abrir produção</button>
+          </div>
+          <section id="qualitySummary" class="operational-summary-grid quality-summary" aria-label="Resumo da qualidade"></section>
+          <div class="quality-layout">
+            <section class="quality-panel">
+              <header><div><h3>Fila de inspeção</h3><p>Pedidos reais na etapa Qualidade</p></div></header>
+              <div id="qualityQueue" class="quality-queue"></div>
+            </section>
+            <section class="quality-panel quality-checklist">
+              <header><div><h3>Checklist padrão</h3><p>Conferência antes de liberar a expedição</p></div></header>
+              <label><input type="checkbox" disabled /> Quantidade confere</label>
+              <label><input type="checkbox" disabled /> Dimensões e material conferem</label>
+              <label><input type="checkbox" disabled /> Acabamento superficial aprovado</label>
+              <label><input type="checkbox" disabled /> Referência visual conferida</label>
+              <label><input type="checkbox" disabled /> Embalagem e identificação conferidas</label>
+              <p class="quality-checklist-note">Abra um item da fila para registrar a inspeção no pedido.</p>
+            </section>
+          </div>
         </section>
 
         <section id="logisticsView" class="view flowops-next-logistics">

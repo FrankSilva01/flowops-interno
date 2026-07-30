@@ -17,6 +17,7 @@ import {
   setOrdersViewMode, openOrderDrawer, closeOrderDrawer, bindOrderDrawer, selectOrder, openOrderCreateDialog,
 } from "../features/orders.js";
 import { renderProduction } from "../features/production.js";
+import { renderQuality } from "../features/quality.js";
 import { renderCash, saveCash, startCashEdit, cancelCashEdit, setFinanceTab, revealCashForm, handleFinanceTabKeydown } from "../features/cash.js";
 import {
   setMaterialsTab, bindMaterialsTabs, clearMaterialFilters, clearInventoryFilters, saveMaterial, cancelMaterialEdit,
@@ -99,7 +100,7 @@ import {
 } from "../features/marketplace-navigation.js";
 import { renderReferenceLibrary } from "../features/reference-library.js";
 
-const APP_VERSION = "263";
+const APP_VERSION = "272";
 
 function openMarketplaceListingDrawer(listing) {
   openListingDrawer(listing, {
@@ -673,7 +674,7 @@ export function bindEvents() {
 }
 
 export function setView(view, replace = false) {
-  const allowed = ["dashboard", "orders", "library", "production", "logistics", "cash", "materials", "reports", "customers", "leads", "quotes", "conversas", "portal", "subscription", "calendar", "notifications", "support", "whatsnew", "logs", "fiscal", ...(hasCapability("manage_marketplaces") ? ["marketplace"] : []), ...(state.isAdmin ? ["approvals", "backup"] : [])];
+  const allowed = ["dashboard", "orders", "library", "production", "quality", "logistics", "cash", "materials", "reports", "customers", "leads", "quotes", "conversas", "portal", "subscription", "calendar", "notifications", "support", "whatsnew", "logs", "fiscal", ...(hasCapability("manage_marketplaces") ? ["marketplace"] : []), ...(state.isAdmin ? ["approvals", "backup"] : [])];
   if (!allowed.includes(view)) view = "dashboard";
   state.view = view;
   localStorage.setItem("3daft-active-view", view);
@@ -691,6 +692,7 @@ export function setView(view, replace = false) {
     orders: "Encomendas",
     library: "Biblioteca de referências",
     production: "Produção",
+    quality: "Qualidade",
     logistics: "Logística",
     cash: "Fluxo de caixa",
     materials: "Materiais",
@@ -714,7 +716,7 @@ export function setView(view, replace = false) {
   byId("viewGroup").textContent = {
     dashboard: "Início",
     customers: "Comercial", leads: "Comercial", quotes: "Comercial", conversas: "Comercial", portal: "Comercial",
-    orders: "Operação", library: "Operação", production: "Operação", logistics: "Operação", calendar: "Operação",
+    orders: "Operação", library: "Operação", production: "Operação", quality: "Operação", logistics: "Operação", calendar: "Operação",
     cash: "Gestão", materials: "Gestão", marketplace: "Gestão", fiscal: "Gestão", reports: "Gestão",
     subscription: "Administração", logs: "Administração", approvals: "Administração", backup: "Administração",
     notifications: "Plataforma", support: "Plataforma", whatsnew: "Plataforma",
@@ -752,6 +754,9 @@ export function render() {
       break;
     case "production":
       renderProduction();
+      break;
+    case "quality":
+      renderQuality();
       break;
     case "logistics":
       renderLogistics();
@@ -1008,6 +1013,11 @@ export function bindActions() {
       }
       if (action === "view-orders") {
         setView("orders");
+        return;
+      }
+      if (action === "new-order") {
+        setView("orders");
+        openOrderCreateDialog();
         return;
       }
       if (action === "view-cash") {

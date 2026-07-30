@@ -31,7 +31,7 @@ const INITIAL_DATA = {
 
 export const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 export const DEFAULT_RESPONSIBLES = ["Franklin", "Ravena", "Anderson", "Dayane"];
-export const PRODUCTION_STAGES = ["Em fila", "Imprimindo", "Pós-processo", "Pintando", "Pronto", "Entregue"];
+export const PRODUCTION_STAGES = ["Em fila", "Produzindo", "Acabamento", "Qualidade", "Pronto"];
 export const PRIORITY_OPTIONS = ["", "Baixa", "Normal", "Alta", "Urgente"];
 export const STATUS_OPTIONS = ["Orçamento", "A preparar", "Despachado", "A caminho", "Entregue"];
 export const SUBSCRIPTION_DEFAULT_GRACE_DAYS = 5;
@@ -107,9 +107,10 @@ export function getHashRoute() {
 }
 
 export function normalizeStage(value) {
-  if (value === "Acabamento") return "Pós-processo";
   if (value === "Fatiado") return "Em fila";
-  if (value === "Pronto" || value === "Entregue") return value;
+  if (value === "Imprimindo") return "Produzindo";
+  if (value === "Pós-processo" || value === "Pintando") return "Acabamento";
+  if (value === "Entregue") return "Entregue";
   return PRODUCTION_STAGES.includes(value) ? value : "Em fila";
 }
 
