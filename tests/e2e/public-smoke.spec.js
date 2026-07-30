@@ -72,10 +72,10 @@ test("shell FlowOps Next expande a navegacao compacta no desktop", async ({ page
   const sidebar = page.locator(".sidebar");
   await expect(app).toHaveClass(/flowops-next-shell/);
   await expect(sidebar).toHaveClass(/flowops-next-sidebar/);
-  await expect(sidebar).toHaveCSS("width", "56px");
+  await expect(sidebar).toHaveCSS("width", "64px");
   await page.locator("#sidebarToggle").click();
   await expect(app).not.toHaveClass(/sidebar-collapsed/);
-  await expect(sidebar).toHaveCSS("width", "220px");
+  await expect(sidebar).toHaveCSS("width", "248px");
   await expect(page.locator(".sidebar .nav-label").first()).toBeVisible();
   const toggleAppearance = await page.locator("#sidebarToggle").evaluate((button) => ({
     icon: getComputedStyle(button, "::before").content,

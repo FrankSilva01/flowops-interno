@@ -52,3 +52,13 @@ test("cabecalho e menu identificam o grupo funcional de cada rota", () => {
   }
   assert.match(styles, /\.flowops-next-shell:not\(\.sidebar-collapsed\) \.flowops-next-sidebar \.sidebar-group-label[\s\S]*overflow:\s*visible !important/);
 });
+
+test("shell final segue as dimensoes e tokens do prototipo aprovado", () => {
+  assert.match(styles, /FlowOps Next prototype fidelity/);
+  assert.match(styles, /--fo-sidebar:\s*248px/);
+  assert.match(styles, /--fo-accent:\s*#27c7b8/);
+  assert.match(styles, /\.topbar\s*\{[^}]*height:\s*64px/s);
+  assert.match(styles, /\.workspace\s*\{[^}]*padding:\s*0\s*!important/s);
+  assert.match(styles, /\.view\s*\{[^}]*padding:\s*20px 24px 40px/s);
+  assert.match(styles, /@media \(max-width:\s*720px\)[\s\S]*\.sidebar\s*\{[^}]*bottom:\s*0/s);
+});

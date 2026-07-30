@@ -13296,3 +13296,200 @@ dialog::backdrop { background: rgba(2,6,12,.66); backdrop-filter: blur(2px); }
     width: 100%;
   }
 }
+
+/* FlowOps Next prototype fidelity: canonical shell and module proportions. */
+:root {
+  --fo-sidebar: 248px;
+  --fo-radius: 6px;
+  --fo-gap: 12px;
+  --fo-accent: #27c7b8;
+  --fo-accent-strong: #1fb4a7;
+  --fo-success: #36c978;
+  --fo-warning: #f2b84b;
+  --fo-danger: #f1646c;
+  --fo-canvas: #080d13;
+  --fo-surface-1: #111a24;
+  --fo-surface-2: #162230;
+  --fo-border: #263544;
+  --fo-border-strong: #3c5266;
+  --fo-text: #f2f6fa;
+  --fo-secondary: #9db0c4;
+  --fo-muted: #708399;
+}
+
+.app-shell,
+.app-shell:not(.sidebar-collapsed) { grid-template-columns: var(--fo-sidebar) minmax(0, 1fr) !important; }
+.app-shell.sidebar-collapsed { grid-template-columns: 64px minmax(0, 1fr) !important; }
+.sidebar,
+.app-shell:not(.sidebar-collapsed) .sidebar {
+  width: var(--fo-sidebar) !important;
+  padding: 12px 8px !important;
+  gap: 10px !important;
+  background: #0b121a !important;
+}
+.app-shell.sidebar-collapsed .sidebar { width: 64px !important; padding: 12px 8px !important; }
+.sidebar-head { min-height: 40px; padding: 0 4px !important; }
+.brand-mark,
+.app-shell.sidebar-collapsed .brand-mark { width: 36px !important; height: 36px !important; border-radius: 5px !important; }
+.brand-mark img { width: 36px; height: 36px; }
+.app-shell:not(.sidebar-collapsed) .sidebar .brand strong { font-size: 14px; }
+.app-shell:not(.sidebar-collapsed) .sidebar .brand span { color: var(--fo-accent); font-size: 10px; }
+.app-shell:not(.sidebar-collapsed) .sidebar-toggle { right: 2px; }
+.sidebar .tabs { gap: 2px; overflow-y: auto !important; overflow-x: hidden !important; }
+.app-shell:not(.sidebar-collapsed) .sidebar .tab {
+  min-height: 38px !important;
+  height: 38px;
+  padding: 0 10px !important;
+  border-radius: 5px !important;
+  color: var(--fo-secondary) !important;
+}
+.app-shell:not(.sidebar-collapsed) .sidebar .tab.active {
+  color: var(--fo-text) !important;
+  background: var(--fo-surface-2) !important;
+  box-shadow: inset 2px 0 var(--fo-accent);
+}
+.app-shell:not(.sidebar-collapsed) .sidebar .nav-label { font-size: 12px; }
+.app-shell:not(.sidebar-collapsed) .sidebar-group-label {
+  margin: 10px 10px 4px !important;
+  color: var(--fo-muted) !important;
+  font-size: 10px !important;
+  font-weight: 700;
+}
+
+.workspace { padding: 0 !important; }
+.topbar {
+  min-height: 64px !important;
+  height: 64px;
+  padding: 0 24px !important;
+  background: rgba(8, 13, 19, .96) !important;
+}
+.topbar-title { min-width: 220px; }
+.topbar-title .eyebrow { color: var(--fo-accent) !important; font-size: 11px !important; text-transform: uppercase; }
+.topbar-title h2 { font-size: 18px !important; }
+.topbar-search { width: min(420px, 42vw); height: 38px !important; border-radius: 5px !important; }
+.topbar-actions .icon-btn,
+.topbar-icon-btn,
+.notification-bell { width: 36px !important; height: 36px !important; min-width: 36px !important; border-radius: 5px !important; }
+
+.view { padding: 20px 24px 40px !important; overflow-x: hidden; }
+.view > .page-head,
+.view > .section-head { margin-bottom: 16px !important; }
+.page-head h1,
+.page-head h2,
+.view > h2 { font-size: 22px !important; }
+.panel,
+.kpi,
+.metric,
+.report-kpi,
+.dashboard-welcome,
+.operational-summary-grid > article,
+.commercial-next-kpi {
+  border-color: var(--fo-border) !important;
+  border-radius: var(--fo-radius) !important;
+  background: var(--fo-surface-1) !important;
+}
+.panel { padding: 14px !important; }
+.dashboard-welcome { padding: 16px !important; margin-bottom: 14px; }
+.dashboard-welcome #dashboardGreeting { font-size: 22px; }
+.dashboard-welcome .quick-actions { gap: 8px; }
+.dashboard-welcome .quick-actions [data-quick-action="client"],
+.dashboard-welcome .quick-actions [data-quick-action="lead"],
+.dashboard-welcome .quick-actions [data-quick-action="material"] { display: none; }
+
+.dashboard-primary-grid,
+.operational-summary-grid,
+.commercial-next-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 0 !important;
+  overflow: hidden;
+  border: 1px solid var(--fo-border);
+  border-radius: var(--fo-radius);
+  background: var(--fo-surface-1);
+}
+.dashboard-primary-grid .kpi,
+.operational-summary-grid > article,
+.commercial-next-kpi {
+  min-height: 94px !important;
+  padding: 15px !important;
+  border: 0 !important;
+  border-right: 1px solid var(--fo-border) !important;
+  border-radius: 0 !important;
+}
+.dashboard-primary-grid > :last-child,
+.operational-summary-grid > :last-child,
+.commercial-next-summary > :last-child { border-right: 0 !important; }
+.dashboard-primary-grid .kpi strong,
+.operational-summary-grid strong,
+.commercial-next-kpi strong { font-size: 24px !important; }
+.dashboard-work-grid { grid-template-columns: minmax(0, 1.25fr) minmax(360px, .85fr) !important; gap: 12px !important; }
+.dashboard-priority-list { grid-template-columns: 1fr !important; }
+.dashboard-priority-list > * { min-height: 54px; }
+.dashboard-flow-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 12px !important; }
+
+.report-tabs,
+.view-tabs,
+.materials-tabs,
+.marketplace-tabs,
+.subtabs { min-height: 39px; margin-bottom: 14px !important; }
+.report-tabs button,
+.view-tabs button,
+.materials-tabs button,
+.marketplace-tabs button,
+.subtabs button { min-height: 38px !important; padding: 0 14px !important; }
+
+.flowops-next-commercial #leadsList { display: grid; grid-template-columns: minmax(300px, .8fr) minmax(0, 1.5fr); gap: 12px; }
+.lead-list-column,
+.lead-detail-card { min-width: 0; }
+.lead-card,
+.lead-detail-card,
+.leads-next-column { border-radius: 5px !important; background: var(--fo-surface-1) !important; }
+.leads-next-pipeline { grid-template-columns: repeat(5, minmax(210px, 1fr)); gap: 8px; }
+
+.production-next-board { grid-template-columns: repeat(5, minmax(190px, 1fr)) !important; gap: 8px !important; min-height: 520px; }
+.production-next-column { padding: 8px !important; border-radius: 4px !important; background: #0e1720 !important; }
+.production-next-card { padding: 10px !important; border-radius: 5px !important; background: var(--fo-surface-1) !important; }
+.production-next-card-meta { padding-top: 8px; border-top: 1px solid var(--fo-border); }
+.logistics-next-tabs { margin-top: 14px; }
+.flowops-next-logistics .table-wrap { border-radius: var(--fo-radius); }
+.flowops-next-logistics table td { height: 58px; }
+
+@media (max-width: 1050px) {
+  .dashboard-primary-grid,
+  .operational-summary-grid,
+  .commercial-next-summary { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .dashboard-primary-grid > :nth-child(2),
+  .operational-summary-grid > :nth-child(2),
+  .commercial-next-summary > :nth-child(2) { border-right: 0 !important; }
+  .dashboard-primary-grid > :nth-child(-n+2),
+  .operational-summary-grid > :nth-child(-n+2),
+  .commercial-next-summary > :nth-child(-n+2) { border-bottom: 1px solid var(--fo-border) !important; }
+  .flowops-next-commercial #leadsList { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 720px) {
+  .app-shell .sidebar,
+  .app-shell:not(.sidebar-collapsed) .sidebar,
+  .app-shell.sidebar-collapsed .sidebar {
+    position: fixed !important;
+    top: auto !important;
+    right: 0 !important;
+    bottom: 0;
+    left: 0 !important;
+    width: 100% !important;
+    height: 66px !important;
+    padding: 6px 8px !important;
+  }
+  .sidebar > :not(.flowops-next-nav) { display: none !important; }
+  .workspace { padding: 0 0 66px !important; }
+  .topbar { min-height: 56px !important; height: 56px; padding: 0 12px !important; }
+  .view { padding: 12px 12px 88px !important; }
+  .dashboard-work-grid,
+  .dashboard-flow-grid { grid-template-columns: 1fr !important; }
+  .dashboard-welcome { align-items: flex-start; }
+  .dashboard-welcome .quick-actions { width: 100%; }
+  .dashboard-welcome .quick-actions button { flex: 1; }
+  .production-next-board { grid-template-columns: repeat(5, 82vw) !important; scroll-snap-type: x mandatory; }
+  .production-next-column { scroll-snap-align: start; }
+  .leads-next-pipeline { grid-template-columns: repeat(5, 82vw); }
+}
