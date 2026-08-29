@@ -1,3 +1,6 @@
+/* FlowOps fix: Supabase PostgrestBuilder has no .catch()/.finally(); add them so existing .catch() chains don't throw. */
+(function(){try{var S=(typeof window!=='undefined')&&window.supabase;if(!S||!S.createClient)return;var c=S.createClient('https://example.supabase.co','anon');var b=c.from('_').select();var p=Object.getPrototypeOf(b);while(p&&!Object.getOwnPropertyDescriptor(p,'then'))p=Object.getPrototypeOf(p);if(p&&typeof p.then==='function'&&typeof p.catch!=='function'){Object.defineProperty(p,'catch',{value:function(f){return this.then(undefined,f);},writable:true,configurable:true});Object.defineProperty(p,'finally',{value:function(f){return this.then(function(v){if(f)f();return v;},function(e){if(f)f();throw e;});},writable:true,configurable:true});}}catch(e){}})();
+
 import { state, money, saveData } from "../core/state.js";
 import { supabaseFunctionUrl } from "../core/config.js";
 import {
