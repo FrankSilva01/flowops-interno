@@ -832,16 +832,56 @@ async function createMlListing(body: Record<string, any>, account: Record<string
   return item;
 }
 
-async function syncMlListings(account: Record<string, any>) {
-  const response = await fetch(`https://api.mercadolibre.com/users/${account.external_seller_id}/items/search?limit=50`, {
-    headers: { Authorization: `Bearer ${account.access_token}` },
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(`Falha ao listar anuncios ML: ${JSON.stringify(data)}`);
+// Teto do proprio Mercado Livre: offset + limit nao passa de 1000 sem search_type=scan.
+const ML_PAGE = 50;
+const ML_MAX_OFFSET = 1000;
+// A Edge Function tem parede de tempo e cada anuncio custa 3 chamadas ao ML (item, descricao,
+// reviews). Paramos antes de morrer no meio de uma escrita; a proxima corrida continua de onde
+// a ordenacao por defasagem deixou.
+const SYNC_BUDGET_MS = 100_000;
 
+/** Lista TODOS os ids de anuncio da conta, pagina por pagina. */
+async function listAllMlItemIds(account: Record<string, any>): Promise<string[]> {
+  const ids: string[] = [];
+  for (let offset = 0; offset < ML_MAX_OFFSET; offset += ML_PAGE) {
+    const response = await fetch(
+      `https://api.mercadolibre.com/users/${account.external_seller_id}/items/search?limit=${ML_PAGE}&offset=${offset}`,
+      { headers: { Authorization: `Bearer ${account.access_token}` } },
+    );
+    const data = await response.json();
+    if (!response.ok) throw new Error(`Falha ao listar anuncios ML: ${JSON.stringify(data)}`);
+    const results: unknown[] = data.results || [];
+    ids.push(...results.map(String));
+    const total = Number(data.paging?.total ?? ids.length);
+    if (!results.length || ids.length >= total) break;
+  }
+  return ids;
+}
+
+async function syncMlListings(account: Record<string, any>) {
   const supabase = adminClient();
+  // Antes: uma unica pagina de 50, sem paginacao. Quando a conta passou de 50 anuncios, tudo
+  // que sobrava virava invisivel para o sync — inclusive anuncio recem-criado, que nunca era
+  // descoberto. O campo data.paging.total ja vinha na resposta e era ignorado.
+  const ids = await listAllMlItemIds(account);
+
+  // Anuncio ainda nao registrado vem primeiro (nao tem updated_at), depois o mais defasado.
+  // Assim, mesmo que a corrida nao alcance a lista inteira, produto novo entra na primeira vez
+  // e nenhum registro fica eternamente para tras.
+  const { data: conhecidos } = await supabase
+    .from("marketplace_listings")
+    .select("external_id, updated_at")
+    .eq("organization_id", account.organization_id)
+    .eq("marketplace", "Mercado Livre")
+    .in("external_id", ids);
+  const visto = new Map<string, string>((conhecidos || []).map((linha: Record<string, any>) => [String(linha.external_id), String(linha.updated_at || "")] as [string, string]));
+  ids.sort((a, b) => (visto.get(a) || "").localeCompare(visto.get(b) || ""));
+
+  const limite = Date.now() + SYNC_BUDGET_MS;
   let importedCount = 0;
-  for (const itemId of data.results || []) {
+  let restantes = 0;
+  for (const itemId of ids) {
+    if (Date.now() > limite) { restantes = ids.length - importedCount; break; }
     const itemResponse = await fetch(`https://api.mercadolibre.com/items/${itemId}`, {
       headers: { Authorization: `Bearer ${account.access_token}` },
     });
@@ -862,15 +902,21 @@ async function syncMlListings(account: Record<string, any>) {
     const lastPrice = lastListing?.price;
     if (lastPrice && lastPrice !== currentPrice) {
       const priceChangePercent = ((currentPrice - lastPrice) / lastPrice) * 100;
-      await supabase.from("price_history").insert({
-        organization_id: account.organization_id,
-        marketplace: "Mercado Livre",
-        external_listing_id: String(item.id),
-        old_price: lastPrice,
-        new_price: currentPrice,
-        change_percent: Number(priceChangePercent.toFixed(2)),
-        changed_at: new Date().toISOString(),
-      }).catch(() => {}); // Não falha sync se price_history falhar
+      // O builder do PostgREST e "thenable", mas nao expoe .catch: chamar .catch aqui
+      // derrubava o sync inteiro com "insert(...).catch is not a function". O erro so
+      // aparecia quando algum preco tinha mudado, entao ficou dormente enquanto o sync
+      // nem chegava nesses anuncios. Historico de preco e acessorio e nao pode interromper.
+      try {
+        await supabase.from("price_history").insert({
+          organization_id: account.organization_id,
+          marketplace: "Mercado Livre",
+          external_listing_id: String(item.id),
+          old_price: lastPrice,
+          new_price: currentPrice,
+          change_percent: Number(priceChangePercent.toFixed(2)),
+          changed_at: new Date().toISOString(),
+        });
+      } catch { /* Não falha sync se price_history falhar */ }
     }
 
     await supabase.from("marketplace_listings").upsert({
@@ -888,6 +934,9 @@ async function syncMlListings(account: Record<string, any>) {
     }, { onConflict: "organization_id,marketplace,external_id" });
     await syncMlReviews(itemId, account).catch(() => {});
     importedCount += 1;
+  }
+  if (restantes > 0) {
+    console.warn(`marketplace-sync: tempo esgotado com ${restantes} de ${ids.length} anuncios sem atualizar; a proxima corrida pega os mais defasados primeiro.`);
   }
   return importedCount;
 }
