@@ -902,15 +902,21 @@ async function syncMlListings(account: Record<string, any>) {
     const lastPrice = lastListing?.price;
     if (lastPrice && lastPrice !== currentPrice) {
       const priceChangePercent = ((currentPrice - lastPrice) / lastPrice) * 100;
-      await supabase.from("price_history").insert({
-        organization_id: account.organization_id,
-        marketplace: "Mercado Livre",
-        external_listing_id: String(item.id),
-        old_price: lastPrice,
-        new_price: currentPrice,
-        change_percent: Number(priceChangePercent.toFixed(2)),
-        changed_at: new Date().toISOString(),
-      }).catch(() => {}); // Não falha sync se price_history falhar
+      // O builder do PostgREST e "thenable", mas nao expoe .catch: chamar .catch aqui
+      // derrubava o sync inteiro com "insert(...).catch is not a function". O erro so
+      // aparecia quando algum preco tinha mudado, entao ficou dormente enquanto o sync
+      // nem chegava nesses anuncios. Historico de preco e acessorio e nao pode interromper.
+      try {
+        await supabase.from("price_history").insert({
+          organization_id: account.organization_id,
+          marketplace: "Mercado Livre",
+          external_listing_id: String(item.id),
+          old_price: lastPrice,
+          new_price: currentPrice,
+          change_percent: Number(priceChangePercent.toFixed(2)),
+          changed_at: new Date().toISOString(),
+        });
+      } catch { /* Não falha sync se price_history falhar */ }
     }
 
     await supabase.from("marketplace_listings").upsert({
