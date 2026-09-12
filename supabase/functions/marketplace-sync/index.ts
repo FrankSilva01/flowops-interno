@@ -1,3 +1,4 @@
+import { postMlListing } from "../_shared/ml-publication.mjs";
 import {
   adminClient,
   applyCors,
@@ -783,15 +784,7 @@ async function createMlListing(body: Record<string, any>, account: Record<string
   }
   if (body.sku) payload.seller_custom_field = String(body.sku);
 
-  const response = await fetch("https://api.mercadolibre.com/items", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${account.access_token}`,
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+  const response = await postMlListing(payload, account.access_token);
   const item = await response.json();
   if (!response.ok) {
     throw new Error(formatMlApiError(item));
